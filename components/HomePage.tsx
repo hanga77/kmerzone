@@ -1,0 +1,143 @@
+import React from 'react';
+import type { Product, Category, Store, FlashSale } from '../types';
+import CategoryCard from './CategoryCard';
+import ProductCard from './ProductCard';
+import StoreCard from './StoreCard';
+import { ShoppingBagIcon, SparklesIcon, TruckIcon, CreditCardIcon, ChatBubbleBottomCenterTextIcon, TagIcon } from './Icons';
+
+interface HomePageProps {
+    categories: Category[];
+    products: Product[];
+    stores: Store[];
+    flashSales: FlashSale[];
+    onProductClick: (product: Product) => void;
+    onCategoryClick: (categoryName: string) => void;
+    onVendorClick: (vendorName: string) => void;
+    onVisitStore: (storeName: string) => void;
+    isComparisonEnabled: boolean;
+}
+
+const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, onProductClick, onCategoryClick, onVendorClick, onVisitStore, isComparisonEnabled }) => {
+    
+    const popularProductsRef = React.useRef<HTMLDivElement>(null);
+    const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
+
+    const handleScrollToProducts = () => {
+        popularProductsRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    
+    return (
+        <>
+            {/* Hero Section */}
+            <section className="relative bg-kmer-green text-white h-[60vh] flex items-center justify-center">
+              <div className="absolute inset-0">
+                <img src="https://picsum.photos/seed/market/1600/900" alt="Marché camerounais" className="w-full h-full object-cover opacity-30"/>
+              </div>
+              <div className="relative z-10 text-center p-4">
+                <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.5)'}}>Le meilleur du Cameroun, livré chez vous.</h1>
+                <p className="text-lg md:text-xl mb-8 max-w-2xl mx-auto">La plus grande sélection de produits locaux et internationaux, à portée de clic.</p>
+                <button onClick={handleScrollToProducts} className="bg-kmer-yellow text-gray-900 font-bold py-3 px-8 rounded-full text-lg hover:bg-yellow-300 transition-transform transform hover:scale-105">
+                  Commencer mes achats
+                </button>
+              </div>
+            </section>
+
+             {/* Promotions Section */}
+            <section className="py-16 bg-white dark:bg-gray-800/30">
+              <div className="container mx-auto px-6">
+                <div className="flex justify-center items-center gap-4 mb-10">
+                    <TagIcon className="w-8 h-8 text-kmer-red"/>
+                    <h2 className="text-3xl font-bold text-center dark:text-white">Promotions du moment</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {products.filter(p => p.promotionPrice).slice(0, 4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                </div>
+              </div>
+            </section>
+
+            {/* Categories Section */}
+            <section className="py-16 bg-gray-50 dark:bg-gray-900">
+              <div className="container mx-auto px-6">
+                <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Parcourir par catégorie</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                  {categories.map(cat => <CategoryCard key={cat.id} category={cat} onClick={onCategoryClick} />)}
+                </div>
+              </div>
+            </section>
+
+            {/* Featured Products Section */}
+            <section ref={popularProductsRef} className="py-16 bg-white dark:bg-gray-800/30">
+              <div className="container mx-auto px-6">
+                <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Nos produits populaires</h2>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {products.slice(0, 4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                </div>
+              </div>
+            </section>
+
+            {/* Made in Cameroon Section */}
+            <section className="py-16 bg-kmer-green/10 dark:bg-kmer-green/20">
+              <div className="container mx-auto px-6">
+                 <div className="flex justify-center items-center gap-4 mb-10">
+                    <SparklesIcon className="w-10 h-10 text-kmer-green"/>
+                    <h2 className="text-3xl font-bold text-center dark:text-white">Fierté Locale: Soutenez le "Made in Cameroon"</h2>
+                </div>
+                <p className="text-center text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">Découvrez des produits authentiques, fabriqués avec passion par nos artisans et producteurs locaux. Chaque achat est un soutien à notre économie.</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                  {products.filter(p => p.category === 'Chimie domestique et hygiène').slice(0,4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                </div>
+              </div>
+            </section>
+            
+            {/* How It Works Section */}
+            <section className="py-20 bg-white dark:bg-gray-800/30">
+                <div className="container mx-auto px-6 text-center">
+                    <h2 className="text-3xl font-bold mb-12 dark:text-white">Simple, Rapide et Fiable</h2>
+                    <div className="grid md:grid-cols-4 gap-10">
+                        <div className="flex flex-col items-center">
+                            <div className="bg-kmer-yellow/20 p-5 rounded-full mb-4">
+                                <ShoppingBagIcon className="h-12 w-12 text-kmer-yellow" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2 dark:text-gray-200">1. Commandez</h3>
+                            <p className="text-gray-600 dark:text-gray-400">Choisissez parmi des milliers de produits et ajoutez-les à votre panier.</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="bg-kmer-red/20 p-5 rounded-full mb-4">
+                                <CreditCardIcon className="h-12 w-12 text-kmer-red" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2 dark:text-gray-200">2. Payez en sécurité</h3>
+                            <p className="text-gray-600 dark:text-gray-400">Utilisez Orange Money ou MTN Mobile Money pour un paiement 100% sécurisé.</p>
+                        </div>
+                         <div className="flex flex-col items-center">
+                            <div className="bg-kmer-green/20 p-5 rounded-full mb-4">
+                               <TruckIcon className="h-12 w-12 text-kmer-green" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2 dark:text-gray-200">3. Suivez votre livraison</h3>
+                            <p className="text-gray-600 dark:text-gray-400">Suivez votre livreur en temps réel jusqu'à votre porte.</p>
+                        </div>
+                        <div className="flex flex-col items-center">
+                            <div className="bg-blue-500/20 p-5 rounded-full mb-4">
+                               <ChatBubbleBottomCenterTextIcon className="h-12 w-12 text-blue-500" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-2 dark:text-gray-200">4. Donnez votre avis</h3>
+                            <p className="text-gray-600 dark:text-gray-400">Notez les produits et les vendeurs pour aider la communauté.</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+
+            {/* Featured Stores Section */}
+            <section className="py-16 bg-gray-50 dark:bg-gray-900">
+              <div className="container mx-auto px-6">
+                <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Nos boutiques partenaires</h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                  {stores.map(store => <StoreCard key={store.id} store={store} onVisitStore={onVisitStore} />)}
+                </div>
+              </div>
+            </section>
+        </>
+    )
+}
+
+export default HomePage;
