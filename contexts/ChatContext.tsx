@@ -60,7 +60,21 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [isWidgetOpen, setIsWidgetOpen] = useState(false);
   const [isTyping, setIsTyping] = useState<Record<string, boolean>>({});
 
-  const ai = useMemo(() => new GoogleGenAI({apiKey: process.env.API_KEY}), []);
+  const ai = useMemo(() => {
+    // This check is required because `process.env.API_KEY` is not available
+    // in the browser during a static Vercel deployment without a build step.
+    // This prevents the entire application from crashing.
+    if (process.env.API_KEY) {
+        try {
+            return new GoogleGenAI({ apiKey: process.env.API_KEY });
+        } catch (error) {
+            console.error('Error initializing Google GenAI:', error);
+            return null;
+        }
+    }
+    console.warn('Google GenAI API key not found. Chat feature will be disabled.');
+    return null;
+  }, []);
 
   const startChat = useCallback((seller: User, store: Store, product?: Product) => {
     if (!user) {
@@ -149,6 +163,22 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         [chatId]: [...(prev[chatId] || []), userMessage]
     }));
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: userMessage.timestamp } : c));
+
+    if (!ai) {
+        const errorMessage: Message = {
+            id: `msg_error_${Date.now()}`,
+            chatId,
+            senderId: 'assistant-id',
+            text: "Désolé, la fonction de chat n'est pas disponible pour le moment en raison d'un problème de configuration.",
+            timestamp: new Date().toISOString(),
+            isRead: false,
+        };
+        setMessages(prev => ({
+            ...prev,
+            [chatId]: [...(prev[chatId] || []), errorMessage]
+        }));
+        return;
+    }
 
     // Set typing indicator
     setIsTyping(prev => ({ ...prev, [chatId]: true }));
