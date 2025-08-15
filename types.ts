@@ -174,6 +174,12 @@ export interface Order extends NewOrderData {
     agentId?: string;
 }
 
+export interface Payout {
+  storeId: string;
+  amount: number;
+  date: string; // ISO String
+}
+
 export interface PickupPoint {
   id: string;
   name: string;
@@ -196,6 +202,7 @@ export interface SiteSettings {
   premiumCautionAmount: number;
   isPremiumPlusEnabled: boolean;
   premiumPlusAnnualFee: number;
+  requiredSellerDocuments: Record<string, boolean>;
 }
 
 export interface SiteActivityLog {

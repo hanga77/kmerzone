@@ -27,7 +27,7 @@ import ComparisonBar from './components/ComparisonBar';
 import BecomePremiumPage from './components/BecomePremiumPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import PromotionModal from './components/PromotionModal';
@@ -440,6 +440,12 @@ const App: React.FC = () => {
     premiumCautionAmount: 15000,
     isPremiumPlusEnabled: true,
     premiumPlusAnnualFee: 30000,
+    requiredSellerDocuments: {
+        "CNI (Carte Nationale d'Identité)": true,
+        "Registre de Commerce": true,
+        "Photo du gérant": false,
+        "Plan de localisation": false,
+    },
   });
 
   const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
@@ -451,6 +457,7 @@ const App: React.FC = () => {
   const [allOrders, setAllOrders] = useState<Order[]>([]);
   const [siteActivityLogs, setSiteActivityLogs] = useState<SiteActivityLog[]>([]);
   const [flashSales, setFlashSales] = useState<FlashSale[]>([]);
+  const [payouts, setPayouts] = useState<Payout[]>([]);
 
   useEffect(() => {
     setComparisonProducts(allProducts);
@@ -817,17 +824,22 @@ const App: React.FC = () => {
   const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string) => {
     if (!user) return;
     const currentUser = user;
+    
+    const requiredDocs = Object.entries(siteSettings.requiredSellerDocuments)
+        .filter(([, isRequired]) => isRequired)
+        .map(([docName]) => ({ name: docName, status: 'requested' as const }));
+
     setAllStores(prev => {
         const newStore: Store = {
           id: new Date().getTime().toString(), name: shopName, logoUrl: `https://picsum.photos/seed/${shopName.replace(/\s+/g, '-')}/200/100`, category: 'Nouvelle Boutique',
           warnings: [], status: 'pending', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress,
-          documents: [{ name: 'CNI (Carte Nationale d\'Identité)', status: 'requested' }, { name: 'Registre de Commerce', status: 'requested' }],
+          documents: requiredDocs,
         };
         return [...prev, newStore];
     });
     addSiteActivityLog(currentUser, 'Demande de Boutique', `A soumis une demande pour la boutique '${shopName}'.`);
     updateUser({ shopName, location });
-  }, [user, addSiteActivityLog, updateUser]);
+  }, [user, addSiteActivityLog, updateUser, siteSettings.requiredSellerDocuments]);
   
   const handleApproveStore = useCallback((storeId: string) => {
     if (!user) return;
@@ -1088,6 +1100,23 @@ const App: React.FC = () => {
     navigate('home');
   }, [user, setAllUsers, addSiteActivityLog, siteSettings.premiumPlusAnnualFee, navigate]);
 
+  const handlePayoutSeller = useCallback((storeId: string, amount: number) => {
+    if (!user || user.role !== 'superadmin') return;
+    if (amount <= 0) return;
+
+    if (window.confirm(`Confirmez-vous le versement de ${amount.toLocaleString('fr-CM')} FCFA à cette boutique ?`)) {
+        const newPayout: Payout = {
+            storeId,
+            amount,
+            date: new Date().toISOString(),
+        };
+        setPayouts(prev => [...prev, newPayout]);
+        
+        const store = allStores.find(s => s.id === storeId);
+        addSiteActivityLog(user, 'Paiement Vendeur', `A versé ${amount.toLocaleString('fr-CM')} FCFA à la boutique '${store?.name}'.`);
+    }
+  }, [user, addSiteActivityLog, allStores]);
+
   const navigateToHome = useCallback(() => { navigate('home'); setAppliedPromoCode(null); }, [navigate]);
   const navigateToCart = useCallback(() => navigate('cart'), [navigate]);
   const navigateToCheckout = useCallback(() => navigate('checkout'), [navigate]);
@@ -1164,7 +1193,7 @@ const App: React.FC = () => {
       case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'product-form': return <ProductForm onCancel={navigateToSellerDashboard} onSave={handleSaveProduct} productToEdit={productToEdit} categories={allCategories} onAddCategory={addCategory} />;
       case 'seller-profile': return <SellerProfile onBack={navigateToSellerDashboard} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} />;
+      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} />;
       case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
       case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
       case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} onUpdateOrderStatus={handleUpdateOrderStatus} allStores={allStores} allPickupPoints={allPickupPoints} />;

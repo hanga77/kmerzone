@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
@@ -150,6 +150,25 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
         }
     };
     
+    const handleRequestNewDoc = (e: React.FormEvent<HTMLFormElement>, storeId: string) => {
+        e.preventDefault();
+        const form = e.currentTarget;
+        const input = form.elements.namedItem('docName') as HTMLInputElement;
+        const docName = input.value.trim();
+        if (docName) {
+            onRequestDocument(storeId, docName);
+            input.value = '';
+        }
+    };
+
+    const getDocStatusClass = (status: string) => ({
+        'requested': 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300',
+        'uploaded': 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300',
+        'verified': 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
+        'rejected': 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+    }[status] || 'bg-gray-100 text-gray-800');
+
+
     return (
         <>
             {warningStore && (
@@ -168,22 +187,70 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                 <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion des Boutiques</h2>
                 <div className="space-y-4">
                     {allStores.map(store => (
-                        <details key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            <summary className="font-semibold cursor-pointer dark:text-white">{store.name} - <span className="font-normal">{store.status}</span></summary>
-                            <div className="mt-4 pt-4 border-t dark:border-gray-700">
-                                <div className="flex flex-wrap gap-2 mb-4">
-                                    {store.status === 'pending' && <>
-                                        <button onClick={() => onApproveStore(store.id)} className="text-sm bg-green-500 text-white px-3 py-1 rounded-md">Approuver</button>
-                                        <button onClick={() => onRejectStore(store.id)} className="text-sm bg-red-500 text-white px-3 py-1 rounded-md">Rejeter</button>
-                                    </>}
-                                    {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-red-500 text-white px-3 py-1 rounded-md">Suspendre</button>}
-                                    {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-green-500 text-white px-3 py-1 rounded-md">Réactiver</button>}
-                                    {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1 rounded-md">Avertir</button>}
+                        <details key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group" open={store.status === 'pending'}>
+                            <summary className="font-semibold cursor-pointer dark:text-white flex justify-between items-center">
+                                <span>{store.name}</span>
+                                <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${
+                                    store.status === 'active' ? 'bg-green-100 text-green-800' :
+                                    store.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-red-100 text-red-800'
+                                }`}>{store.status}</span>
+                            </summary>
+                            <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-4">
+                                <div>
+                                    <h4 className="font-semibold mb-2 dark:text-white text-sm">Actions Rapides</h4>
+                                    <div className="flex flex-wrap gap-2">
+                                        {store.status === 'pending' && <>
+                                            <button onClick={() => onApproveStore(store.id)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Approuver</button>
+                                            <button onClick={() => onRejectStore(store.id)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Rejeter</button>
+                                        </>}
+                                        {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
+                                        {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
+                                        {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors">Avertir</button>}
+                                    </div>
                                 </div>
-                                <h4 className="font-semibold mt-2 dark:text-white">Documents:</h4>
-                                {store.documents.map(doc => (
-                                    <div key={doc.name} className="text-sm my-1 dark:text-gray-300">{doc.name}: {doc.status}</div>
-                                ))}
+                                
+                                <div>
+                                    <h4 className="font-semibold mb-2 dark:text-white text-sm">Gestion des Documents</h4>
+                                    <div className="space-y-2">
+                                        {store.documents.map(doc => (
+                                            <div key={doc.name} className="flex flex-col sm:flex-row justify-between sm:items-center p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700">
+                                                <div>
+                                                    <p className="font-medium text-gray-800 dark:text-gray-200">{doc.name}</p>
+                                                    <span className={`px-2 py-0.5 mt-1 inline-block rounded-full text-xs font-medium ${getDocStatusClass(doc.status)}`}>{doc.status}</span>
+                                                    {doc.status === 'rejected' && doc.rejectionReason && <p className="text-xs text-red-500 mt-1">Motif: {doc.rejectionReason}</p>}
+                                                </div>
+                                                {doc.status === 'uploaded' && (
+                                                    <div className="flex gap-2 mt-2 sm:mt-0">
+                                                        <button 
+                                                            onClick={() => {
+                                                                const reason = window.prompt('Motif du rejet (optionnel) :');
+                                                                if (reason !== null) {
+                                                                    onVerifyDocumentStatus(store.id, doc.name, 'rejected', reason || 'Non spécifié');
+                                                                }
+                                                            }} 
+                                                            className="text-xs bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
+                                                        >
+                                                            Rejeter
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => onVerifyDocumentStatus(store.id, doc.name, 'verified')} 
+                                                            className="text-xs bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600"
+                                                        >
+                                                            Approuver
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </div>
+                                     <form onSubmit={(e) => handleRequestNewDoc(e, store.id)} className="mt-3">
+                                        <div className="flex gap-2">
+                                            <input name="docName" type="text" placeholder="Demander un nouveau document (ex: Patente)" className="flex-grow p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600"/>
+                                            <button type="submit" className="text-xs bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600">Demander</button>
+                                        </div>
+                                    </form>
+                                </div>
                             </div>
                         </details>
                     ))}
@@ -320,6 +387,17 @@ const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'o
             premiumThresholds: { ...s.premiumThresholds, [field]: Number(value) }
         }));
     };
+    
+    const handleDocumentSettingChange = (docName: string) => {
+        setSettings(s => ({
+            ...s,
+            requiredSellerDocuments: {
+                ...s.requiredSellerDocuments,
+                [docName]: !s.requiredSellerDocuments[docName],
+            }
+        }));
+    };
+
 
     return (
         <div className="p-4 sm:p-6 space-y-8">
@@ -330,6 +408,22 @@ const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'o
                 <div className="space-y-4">
                     <ToggleSwitch label="Activer le Chat" description="Permet aux clients de discuter avec les vendeurs." enabled={props.isChatEnabled} onChange={props.onToggleChatFeature} />
                     <ToggleSwitch label="Activer la Comparaison" description="Permet aux clients de comparer jusqu'à 4 produits." enabled={props.isComparisonEnabled} onChange={props.onToggleComparisonFeature} />
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800/50 p-6 rounded-lg shadow-sm">
+                <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700 dark:text-white">Documents Vendeurs Requis</h3>
+                 <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Choisissez les documents que les nouveaux vendeurs doivent fournir lors de l'inscription.</p>
+                <div className="space-y-4">
+                    {Object.keys(settings.requiredSellerDocuments).map((docName) => (
+                        <ToggleSwitch
+                            key={docName}
+                            label={docName}
+                            description={`Activer pour demander ce document.`}
+                            enabled={settings.requiredSellerDocuments[docName]}
+                            onChange={() => handleDocumentSettingChange(docName)}
+                        />
+                    ))}
                 </div>
             </div>
 
@@ -568,6 +662,109 @@ const CategoryManagementPanel: React.FC<CategoryManagementPanelProps> = ({
     );
 };
 
+const PaymentsManagementPanel: React.FC<{
+    allOrders: Order[];
+    allStores: Store[];
+    payouts: Payout[];
+    onPayoutSeller: (storeId: string, amount: number) => void;
+}> = ({ allOrders, allStores, payouts, onPayoutSeller }) => {
+    const COMMISSION_RATE = 0.10; // 10% commission
+
+    const paymentData = useMemo(() => {
+        const deliveredOrders = allOrders.filter(o => o.status === 'delivered');
+        
+        const totalTransactionVolume = deliveredOrders
+            .flatMap(o => o.items)
+            .reduce((sum, item) => sum + (item.promotionPrice ?? item.price) * item.quantity, 0);
+        
+        const totalCommission = totalTransactionVolume * COMMISSION_RATE;
+        const totalPaidOut = payouts.reduce((sum, p) => sum + p.amount, 0);
+        const totalDueToSellers = totalTransactionVolume - totalCommission;
+        
+        const sellerPayouts = allStores.map(store => {
+            const storeDeliveredItems = deliveredOrders.flatMap(o => o.items.filter(i => i.vendor === store.name));
+            const grossRevenue = storeDeliveredItems.reduce((sum, item) => sum + (item.promotionPrice ?? item.price) * item.quantity, 0);
+            
+            const commission = grossRevenue * COMMISSION_RATE;
+            const netDue = grossRevenue - commission;
+            
+            const paidAmount = payouts
+                .filter(p => p.storeId === store.id)
+                .reduce((sum, p) => sum + p.amount, 0);
+            
+            const remainingDue = netDue - paidAmount;
+
+            return {
+                storeId: store.id,
+                storeName: store.name,
+                grossRevenue,
+                commission,
+                netDue,
+                paidAmount,
+                remainingDue,
+            };
+        });
+
+        return {
+            totalTransactionVolume,
+            totalCommission,
+            totalPaidOut,
+            totalDueToSellers,
+            sellerPayouts,
+        };
+    }, [allOrders, allStores, payouts, COMMISSION_RATE]);
+
+    return (
+        <div className="p-4 sm:p-6 space-y-6">
+            <h2 className="text-xl font-bold dark:text-white">Gestion des Paiements</h2>
+            
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Volume des Ventes" value={`${paymentData.totalTransactionVolume.toLocaleString('fr-CM')} FCFA`} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
+                <StatCard icon={<ChartPieIcon className="w-7 h-7"/>} label="Commission Plateforme" value={`${paymentData.totalCommission.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
+                <StatCard icon={<TruckIcon className="w-7 h-7"/>} label="Total Reversé aux Vendeurs" value={`${paymentData.totalPaidOut.toLocaleString('fr-CM')} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
+                <StatCard icon={<ExclamationTriangleIcon className="w-7 h-7"/>} label="Montant Restant à Payer" value={`${(paymentData.totalDueToSellers - paymentData.totalPaidOut).toLocaleString('fr-CM')} FCFA`} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" />
+            </div>
+
+            <div className="overflow-x-auto bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
+                 <table className="w-full min-w-[800px] text-sm text-left">
+                    <thead className="bg-gray-50 dark:bg-gray-700/50">
+                        <tr>
+                            <th className="px-4 py-3 font-semibold">Boutique</th>
+                            <th className="px-4 py-3 font-semibold text-right">Revenu Brut</th>
+                            <th className="px-4 py-3 font-semibold text-right">Commission (10%)</th>
+                            <th className="px-4 py-3 font-semibold text-right">Montant Net Dû</th>
+                            <th className="px-4 py-3 font-semibold text-right">Déjà Versé</th>
+                            <th className="px-4 py-3 font-semibold text-right">Reste à Payer</th>
+                            <th className="px-4 py-3 font-semibold text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y dark:divide-gray-700">
+                        {paymentData.sellerPayouts.map(seller => (
+                            <tr key={seller.storeId} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
+                                <td className="px-4 py-3 font-medium dark:text-white">{seller.storeName}</td>
+                                <td className="px-4 py-3 text-right">{seller.grossRevenue.toLocaleString('fr-CM')} FCFA</td>
+                                <td className="px-4 py-3 text-right text-red-600 dark:text-red-400">- {seller.commission.toLocaleString('fr-CM')} FCFA</td>
+                                <td className="px-4 py-3 text-right font-semibold">{seller.netDue.toLocaleString('fr-CM')} FCFA</td>
+                                <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">{seller.paidAmount.toLocaleString('fr-CM')} FCFA</td>
+                                <td className="px-4 py-3 text-right font-bold text-orange-600 dark:text-orange-400">{seller.remainingDue.toLocaleString('fr-CM')} FCFA</td>
+                                <td className="px-4 py-3 text-center">
+                                    <button 
+                                        onClick={() => onPayoutSeller(seller.storeId, seller.remainingDue)}
+                                        disabled={seller.remainingDue <= 0}
+                                        className="bg-kmer-green text-white text-xs font-bold px-3 py-1.5 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                                    >
+                                        Payer le solde
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                 </table>
+            </div>
+        </div>
+    );
+};
+
 interface SuperAdminDashboardProps {
     allUsers: User[];
     allOrders: Order[];
@@ -577,6 +774,7 @@ interface SuperAdminDashboardProps {
     flashSales: FlashSale[];
     allProducts: Product[];
     allPickupPoints: PickupPoint[];
+    payouts: Payout[];
     onUpdateOrderStatus: (id: string, status: OrderStatus) => void;
     onUpdateCategoryImage: (id: string, imageUrl: string) => void;
     onWarnStore: (id: string, reason: string) => void;
@@ -601,6 +799,7 @@ interface SuperAdminDashboardProps {
     onAdminAddCategory: (categoryName: string) => void;
     onAdminDeleteCategory: (categoryId: string) => void;
     onUpdateUserRole: (userId: string, newRole: UserRole) => void;
+    onPayoutSeller: (storeId: string, amount: number) => void;
 }
 
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
@@ -609,6 +808,22 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
     
     if (!user || user.role !== 'superadmin') {
         return <div className="p-8 text-center text-red-500">Accès non autorisé.</div>;
+    }
+
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'overview': return <DashboardOverviewPanel {...props} />;
+            case 'orders': return <OrderManagementPanel {...props} />;
+            case 'payments': return <PaymentsManagementPanel {...props} />;
+            case 'stores': return <StoreManagementPanel {...props} />;
+            case 'categories': return <CategoryManagementPanel {...props} />;
+            case 'flash-sales': return <FlashSaleManagementPanel {...props} />;
+            case 'users': return <UserManagementPanel {...props} />;
+            case 'pickuppoints': return <PickupPointManagementPanel {...props} />;
+            case 'logs': return <LogsPanel {...props} />;
+            case 'settings': return <SettingsPanel {...props} />;
+            default: return <DashboardOverviewPanel {...props} />;
+        }
     }
 
     return (
@@ -628,6 +843,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
                         <div className="flex space-x-2 overflow-x-auto">
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
+                           <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
                            <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
                            <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
@@ -641,15 +857,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
             </header>
              <main className="container mx-auto px-4 sm:px-6 py-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    {activeTab === 'overview' && <DashboardOverviewPanel allOrders={props.allOrders} allStores={props.allStores} allUsers={props.allUsers} siteActivityLogs={props.siteActivityLogs} />}
-                    {activeTab === 'orders' && <OrderManagementPanel allOrders={props.allOrders} allUsers={props.allUsers} onUpdateOrderStatus={props.onUpdateOrderStatus} onAssignAgent={props.onAssignAgent} />}
-                    {activeTab === 'stores' && <StoreManagementPanel allStores={props.allStores} onApproveStore={props.onApproveStore} onRejectStore={props.onRejectStore} onToggleStoreStatus={props.onToggleStoreStatus} onWarnStore={props.onWarnStore} onRequestDocument={props.onRequestDocument} onVerifyDocumentStatus={props.onVerifyDocumentStatus} />}
-                    {activeTab === 'categories' && <CategoryManagementPanel allCategories={props.allCategories} onUpdateCategoryImage={props.onUpdateCategoryImage} onAdminAddCategory={props.onAdminAddCategory} onAdminDeleteCategory={props.onAdminDeleteCategory} />}
-                    {activeTab === 'flash-sales' && <FlashSaleManagementPanel flashSales={props.flashSales} allProducts={props.allProducts} onSaveFlashSale={props.onSaveFlashSale} onUpdateFlashSaleSubmissionStatus={props.onUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={props.onBatchUpdateFlashSaleStatus} />}
-                    {activeTab === 'users' && <UserManagementPanel allUsers={props.allUsers} onUpdateUserRole={props.onUpdateUserRole} />}
-                    {activeTab === 'pickuppoints' && <PickupPointManagementPanel allPickupPoints={props.allPickupPoints} onAddPickupPoint={props.onAddPickupPoint} onUpdatePickupPoint={props.onUpdatePickupPoint} onDeletePickupPoint={props.onDeletePickupPoint} />}
-                    {activeTab === 'logs' && <LogsPanel siteActivityLogs={props.siteActivityLogs} />}
-                    {activeTab === 'settings' && <SettingsPanel isChatEnabled={props.isChatEnabled} isComparisonEnabled={props.isComparisonEnabled} onToggleChatFeature={props.onToggleChatFeature} onToggleComparisonFeature={props.onToggleComparisonFeature} siteSettings={props.siteSettings} onUpdateSiteSettings={props.onUpdateSiteSettings} />}
+                   {renderContent()}
                 </div>
             </main>
         </div>
