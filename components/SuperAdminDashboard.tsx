@@ -6,7 +6,7 @@ import FlashSaleForm from './FlashSaleForm';
 
 declare const L: any;
 
-const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
+const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
 
 interface SuperAdminDashboardProps {
     allUsers: User[];
@@ -549,6 +549,7 @@ const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'o
 
 const CategoryManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allCategories' | 'onUpdateCategoryImage' | 'onAdminAddCategory' | 'onAdminDeleteCategory'>> = ({ allCategories, onUpdateCategoryImage, onAdminAddCategory, onAdminDeleteCategory }) => {
     const [newCategoryName, setNewCategoryName] = useState('');
+    const [editingState, setEditingState] = useState<{ id: string | null; url: string }>({ id: null, url: '' });
 
     const handleAdd = () => {
         if (newCategoryName.trim()) {
@@ -556,12 +557,20 @@ const CategoryManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allCateg
             setNewCategoryName('');
         }
     };
+    
+    const handleEditClick = (cat: Category) => {
+        setEditingState({ id: cat.id, url: cat.imageUrl });
+    };
 
-    const handleUpdateImage = (catId: string) => {
-        const newUrl = prompt("Entrez la nouvelle URL de l'image :");
-        if (newUrl) {
-            onUpdateCategoryImage(catId, newUrl);
+    const handleSaveImage = () => {
+        if (editingState.id && editingState.url.trim()) {
+            onUpdateCategoryImage(editingState.id, editingState.url);
         }
+        setEditingState({ id: null, url: '' });
+    };
+    
+    const handleCancelEdit = () => {
+        setEditingState({ id: null, url: '' });
     };
 
     return (
@@ -582,13 +591,29 @@ const CategoryManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allCateg
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {allCategories.map(cat => (
                     <div key={cat.id} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm overflow-hidden group">
-                        <img src={cat.imageUrl} alt={cat.name} className="h-32 w-full object-cover"/>
+                        <img src={editingState.id === cat.id ? editingState.url : cat.imageUrl} alt={cat.name} className="h-32 w-full object-cover bg-gray-200" onError={(e) => { e.currentTarget.src = PLACEHOLDER_IMAGE_URL }}/>
                         <div className="p-3">
-                            <p className="font-semibold dark:text-white">{cat.name}</p>
-                            <div className="flex gap-2 mt-2">
-                                <button onClick={() => handleUpdateImage(cat.id)} className="text-xs text-blue-600 hover:underline">Changer l'image</button>
-                                <button onClick={() => onAdminDeleteCategory(cat.id)} className="text-xs text-red-600 hover:underline">Supprimer</button>
-                            </div>
+                            <p className="font-semibold dark:text-white truncate">{cat.name}</p>
+                             {editingState.id === cat.id ? (
+                                <div className="mt-2 space-y-2">
+                                    <input
+                                        type="text"
+                                        value={editingState.url}
+                                        onChange={(e) => setEditingState(s => ({ ...s, url: e.target.value }))}
+                                        placeholder="Nouvelle URL de l'image"
+                                        className="w-full p-1 text-xs border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                    />
+                                    <div className="flex gap-2">
+                                        <button onClick={handleSaveImage} className="text-xs bg-green-500 text-white px-2 py-1 rounded-md">OK</button>
+                                        <button onClick={handleCancelEdit} className="text-xs bg-gray-300 text-gray-800 px-2 py-1 rounded-md">X</button>
+                                    </div>
+                                </div>
+                            ) : (
+                                <div className="flex gap-2 mt-2">
+                                    <button onClick={() => handleEditClick(cat)} className="text-xs text-blue-600 hover:underline flex items-center gap-1"><PencilSquareIcon className="w-3 h-3"/>Changer</button>
+                                    <button onClick={() => onAdminDeleteCategory(cat.id)} className="text-xs text-red-600 hover:underline flex items-center gap-1"><TrashIcon className="w-3 h-3"/>Supprimer</button>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
@@ -891,22 +916,19 @@ const AdvertisementManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'adv
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState('overview');
     
-    const renderContent = () => {
-        switch(activeTab) {
-            case 'overview': return <DashboardOverviewPanel {...props} />;
-            case 'orders': return <OrderManagementPanel {...props} />;
-            case 'stores': return <StoreManagementPanel {...props} />;
-            case 'users': return <UserManagementPanel {...props} />;
-            case 'logs': return <LogsPanel siteActivityLogs={props.siteActivityLogs} />;
-            case 'flash_sales': return <FlashSaleManagementPanel {...props} />;
-            case 'pickup_points': return <PickupPointManagementPanel {...props} />;
-            case 'categories': return <CategoryManagementPanel {...props} />;
-            case 'payouts': return <PayoutManagementPanel {...props} />;
-            case 'map': return <MapPanel {...props} />;
-            case 'advertisements': return <AdvertisementManagementPanel {...props} />;
-            case 'settings': return <SettingsPanel {...props} />;
-            default: return <DashboardOverviewPanel {...props} />;
-        }
+    const panelComponents = {
+        'overview': <DashboardOverviewPanel {...props} />,
+        'orders': <OrderManagementPanel {...props} />,
+        'stores': <StoreManagementPanel {...props} />,
+        'users': <UserManagementPanel {...props} />,
+        'logs': <LogsPanel siteActivityLogs={props.siteActivityLogs} />,
+        'flash_sales': <FlashSaleManagementPanel {...props} />,
+        'pickup_points': <PickupPointManagementPanel {...props} />,
+        'categories': <CategoryManagementPanel {...props} />,
+        'payouts': <PayoutManagementPanel {...props} />,
+        'map': <MapPanel {...props} />,
+        'advertisements': <AdvertisementManagementPanel {...props} />,
+        'settings': <SettingsPanel {...props} />,
     };
     
     return (
@@ -919,25 +941,56 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
                      </div>
                      <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
                         <div className="flex space-x-2 overflow-x-auto">
-                           <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                           <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
-                           <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
-                           <TabButton icon={<UserGroupIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-                           <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Carte" isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
-                           <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
-                           <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash_sales'} onClick={() => setActiveTab('flash_sales')} />
-                           <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup_points'} onClick={() => setActiveTab('pickup_points')} />
-                           <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
-                           <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Publicités" isActive={activeTab === 'advertisements'} onClick={() => setActiveTab('advertisements')} />
-                           <TabButton icon={<ClockIcon className="w-5 h-5"/>} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
-                           <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                           {Object.keys(panelComponents).map(key => {
+                               const icons: Record<string, React.ReactNode> = {
+                                   'overview': <ChartPieIcon className="w-5 h-5"/>,
+                                   'orders': <ShoppingBagIcon className="w-5 h-5"/>,
+                                   'stores': <BuildingStorefrontIcon className="w-5 h-5"/>,
+                                   'users': <UserGroupIcon className="w-5 h-5"/>,
+                                   'map': <MapPinIcon className="w-5 h-5"/>,
+                                   'categories': <TagIcon className="w-5 h-5"/>,
+                                   'flash_sales': <BoltIcon className="w-5 h-5"/>,
+                                   'pickup_points': <BuildingStorefrontIcon className="w-5 h-5"/>,
+                                   'payouts': <CurrencyDollarIcon className="w-5 h-5"/>,
+                                   'advertisements': <ExclamationTriangleIcon className="w-5 h-5"/>,
+                                   'logs': <ClockIcon className="w-5 h-5"/>,
+                                   'settings': <Cog8ToothIcon className="w-5 h-5"/>
+                               };
+                               const labels: Record<string, string> = {
+                                   'overview': 'Aperçu',
+                                   'orders': 'Commandes',
+                                   'stores': 'Boutiques',
+                                   'users': 'Utilisateurs',
+                                   'map': 'Carte',
+                                   'categories': 'Catégories',
+                                   'flash_sales': 'Ventes Flash',
+                                   'pickup_points': 'Points Relais',
+                                   'payouts': 'Paiements',
+                                   'advertisements': 'Publicités',
+                                   'logs': 'Logs',
+                                   'settings': 'Paramètres'
+                               };
+                               return (
+                                  <TabButton 
+                                    key={key}
+                                    icon={icons[key]} 
+                                    label={labels[key]} 
+                                    isActive={activeTab === key} 
+                                    onClick={() => setActiveTab(key)} 
+                                  />
+                               );
+                           })}
                         </div>
                     </div>
                 </div>
             </header>
             <main className="container mx-auto px-4 sm:px-6 py-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    {renderContent()}
+                   {Object.entries(panelComponents).map(([key, panel]) => (
+                        <div key={key} hidden={activeTab !== key}>
+                            {panel}
+                        </div>
+                    ))}
                 </div>
             </main>
         </div>
