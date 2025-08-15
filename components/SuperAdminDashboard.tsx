@@ -140,7 +140,7 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
     );
 };
 
-const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'onApproveStore' | 'onRejectStore' | 'onToggleStoreStatus' | 'onWarnStore' | 'onRequestDocument' | 'onVerifyDocumentStatus'>> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onRequestDocument, onVerifyDocumentStatus }) => {
+const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'onApproveStore' | 'onRejectStore' | 'onToggleStoreStatus' | 'onWarnStore' | 'onRequestDocument' | 'onVerifyDocumentStatus' | 'siteSettings' | 'onActivateSubscription'>> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onRequestDocument, onVerifyDocumentStatus, siteSettings, onActivateSubscription }) => {
     const [warningStore, setWarningStore] = useState<Store | null>(null);
     const [warningReason, setWarningReason] = useState('');
 
@@ -211,6 +211,26 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                         {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors">Avertir</button>}
                                     </div>
                                 </div>
+                                
+                                {siteSettings.isRentEnabled && (
+                                    <div>
+                                        <h4 className="font-semibold mb-2 dark:text-white text-sm">Abonnement</h4>
+                                        <div className="flex items-center gap-4 p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700">
+                                            <p className="text-sm flex-grow">
+                                                Statut : <span className="font-bold">{store.subscriptionStatus || 'inactif'}</span>
+                                                {store.subscriptionDueDate && ` (Échéance : ${new Date(store.subscriptionDueDate).toLocaleDateString('fr-FR')})`}
+                                            </p>
+                                            {store.status === 'active' && store.subscriptionStatus !== 'active' && (
+                                                <button
+                                                    onClick={() => onActivateSubscription(store.id)}
+                                                    className="text-sm bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600"
+                                                >
+                                                    Activer l'abonnement
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
                                 
                                 <div>
                                     <h4 className="font-semibold mb-2 dark:text-white text-sm">Gestion des Documents</h4>
@@ -379,6 +399,10 @@ const ToggleSwitch: React.FC<{
 const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'onUpdateSiteSettings' | 'isChatEnabled' | 'isComparisonEnabled' | 'onToggleChatFeature' | 'onToggleComparisonFeature'>> = (props) => {
     const [settings, setSettings] = useState(props.siteSettings);
     
+    useEffect(() => {
+        setSettings(props.siteSettings);
+    }, [props.siteSettings]);
+
     const handleSettingsChange = (field: keyof SiteSettings, value: any) => {
         setSettings(s => ({ ...s, [field]: value }));
     };
@@ -410,6 +434,28 @@ const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'o
                 <div className="space-y-4">
                     <ToggleSwitch label="Activer le Chat" description="Permet aux clients de discuter avec les vendeurs." enabled={props.isChatEnabled} onChange={props.onToggleChatFeature} />
                     <ToggleSwitch label="Activer la Comparaison" description="Permet aux clients de comparer jusqu'à 4 produits." enabled={props.isComparisonEnabled} onChange={props.onToggleComparisonFeature} />
+                </div>
+            </div>
+
+             <div className="bg-white dark:bg-gray-800/50 p-6 rounded-lg shadow-sm">
+                <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700 dark:text-white">Gestion des Loyers de Boutique</h3>
+                <div className="space-y-4">
+                    <ToggleSwitch
+                        label="Activer le système de loyer"
+                        description="Les vendeurs devront payer un loyer mensuel."
+                        enabled={settings.isRentEnabled}
+                        onChange={() => handleSettingsChange('isRentEnabled', !settings.isRentEnabled)}
+                    />
+                    <div>
+                        <label className="block text-sm font-medium dark:text-gray-300">Montant du loyer mensuel (FCFA)</label>
+                        <input
+                            type="number"
+                            value={settings.rentAmount}
+                            onChange={e => handleSettingsChange('rentAmount', Number(e.target.value))}
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                            disabled={!settings.isRentEnabled}
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -893,6 +939,7 @@ interface SuperAdminDashboardProps {
     onAdminDeleteCategory: (categoryId: string) => void;
     onUpdateUserRole: (userId: string, newRole: UserRole) => void;
     onPayoutSeller: (storeId: string, amount: number) => void;
+    onActivateSubscription: (storeId: string) => void;
 }
 
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {

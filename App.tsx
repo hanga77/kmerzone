@@ -371,10 +371,10 @@ const initialProducts: Product[] = [
 ];
 
 const initialStores: Store[] = [
-    { id: '1', name: 'Mama Africa', logoUrl: 'https://picsum.photos/seed/mama/200/100', category: 'Restaurant & Alimentation', warnings: [], status: 'active', location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Mama', sellerLastName: 'Africa', sellerPhone: '699887766', physicalAddress: '123 Rue de la Joie', documents: [], latitude: 3.8665, longitude: 11.521 },
-    { id: '2', name: 'Kmer Fashion', logoUrl: 'https://picsum.photos/seed/kmerfashion/200/100', category: 'Mode', warnings: [{id: 'warn1', date: '2023-10-01T10:00:00Z', reason: 'Non-respect des délais de livraison.'}], status: 'active', location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Adèle', sellerLastName: 'Ngo', sellerPhone: '677665544', physicalAddress: '45 Avenue de la Mode', documents: [], latitude: 4.0483, longitude: 9.702 },
-    { id: '3', name: 'Electro Plus', logoUrl: 'https://picsum.photos/seed/electro/200/100', category: 'Électronique', warnings: [{id: 'warn2', date: '2023-09-15T10:00:00Z', reason: 'Publicité mensongère sur un produit.'}, {id: 'warn3', date: '2023-10-05T14:00:00Z', reason: 'Mauvaise évaluation client non résolue.'}], status: 'active', location: 'Yaoundé', neighborhood: 'Centre Ville', sellerFirstName: 'Eric', sellerLastName: 'Kamdem', sellerPhone: '655443322', physicalAddress: '789 Boulevard du 20 Mai', documents: [], latitude: 3.8721, longitude: 11.5213 },
-    { id: '4', name: 'Douala Soaps', logoUrl: 'https://picsum.photos/seed/soap-store/200/100', category: 'Artisanat', warnings: [], status: 'active', location: 'Douala', neighborhood: 'Marché Central', sellerFirstName: 'Fatima', sellerLastName: 'Gaye', sellerPhone: '688776655', physicalAddress: 'Boutique 15', documents: [], latitude: 4.0475, longitude: 9.692 },
+    { id: '1', name: 'Mama Africa', logoUrl: 'https://picsum.photos/seed/mama/200/100', category: 'Restaurant & Alimentation', warnings: [], status: 'active', location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Mama', sellerLastName: 'Africa', sellerPhone: '699887766', physicalAddress: '123 Rue de la Joie', documents: [], latitude: 3.8665, longitude: 11.521, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [] },
+    { id: '2', name: 'Kmer Fashion', logoUrl: 'https://picsum.photos/seed/kmerfashion/200/100', category: 'Mode', warnings: [{id: 'warn1', date: '2023-10-01T10:00:00Z', reason: 'Non-respect des délais de livraison.'}], status: 'active', location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Adèle', sellerLastName: 'Ngo', sellerPhone: '677665544', physicalAddress: '45 Avenue de la Mode', documents: [], latitude: 4.0483, longitude: 9.702, subscriptionStatus: 'overdue', subscriptionDueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [] },
+    { id: '3', name: 'Electro Plus', logoUrl: 'https://picsum.photos/seed/electro/200/100', category: 'Électronique', warnings: [{id: 'warn2', date: '2023-09-15T10:00:00Z', reason: 'Publicité mensongère sur un produit.'}, {id: 'warn3', date: '2023-10-05T14:00:00Z', reason: 'Mauvaise évaluation client non résolue.'}], status: 'active', location: 'Yaoundé', neighborhood: 'Centre Ville', sellerFirstName: 'Eric', sellerLastName: 'Kamdem', sellerPhone: '655443322', physicalAddress: '789 Boulevard du 20 Mai', documents: [], latitude: 3.8721, longitude: 11.5213, subscriptionStatus: 'inactive' },
+    { id: '4', name: 'Douala Soaps', logoUrl: 'https://picsum.photos/seed/soap-store/200/100', category: 'Artisanat', warnings: [], status: 'active', location: 'Douala', neighborhood: 'Marché Central', sellerFirstName: 'Fatima', sellerLastName: 'Gaye', sellerPhone: '688776655', physicalAddress: 'Boutique 15', documents: [], latitude: 4.0475, longitude: 9.692, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [] },
 ];
 
 const initialCategories: Category[] = [
@@ -411,6 +411,30 @@ const initialPickupPoints: PickupPoint[] = [
     { id: 'pp4', name: 'KMER ZONE Bastos', streetNumber: '101', street: 'Rue des Ambassades', city: 'Yaoundé', neighborhood: 'Bastos' },
 ];
 
+const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+      if (storedValue) {
+        return JSON.parse(storedValue);
+      }
+    } catch (error) {
+      console.error(`Error reading localStorage key “${key}”:`, error);
+    }
+    return defaultValue;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.error(`Error setting localStorage key “${key}”:`, error);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+};
+
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -429,9 +453,9 @@ const App: React.FC = () => {
   const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
 
   // Site feature flags & settings
-  const [isChatEnabled, setIsChatEnabled] = useState<boolean>(true);
-  const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(true);
-  const [siteSettings, setSiteSettings] = useState<SiteSettings>({
+  const [isChatEnabled, setIsChatEnabled] = usePersistentState<boolean>('isChatEnabled', true);
+  const [isComparisonEnabled, setIsComparisonEnabled] = usePersistentState<boolean>('isComparisonEnabled', true);
+  const [siteSettings, setSiteSettings] = usePersistentState<SiteSettings>('siteSettings', {
     isPremiumProgramEnabled: true,
     premiumThresholds: {
         orders: 5,
@@ -446,22 +470,103 @@ const App: React.FC = () => {
         "Photo du gérant": false,
         "Plan de localisation": false,
     },
+    isRentEnabled: true,
+    rentAmount: 5000,
   });
 
-  const [allProducts, setAllProducts] = useState<Product[]>(initialProducts);
-  const [allStores, setAllStores] = useState<Store[]>(initialStores);
-  const [allCategories, setAllCategories] = useState<Category[]>(initialCategories);
-  const [allPickupPoints, setAllPickupPoints] = useState<PickupPoint[]>(initialPickupPoints);
+  const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
+  const [allStores, setAllStores] = usePersistentState<Store[]>('allStores', initialStores);
+  const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
+  const [allPickupPoints, setAllPickupPoints] = usePersistentState<PickupPoint[]>('allPickupPoints', initialPickupPoints);
 
-  const [allPromoCodes, setAllPromoCodes] = useState<PromoCode[]>([]);
-  const [allOrders, setAllOrders] = useState<Order[]>([]);
-  const [siteActivityLogs, setSiteActivityLogs] = useState<SiteActivityLog[]>([]);
-  const [flashSales, setFlashSales] = useState<FlashSale[]>([]);
-  const [payouts, setPayouts] = useState<Payout[]>([]);
+  const [allPromoCodes, setAllPromoCodes] = usePersistentState<PromoCode[]>('allPromoCodes', []);
+  const [allOrders, setAllOrders] = usePersistentState<Order[]>('allOrders', []);
+  const [siteActivityLogs, setSiteActivityLogs] = usePersistentState<SiteActivityLog[]>('siteActivityLogs', []);
+  const [flashSales, setFlashSales] = usePersistentState<FlashSale[]>('flashSales', []);
+  const [payouts, setPayouts] = usePersistentState<Payout[]>('payouts', []);
 
   useEffect(() => {
     setComparisonProducts(allProducts);
   }, [allProducts, setComparisonProducts]);
+
+  const addSiteActivityLog = useCallback((user: User, action: string, details: string) => {
+    setSiteActivityLogs(prev => [{
+      id: new Date().getTime().toString(),
+      timestamp: new Date().toISOString(),
+      user: { id: user.id, name: user.name, role: user.role },
+      action,
+      details,
+    }, ...prev]);
+  }, [setSiteActivityLogs]);
+
+  // Rent Management Logic
+  const handleActivateSubscription = useCallback((storeId: string) => {
+    if (!user || user.role !== 'superadmin') return;
+    setAllStores(prev => prev.map(s => {
+      if (s.id === storeId && s.status === 'active' && s.subscriptionStatus !== 'active') {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30);
+        addSiteActivityLog(user, 'Activation Abonnement', `Abonnement activé pour la boutique '${s.name}'.`);
+        return {
+          ...s,
+          subscriptionStatus: 'active',
+          subscriptionDueDate: dueDate.toISOString(),
+          paymentHistory: s.paymentHistory || []
+        };
+      }
+      return s;
+    }));
+  }, [user, addSiteActivityLog, setAllStores]);
+
+  const handlePayRent = useCallback((storeId: string) => {
+    if (!user || user.role !== 'seller') return;
+    
+    const store = allStores.find(s => s.id === storeId);
+    if (!store) return;
+
+    if (window.confirm(`Confirmez-vous le paiement du loyer de ${siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA pour votre boutique ?`)) {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                const newDueDate = s.subscriptionDueDate ? new Date(s.subscriptionDueDate) : new Date();
+                if(newDueDate < new Date()) { // If overdue, start from today
+                    newDueDate.setTime(Date.now());
+                }
+                newDueDate.setDate(newDueDate.getDate() + 30);
+                addSiteActivityLog(user, 'Paiement Loyer', `Loyer payé pour la boutique '${s.name}'.`);
+                return {
+                    ...s,
+                    subscriptionStatus: 'active',
+                    subscriptionDueDate: newDueDate.toISOString(),
+                    paymentHistory: [
+                        ...(s.paymentHistory || []),
+                        { date: new Date().toISOString(), amount: siteSettings.rentAmount }
+                    ]
+                };
+            }
+            return s;
+        }));
+    }
+  }, [user, addSiteActivityLog, allStores, siteSettings.rentAmount, setAllStores]);
+
+  // Effect to check for overdue payments
+  useEffect(() => {
+    if (!siteSettings.isRentEnabled) return;
+    const now = new Date();
+    setAllStores(prevStores => {
+        const updatedStores = prevStores.map(store => {
+            if (store.subscriptionStatus === 'active' && store.subscriptionDueDate && new Date(store.subscriptionDueDate) < now) {
+                return { ...store, subscriptionStatus: 'overdue' as const };
+            }
+            return store;
+        });
+        if (JSON.stringify(updatedStores) !== JSON.stringify(prevStores)) {
+          return updatedStores;
+        }
+        return prevStores;
+    });
+  // Rerun check when orders change (simulates time passing) or settings change
+  }, [siteSettings.isRentEnabled, allOrders, setAllStores]);
+
 
   const navigate = useCallback((page: Page) => {
     setCurrentPage(page);
@@ -482,16 +587,6 @@ const App: React.FC = () => {
       }
     }
   }, [allProducts, navigateToProduct]);
-
-  const addSiteActivityLog = useCallback((user: User, action: string, details: string) => {
-    setSiteActivityLogs(prev => [{
-      id: new Date().getTime().toString(),
-      timestamp: new Date().toISOString(),
-      user: { id: user.id, name: user.name, role: user.role },
-      action,
-      details,
-    }, ...prev]);
-  }, []);
 
   const prevUserRef = useRef(user);
   useEffect(() => {
@@ -538,7 +633,7 @@ const App: React.FC = () => {
         return [...prev, newCategory];
     });
     return newCategory!;
-  }, []);
+  }, [setAllCategories]);
 
   const addReview = useCallback((productId: string, review: Review) => {
     if (!user) return;
@@ -550,7 +645,7 @@ const App: React.FC = () => {
         }
         return prevProducts.map(p => p.id === productId ? { ...p, reviews: [...p.reviews, review] } : p)
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllProducts]);
 
   const handleReviewModeration = useCallback((productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => {
     if (!user || user.role !== 'superadmin') return;
@@ -577,7 +672,7 @@ const App: React.FC = () => {
       
       return newProducts;
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllProducts]);
   
   const handleSaveProduct = useCallback((productData: Product) => {
     if (!user) return;
@@ -593,7 +688,7 @@ const App: React.FC = () => {
     });
     setProductToEdit(null);
     navigate('seller-dashboard');
-  }, [user, addSiteActivityLog, navigate]);
+  }, [user, addSiteActivityLog, navigate, setAllProducts]);
   
   const handleDeleteProduct = useCallback((productId: string) => {
     if (!user) return;
@@ -605,11 +700,11 @@ const App: React.FC = () => {
         }
         return prevProducts.filter(p => p.id !== productId);
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllProducts]);
   
   const handleToggleProductStatus = useCallback((productId: string) => {
     setAllProducts(prev => prev.map(p => p.id === productId ? { ...p, status: p.status === 'published' ? 'draft' : 'published' } : p));
-  }, []);
+  }, [setAllProducts]);
 
   const handleOpenPromotionModal = useCallback((product: Product) => setPromotionModalProduct(product), []);
   const handleClosePromotionModal = useCallback(() => setPromotionModalProduct(null), []);
@@ -625,7 +720,7 @@ const App: React.FC = () => {
         return prev.map(p => p.id === productId ? { ...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate } : p)
     });
     handleClosePromotionModal();
-  }, [user, addSiteActivityLog, handleClosePromotionModal]);
+  }, [user, addSiteActivityLog, handleClosePromotionModal, setAllProducts]);
   
   const handleRemovePromotion = useCallback((productId: string) => {
     if (window.confirm("Êtes-vous sûr de vouloir retirer cette promotion ?")) {
@@ -645,7 +740,7 @@ const App: React.FC = () => {
         })
       });
     }
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllProducts]);
 
   const handleConfirmOrder = useCallback(async (orderData: NewOrderData) => {
     if (!user) return;
@@ -687,7 +782,7 @@ const App: React.FC = () => {
     clearCart();
     setAppliedPromoCode(null);
     navigate('order-success');
-  }, [user, addSiteActivityLog, clearCart, navigate]);
+  }, [user, addSiteActivityLog, clearCart, navigate, setAllOrders, setAllPromoCodes]);
 
   const handleUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
     if (!user) return;
@@ -740,7 +835,7 @@ const App: React.FC = () => {
         const newTrackingEvent: TrackingEvent = { status, date: new Date().toISOString(), details: newEventDetails, location: newEventLocation };
         return prevOrders.map(o => o.id === orderId ? { ...o, status, trackingHistory: [...o.trackingHistory, newTrackingEvent] } : o);
     });
-  }, [user, addSiteActivityLog, setAllUsers, siteSettings]);
+  }, [user, addSiteActivityLog, setAllUsers, siteSettings, setAllOrders, setAllStores]);
 
   const handleCancelOrder = useCallback((orderId: string) => {
     if (!user) return;
@@ -765,7 +860,7 @@ const App: React.FC = () => {
     });
     
     navigate('order-history');
-  }, [user, addSiteActivityLog, navigate]);
+  }, [user, addSiteActivityLog, navigate, setAllOrders]);
 
 
   const handleRequestRefund = useCallback((orderId: string, reason: string) => {
@@ -777,7 +872,7 @@ const App: React.FC = () => {
         return prevOrders.map(o => o.id === orderId ? { ...o, status: 'refund-requested', refundReason: reason, trackingHistory: [...o.trackingHistory, newTrackingEvent] } : o);
     });
     navigate('order-history');
-  }, [user, addSiteActivityLog, navigate]);
+  }, [user, addSiteActivityLog, navigate, setAllOrders]);
 
   const handleUpdateCategoryImage = useCallback((categoryId: string, imageUrl: string) => {
     if (!user || user.role !== 'superadmin') return;
@@ -789,7 +884,7 @@ const App: React.FC = () => {
         }
         return prev.map(c => c.id === categoryId ? { ...c, imageUrl } : c);
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllCategories]);
   
   const handleAdminAddCategory = useCallback((categoryName: string) => {
     if (!user || user.role !== 'superadmin') return;
@@ -806,7 +901,7 @@ const App: React.FC = () => {
         addSiteActivityLog(user, "Ajout Catégorie", `A créé la catégorie '${categoryName}'.`);
         return [...prev, newCategory];
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllCategories]);
 
   const handleAdminDeleteCategory = useCallback((categoryId: string) => {
     if (!user || user.role !== 'superadmin') return;
@@ -819,9 +914,9 @@ const App: React.FC = () => {
             return prev.filter(c => c.id !== categoryId);
         });
     }
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllCategories]);
   
-  const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string) => {
+  const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, latitude?: number, longitude?: number) => {
     if (!user) return;
     const currentUser = user;
     
@@ -834,12 +929,15 @@ const App: React.FC = () => {
           id: new Date().getTime().toString(), name: shopName, logoUrl: `https://picsum.photos/seed/${shopName.replace(/\s+/g, '-')}/200/100`, category: 'Nouvelle Boutique',
           warnings: [], status: 'pending', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress,
           documents: requiredDocs,
+          latitude,
+          longitude,
+          subscriptionStatus: 'inactive',
         };
         return [...prev, newStore];
     });
     addSiteActivityLog(currentUser, 'Demande de Boutique', `A soumis une demande pour la boutique '${shopName}'.`);
     updateUser({ shopName, location });
-  }, [user, addSiteActivityLog, updateUser, siteSettings.requiredSellerDocuments]);
+  }, [user, addSiteActivityLog, updateUser, siteSettings.requiredSellerDocuments, setAllStores]);
   
   const handleApproveStore = useCallback((storeId: string) => {
     if (!user) return;
@@ -849,7 +947,7 @@ const App: React.FC = () => {
         if(store) { addSiteActivityLog(currentUser, "Approbation boutique", `La boutique '${store.name}' a été approuvée.`); }
         return prev.map(s => s.id === storeId ? { ...s, status: 'active' } : s);
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllStores]);
   
   const handleRejectStore = useCallback((storeId: string) => {
     if (!user) return;
@@ -859,7 +957,7 @@ const App: React.FC = () => {
         if(store) { addSiteActivityLog(currentUser, "Rejet boutique", `La boutique '${store.name}' a été rejetée.`); }
         return prev.map(s => s.id === storeId ? { ...s, status: 'suspended' } : s);
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllStores]);
   
   const handleWarnStore = useCallback((storeId: string, reason: string) => {
     if (!user) return;
@@ -879,7 +977,7 @@ const App: React.FC = () => {
         }
         return store;
     }));
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllStores]);
   
   const handleToggleStoreStatus = useCallback((storeId: string) => {
     if (!user) return;
@@ -893,7 +991,7 @@ const App: React.FC = () => {
         }
         return store;
     }));
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllStores]);
 
     const handleRequestDocument = useCallback((storeId: string, documentName: string) => {
         if (!user) return;
@@ -903,13 +1001,13 @@ const App: React.FC = () => {
             if (store) { addSiteActivityLog(currentUser, 'Demande de document', `Document '${documentName}' demandé à la boutique '${store?.name}'.`); }
             return prev.map(s => s.id === storeId ? { ...s, documents: [...s.documents, { name: documentName, status: 'requested' }] } : s)
         });
-    }, [user, addSiteActivityLog]);
+    }, [user, addSiteActivityLog, setAllStores]);
 
     const handleUploadDocument = useCallback((storeId: string, documentName: string, fileUrl: string) => {
         if (!user) return;
         setAllStores(prev => prev.map(s => s.id === storeId ? { ...s, documents: s.documents.map(d => d.name === documentName ? { ...d, status: 'uploaded', fileUrl: fileUrl } : d) } : s));
         addSiteActivityLog(user, 'Soumission de document', `Document '${documentName}' soumis.`);
-    }, [user, addSiteActivityLog]);
+    }, [user, addSiteActivityLog, setAllStores]);
 
     const handleVerifyDocumentStatus = useCallback((storeId: string, documentName: string, status: 'verified' | 'rejected', reason?: string) => {
         if (!user) return;
@@ -919,7 +1017,7 @@ const App: React.FC = () => {
             if (store) { addSiteActivityLog(currentUser, 'Vérification de document', `Document '${documentName}' de la boutique '${store?.name}' a été ${status === 'verified' ? 'vérifié' : 'vérifié'}.`); }
             return prev.map(s => s.id === storeId ? { ...s, documents: s.documents.map(d => d.name === documentName ? { ...d, status: status, rejectionReason: reason } : d) } : s)
         });
-    }, [user, addSiteActivityLog]);
+    }, [user, addSiteActivityLog, setAllStores]);
 
   const handleSaveFlashSale = useCallback((flashSaleData: Omit<FlashSale, 'id' | 'products'>) => {
       if (!user) return;
@@ -929,7 +1027,7 @@ const App: React.FC = () => {
         addSiteActivityLog(currentUser, 'Création Vente Flash', `L'événement '${newFlashSale.name}' a été créé.`);
         return [...prev, newFlashSale];
       });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setFlashSales]);
 
   const handleProposeForFlashSale = useCallback((flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => {
       if (!user) return;
@@ -942,7 +1040,7 @@ const App: React.FC = () => {
           }
           return fs;
       }));
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setFlashSales]);
 
   const handleUpdateFlashSaleSubmissionStatus = useCallback((flashSaleId: string, productId: string, status: 'approved' | 'rejected') => {
       if (!user) return;
@@ -962,7 +1060,7 @@ const App: React.FC = () => {
             return fs;
         })
       });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setFlashSales, setAllProducts]);
   
   const handleBatchUpdateFlashSaleStatus = useCallback((flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => {
     if (!user) return;
@@ -974,7 +1072,7 @@ const App: React.FC = () => {
       }
       return fs;
     }));
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setFlashSales]);
 
   const handleSearch = useCallback((query: string) => {
     setSearchQuery(query);
@@ -989,7 +1087,7 @@ const App: React.FC = () => {
         addSiteActivityLog(currentUser, 'Ajout Point Dépôt', `Le point de dépôt '${newPoint.name}' a été créé.`);
         return [...prev, newPoint];
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllPickupPoints]);
 
   const handleUpdatePickupPoint = useCallback((updatedPoint: PickupPoint) => {
       if (!user) return;
@@ -997,7 +1095,7 @@ const App: React.FC = () => {
         addSiteActivityLog(user, 'Modification Point Dépôt', `Le point de dépôt '${updatedPoint.name}' a été mis à jour.`);
         return prev.map(p => p.id === updatedPoint.id ? updatedPoint : p)
       });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllPickupPoints]);
   
   const handleDeletePickupPoint = useCallback((pointId: string) => {
     if (!user) return;
@@ -1011,7 +1109,7 @@ const App: React.FC = () => {
         }
         return prevPoints;
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllPickupPoints]);
 
   const handleUpdateUserRole = useCallback((userId: string, newRole: UserRole) => {
     if (!user || user.role !== 'superadmin') return;
@@ -1037,7 +1135,7 @@ const App: React.FC = () => {
         }
         return prevOrders.map(o => o.id === orderId ? { ...o, agentId } : o);
     });
-  }, [user, addSiteActivityLog, allUsers]);
+  }, [user, addSiteActivityLog, allUsers, setAllOrders]);
   
   const handleCreatePromoCode = useCallback((codeData: Omit<PromoCode, 'uses'>) => {
     if (!user) return;
@@ -1047,7 +1145,7 @@ const App: React.FC = () => {
         addSiteActivityLog(currentUser, 'Création Code Promo', `A créé le code promo '${newCode.code}'.`);
         return [...prev, newCode];
     });
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllPromoCodes]);
 
   const handleDeletePromoCode = useCallback((code: string) => {
     if (!user) return;
@@ -1058,15 +1156,15 @@ const App: React.FC = () => {
             return prev.filter(pc => pc.code !== code);
         });
     }
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setAllPromoCodes]);
   
-  const handleToggleChatFeature = useCallback(() => setIsChatEnabled(prev => !prev), []);
-  const handleToggleComparisonFeature = useCallback(() => setIsComparisonEnabled(prev => !prev), []);
+  const handleToggleChatFeature = useCallback(() => setIsChatEnabled(prev => !prev), [setIsChatEnabled]);
+  const handleToggleComparisonFeature = useCallback(() => setIsComparisonEnabled(prev => !prev), [setIsComparisonEnabled]);
   
   const handleUpdateSiteSettings = useCallback((newSettings: SiteSettings) => {
       setSiteSettings(newSettings);
       if(user) addSiteActivityLog(user, 'Mise à jour Paramètres', `Les paramètres du site ont été mis à jour.`);
-  }, [user, addSiteActivityLog]);
+  }, [user, addSiteActivityLog, setSiteSettings]);
 
   const handleBecomePremiumByCaution = useCallback(() => {
     if (!user) return;
@@ -1115,7 +1213,7 @@ const App: React.FC = () => {
         const store = allStores.find(s => s.id === storeId);
         addSiteActivityLog(user, 'Paiement Vendeur', `A versé ${amount.toLocaleString('fr-CM')} FCFA à la boutique '${store?.name}'.`);
     }
-  }, [user, addSiteActivityLog, allStores]);
+  }, [user, addSiteActivityLog, allStores, setPayouts]);
 
   const navigateToHome = useCallback(() => { navigate('home'); setAppliedPromoCode(null); }, [navigate]);
   const navigateToCart = useCallback(() => navigate('cart'), [navigate]);
@@ -1182,18 +1280,18 @@ const App: React.FC = () => {
       case 'flash-sales': return <FlashSalesPage allProducts={publishedProducts} flashSales={flashSales} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} allStores={allStores} isComparisonEnabled={isComparisonEnabled} />;
       case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'wishlist': return <WishlistPage allProducts={allProducts} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} allStores={allStores} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
-      case 'become-seller': return <BecomeSeller onBack={navigateToHome} onBecomeSeller={handleBecomeSeller} onRegistrationSuccess={navigateToSellerDashboard} />;
+      case 'become-seller': return <BecomeSeller onBack={navigateToHome} onBecomeSeller={handleBecomeSeller} onRegistrationSuccess={navigateToSellerDashboard} siteSettings={siteSettings} />;
       case 'category': return selectedCategory && <CategoryPage categoryName={selectedCategory} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'seller-dashboard': return user && <SellerDashboard 
                                                   store={currentStore} products={sellerProducts} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={navigateToHome} 
                                                   onAddProduct={onAddProduct} onEditProduct={navigateToProductForm} onDeleteProduct={handleDeleteProduct} onToggleStatus={handleToggleProductStatus} 
                                                   onNavigateToProfile={navigateToSellerProfile} categories={sellerCategories} onSetPromotion={handleOpenPromotionModal} onRemovePromotion={handleRemovePromotion} 
                                                   flashSales={flashSales} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderStatus}
-                                                  onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} />;
+                                                  onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} />;
       case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'product-form': return <ProductForm onCancel={navigateToSellerDashboard} onSave={handleSaveProduct} productToEdit={productToEdit} categories={allCategories} onAddCategory={addCategory} />;
       case 'seller-profile': return <SellerProfile onBack={navigateToSellerDashboard} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} />;
+      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} />;
       case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
       case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
       case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} onUpdateOrderStatus={handleUpdateOrderStatus} allStores={allStores} allPickupPoints={allPickupPoints} />;

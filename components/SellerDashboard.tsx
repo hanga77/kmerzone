@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
 import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon } from './Icons';
@@ -25,6 +25,8 @@ interface SellerDashboardProps {
   onCreatePromoCode: (codeData: Omit<PromoCode, 'uses'>) => void;
   onDeletePromoCode: (code: string) => void;
   isChatEnabled: boolean;
+  onPayRent: (storeId: string) => void;
+  siteSettings: SiteSettings;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -335,6 +337,8 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onCreatePromoCode,
   onDeletePromoCode,
   isChatEnabled,
+  onPayRent,
+  siteSettings,
 }) => {
     const [activeTab, setActiveTab] = useState('overview');
     const { user } = useAuth();
@@ -371,6 +375,8 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
         pending: { text: "En attente de validation", color: "text-yellow-500", icon: <ExclamationTriangleIcon className="w-5 h-5"/> },
         suspended: { text: "Suspendu", color: "text-red-500", icon: <XCircleIcon className="w-5 h-5"/> },
     };
+    
+    const isRentDueSoon = store.subscriptionDueDate && (new Date(store.subscriptionDueDate).getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
 
     const renderContent = () => {
         switch(activeTab) {
@@ -421,6 +427,31 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                 </div>
             </header>
             <main className="container mx-auto px-4 sm:px-6 py-6">
+                 {store && siteSettings.isRentEnabled && store.subscriptionStatus !== 'inactive' && (
+                    <div className={`p-4 rounded-lg mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 ${
+                        store.subscriptionStatus === 'overdue' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' 
+                        : isRentDueSoon ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
+                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
+                    }`}>
+                        <div className="flex items-center gap-3">
+                           <ExclamationTriangleIcon className="w-6 h-6"/>
+                           <div>
+                                <h3 className="font-bold">Statut de votre abonnement</h3>
+                                {store.subscriptionStatus === 'overdue' ? (
+                                    <p className="text-sm">Votre loyer est en retard. Veuillez payer pour éviter la suspension de votre boutique.</p>
+                                ) : (
+                                    <p className="text-sm">Votre prochain paiement de loyer est dû le {new Date(store.subscriptionDueDate!).toLocaleDateString('fr-FR')}.</p>
+                                )}
+                           </div>
+                        </div>
+                        <button
+                            onClick={() => onPayRent(store.id)}
+                            className="bg-white text-black font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-200 transition-colors flex-shrink-0"
+                        >
+                            Payer le loyer ({siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA)
+                        </button>
+                    </div>
+                )}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
                     {renderContent()}
                 </div>

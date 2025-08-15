@@ -23,10 +23,34 @@ const initialUsers: User[] = [
     { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
 ];
 
+const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+      if (storedValue) {
+        return JSON.parse(storedValue);
+      }
+    } catch (error) {
+      console.error(`Error reading localStorage key “${key}”:`, error);
+    }
+    return defaultValue;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.error(`Error setting localStorage key “${key}”:`, error);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+};
+
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [allUsers, setAllUsers] = useState<User[]>(initialUsers);
+  const [user, setUser] = usePersistentState<User | null>('currentUser', null);
+  const [allUsers, setAllUsers] = usePersistentState<User[]>('allUsers', initialUsers);
 
   // Effect to keep the `user` state in sync with the `allUsers` array.
   // This ensures that if loyalty status or other details are updated elsewhere,
@@ -40,7 +64,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         setUser(updatedUserInList);
       }
     }
-  }, [allUsers, user]);
+  }, [allUsers, user, setUser]);
 
   const login = useCallback((email: string, password?: string): boolean => {
     // This is a simplified login.
@@ -72,7 +96,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setAllUsers(prev => [...prev, newUser]);
     setUser(newUser);
     return true;
-  }, [allUsers]);
+  }, [allUsers, setAllUsers, setUser]);
 
   const register = useCallback((name: string, email: string): boolean => {
       const existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
@@ -92,7 +116,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       setAllUsers(prev => [...prev, newUser]);
       setUser(newUser);
       return true;
-  }, [allUsers]);
+  }, [allUsers, setAllUsers, setUser]);
 
   const updateUser = useCallback((updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => {
     setUser(currentUser => {
@@ -109,11 +133,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
         return updatedUser;
     });
-  }, []);
+  }, [setAllUsers, setUser]);
 
   const logout = useCallback(() => {
     setUser(null);
-  }, []);
+  }, [setUser]);
   
   const contextValue = useMemo(() => ({
     user,
@@ -123,7 +147,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     register,
     updateUser,
     setAllUsers // Expose this for the loyalty program logic in App.tsx
-  }), [user, allUsers, login, logout, register, updateUser]);
+  }), [user, allUsers, login, logout, register, updateUser, setAllUsers]);
 
   return (
     <AuthContext.Provider value={contextValue as any}>

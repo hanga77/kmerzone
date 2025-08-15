@@ -103,6 +103,9 @@ export interface Store {
   documents: RequestedDocument[];
   latitude?: number;
   longitude?: number;
+  subscriptionStatus?: 'active' | 'overdue' | 'inactive';
+  subscriptionDueDate?: string; // ISO String
+  paymentHistory?: { date: string; amount: number }[];
 }
 
 export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent';
@@ -205,6 +208,8 @@ export interface SiteSettings {
   isPremiumPlusEnabled: boolean;
   premiumPlusAnnualFee: number;
   requiredSellerDocuments: Record<string, boolean>;
+  isRentEnabled: boolean;
+  rentAmount: number;
 }
 
 export interface SiteActivityLog {

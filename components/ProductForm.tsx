@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, Category, Variant, VariantDetail } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -97,7 +95,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
         setIsAddingCategory(true);
     } else {
        setProduct(prev => ({ ...prev, [name]: value }));
-       if (name !== "category") setIsAddingCategory(false);
+       if (name === "category") setIsAddingCategory(false);
     }
   };
   
@@ -225,6 +223,73 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     };
     onSave(finalProduct);
   };
+
+    const renderCategorySpecificFields = () => {
+        const category = product.category || '';
+        if (['Vêtements', 'Chaussures', 'Accessoires'].includes(category)) {
+            return (
+                <>
+                    <div>
+                        <label htmlFor="brand" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Marque</label>
+                        <input type="text" name="brand" id="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                        <label htmlFor="material" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Matériau</label>
+                        <input type="text" name="material" id="material" value={product.material || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                        <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Genre</label>
+                        <select name="gender" id="gender" value={product.gender} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
+                            <option value="Unisexe">Unisexe</option>
+                            <option value="Homme">Homme</option>
+                            <option value="Femme">Femme</option>
+                        </select>
+                    </div>
+                </>
+            );
+        }
+        if (category === 'Alimentation alimentaire') {
+            return (
+                <>
+                    <div>
+                        <label htmlFor="brand" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Marque</label>
+                        <input type="text" name="brand" id="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                        <label htmlFor="weight" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Poids (ex: 500g)</label>
+                        <input type="text" name="weight" id="weight" value={product.weight || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                        <label htmlFor="expirationDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date d'expiration</label>
+                        <input type="date" name="expirationDate" id="expirationDate" value={product.expirationDate || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                </>
+            );
+        }
+        if (['Électronique', 'Appareils électroménagers'].includes(category)) {
+            return (
+                 <>
+                    <div>
+                       <label htmlFor="brand" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Marque</label>
+                       <input type="text" name="brand" id="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                       <label htmlFor="weight" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Poids (ex: 1.2kg)</label>
+                       <input type="text" name="weight" id="weight" value={product.weight || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                       <label htmlFor="dimensions" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dimensions (ex: 10x5x3 cm)</label>
+                       <input type="text" name="dimensions" id="dimensions" value={product.dimensions || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                       <label htmlFor="serialNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">N° de série</label>
+                       <input type="text" name="serialNumber" id="serialNumber" value={product.serialNumber || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                 </>
+            );
+        }
+        return null; // No specific fields for other categories
+    }
 
   return (
     <div className="container mx-auto px-6 py-12">
@@ -362,43 +427,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
 
             <div className="border-t pt-6 mt-6 dark:border-gray-700">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">Caractéristiques Détaillées (optionnel)</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Les champs affichés dépendent de la catégorie sélectionnée.</p>
                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
-                    <div>
-                       <label htmlFor="brand" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Marque</label>
-                       <input type="text" name="brand" id="brand" value={product.brand} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                       <label htmlFor="material" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Matériau</label>
-                       <input type="text" name="material" id="material" value={product.material} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                       <label htmlFor="weight" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Poids (ex: 500g)</label>
-                       <input type="text" name="weight" id="weight" value={product.weight} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                       <label htmlFor="dimensions" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dimensions (ex: 10x5x3 cm)</label>
-                       <input type="text" name="dimensions" id="dimensions" value={product.dimensions} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                        <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Genre</label>
-                        <select name="gender" id="gender" value={product.gender} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                            <option value="Unisexe">Unisexe</option>
-                            <option value="Homme">Homme</option>
-                            <option value="Femme">Femme</option>
-                        </select>
-                    </div>
-                    <div>
-                       <label htmlFor="serialNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">N° de série</label>
-                       <input type="text" name="serialNumber" id="serialNumber" value={product.serialNumber} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                     <div>
-                        <label htmlFor="productionDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date de production</label>
-                        <input type="date" name="productionDate" id="productionDate" value={product.productionDate} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                     <div>
-                        <label htmlFor="expirationDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date d'expiration</label>
-                        <input type="date" name="expirationDate" id="expirationDate" value={product.expirationDate} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
+                    {renderCategorySpecificFields()}
                  </div>
              </div>
 
