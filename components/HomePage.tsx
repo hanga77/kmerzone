@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Product, Category, Store, FlashSale } from '../types';
+import type { Product, Category, Store, FlashSale, Advertisement } from '../types';
 import CategoryCard from './CategoryCard';
 import ProductCard from './ProductCard';
 import StoreCard from './StoreCard';
@@ -10,6 +10,7 @@ interface HomePageProps {
     products: Product[];
     stores: Store[];
     flashSales: FlashSale[];
+    advertisements: Advertisement[];
     onProductClick: (product: Product) => void;
     onCategoryClick: (categoryName: string) => void;
     onVendorClick: (vendorName: string) => void;
@@ -17,7 +18,7 @@ interface HomePageProps {
     isComparisonEnabled: boolean;
 }
 
-const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, onProductClick, onCategoryClick, onVendorClick, onVisitStore, isComparisonEnabled }) => {
+const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, isComparisonEnabled }) => {
     
     const popularProductsRef = React.useRef<HTMLDivElement>(null);
     const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
@@ -74,6 +75,22 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 </div>
               </div>
             </section>
+
+            {/* Advertisements Section */}
+            {advertisements.length > 0 && (
+                <section className="py-16 bg-gray-200 dark:bg-gray-800">
+                    <div className="container mx-auto px-6">
+                        <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Nos Partenaires</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            {advertisements.map(ad => (
+                                <a key={ad.id} href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="block group">
+                                    <img src={ad.imageUrl} alt="Publicité" className="w-full h-48 object-cover rounded-lg shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:scale-105" />
+                                </a>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Made in Cameroon Section */}
             <section className="py-16 bg-kmer-green/10 dark:bg-kmer-green/20">

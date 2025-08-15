@@ -193,6 +193,8 @@ export interface PickupPoint {
   additionalInfo?: string;
   city: string;
   neighborhood: string;
+  latitude?: number;
+  longitude?: number;
 }
 
 
@@ -261,4 +263,12 @@ export interface Chat {
   };
   lastMessageTimestamp: string;
   unreadCount: { [key: string]: number }; // Unread count for each user
+}
+
+export interface Advertisement {
+  id: string;
+  imageUrl: string;
+  linkUrl: string;
+  location: 'homepage-banner';
+  isActive: boolean;
 }

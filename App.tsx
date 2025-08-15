@@ -25,9 +25,10 @@ import DeliveryAgentDashboard from './components/DeliveryAgentDashboard';
 import ComparisonPage from './components/ComparisonPage';
 import ComparisonBar from './components/ComparisonBar';
 import BecomePremiumPage from './components/BecomePremiumPage';
+import InfoPage from './components/InfoPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import PromotionModal from './components/PromotionModal';
@@ -35,7 +36,7 @@ import { useCart } from './contexts/CartContext';
 import ChatWidget from './components/ChatWidget';
 import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon } from './components/Icons';
 
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation';
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info';
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -405,10 +406,10 @@ const initialCategories: Category[] = [
 ];
 
 const initialPickupPoints: PickupPoint[] = [
-    { id: 'pp1', name: 'Point Relais Akwa', streetNumber: '123', street: 'Rue de la Liberté', additionalInfo: 'Près de la boulangerie Saker', city: 'Douala', neighborhood: 'Akwa' },
-    { id: 'pp2', name: 'KMER ZONE Bonamoussadi', streetNumber: '456', street: 'Avenue Kayo', additionalInfo: 'Carrefour Kayo', city: 'Douala', neighborhood: 'Bonamoussadi' },
-    { id: 'pp3', name: 'Point Relais Mvog-Mbi', streetNumber: '789', street: 'Boulevard Nsam', additionalInfo: 'Au rond-point', city: 'Yaoundé', neighborhood: 'Mvog-Mbi' },
-    { id: 'pp4', name: 'KMER ZONE Bastos', streetNumber: '101', street: 'Rue des Ambassades', city: 'Yaoundé', neighborhood: 'Bastos' },
+    { id: 'pp1', name: 'Point Relais Akwa', streetNumber: '123', street: 'Rue de la Liberté', additionalInfo: 'Près de la boulangerie Saker', city: 'Douala', neighborhood: 'Akwa', latitude: 4.049, longitude: 9.695 },
+    { id: 'pp2', name: 'KMER ZONE Bonamoussadi', streetNumber: '456', street: 'Avenue Kayo', additionalInfo: 'Carrefour Kayo', city: 'Douala', neighborhood: 'Bonamoussadi', latitude: 4.101, longitude: 9.734 },
+    { id: 'pp3', name: 'Point Relais Mvog-Mbi', streetNumber: '789', street: 'Boulevard Nsam', additionalInfo: 'Au rond-point', city: 'Yaoundé', neighborhood: 'Mvog-Mbi', latitude: 3.844, longitude: 11.512 },
+    { id: 'pp4', name: 'KMER ZONE Bastos', streetNumber: '101', street: 'Rue des Ambassades', city: 'Yaoundé', neighborhood: 'Bastos', latitude: 3.882, longitude: 11.509 },
 ];
 
 const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
@@ -445,6 +446,8 @@ const App: React.FC = () => {
   const [productToEdit, setProductToEdit] = useState<Product | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [infoPageContent, setInfoPageContent] = useState<{title: string, content: string} | null>(null);
+
   const { user, allUsers, updateUser, setAllUsers } = useAuth();
   const { isModalOpen, modalProduct, closeModal } = useUI();
   const { setProducts: setComparisonProducts } = useComparison();
@@ -484,6 +487,11 @@ const App: React.FC = () => {
   const [siteActivityLogs, setSiteActivityLogs] = usePersistentState<SiteActivityLog[]>('siteActivityLogs', []);
   const [flashSales, setFlashSales] = usePersistentState<FlashSale[]>('flashSales', []);
   const [payouts, setPayouts] = usePersistentState<Payout[]>('payouts', []);
+  const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', [
+    { id: 'ad1', imageUrl: 'https://picsum.photos/seed/ad1/800/200', linkUrl: '#', location: 'homepage-banner', isActive: true },
+    { id: 'ad2', imageUrl: 'https://picsum.photos/seed/ad2/800/200', linkUrl: '#', location: 'homepage-banner', isActive: false },
+    { id: 'ad3', imageUrl: 'https://picsum.photos/seed/ad3/800/200', linkUrl: '#', location: 'homepage-banner', isActive: true },
+  ]);
 
   useEffect(() => {
     setComparisonProducts(allProducts);
@@ -1215,6 +1223,28 @@ const App: React.FC = () => {
     }
   }, [user, addSiteActivityLog, allStores, setPayouts]);
 
+  const handleAddAdvertisement = useCallback((ad: Omit<Advertisement, 'id'>) => {
+    if (!user || user.role !== 'superadmin') return;
+    const newAd = { ...ad, id: `ad-${Date.now()}` };
+    setAdvertisements(prev => [...prev, newAd]);
+    addSiteActivityLog(user, 'Ajout Publicité', `A ajouté une nouvelle publicité.`);
+  }, [user, addSiteActivityLog, setAdvertisements]);
+
+  const handleUpdateAdvertisement = useCallback((updatedAd: Advertisement) => {
+    if (!user || user.role !== 'superadmin') return;
+    setAdvertisements(prev => prev.map(ad => ad.id === updatedAd.id ? updatedAd : ad));
+    addSiteActivityLog(user, 'Mise à jour Publicité', `A mis à jour la publicité ${updatedAd.id}.`);
+  }, [user, addSiteActivityLog, setAdvertisements]);
+
+  const handleDeleteAdvertisement = useCallback((adId: string) => {
+    if (!user || user.role !== 'superadmin') return;
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette publicité ?")) {
+      setAdvertisements(prev => prev.filter(ad => ad.id !== adId));
+      addSiteActivityLog(user, 'Suppression Publicité', `A supprimé la publicité ${adId}.`);
+    }
+  }, [user, addSiteActivityLog, setAdvertisements]);
+
+
   const navigateToHome = useCallback(() => { navigate('home'); setAppliedPromoCode(null); }, [navigate]);
   const navigateToCart = useCallback(() => navigate('cart'), [navigate]);
   const navigateToCheckout = useCallback(() => navigate('checkout'), [navigate]);
@@ -1233,6 +1263,11 @@ const App: React.FC = () => {
   const navigateToAnalyticsDashboard = useCallback(() => navigate('analytics-dashboard'), [navigate]);
   const navigateToReviewModeration = useCallback(() => navigate('review-moderation'), [navigate]);
   
+  const navigateToInfoPage = useCallback((title: string, content: string) => {
+    setInfoPageContent({ title, content });
+    navigate('info');
+  }, [navigate]);
+
   const navigateToCategory = useCallback((categoryName: string) => { setSelectedCategory(categoryName); navigate('category'); }, [navigate]);
   const navigateToVendorPage = useCallback((vendorName: string) => { setSelectedVendor(vendorName); navigate('vendor-page'); }, [navigate]);
   const navigateToProductForm = useCallback((product: Product | null) => { setProductToEdit(product); navigate('product-form'); }, [navigate]);
@@ -1291,15 +1326,16 @@ const App: React.FC = () => {
       case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'product-form': return <ProductForm onCancel={navigateToSellerDashboard} onSave={handleSaveProduct} productToEdit={productToEdit} categories={allCategories} onAddCategory={addCategory} />;
       case 'seller-profile': return <SellerProfile onBack={navigateToSellerDashboard} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} />;
+      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} advertisements={advertisements} onAddAdvertisement={handleAddAdvertisement} onUpdateAdvertisement={handleUpdateAdvertisement} onDeleteAdvertisement={handleDeleteAdvertisement} />;
       case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
       case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
-      case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} onUpdateOrderStatus={handleUpdateOrderStatus} allStores={allStores} allPickupPoints={allPickupPoints} />;
+      case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={handleUpdateOrderStatus} />;
       case 'comparison': return <ComparisonPage onBack={navigateToHome} />;
       case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={navigateToHome} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} />;
       case 'analytics-dashboard': return <AnalyticsDashboard onBack={navigateToSuperAdminDashboard} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} />;
       case 'review-moderation': return <ReviewModeration onBack={navigateToSuperAdminDashboard} allProducts={allProducts} onReviewModeration={handleReviewModeration} />;
-      case 'home': default: return <HomePage categories={allCategories} products={publishedProducts} stores={storesForDisplay} onProductClick={navigateToProduct} onCategoryClick={navigateToCategory} onVendorClick={navigateToVendorPage} onVisitStore={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
+      case 'info': return infoPageContent && <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={navigateToHome} />;
+      case 'home': default: return <HomePage categories={allCategories} products={publishedProducts} stores={storesForDisplay} onProductClick={navigateToProduct} onCategoryClick={navigateToCategory} onVendorClick={navigateToVendorPage} onVisitStore={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} advertisements={advertisements.filter(ad => ad.isActive)} />;
     }
   };
 
@@ -1335,7 +1371,7 @@ const App: React.FC = () => {
       <main className="pb-16">
         {renderContent()}
       </main>
-      <Footer />
+      <Footer onNavigate={navigateToInfoPage} />
       {isComparisonEnabled && <ComparisonBar onCompareClick={navigateToComparison} />}
     </div>
   );

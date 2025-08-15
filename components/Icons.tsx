@@ -96,16 +96,18 @@ export const InstagramIcon: React.FC<IconProps> = (props) => (
   </svg>
 );
 
-export const OrangeMoneyLogo: React.FC<IconProps> = ({ className }) => (
-    <div className={`${className} bg-black text-white rounded-md px-2 py-1 flex items-center justify-center font-bold text-sm`}>
-      <span className="text-orange-500">orange</span>&nbsp;<span>money</span>
-    </div>
+export const OrangeMoneyLogo: React.FC<IconProps> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 58 20" fill="none">
+        <path d="M12.33 16.32V3.52h2.44v11.16c0 .8.15 1.28.44 1.48.3.2.7.3 1.2.3.52 0 .92-.1 1.2-.3.3-.2.44-.68.44-1.48V3.52h2.44v11.16c0 1.28-.4 2.24-1.2 2.88-.8.64-1.92.96-3.36.96-1.44 0-2.56-.32-3.36-.96-.8-.64-1.2-1.6-1.2-2.88zM24.89 3.52h4.52v2.16h-1.92v10.64h-2.6V3.52zM32.89 3.52l3.48 10.96h.04L39.89 3.52h2.52v12.8h-2.28L40.21 5.4h-.04l-3.56 10.92h-2.12L31.01 5.4h-.04l.08 10.92h-2.2V3.52h2.52l3.48 10.96h.04L39.89 3.52h2.52v12.8h-2.28L40.21 5.4h-.04l-3.56 10.92h-2.12L31.01 5.4h-.04l.08 10.92h-2.2V3.52zM45.13 3.52h2.6v12.8h-2.6V3.52zM57.65 9.12c0-1.6-.43-2.88-1.3-3.84-.86-.96-2.04-1.44-3.52-1.44-1.48 0-2.66.48-3.52 1.44-.87.96-1.3 2.24-1.3 3.84 0 1.6.43 2.88 1.3 3.84.86.96 2.04 1.44 3.52 1.44 1.48 0 2.66-.48 3.52-1.44.87-.96 1.3-2.24 1.3-3.84zm-2.56 0c0 .88-.18 1.57-.52 2.06-.35.5-.8.74-1.36.74-.56 0-1.01-.25-1.36-.74-.34-.5-.52-1.18-.52-2.06 0-.88.18-1.57.52-2.06.35-.5.8-.74-1.36-.74.56 0 1.01.25 1.36.74.34.5.52 1.18.52 2.06z" fill="#000"/>
+        <path d="M5.8.2A5.8 5.8 0 00.2 5.8v8.4a5.8 5.8 0 005.6 5.6h8.4a5.8 5.8 0 005.6-5.6V5.8A5.8 5.8 0 0014.2.2H5.8zm4.1 14a4.1 4.1 0 01-4.1-4.1V5.9a4.1 4.1 0 014.1-4.1h.4a4.1 4.1 0 014.1 4.1v4.2a4.1 4.1 0 01-4.1 4.1h-.4z" fill="#FF7900"/>
+    </svg>
 );
   
-export const MtnMomoLogo: React.FC<IconProps> = ({ className }) => (
-    <div className={`${className} bg-yellow-400 text-black rounded-md px-2 py-1 flex items-center justify-center font-bold text-sm`}>
-      <span className="text-blue-700">MTN</span>&nbsp;<span>MoMo</span>
-    </div>
+export const MtnMomoLogo: React.FC<IconProps> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 28" fill="none">
+        <path d="M0 28V0h100v28H0z" fill="#FFCC00"/>
+        <path d="M8.88 6.12h4.44v15.72H8.88V6.12zM21.18 6.12l6.9 13.08h.06L35.1 6.12h4.5v15.72h-4.32V9.18h-.06l-6.24 12.66h-2.94L19.8 9.18h-.06v12.66H15.4V6.12h5.78zM43.72 21.84V6.12h11.94v3.78H48v3.18h7.2v3.78H48v5zM63.88 6.12h8.52c4.14 0 6.36 1.98 6.36 5.58 0 2.22-.9 3.78-2.46 4.68l3 5.46H74.4l-2.82-5.22h-3.48v5.22h-4.3V6.12zm4.3 9.42h3.9c1.92 0 3-1.02 3-3.12s-1.08-3.12-3-3.12h-3.9v6.24zM83.62 13.5c0-4.32 2.82-7.38 7.2-7.38 4.38 0 7.2 3.06 7.2 7.38s-2.82 7.38-7.2 7.38-7.2-3.06-7.2-7.38zm9.96 0c0-2.34-1.38-4.2-2.76-4.2s-2.76 1.86-2.76 4.2 1.38 4.2 2.76 4.2 2.76-1.86 2.76-4.2z" fill="#004F9F"/>
+    </svg>
 );
 
 export const PaypalIcon: React.FC<IconProps> = (props) => (
@@ -115,6 +117,19 @@ export const PaypalIcon: React.FC<IconProps> = (props) => (
   </svg>
 );
 
+export const VisaIcon: React.FC<IconProps> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 38 12" fill="none">
+        <path d="M2.52.32h2.24l-2.04 11.2H.48L2.52.32zm9.12 6.44c0-1.2-.56-2.16-1.76-2.16-1.2 0-1.8.8-1.8 1.92 0 .12.04.24.04.36l.2 1.48c.04.44.28.68.76.68.76 0 1.04-.44 1.08-1.08l.04-.52zm-3.84-2.8c1.36-.6 2.88-.96 4.48-.96 2.44 0 3.88.92 3.88 2.84 0 1.4-.72 2.2-1.84 2.72-.12.04-.2.08-.2.16 0 .04.04.08.12.08.2 0 .4-.04.6-.08l.08.44c-.24.08-.56.12-.92.12-1.4 0-2.28-.6-2.36-1.8l-.2-1.56c-.04-.56-.28-.84-.96-.84-.52 0-.84.28-.96.8-.08.36-.12.72-.12 1.12 0 1.16.56 2.2 1.8 2.2 1.08 0 1.8-.6 2.12-1.48l1.48-.08c-.36 2.04-2.28 3.04-4.2 3.04-2.6 0-4.4-1.28-4.4-3.84 0-1.8.92-2.92 2.48-3.56zM22.04.32h2.28L21.8 11.52h-2.12c-.44 0-.8-.2-.96-.72l-2.6-6.88-2.6 6.88c-.16.52-.52.72-.96.72h-2.12L12.04.32H14.4l2 6.32 2-6.32h2.08l1.56 6.32zM38 .32l-2.48 8.4-2.4-8.4h-2.2L34.12 11.8c.2.68.44 1.2 1.16 1.2.12 0 .2-.04.32-.08l.24.84c-.24.08-.6.16-1.04.16-1.48 0-2.32-.8-2.76-2.2L27.16.32h2.28l1.96 7.48L33.4.32H38z" fill="#00579E"/>
+    </svg>
+);
+
+export const MastercardIcon: React.FC<IconProps> = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 38 23" fill="none">
+        <circle cx="12.31" cy="11.5" r="11.19" fill="#EA001B"/>
+        <circle cx="25.69" cy="11.5" r="11.19" fill="#F79E1B"/>
+        <path d="M22.04 11.5a8.38 8.38 0 01-9.73 8.16 8.38 8.38 0 000-16.32 8.38 8.38 0 019.73 8.16z" fill="#FF5F00"/>
+    </svg>
+);
 
 export const SparklesIcon: React.FC<IconProps> = (props) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>

@@ -1,12 +1,54 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
 
 declare const L: any;
 
-const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
+const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
+
+interface SuperAdminDashboardProps {
+    allUsers: User[];
+    allOrders: Order[];
+    allCategories: Category[];
+    allStores: Store[];
+    siteActivityLogs: SiteActivityLog[];
+    onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+    onUpdateCategoryImage: (categoryId: string, imageUrl: string) => void;
+    onWarnStore: (storeId: string, reason: string) => void;
+    onToggleStoreStatus: (storeId: string) => void;
+    onApproveStore: (storeId: string) => void;
+    onRejectStore: (storeId: string) => void;
+    onSaveFlashSale: (flashSaleData: Omit<FlashSale, 'id' | 'products'>) => void;
+    flashSales: FlashSale[];
+    allProducts: Product[];
+    onUpdateFlashSaleSubmissionStatus: (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => void;
+    onBatchUpdateFlashSaleStatus: (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => void;
+    onRequestDocument: (storeId: string, documentName: string) => void;
+    onVerifyDocumentStatus: (storeId: string, documentName: string, status: 'verified' | 'rejected', reason?: string) => void;
+    allPickupPoints: PickupPoint[];
+    onAddPickupPoint: (pointData: Omit<PickupPoint, 'id'>) => void;
+    onUpdatePickupPoint: (updatedPoint: PickupPoint) => void;
+    onDeletePickupPoint: (pointId: string) => void;
+    onAssignAgent: (orderId: string, agentId: string) => void;
+    isChatEnabled: boolean;
+    isComparisonEnabled: boolean;
+    onToggleChatFeature: () => void;
+    onToggleComparisonFeature: () => void;
+    siteSettings: SiteSettings;
+    onUpdateSiteSettings: (newSettings: SiteSettings) => void;
+    onAdminAddCategory: (categoryName: string) => void;
+    onAdminDeleteCategory: (categoryId: string) => void;
+    onUpdateUserRole: (userId: string, newRole: UserRole) => void;
+    payouts: Payout[];
+    onPayoutSeller: (storeId: string, amount: number) => void;
+    onActivateSubscription: (storeId: string) => void;
+    advertisements: Advertisement[];
+    onAddAdvertisement: (ad: Omit<Advertisement, 'id'>) => void;
+    onUpdateAdvertisement: (ad: Advertisement) => void;
+    onDeleteAdvertisement: (adId: string) => void;
+}
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
     <button
@@ -59,6 +101,22 @@ const getStatusClass = (status: OrderStatus) => {
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
+};
+
+const LogsPanel: React.FC<{ siteActivityLogs: SiteActivityLog[] }> = ({ siteActivityLogs }) => {
+    return (
+        <div className="p-4 sm:p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Logs d'Activité</h2>
+            <div className="space-y-2 max-h-96 overflow-y-auto">
+                {siteActivityLogs.map(log => (
+                    <div key={log.id} className="p-2 bg-gray-50 dark:bg-gray-900/50 rounded-md text-sm">
+                        <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{new Date(log.timestamp).toLocaleString()}</span><br/>
+                        <span className="font-semibold dark:text-white">{log.user.name} ({log.user.role})</span> a effectué l'action : <span className="font-bold text-kmer-green">{log.action}</span> - <span className="italic dark:text-gray-300">{log.details}</span>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 };
 
 const DashboardOverviewPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allStores' | 'allUsers' | 'siteActivityLogs'>> = ({ allOrders, allStores, allUsers, siteActivityLogs }) => {
@@ -282,7 +340,7 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
     );
 };
 
-const UserManagementPanel: React.FC<{ allUsers: User[], onUpdateUserRole: (userId: string, newRole: UserRole) => void }> = ({ allUsers, onUpdateUserRole }) => {
+const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUserRole'>> = ({ allUsers, onUpdateUserRole }) => {
     const [searchTerm, setSearchTerm] = useState('');
 
     const filteredUsers = useMemo(() => {
@@ -348,22 +406,6 @@ const UserManagementPanel: React.FC<{ allUsers: User[], onUpdateUserRole: (userI
                         ))}
                     </tbody>
                 </table>
-            </div>
-        </div>
-    );
-};
-
-const LogsPanel: React.FC<{ siteActivityLogs: SiteActivityLog[] }> = ({ siteActivityLogs }) => {
-    return (
-        <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4 dark:text-white">Logs d'Activité</h2>
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-                {siteActivityLogs.map(log => (
-                    <div key={log.id} className="p-2 bg-gray-50 dark:bg-gray-900/50 rounded-md text-sm">
-                        <span className="font-mono text-xs text-gray-500 dark:text-gray-400">{new Date(log.timestamp).toLocaleString()}</span><br/>
-                        <span className="font-semibold dark:text-white">{log.user.name} ({log.user.role})</span> a effectué l'action : <span className="font-bold text-kmer-green">{log.action}</span> - <span className="italic dark:text-gray-300">{log.details}</span>
-                    </div>
-                ))}
             </div>
         </div>
     );
@@ -480,227 +522,72 @@ const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'o
                 <div className="space-y-4">
                     <ToggleSwitch label="Activer le programme Premium" description="Permet aux clients de devenir membres Premium." enabled={settings.isPremiumProgramEnabled} onChange={() => handleSettingsChange('isPremiumProgramEnabled', !settings.isPremiumProgramEnabled)} />
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        <div>
-                            <label className="block text-sm font-medium dark:text-gray-300">Commandes requises (Fidélité)</label>
-                            <input type="number" value={settings.premiumThresholds.orders} onChange={e => handleThresholdChange('orders', e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium dark:text-gray-300">Dépenses requises (Fidélité)</label>
-                            <input type="number" value={settings.premiumThresholds.spending} onChange={e => handleThresholdChange('spending', e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                        </div>
-                        <div>
-                            <label className="block text-sm font-medium dark:text-gray-300">Montant de la caution (FCFA)</label>
-                            <input type="number" value={settings.premiumCautionAmount} onChange={e => handleSettingsChange('premiumCautionAmount', Number(e.target.value))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                        </div>
+                         <div>
+                            <label className="block text-sm font-medium dark:text-gray-300">Nb de commandes pour Premium</label>
+                            <input type="number" value={settings.premiumThresholds.orders} onChange={e => handleThresholdChange('orders', e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" disabled={!settings.isPremiumProgramEnabled} />
+                         </div>
+                         <div>
+                            <label className="block text-sm font-medium dark:text-gray-300">Montant dépensé pour Premium (FCFA)</label>
+                            <input type="number" value={settings.premiumThresholds.spending} onChange={e => handleThresholdChange('spending', e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" disabled={!settings.isPremiumProgramEnabled} />
+                         </div>
+                         <div>
+                            <label className="block text-sm font-medium dark:text-gray-300">Montant caution Premium (FCFA)</label>
+                            <input type="number" value={settings.premiumCautionAmount} onChange={e => handleSettingsChange('premiumCautionAmount', Number(e.target.value))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" disabled={!settings.isPremiumProgramEnabled} />
+                         </div>
+                    </div>
+                    <ToggleSwitch label="Activer Premium+" description="Permet aux clients de souscrire à l'abonnement Premium+." enabled={settings.isPremiumPlusEnabled} onChange={() => handleSettingsChange('isPremiumPlusEnabled', !settings.isPremiumPlusEnabled)} />
+                    <div>
+                        <label className="block text-sm font-medium dark:text-gray-300">Frais annuels Premium+ (FCFA)</label>
+                        <input type="number" value={settings.premiumPlusAnnualFee} onChange={e => handleSettingsChange('premiumPlusAnnualFee', Number(e.target.value))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" disabled={!settings.isPremiumPlusEnabled} />
                     </div>
                 </div>
             </div>
-            
-            <div className="bg-white dark:bg-gray-800/50 p-6 rounded-lg shadow-sm">
-                <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700 dark:text-white">Programme Premium+</h3>
-                <div className="space-y-4">
-                     <ToggleSwitch label="Activer le programme Premium+" description="Permet aux membres de souscrire à Premium+." enabled={settings.isPremiumPlusEnabled} onChange={() => handleSettingsChange('isPremiumPlusEnabled', !settings.isPremiumPlusEnabled)} />
-                     <div>
-                        <label className="block text-sm font-medium dark:text-gray-300">Frais annuels (FCFA)</label>
-                        <input type="number" value={settings.premiumPlusAnnualFee} onChange={e => handleSettingsChange('premiumPlusAnnualFee', Number(e.target.value))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                    </div>
-                </div>
-            </div>
-
-            <div className="flex justify-end pt-4">
-                <button onClick={() => props.onUpdateSiteSettings(settings)} className="bg-kmer-green text-white font-bold px-6 py-2 rounded-lg hover:bg-green-700 transition-colors">
-                    Sauvegarder les modifications
-                </button>
-            </div>
+             <button onClick={() => props.onUpdateSiteSettings(settings)} className="w-full bg-kmer-green text-white font-bold py-3 rounded-lg hover:bg-green-700 transition-colors">Enregistrer les paramètres</button>
         </div>
     );
 };
 
-const FlashSaleManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'flashSales' | 'allProducts' | 'onSaveFlashSale' | 'onUpdateFlashSaleSubmissionStatus' | 'onBatchUpdateFlashSaleStatus'>> = ({ flashSales, allProducts, onSaveFlashSale, onUpdateFlashSaleSubmissionStatus, onBatchUpdateFlashSaleStatus }) => {
-    const [isFormVisible, setIsFormVisible] = useState(false);
-    return (
-        <div className="p-4 sm:p-6">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-bold dark:text-white">Gestion des Ventes Flash</h2>
-                <button onClick={() => setIsFormVisible(true)} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg">Créer un événement</button>
-            </div>
-            {isFormVisible && <FlashSaleForm onSave={(data) => { onSaveFlashSale(data); setIsFormVisible(false); }} onCancel={() => setIsFormVisible(false)} />}
-            <div className="space-y-4 mt-4">
-                {flashSales.map(fs => (
-                    <details key={fs.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                        <summary className="font-semibold cursor-pointer dark:text-white">{fs.name}</summary>
-                        <div className="mt-2 pt-2 border-t dark:border-gray-700">
-                           {fs.products.filter(p=>p.status === 'pending').map(p => {
-                                const product = allProducts.find(prod => prod.id === p.productId);
-                                return (
-                                <div key={p.productId} className="text-sm my-2 flex justify-between items-center dark:text-gray-300">
-                                    <span>{product?.name} ({p.sellerShopName}) - {p.flashPrice} FCFA</span>
-                                    <div>
-                                        <button onClick={() => onUpdateFlashSaleSubmissionStatus(fs.id, p.productId, 'approved')} className="text-green-500">Approuver</button> /
-                                        <button onClick={() => onUpdateFlashSaleSubmissionStatus(fs.id, p.productId, 'rejected')} className="text-red-500">Rejeter</button>
-                                    </div>
-                                </div>
-                                )
-                           })}
-                        </div>
-                    </details>
-                ))}
-            </div>
-        </div>
-    );
-};
-
-const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPickupPoints' | 'onAddPickupPoint' | 'onUpdatePickupPoint' | 'onDeletePickupPoint'>> = ({ allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint }) => {
-    const initialFormState = { name: '', street: '', city: 'Douala', neighborhood: '', streetNumber: '', additionalInfo: '' };
-    const [formData, setFormData] = useState<Omit<PickupPoint, 'id'>>(initialFormState);
-    const [editingId, setEditingId] = useState<string|null>(null);
-
-    const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        const { name, value } = e.target;
-        setFormData(prev => ({ ...prev, [name]: value }));
-    };
-
-    const handleSave = () => {
-        if (!formData.name || !formData.street || !formData.neighborhood) {
-            alert("Veuillez remplir au moins le nom, la rue et le quartier.");
-            return;
-        }
-        if (editingId) {
-            onUpdatePickupPoint({ id: editingId, ...formData });
-        } else {
-            onAddPickupPoint(formData);
-        }
-        setFormData(initialFormState);
-        setEditingId(null);
-    }
-    
-    return (
-        <div className="p-4 sm:p-6 lg:flex lg:gap-8">
-            <div className="lg:w-1/3 mb-6 lg:mb-0">
-                <h3 className="text-lg font-bold mb-4 dark:text-white">{editingId ? 'Modifier le point de dépôt' : 'Ajouter un point de dépôt'}</h3>
-                <div className="p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg space-y-3 sticky top-28">
-                    <input name="name" type="text" placeholder="Nom du point (ex: Relais Akwa)" value={formData.name} onChange={handleFormChange} className="p-2 border rounded-md w-full dark:bg-gray-700 dark:border-gray-600"/>
-                    <input name="streetNumber" type="text" placeholder="N° de rue (ex: 123B)" value={formData.streetNumber} onChange={handleFormChange} className="p-2 border rounded-md w-full dark:bg-gray-700 dark:border-gray-600"/>
-                    <input name="street" type="text" placeholder="Nom de la rue (ex: Rue de la Liberté)" value={formData.street} onChange={handleFormChange} className="p-2 border rounded-md w-full dark:bg-gray-700 dark:border-gray-600"/>
-                    <input name="neighborhood" type="text" placeholder="Quartier" value={formData.neighborhood} onChange={handleFormChange} className="p-2 border rounded-md w-full dark:bg-gray-700 dark:border-gray-600"/>
-                    <input name="additionalInfo" type="text" placeholder="Info additionnelle (ex: En face de...)" value={formData.additionalInfo} onChange={handleFormChange} className="p-2 border rounded-md w-full dark:bg-gray-700 dark:border-gray-600"/>
-                    <select name="city" value={formData.city} onChange={handleFormChange} className="p-2 border rounded-md w-full dark:bg-gray-700 dark:border-gray-600">
-                        <option>Douala</option>
-                        <option>Yaoundé</option>
-                    </select>
-                    <div className="flex gap-2">
-                        {editingId && <button onClick={() => { setEditingId(null); setFormData(initialFormState); }} className="bg-gray-200 dark:bg-gray-600 w-full px-4 py-2 rounded-md">Annuler</button>}
-                        <button onClick={handleSave} className="bg-kmer-green text-white w-full px-4 py-2 rounded-md">{editingId ? 'Mettre à jour' : 'Ajouter'}</button>
-                    </div>
-                </div>
-            </div>
-            <div className="lg:w-2/3">
-                 <h3 className="text-lg font-bold mb-4 dark:text-white">Points de dépôt existants</h3>
-                <div className="space-y-2">
-                    {allPickupPoints.map(pp => (
-                        <div key={pp.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
-                            <div>
-                                <p className="font-semibold dark:text-white">{pp.name}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{[pp.streetNumber, pp.street, pp.neighborhood, pp.city].filter(Boolean).join(', ')}</p>
-                            </div>
-                            <div>
-                            <button onClick={() => { setEditingId(pp.id); setFormData(pp); }} className="p-2 text-blue-500 hover:text-blue-700"><PencilSquareIcon className="w-5 h-5"/></button>
-                            <button onClick={() => onDeletePickupPoint(pp.id)} className="p-2 text-red-500 hover:text-red-700"><TrashIcon className="w-5 h-5"/></button>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-interface CategoryManagementPanelProps {
-    allCategories: Category[];
-    onUpdateCategoryImage: (categoryId: string, imageUrl: string) => void;
-    onAdminAddCategory: (categoryName: string) => void;
-    onAdminDeleteCategory: (categoryId: string) => void;
-}
-
-const CategoryManagementPanel: React.FC<CategoryManagementPanelProps> = ({
-    allCategories,
-    onUpdateCategoryImage,
-    onAdminAddCategory,
-    onAdminDeleteCategory
-}) => {
+const CategoryManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allCategories' | 'onUpdateCategoryImage' | 'onAdminAddCategory' | 'onAdminDeleteCategory'>> = ({ allCategories, onUpdateCategoryImage, onAdminAddCategory, onAdminDeleteCategory }) => {
     const [newCategoryName, setNewCategoryName] = useState('');
-    const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
 
-    const handleEditClick = (categoryId: string) => {
-        setEditingCategoryId(categoryId);
-        fileInputRef.current?.click();
-    };
-
-    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0] && editingCategoryId) {
-            const file = e.target.files[0];
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                const result = reader.result as string;
-                onUpdateCategoryImage(editingCategoryId, result);
-                setEditingCategoryId(null); 
-            };
-            reader.readAsDataURL(file);
-        }
-        if(e.target) e.target.value = '';
-    };
-
-    const handleAddNewCategory = (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleAdd = () => {
         if (newCategoryName.trim()) {
             onAdminAddCategory(newCategoryName.trim());
             setNewCategoryName('');
         }
     };
 
+    const handleUpdateImage = (catId: string) => {
+        const newUrl = prompt("Entrez la nouvelle URL de l'image :");
+        if (newUrl) {
+            onUpdateCategoryImage(catId, newUrl);
+        }
+    };
+
     return (
         <div className="p-4 sm:p-6">
-            <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileChange}
-                className="hidden"
-                accept="image/*"
-            />
-            <form onSubmit={handleAddNewCategory} className="mb-8 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg border dark:border-gray-600">
-                <h3 className="text-lg font-semibold mb-2 dark:text-white">Ajouter une nouvelle catégorie</h3>
-                <div className="flex flex-col sm:flex-row gap-2">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion des Catégories</h2>
+            <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                <div className="flex gap-2">
                     <input
                         type="text"
                         value={newCategoryName}
                         onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder="Nom de la catégorie"
+                        placeholder="Nom de la nouvelle catégorie"
                         className="flex-grow p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                        required
                     />
-                    <button type="submit" className="bg-kmer-green text-white font-semibold px-4 py-2 rounded-md hover:bg-green-700 flex items-center justify-center gap-2">
-                        <PlusIcon className="w-5 h-5"/> Ajouter
-                    </button>
+                    <button onClick={handleAdd} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Ajouter</button>
                 </div>
-            </form>
-
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {allCategories.map(cat => (
-                    <div key={cat.id} className="group relative">
-                        <img
-                            src={cat.imageUrl}
-                            alt={cat.name}
-                            className="w-full h-32 object-cover rounded-lg shadow-sm bg-gray-200 dark:bg-gray-700"
-                            onError={(e) => (e.currentTarget.src = PLACEHOLDER_IMAGE_URL)}
-                        />
-                         <div className="absolute inset-0 bg-black/40 flex items-center justify-center p-2">
-                            <h4 className="text-white font-bold text-center text-sm" style={{ textShadow: '1px 1px 2px black' }}>{cat.name}</h4>
-                        </div>
-                        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex flex-col items-center justify-center p-2">
-                            <div className="flex gap-2">
-                                <button onClick={() => handleEditClick(cat.id)} className="bg-blue-500 text-white p-1.5 rounded-full hover:bg-blue-600" title="Modifier l'image"><PencilSquareIcon className="w-4 h-4" /></button>
-                                <button onClick={() => onAdminDeleteCategory(cat.id)} className="bg-red-500 text-white p-1.5 rounded-full hover:bg-red-600" title="Supprimer"><TrashIcon className="w-4 h-4" /></button>
+                    <div key={cat.id} className="bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm overflow-hidden group">
+                        <img src={cat.imageUrl} alt={cat.name} className="h-32 w-full object-cover"/>
+                        <div className="p-3">
+                            <p className="font-semibold dark:text-white">{cat.name}</p>
+                            <div className="flex gap-2 mt-2">
+                                <button onClick={() => handleUpdateImage(cat.id)} className="text-xs text-blue-600 hover:underline">Changer l'image</button>
+                                <button onClick={() => onAdminDeleteCategory(cat.id)} className="text-xs text-red-600 hover:underline">Supprimer</button>
                             </div>
                         </div>
                     </div>
@@ -710,110 +597,141 @@ const CategoryManagementPanel: React.FC<CategoryManagementPanelProps> = ({
     );
 };
 
-const PaymentsManagementPanel: React.FC<{
-    allOrders: Order[];
-    allStores: Store[];
-    payouts: Payout[];
-    onPayoutSeller: (storeId: string, amount: number) => void;
-}> = ({ allOrders, allStores, payouts, onPayoutSeller }) => {
-    const COMMISSION_RATE = 0.10; // 10% commission
+const FlashSaleManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'flashSales' | 'allProducts' | 'onSaveFlashSale' | 'onUpdateFlashSaleSubmissionStatus' | 'onBatchUpdateFlashSaleStatus'>> = ({ flashSales, allProducts, onSaveFlashSale, onUpdateFlashSaleSubmissionStatus, onBatchUpdateFlashSaleStatus }) => {
+    const [showForm, setShowForm] = useState(false);
+    
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold dark:text-white">Gestion des Ventes Flash</h2>
+              <button onClick={() => setShowForm(!showForm)} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                  <PlusIcon className="w-5 h-5"/> {showForm ? 'Annuler' : 'Créer un événement'}
+              </button>
+            </div>
+            {showForm && <FlashSaleForm onSave={(data) => { onSaveFlashSale(data); setShowForm(false); }} onCancel={() => setShowForm(false)} />}
+        </div>
+    );
+};
 
-    const paymentData = useMemo(() => {
-        const deliveredOrders = allOrders.filter(o => o.status === 'delivered');
-        
-        const totalTransactionVolume = deliveredOrders
-            .flatMap(o => o.items)
-            .reduce((sum, item) => sum + (item.promotionPrice ?? item.price) * item.quantity, 0);
-        
-        const totalCommission = totalTransactionVolume * COMMISSION_RATE;
-        const totalPaidOut = payouts.reduce((sum, p) => sum + p.amount, 0);
-        const totalDueToSellers = totalTransactionVolume - totalCommission;
-        
-        const sellerPayouts = allStores.map(store => {
-            const storeDeliveredItems = deliveredOrders.flatMap(o => o.items.filter(i => i.vendor === store.name));
-            const grossRevenue = storeDeliveredItems.reduce((sum, item) => sum + (item.promotionPrice ?? item.price) * item.quantity, 0);
-            
-            const commission = grossRevenue * COMMISSION_RATE;
-            const netDue = grossRevenue - commission;
-            
-            const paidAmount = payouts
-                .filter(p => p.storeId === store.id)
-                .reduce((sum, p) => sum + p.amount, 0);
-            
-            const remainingDue = netDue - paidAmount;
+const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPickupPoints' | 'onAddPickupPoint' | 'onUpdatePickupPoint' | 'onDeletePickupPoint'>> = ({ allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint }) => {
+    const [editingPoint, setEditingPoint] = useState<Partial<PickupPoint> | null>(null);
 
-            return {
-                storeId: store.id,
-                storeName: store.name,
-                grossRevenue,
-                commission,
-                netDue,
-                paidAmount,
-                remainingDue,
-            };
-        });
+    const handleSave = () => {
+        if (!editingPoint || !editingPoint.name || !editingPoint.street || !editingPoint.city || !editingPoint.neighborhood) {
+            alert("Veuillez remplir tous les champs obligatoires.");
+            return;
+        }
+        if (editingPoint.id) {
+            onUpdatePickupPoint(editingPoint as PickupPoint);
+        } else {
+            onAddPickupPoint(editingPoint as Omit<PickupPoint, 'id'>);
+        }
+        setEditingPoint(null);
+    };
 
-        return {
-            totalTransactionVolume,
-            totalCommission,
-            totalPaidOut,
-            totalDueToSellers,
-            sellerPayouts,
-        };
-    }, [allOrders, allStores, payouts, COMMISSION_RATE]);
+    const form = (
+        <div className="p-4 my-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border dark:border-gray-700 space-y-4">
+            <h3 className="font-semibold text-lg">{editingPoint?.id ? 'Modifier' : 'Ajouter'} un point de dépôt</h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <input type="text" placeholder="Nom du point" value={editingPoint?.name || ''} onChange={e => setEditingPoint(p => ({...p, name: e.target.value}))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                <input type="text" placeholder="Ville" value={editingPoint?.city || ''} onChange={e => setEditingPoint(p => ({...p, city: e.target.value}))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                <input type="text" placeholder="Quartier" value={editingPoint?.neighborhood || ''} onChange={e => setEditingPoint(p => ({...p, neighborhood: e.target.value}))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                <input type="text" placeholder="Rue" value={editingPoint?.street || ''} onChange={e => setEditingPoint(p => ({...p, street: e.target.value}))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+            </div>
+            <div className="flex justify-end gap-2">
+                <button onClick={() => setEditingPoint(null)} className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 py-2 rounded-md">Annuler</button>
+                <button onClick={handleSave} className="bg-kmer-green text-white font-semibold px-4 py-2 rounded-md">Enregistrer</button>
+            </div>
+        </div>
+    );
 
     return (
-        <div className="p-4 sm:p-6 space-y-6">
-            <h2 className="text-xl font-bold dark:text-white">Gestion des Paiements</h2>
-            
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Volume des Ventes" value={`${paymentData.totalTransactionVolume.toLocaleString('fr-CM')} FCFA`} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
-                <StatCard icon={<ChartPieIcon className="w-7 h-7"/>} label="Commission Plateforme" value={`${paymentData.totalCommission.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
-                <StatCard icon={<TruckIcon className="w-7 h-7"/>} label="Total Reversé aux Vendeurs" value={`${paymentData.totalPaidOut.toLocaleString('fr-CM')} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
-                <StatCard icon={<ExclamationTriangleIcon className="w-7 h-7"/>} label="Montant Restant à Payer" value={`${(paymentData.totalDueToSellers - paymentData.totalPaidOut).toLocaleString('fr-CM')} FCFA`} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" />
+        <div className="p-4 sm:p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold dark:text-white">Gestion des Points de Dépôt</h2>
+                <button onClick={() => setEditingPoint({})} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><PlusIcon className="w-5 h-5"/> Ajouter</button>
             </div>
-
-            <div className="overflow-x-auto bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
-                 <table className="w-full min-w-[800px] text-sm text-left">
-                    <thead className="bg-gray-50 dark:bg-gray-700/50">
-                        <tr>
-                            <th className="px-4 py-3 font-semibold">Boutique</th>
-                            <th className="px-4 py-3 font-semibold text-right">Revenu Brut</th>
-                            <th className="px-4 py-3 font-semibold text-right">Commission (10%)</th>
-                            <th className="px-4 py-3 font-semibold text-right">Montant Net Dû</th>
-                            <th className="px-4 py-3 font-semibold text-right">Déjà Versé</th>
-                            <th className="px-4 py-3 font-semibold text-right">Reste à Payer</th>
-                            <th className="px-4 py-3 font-semibold text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y dark:divide-gray-700">
-                        {paymentData.sellerPayouts.map(seller => (
-                            <tr key={seller.storeId} className="hover:bg-gray-50 dark:hover:bg-gray-900/30">
-                                <td className="px-4 py-3 font-medium dark:text-white">{seller.storeName}</td>
-                                <td className="px-4 py-3 text-right">{seller.grossRevenue.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="px-4 py-3 text-right text-red-600 dark:text-red-400">- {seller.commission.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="px-4 py-3 text-right font-semibold">{seller.netDue.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="px-4 py-3 text-right text-green-600 dark:text-green-400">{seller.paidAmount.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="px-4 py-3 text-right font-bold text-orange-600 dark:text-orange-400">{seller.remainingDue.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="px-4 py-3 text-center">
-                                    <button 
-                                        onClick={() => onPayoutSeller(seller.storeId, seller.remainingDue)}
-                                        disabled={seller.remainingDue <= 0}
-                                        className="bg-kmer-green text-white text-xs font-bold px-3 py-1.5 rounded-md hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
-                                    >
-                                        Payer le solde
-                                    </button>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                 </table>
+            {editingPoint && form}
+            <div className="space-y-2">
+                {allPickupPoints.map(point => (
+                    <div key={point.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
+                        <div>
+                            <p className="font-semibold">{point.name}</p>
+                            <p className="text-sm text-gray-500">{point.street}, {point.neighborhood}, {point.city}</p>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setEditingPoint(point)} className="p-2 text-gray-500 hover:text-blue-500"><PencilSquareIcon className="w-5 h-5"/></button>
+                            <button onClick={() => onDeletePickupPoint(point.id)} className="p-2 text-gray-500 hover:text-red-600"><TrashIcon className="w-5 h-5"/></button>
+                        </div>
+                    </div>
+                ))}
             </div>
         </div>
     );
 };
 
-const StoresMapPanel: React.FC<{ allStores: Store[] }> = ({ allStores }) => {
+const PayoutManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'allOrders' | 'payouts' | 'onPayoutSeller'>> = ({ allStores, allOrders, payouts, onPayoutSeller }) => {
+    const [payoutAmount, setPayoutAmount] = useState<Record<string, number | undefined>>({});
+    
+    const storeBalances = useMemo(() => {
+        const balances: Record<string, { revenue: number, paid: number, balance: number }> = {};
+        
+        allStores.forEach(store => {
+            const revenue = allOrders
+                .filter(o => o.status === 'delivered' && o.items.some(i => i.vendor === store.name))
+                .reduce((total, order) => {
+                    const storeItemsTotal = order.items
+                        .filter(i => i.vendor === store.name)
+                        .reduce((sum, item) => sum + item.price * item.quantity, 0);
+                    return total + storeItemsTotal;
+                }, 0);
+
+            const paid = payouts
+                .filter(p => p.storeId === store.id)
+                .reduce((sum, p) => sum + p.amount, 0);
+            
+            balances[store.id] = { revenue, paid, balance: revenue - paid };
+        });
+        
+        return balances;
+    }, [allStores, allOrders, payouts]);
+    
+    return (
+        <div className="p-4 sm:p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Paiements aux Vendeurs</h2>
+            <div className="space-y-3">
+                {allStores.filter(s => s.status === 'active').map(store => (
+                    <div key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                        <p className="font-bold text-lg dark:text-white">{store.name}</p>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-2 text-sm">
+                            <div><span className="font-semibold">Revenu total:</span> {storeBalances[store.id]?.revenue.toLocaleString('fr-CM')} FCFA</div>
+                            <div><span className="font-semibold">Total versé:</span> {storeBalances[store.id]?.paid.toLocaleString('fr-CM')} FCFA</div>
+                            <div className="font-bold text-kmer-green"><span className="font-semibold text-black dark:text-white">Solde:</span> {storeBalances[store.id]?.balance.toLocaleString('fr-CM')} FCFA</div>
+                        </div>
+                        <div className="mt-4 pt-3 border-t dark:border-gray-700 flex items-center gap-2">
+                            <input
+                                type="number"
+                                placeholder="Montant à verser"
+                                value={payoutAmount[store.id] || ''}
+                                onChange={e => setPayoutAmount(prev => ({ ...prev, [store.id]: Number(e.target.value) }))}
+                                className="w-48 p-2 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <button
+                                onClick={() => onPayoutSeller(store.id, payoutAmount[store.id] || 0)}
+                                disabled={!payoutAmount[store.id] || payoutAmount[store.id]! <= 0 || payoutAmount[store.id]! > storeBalances[store.id]?.balance}
+                                className="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-blue-300"
+                            >
+                                Verser
+                            </button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+const MapPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'allPickupPoints'>> = ({ allStores, allPickupPoints }) => {
     const mapContainer = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
     const [selectedCity, setSelectedCity] = useState<'all' | 'Douala' | 'Yaoundé'>('all');
@@ -822,22 +740,6 @@ const StoresMapPanel: React.FC<{ allStores: Store[] }> = ({ allStores }) => {
         'Douala': { lat: 4.0511, lng: 9.7679, zoom: 12 },
         'Yaoundé': { lat: 3.8480, lng: 11.5021, zoom: 12 },
         'all': { lat: 3.95, lng: 10.6, zoom: 7 }
-    };
-
-    const statusColors: Record<Store['status'], string> = {
-        active: '#007A5E', // kmer-green
-        pending: '#F59E0B', // amber-500
-        suspended: '#EF4444' // red-500
-    };
-
-    const createIcon = (color: string) => {
-        return L.divIcon({
-            html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" class="w-8 h-8 drop-shadow-lg"><path d="M12 11.5A2.5 2.5 0 019.5 9A2.5 2.5 0 0112 6.5A2.5 2.5 0 0114.5 9A2.5 2.5 0 0112 11.5M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"></path></svg>`,
-            className: '',
-            iconSize: [32, 32],
-            iconAnchor: [16, 32],
-            popupAnchor: [0, -32]
-        });
     };
 
     useEffect(() => {
@@ -860,146 +762,182 @@ const StoresMapPanel: React.FC<{ allStores: Store[] }> = ({ allStores }) => {
             const { lat, lng, zoom } = cityCoordinates[selectedCity];
             mapRef.current.flyTo([lat, lng], zoom);
 
-            const filteredStores = allStores.filter(store =>
-                selectedCity === 'all' || store.location === selectedCity
-            );
-            
+            const statusColors: Record<Store['status'], string> = {
+                active: 'green',
+                pending: 'orange',
+                suspended: 'red'
+            };
+
+            const filteredStores = allStores.filter(store => selectedCity === 'all' || store.location === selectedCity);
             filteredStores.forEach(store => {
                 if (store.latitude && store.longitude) {
-                    const icon = createIcon(statusColors[store.status]);
-                    const marker = L.marker([store.latitude, store.longitude], { icon }).addTo(mapRef.current);
-                    const popupContent = `
-                        <div class="p-1 font-sans">
-                            <b class="text-base" style="color: #007A5E;">${store.name}</b><br>
-                            Vendeur: ${store.sellerFirstName} ${store.sellerLastName}<br>
-                            Statut: <span style="font-weight: bold; color: ${statusColors[store.status]}; text-transform: capitalize;">${store.status}</span>
-                        </div>
-                    `;
-                    marker.bindPopup(popupContent);
+                    const icon = L.divIcon({
+                        html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${statusColors[store.status]}" class="w-8 h-8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+                        className: 'map-marker-icon',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32],
+                        popupAnchor: [0, -32]
+                    });
+                    L.marker([store.latitude, store.longitude], { icon }).addTo(mapRef.current)
+                        .bindPopup(`<b>${store.name}</b><br>Statut: ${store.status}`);
+                }
+            });
+
+            const filteredPickupPoints = allPickupPoints.filter(pp => selectedCity === 'all' || pp.city === selectedCity);
+            filteredPickupPoints.forEach(pp => {
+                if (pp.latitude && pp.longitude) {
+                     const icon = L.divIcon({
+                        html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="blue" class="w-8 h-8"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>`,
+                        className: 'map-marker-icon',
+                        iconSize: [32, 32],
+                        iconAnchor: [16, 32],
+                        popupAnchor: [0, -32]
+                    });
+                    L.marker([pp.latitude, pp.longitude], { icon }).addTo(mapRef.current)
+                        .bindPopup(`<b>${pp.name}</b><br>Point de dépôt`);
                 }
             });
         }
-    }, [selectedCity, allStores]);
+    }, [selectedCity, allStores, allPickupPoints]);
 
     return (
         <div className="p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
-                <h2 className="text-xl font-bold dark:text-white">Carte des Boutiques</h2>
-                <div className="flex items-center gap-2">
-                    <label htmlFor="city-filter-admin" className="text-sm font-medium dark:text-gray-300">Filtrer par ville:</label>
-                    <select
-                        id="city-filter-admin"
-                        value={selectedCity}
-                        onChange={(e) => setSelectedCity(e.target.value as any)}
-                        className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 text-sm font-semibold focus:ring-kmer-green focus:border-kmer-green"
-                    >
-                        <option value="all">Toutes</option>
-                        <option value="Douala">Douala</option>
-                        <option value="Yaoundé">Yaoundé</option>
-                    </select>
-                </div>
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold dark:text-white">Carte des Boutiques et Points de Dépôt</h2>
+                <select value={selectedCity} onChange={e => setSelectedCity(e.target.value as any)} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 text-sm">
+                    <option value="all">Toutes les villes</option>
+                    <option value="Douala">Douala</option>
+                    <option value="Yaoundé">Yaoundé</option>
+                </select>
             </div>
-            <div ref={mapContainer} style={{ height: '600px', width: '100%', borderRadius: '8px', zIndex: 1 }} />
+            <div ref={mapContainer} style={{ height: '500px', width: '100%', borderRadius: '8px' }}></div>
         </div>
     );
 };
 
-interface SuperAdminDashboardProps {
-    allUsers: User[];
-    allOrders: Order[];
-    allCategories: Category[];
-    allStores: Store[];
-    siteActivityLogs: SiteActivityLog[];
-    flashSales: FlashSale[];
-    allProducts: Product[];
-    allPickupPoints: PickupPoint[];
-    payouts: Payout[];
-    onUpdateOrderStatus: (id: string, status: OrderStatus) => void;
-    onUpdateCategoryImage: (id: string, imageUrl: string) => void;
-    onWarnStore: (id: string, reason: string) => void;
-    onToggleStoreStatus: (id: string) => void;
-    onApproveStore: (id: string) => void;
-    onRejectStore: (id: string) => void;
-    onSaveFlashSale: (flashSale: Omit<FlashSale, 'id' | 'products'>) => void;
-    onUpdateFlashSaleSubmissionStatus: (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => void;
-    onBatchUpdateFlashSaleStatus: (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => void;
-    onRequestDocument: (storeId: string, documentName: string) => void;
-    onVerifyDocumentStatus: (storeId: string, documentName: string, status: 'verified' | 'rejected', reason?: string) => void;
-    onAddPickupPoint: (pointData: Omit<PickupPoint, 'id'>) => void;
-    onUpdatePickupPoint: (point: PickupPoint) => void;
-    onDeletePickupPoint: (pointId: string) => void;
-    onAssignAgent: (orderId: string, agentId: string) => void;
-    isChatEnabled: boolean;
-    isComparisonEnabled: boolean;
-    onToggleChatFeature: () => void;
-    onToggleComparisonFeature: () => void;
-    siteSettings: SiteSettings;
-    onUpdateSiteSettings: (settings: SiteSettings) => void;
-    onAdminAddCategory: (categoryName: string) => void;
-    onAdminDeleteCategory: (categoryId: string) => void;
-    onUpdateUserRole: (userId: string, newRole: UserRole) => void;
-    onPayoutSeller: (storeId: string, amount: number) => void;
-    onActivateSubscription: (storeId: string) => void;
-}
+const AdvertisementManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'advertisements' | 'onAddAdvertisement' | 'onUpdateAdvertisement' | 'onDeleteAdvertisement'>> = ({ advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement }) => {
+    const [editingAd, setEditingAd] = useState<Partial<Advertisement> | null>(null);
+
+    const handleSave = () => {
+        if (!editingAd || !editingAd.imageUrl || !editingAd.linkUrl) {
+            alert("L'URL de l'image et le lien sont obligatoires.");
+            return;
+        }
+        const adData: Omit<Advertisement, 'id'> = {
+            imageUrl: editingAd.imageUrl,
+            linkUrl: editingAd.linkUrl,
+            location: 'homepage-banner',
+            isActive: editingAd.isActive ?? false,
+        };
+
+        if ('id' in editingAd && editingAd.id) {
+            onUpdateAdvertisement({ ...adData, id: editingAd.id });
+        } else {
+            onAddAdvertisement(adData);
+        }
+        setEditingAd(null);
+    };
+
+    const adForm = (
+        <div className="p-4 my-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border dark:border-gray-700 space-y-4">
+            <h3 className="font-semibold text-lg">{editingAd?.id ? 'Modifier' : 'Ajouter'} une Publicité</h3>
+            <div>
+                <label className="text-sm font-medium">URL de l'image</label>
+                <input type="text" placeholder="https://..." value={editingAd?.imageUrl || ''} onChange={e => setEditingAd(ad => ({ ...ad, imageUrl: e.target.value }))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+            </div>
+            <div>
+                <label className="text-sm font-medium">Lien de destination</label>
+                <input type="text" placeholder="https://..." value={editingAd?.linkUrl || ''} onChange={e => setEditingAd(ad => ({ ...ad, linkUrl: e.target.value }))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+            </div>
+            <label className="flex items-center gap-2">
+                <input type="checkbox" checked={editingAd?.isActive || false} onChange={e => setEditingAd(ad => ({ ...ad, isActive: e.target.checked }))} className="h-4 w-4 rounded border-gray-300 text-kmer-green" />
+                <span>Active</span>
+            </label>
+            <div className="flex justify-end gap-2">
+                <button onClick={() => setEditingAd(null)} className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 py-2 rounded-md">Annuler</button>
+                <button onClick={handleSave} className="bg-kmer-green text-white font-semibold px-4 py-2 rounded-md">Enregistrer</button>
+            </div>
+        </div>
+    );
+
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold dark:text-white">Gestion des Publicités</h2>
+                <button onClick={() => setEditingAd({isActive: true})} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><PlusIcon className="w-5 h-5"/> Ajouter</button>
+            </div>
+            {editingAd && adForm}
+            <div className="space-y-2">
+                {advertisements.map(ad => (
+                    <div key={ad.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
+                        <div className="flex items-center gap-4">
+                            <img src={ad.imageUrl} alt="Ad preview" className="w-24 h-12 object-cover rounded-md bg-gray-200"/>
+                            <div>
+                                <p className="text-sm text-gray-500 truncate max-w-xs">{ad.linkUrl}</p>
+                                <span className={`px-2 py-0.5 mt-1 inline-block rounded-full text-xs font-medium ${ad.isActive ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{ad.isActive ? 'Active' : 'Inactive'}</span>
+                            </div>
+                        </div>
+                        <div className="flex gap-2">
+                            <button onClick={() => setEditingAd(ad)} className="p-2 text-gray-500 hover:text-blue-500"><PencilSquareIcon className="w-5 h-5"/></button>
+                            <button onClick={() => onDeleteAdvertisement(ad.id)} className="p-2 text-gray-500 hover:text-red-600"><TrashIcon className="w-5 h-5"/></button>
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
 
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState('overview');
-    const { user } = useAuth();
     
-    if (!user || user.role !== 'superadmin') {
-        return <div className="p-8 text-center text-red-500">Accès non autorisé.</div>;
-    }
-
     const renderContent = () => {
-        switch (activeTab) {
+        switch(activeTab) {
             case 'overview': return <DashboardOverviewPanel {...props} />;
             case 'orders': return <OrderManagementPanel {...props} />;
-            case 'payments': return <PaymentsManagementPanel {...props} />;
             case 'stores': return <StoreManagementPanel {...props} />;
-            case 'map': return <StoresMapPanel allStores={props.allStores} />;
-            case 'categories': return <CategoryManagementPanel {...props} />;
-            case 'flash-sales': return <FlashSaleManagementPanel {...props} />;
             case 'users': return <UserManagementPanel {...props} />;
-            case 'pickuppoints': return <PickupPointManagementPanel {...props} />;
-            case 'logs': return <LogsPanel {...props} />;
+            case 'logs': return <LogsPanel siteActivityLogs={props.siteActivityLogs} />;
+            case 'flash_sales': return <FlashSaleManagementPanel {...props} />;
+            case 'pickup_points': return <PickupPointManagementPanel {...props} />;
+            case 'categories': return <CategoryManagementPanel {...props} />;
+            case 'payouts': return <PayoutManagementPanel {...props} />;
+            case 'map': return <MapPanel {...props} />;
+            case 'advertisements': return <AdvertisementManagementPanel {...props} />;
             case 'settings': return <SettingsPanel {...props} />;
             default: return <DashboardOverviewPanel {...props} />;
         }
-    }
-
+    };
+    
     return (
         <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-            <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+            <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-[76px] z-20">
                 <div className="container mx-auto px-4 sm:px-6 py-4">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <AcademicCapIcon className="h-10 w-10 text-kmer-green"/>
-                            <div>
-                                <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Tableau de Bord Superadmin</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Connecté en tant que {user.name}</p>
-                            </div>
-                        </div>
-                    </div>
+                     <div className="flex items-center gap-4">
+                        <AcademicCapIcon className="w-8 h-8 text-kmer-green"/>
+                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de Bord Super Admin</h1>
+                     </div>
                      <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
                         <div className="flex space-x-2 overflow-x-auto">
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
-                           <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
                            <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
-                           <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Carte des Boutiques" isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
+                           <TabButton icon={<UserGroupIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
+                           <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Carte" isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
-                           <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
-                           <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-                           <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Points Dépôt" isActive={activeTab === 'pickuppoints'} onClick={() => setActiveTab('pickuppoints')} />
+                           <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash_sales'} onClick={() => setActiveTab('flash_sales')} />
+                           <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup_points'} onClick={() => setActiveTab('pickup_points')} />
+                           <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
+                           <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Publicités" isActive={activeTab === 'advertisements'} onClick={() => setActiveTab('advertisements')} />
                            <TabButton icon={<ClockIcon className="w-5 h-5"/>} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
                            <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                         </div>
                     </div>
                 </div>
             </header>
-             <main className="container mx-auto px-4 sm:px-6 py-6">
+            <main className="container mx-auto px-4 sm:px-6 py-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                   {renderContent()}
+                    {renderContent()}
                 </div>
             </main>
         </div>
