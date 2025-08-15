@@ -225,8 +225,9 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                     {pickupPoint ? (
                       <div className="text-gray-600 dark:text-gray-300 space-y-1">
                         <p className="font-bold">{pickupPoint.name}</p>
-                        <p>{pickupPoint.address}</p>
+                        <p>{[pickupPoint.streetNumber, pickupPoint.street].filter(Boolean).join(' ')}, {pickupPoint.neighborhood}</p>
                         <p>{pickupPoint.city}</p>
+                        {pickupPoint.additionalInfo && <p className="text-sm italic">({pickupPoint.additionalInfo})</p>}
                       </div>
                     ) : (
                       <p className="text-red-500">Information sur le point de dépôt non disponible.</p>

@@ -27,7 +27,7 @@ import ComparisonBar from './components/ComparisonBar';
 import BecomePremiumPage from './components/BecomePremiumPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import PromotionModal from './components/PromotionModal';
@@ -405,10 +405,10 @@ const initialCategories: Category[] = [
 ];
 
 const initialPickupPoints: PickupPoint[] = [
-    { id: 'pp1', name: 'Point Relais Akwa', address: '123 Rue de la Liberté, Akwa', city: 'Douala', neighborhood: 'Akwa' },
-    { id: 'pp2', name: 'KMER ZONE Bonamoussadi', address: 'Carrefour Kayo, Bonamoussadi', city: 'Douala', neighborhood: 'Bonamoussadi' },
-    { id: 'pp3', name: 'Point Relais Mvog-Mbi', address: 'Rond-point Nsam, Mvog-Mbi', city: 'Yaoundé', neighborhood: 'Mvog-Mbi' },
-    { id: 'pp4', name: 'KMER ZONE Bastos', address: 'Près de l\'ambassade', city: 'Yaoundé', neighborhood: 'Bastos' },
+    { id: 'pp1', name: 'Point Relais Akwa', streetNumber: '123', street: 'Rue de la Liberté', additionalInfo: 'Près de la boulangerie Saker', city: 'Douala', neighborhood: 'Akwa' },
+    { id: 'pp2', name: 'KMER ZONE Bonamoussadi', streetNumber: '456', street: 'Avenue Kayo', additionalInfo: 'Carrefour Kayo', city: 'Douala', neighborhood: 'Bonamoussadi' },
+    { id: 'pp3', name: 'Point Relais Mvog-Mbi', streetNumber: '789', street: 'Boulevard Nsam', additionalInfo: 'Au rond-point', city: 'Yaoundé', neighborhood: 'Mvog-Mbi' },
+    { id: 'pp4', name: 'KMER ZONE Bastos', streetNumber: '101', street: 'Rue des Ambassades', city: 'Yaoundé', neighborhood: 'Bastos' },
 ];
 
 
@@ -773,7 +773,7 @@ const App: React.FC = () => {
   }, [user, addSiteActivityLog, navigate]);
 
   const handleUpdateCategoryImage = useCallback((categoryId: string, imageUrl: string) => {
-    if (!user) return;
+    if (!user || user.role !== 'superadmin') return;
     const currentUser = user;
     setAllCategories(prev => {
         const category = prev.find(c => c.id === categoryId);
@@ -782,6 +782,36 @@ const App: React.FC = () => {
         }
         return prev.map(c => c.id === categoryId ? { ...c, imageUrl } : c);
     });
+  }, [user, addSiteActivityLog]);
+  
+  const handleAdminAddCategory = useCallback((categoryName: string) => {
+    if (!user || user.role !== 'superadmin') return;
+    setAllCategories(prev => {
+        if (prev.find(c => c.name.toLowerCase() === categoryName.toLowerCase())) {
+            alert("Cette catégorie existe déjà.");
+            return prev;
+        }
+        const newCategory: Category = {
+            id: `cat-${new Date().getTime()}`,
+            name: categoryName,
+            imageUrl: `https://picsum.photos/seed/${categoryName.toLowerCase().replace(/\s+/g, '-')}/300/200`
+        };
+        addSiteActivityLog(user, "Ajout Catégorie", `A créé la catégorie '${categoryName}'.`);
+        return [...prev, newCategory];
+    });
+  }, [user, addSiteActivityLog]);
+
+  const handleAdminDeleteCategory = useCallback((categoryId: string) => {
+    if (!user || user.role !== 'superadmin') return;
+    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette catégorie ? Cela pourrait affecter les produits existants.")) {
+        setAllCategories(prev => {
+            const category = prev.find(c => c.id === categoryId);
+            if(category) {
+                addSiteActivityLog(user, "Suppression Catégorie", `A supprimé la catégorie '${category.name}'.`);
+            }
+            return prev.filter(c => c.id !== categoryId);
+        });
+    }
   }, [user, addSiteActivityLog]);
   
   const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string) => {
@@ -940,7 +970,7 @@ const App: React.FC = () => {
   }, [navigate]);
 
   const handleAddPickupPoint = useCallback((pointData: Omit<PickupPoint, 'id'>) => {
-    if (!user) return;
+    if (!user || user.role !== 'superadmin') return;
     const currentUser = user;
     setAllPickupPoints(prev => {
         const newPoint: PickupPoint = { id: `pp-${new Date().getTime()}`, ...pointData };
@@ -970,6 +1000,19 @@ const App: React.FC = () => {
         return prevPoints;
     });
   }, [user, addSiteActivityLog]);
+
+  const handleUpdateUserRole = useCallback((userId: string, newRole: UserRole) => {
+    if (!user || user.role !== 'superadmin') return;
+    if (window.confirm(`Êtes-vous sûr de vouloir changer le rôle de cet utilisateur en '${newRole}' ? Cette action est irréversible.`)) {
+      setAllUsers(prevUsers => {
+        const userToUpdate = prevUsers.find(u => u.id === userId);
+        if (userToUpdate) {
+          addSiteActivityLog(user, 'Changement de Rôle', `Le rôle de '${userToUpdate.name}' a été changé de '${userToUpdate.role}' à '${newRole}'.`);
+        }
+        return prevUsers.map(u => u.id === userId ? { ...u, role: newRole } : u);
+      });
+    }
+  }, [user, addSiteActivityLog, setAllUsers]);
 
   const handleAssignAgent = useCallback((orderId: string, agentId: string) => {
     if (!user) return;
@@ -1121,7 +1164,7 @@ const App: React.FC = () => {
       case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'product-form': return <ProductForm onCancel={navigateToSellerDashboard} onSave={handleSaveProduct} productToEdit={productToEdit} categories={allCategories} onAddCategory={addCategory} />;
       case 'seller-profile': return <SellerProfile onBack={navigateToSellerDashboard} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} />;
+      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} />;
       case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
       case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
       case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} onUpdateOrderStatus={handleUpdateOrderStatus} allStores={allStores} allPickupPoints={allPickupPoints} />;

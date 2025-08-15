@@ -177,7 +177,9 @@ export interface Order extends NewOrderData {
 export interface PickupPoint {
   id: string;
   name: string;
-  address: string;
+  streetNumber?: string;
+  street: string;
+  additionalInfo?: string;
   city: string;
   neighborhood: string;
 }

@@ -267,7 +267,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                      <select id="pickup-point" value={selectedPickupPointId} onChange={(e) => setSelectedPickupPointId(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-kmer-green focus:border-kmer-green dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                          {Object.entries(pickupPointsByCity).map(([city, points]) => (
                             <optgroup key={city} label={city}>
-                                {points.map(pp => <option key={pp.id} value={pp.id}>{pp.name} - {pp.address}</option>)}
+                                {points.map(pp => <option key={pp.id} value={pp.id}>{pp.name} - {pp.street}</option>)}
                             </optgroup>
                          ))}
                      </select>
