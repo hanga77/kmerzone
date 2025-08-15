@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import type { Product, Category, Store, FlashSale, Advertisement } from '../types';
 import CategoryCard from './CategoryCard';
 import ProductCard from './ProductCard';
 import StoreCard from './StoreCard';
-import { ShoppingBagIcon, SparklesIcon, TruckIcon, CreditCardIcon, ChatBubbleBottomCenterTextIcon, TagIcon } from './Icons';
+import { ShoppingBagIcon, SparklesIcon, TruckIcon, CreditCardIcon, ChatBubbleBottomCenterTextIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 
 interface HomePageProps {
     categories: Category[];
@@ -17,6 +17,84 @@ interface HomePageProps {
     onVisitStore: (storeName: string) => void;
     isComparisonEnabled: boolean;
 }
+
+const AdCarousel: React.FC<{ advertisements: Advertisement[] }> = ({ advertisements }) => {
+    const [currentIndex, setCurrentIndex] = useState(0);
+    const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+    const resetTimeout = () => {
+        if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+        }
+    };
+
+    useEffect(() => {
+        resetTimeout();
+        timeoutRef.current = setTimeout(
+            () => setCurrentIndex((prevIndex) => (prevIndex === advertisements.length - 1 ? 0 : prevIndex + 1)),
+            5000 // Change slide every 5 seconds
+        );
+        return () => {
+            resetTimeout();
+        };
+    }, [currentIndex, advertisements.length]);
+
+    const prevSlide = () => {
+        const isFirstSlide = currentIndex === 0;
+        const newIndex = isFirstSlide ? advertisements.length - 1 : currentIndex - 1;
+        setCurrentIndex(newIndex);
+    };
+
+    const nextSlide = () => {
+        const isLastSlide = currentIndex === advertisements.length - 1;
+        const newIndex = isLastSlide ? 0 : currentIndex + 1;
+        setCurrentIndex(newIndex);
+    };
+
+    const goToSlide = (slideIndex: number) => {
+        setCurrentIndex(slideIndex);
+    };
+    
+    if (advertisements.length === 0) return null;
+
+    return (
+        <div className="relative w-full h-48 sm:h-64 rounded-lg shadow-lg group">
+            <div className="w-full h-full rounded-lg overflow-hidden">
+                <div
+                    className="flex transition-transform ease-in-out duration-700 h-full"
+                    style={{ transform: `translateX(-${currentIndex * 100}%)` }}
+                >
+                    {advertisements.map((ad) => (
+                        <a key={ad.id} href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="flex-shrink-0 w-full h-full">
+                            <img src={ad.imageUrl} alt="Publicité" className="w-full h-full object-cover" />
+                        </a>
+                    ))}
+                </div>
+            </div>
+            {/* Left Arrow */}
+            <div onClick={prevSlide} className="hidden group-hover:block absolute top-1/2 -translate-y-1/2 left-5 text-2xl rounded-full p-2 bg-black/20 text-white cursor-pointer">
+                <ChevronLeftIcon className="w-6 h-6" />
+            </div>
+            {/* Right Arrow */}
+            <div onClick={nextSlide} className="hidden group-hover:block absolute top-1/2 -translate-y-1/2 right-5 text-2xl rounded-full p-2 bg-black/20 text-white cursor-pointer">
+                <ChevronRightIcon className="w-6 h-6" />
+            </div>
+            {/* Dots */}
+            <div className="absolute bottom-5 left-1/2 -translate-x-1/2 flex justify-center py-2 space-x-2">
+                {advertisements.map((_, slideIndex) => (
+                    <div
+                        key={slideIndex}
+                        onClick={() => goToSlide(slideIndex)}
+                        className={`w-3 h-3 rounded-full cursor-pointer transition-colors ${
+                            currentIndex === slideIndex ? 'bg-white' : 'bg-white/50'
+                        }`}
+                    ></div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 
 const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, isComparisonEnabled }) => {
     
@@ -81,13 +159,7 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 <section className="py-16 bg-gray-200 dark:bg-gray-800">
                     <div className="container mx-auto px-6">
                         <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Nos Partenaires</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                            {advertisements.map(ad => (
-                                <a key={ad.id} href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="block group">
-                                    <img src={ad.imageUrl} alt="Publicité" className="w-full h-48 object-cover rounded-lg shadow-lg group-hover:shadow-2xl transition-shadow duration-300 transform group-hover:scale-105" />
-                                </a>
-                            ))}
-                        </div>
+                        <AdCarousel advertisements={advertisements} />
                     </div>
                 </section>
             )}

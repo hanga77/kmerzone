@@ -1244,6 +1244,25 @@ const App: React.FC = () => {
     }
   }, [user, addSiteActivityLog, setAdvertisements]);
 
+  const handleUpdateSellerProfile = useCallback((storeId: string, updatedData: { shopName: string, location: string, logoUrl: string }) => {
+    if (!user) return;
+    const { shopName, location, logoUrl } = updatedData;
+
+    // Update the store in allStores
+    setAllStores(prevStores => prevStores.map(s => 
+        s.id === storeId ? { ...s, name: shopName, location, logoUrl } : s
+    ));
+    
+    // Update the user object to keep it in sync
+    updateUser({
+        name: shopName, // user.name is often the shop name for a seller
+        shopName,
+        location
+    });
+
+    addSiteActivityLog(user, 'Mise à jour Profil Boutique', `Le profil de la boutique a été mis à jour.`);
+  }, [user, addSiteActivityLog, setAllStores, updateUser]);
+
 
   const navigateToHome = useCallback(() => { navigate('home'); setAppliedPromoCode(null); }, [navigate]);
   const navigateToCart = useCallback(() => navigate('cart'), [navigate]);
@@ -1325,7 +1344,7 @@ const App: React.FC = () => {
                                                   onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} />;
       case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'product-form': return <ProductForm onCancel={navigateToSellerDashboard} onSave={handleSaveProduct} productToEdit={productToEdit} categories={allCategories} onAddCategory={addCategory} />;
-      case 'seller-profile': return <SellerProfile onBack={navigateToSellerDashboard} />;
+      case 'seller-profile': return currentStore && <SellerProfile store={currentStore} onBack={navigateToSellerDashboard} onUpdateProfile={handleUpdateSellerProfile} />;
       case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} advertisements={advertisements} onAddAdvertisement={handleAddAdvertisement} onUpdateAdvertisement={handleUpdateAdvertisement} onDeleteAdvertisement={handleDeleteAdvertisement} />;
       case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
       case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
