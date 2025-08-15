@@ -101,6 +101,8 @@ export interface Store {
   sellerPhone: string;
   physicalAddress: string;
   documents: RequestedDocument[];
+  latitude?: number;
+  longitude?: number;
 }
 
 export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent';

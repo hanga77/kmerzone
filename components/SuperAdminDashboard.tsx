@@ -1,8 +1,10 @@
-import React, { useState, useMemo, useRef } from 'react';
+import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
+
+declare const L: any;
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
 
@@ -765,6 +767,97 @@ const PaymentsManagementPanel: React.FC<{
     );
 };
 
+const StoresMapPanel: React.FC<{ allStores: Store[] }> = ({ allStores }) => {
+    const mapContainer = useRef<HTMLDivElement>(null);
+    const mapRef = useRef<any>(null);
+    const [selectedCity, setSelectedCity] = useState<'all' | 'Douala' | 'Yaoundé'>('all');
+
+    const cityCoordinates = {
+        'Douala': { lat: 4.0511, lng: 9.7679, zoom: 12 },
+        'Yaoundé': { lat: 3.8480, lng: 11.5021, zoom: 12 },
+        'all': { lat: 3.95, lng: 10.6, zoom: 7 }
+    };
+
+    const statusColors: Record<Store['status'], string> = {
+        active: '#007A5E', // kmer-green
+        pending: '#F59E0B', // amber-500
+        suspended: '#EF4444' // red-500
+    };
+
+    const createIcon = (color: string) => {
+        return L.divIcon({
+            html: `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${color}" class="w-8 h-8 drop-shadow-lg"><path d="M12 11.5A2.5 2.5 0 019.5 9A2.5 2.5 0 0112 6.5A2.5 2.5 0 0114.5 9A2.5 2.5 0 0112 11.5M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"></path></svg>`,
+            className: '',
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+        });
+    };
+
+    useEffect(() => {
+        if (mapContainer.current && !mapRef.current) {
+            mapRef.current = L.map(mapContainer.current).setView([cityCoordinates.all.lat, cityCoordinates.all.lng], cityCoordinates.all.zoom);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(mapRef.current);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (mapRef.current) {
+            mapRef.current.eachLayer((layer: any) => {
+                if (layer instanceof L.Marker) {
+                    mapRef.current.removeLayer(layer);
+                }
+            });
+
+            const { lat, lng, zoom } = cityCoordinates[selectedCity];
+            mapRef.current.flyTo([lat, lng], zoom);
+
+            const filteredStores = allStores.filter(store =>
+                selectedCity === 'all' || store.location === selectedCity
+            );
+            
+            filteredStores.forEach(store => {
+                if (store.latitude && store.longitude) {
+                    const icon = createIcon(statusColors[store.status]);
+                    const marker = L.marker([store.latitude, store.longitude], { icon }).addTo(mapRef.current);
+                    const popupContent = `
+                        <div class="p-1 font-sans">
+                            <b class="text-base" style="color: #007A5E;">${store.name}</b><br>
+                            Vendeur: ${store.sellerFirstName} ${store.sellerLastName}<br>
+                            Statut: <span style="font-weight: bold; color: ${statusColors[store.status]}; text-transform: capitalize;">${store.status}</span>
+                        </div>
+                    `;
+                    marker.bindPopup(popupContent);
+                }
+            });
+        }
+    }, [selectedCity, allStores]);
+
+    return (
+        <div className="p-4 sm:p-6">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-2">
+                <h2 className="text-xl font-bold dark:text-white">Carte des Boutiques</h2>
+                <div className="flex items-center gap-2">
+                    <label htmlFor="city-filter-admin" className="text-sm font-medium dark:text-gray-300">Filtrer par ville:</label>
+                    <select
+                        id="city-filter-admin"
+                        value={selectedCity}
+                        onChange={(e) => setSelectedCity(e.target.value as any)}
+                        className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 text-sm font-semibold focus:ring-kmer-green focus:border-kmer-green"
+                    >
+                        <option value="all">Toutes</option>
+                        <option value="Douala">Douala</option>
+                        <option value="Yaoundé">Yaoundé</option>
+                    </select>
+                </div>
+            </div>
+            <div ref={mapContainer} style={{ height: '600px', width: '100%', borderRadius: '8px', zIndex: 1 }} />
+        </div>
+    );
+};
+
 interface SuperAdminDashboardProps {
     allUsers: User[];
     allOrders: Order[];
@@ -816,6 +909,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
             case 'orders': return <OrderManagementPanel {...props} />;
             case 'payments': return <PaymentsManagementPanel {...props} />;
             case 'stores': return <StoreManagementPanel {...props} />;
+            case 'map': return <StoresMapPanel allStores={props.allStores} />;
             case 'categories': return <CategoryManagementPanel {...props} />;
             case 'flash-sales': return <FlashSaleManagementPanel {...props} />;
             case 'users': return <UserManagementPanel {...props} />;
@@ -845,6 +939,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
                            <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payments'} onClick={() => setActiveTab('payments')} />
                            <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
+                           <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Carte des Boutiques" isActive={activeTab === 'map'} onClick={() => setActiveTab('map')} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
                            <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
                            <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
