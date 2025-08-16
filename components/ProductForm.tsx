@@ -274,16 +274,38 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                        <input type="text" name="brand" id="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
                     </div>
                     <div>
-                       <label htmlFor="weight" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Poids (ex: 1.2kg)</label>
-                       <input type="text" name="weight" id="weight" value={product.weight || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                       <label htmlFor="modelNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Numéro de modèle</label>
+                       <input type="text" name="modelNumber" id="modelNumber" value={product.modelNumber || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                     <div>
+                       <label htmlFor="color" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Couleur</label>
+                       <input type="text" name="color" id="color" value={product.color || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
                     </div>
                     <div>
-                       <label htmlFor="dimensions" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Dimensions (ex: 10x5x3 cm)</label>
-                       <input type="text" name="dimensions" id="dimensions" value={product.dimensions || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                       <label htmlFor="warranty" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Garantie</label>
+                       <input type="text" name="warranty" id="warranty" placeholder="Ex: 1 an" value={product.warranty || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                 </>
+            );
+        }
+        if (category === 'Livres') {
+            return (
+                 <>
+                    <div>
+                       <label htmlFor="author" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Auteur</label>
+                       <input type="text" name="author" id="author" value={product.author || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
                     </div>
                     <div>
-                       <label htmlFor="serialNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">N° de série</label>
-                       <input type="text" name="serialNumber" id="serialNumber" value={product.serialNumber || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                       <label htmlFor="publisher" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Éditeur</label>
+                       <input type="text" name="publisher" id="publisher" value={product.publisher || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                    <div>
+                       <label htmlFor="publicationYear" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Année de publication</label>
+                       <input type="number" name="publicationYear" id="publicationYear" value={product.publicationYear || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </div>
+                     <div>
+                       <label htmlFor="isbn" className="block text-sm font-medium text-gray-700 dark:text-gray-300">ISBN</label>
+                       <input type="text" name="isbn" id="isbn" value={product.isbn || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
                     </div>
                  </>
             );

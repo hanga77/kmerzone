@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Product, Store, FlashSale } from '../types';
 import ProductCard from './ProductCard';
-import { ArrowLeftIcon } from './Icons';
+import { ArrowLeftIcon, StarIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
 
@@ -40,7 +40,14 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
                 <div className="flex items-center gap-4">
                   <img src={store?.logoUrl} alt={store?.name} className="h-16 w-16 object-contain rounded-md bg-white p-1 shadow-sm"/>
                   <div>
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Boutique <span className="text-kmer-green">{vendorName}</span></h1>
+                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                        Boutique <span className="text-kmer-green">{vendorName}</span>
+                        {store?.premiumStatus === 'premium' && (
+                          <span className="bg-kmer-yellow text-white p-1.5 rounded-full" title="Boutique Premium">
+                            <StarIcon className="w-5 h-5" />
+                          </span>
+                        )}
+                    </h1>
                      {store && <p className="text-gray-500 dark:text-gray-400">{store.location}</p>}
                   </div>
                 </div>

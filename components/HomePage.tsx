@@ -18,6 +18,36 @@ interface HomePageProps {
     isComparisonEnabled: boolean;
 }
 
+const StoryCarousel: React.FC<{ stores: Store[] }> = ({ stores }) => {
+    const storesWithStories = stores.filter(store => {
+        if (!store.stories || store.stories.length === 0) return false;
+        // Show stories from the last 24 hours
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        return store.stories.some(story => new Date(story.createdAt) > twentyFourHoursAgo);
+    });
+
+    if (storesWithStories.length === 0) return null;
+
+    return (
+        <div className="py-8">
+            <div className="container mx-auto px-6">
+                <h2 className="text-2xl font-bold mb-4 dark:text-white">Stories des Boutiques</h2>
+                <div className="flex space-x-4 overflow-x-auto pb-4">
+                    {storesWithStories.map(store => (
+                        <div key={store.id} className="flex-shrink-0 text-center">
+                            <button className="w-20 h-20 p-1 rounded-full border-2 border-kmer-red hover:border-kmer-yellow transition-colors">
+                                <img src={store.logoUrl} alt={store.name} className="w-full h-full object-contain rounded-full bg-white" />
+                            </button>
+                            <p className="text-xs mt-2 font-semibold truncate w-20">{store.name}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const AdCarousel: React.FC<{ advertisements: Advertisement[] }> = ({ advertisements }) => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -108,9 +138,9 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
     return (
         <>
             {/* Hero Section */}
-            <section className="relative bg-kmer-green text-white h-[60vh] flex items-center justify-center">
+            <section className="relative bg-gradient-to-br from-kmer-green to-green-900 text-white h-[60vh] flex items-center justify-center">
               <div className="absolute inset-0">
-                <img src="https://picsum.photos/seed/market/1600/900" alt="Marché camerounais" className="w-full h-full object-cover opacity-30"/>
+                <img src="https://picsum.photos/seed/market/1600/900" alt="Marché camerounais" className="w-full h-full object-cover opacity-20"/>
               </div>
               <div className="relative z-10 text-center p-4">
                 <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.5)'}}>Le meilleur du Cameroun, livré chez vous.</h1>
@@ -120,6 +150,8 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 </button>
               </div>
             </section>
+            
+            <StoryCarousel stores={stores} />
 
              {/* Promotions Section */}
             <section className="py-16 bg-white dark:bg-gray-800/30">

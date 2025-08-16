@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeftIcon } from './Icons';
+import { ArrowLeftIcon, PhotoIcon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 import type { SiteSettings } from '../types';
 
 interface BecomeSellerProps {
     onBack: () => void;
-    onBecomeSeller: (shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, latitude?: number, longitude?: number) => void;
+    onBecomeSeller: (shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string, latitude?: number, longitude?: number) => void;
     onRegistrationSuccess: () => void;
     siteSettings: SiteSettings;
 }
@@ -19,16 +19,32 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
   const [phone, setPhone] = useState('');
   const [neighborhood, setNeighborhood] = useState('');
   const [physicalAddress, setPhysicalAddress] = useState('');
+  const [logoUrl, setLogoUrl] = useState('');
   const [latitude, setLatitude] = useState<number | undefined>();
   const [longitude, setLongitude] = useState<number | undefined>();
   const [isDetecting, setIsDetecting] = useState(false);
 
   useEffect(() => {
+    // This effect runs when the user object changes (e.g., on login/logout)
+    // It resets the form to its initial state or pre-fills with the new user's name
     if (user) {
       const nameParts = user.name.split(' ');
       setFirstName(nameParts[0] || '');
       setLastName(nameParts.slice(1).join(' ') || '');
+    } else {
+        setFirstName('');
+        setLastName('');
     }
+    // Reset all other fields to prevent showing old data
+    setShopName('');
+    setLocation('Douala');
+    setPhone('');
+    setNeighborhood('');
+    setPhysicalAddress('');
+    setLogoUrl('');
+    setLatitude(undefined);
+    setLongitude(undefined);
+
   }, [user]);
 
   const handleDetectLocation = () => {
@@ -50,6 +66,17 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
     }
   };
 
+  const handleLogoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+        const file = e.target.files[0];
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setLogoUrl(reader.result as string);
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,12 +84,12 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
         alert("Vous devez être connecté pour devenir vendeur.");
         return;
     }
-    if (!shopName || !location || !firstName || !lastName || !phone || !neighborhood || !physicalAddress) {
-        alert("Veuillez remplir tous les champs.");
+    if (!shopName || !location || !firstName || !lastName || !phone || !neighborhood || !physicalAddress || !logoUrl) {
+        alert("Veuillez remplir tous les champs, y compris le logo.");
         return;
     }
 
-    onBecomeSeller(shopName, location, neighborhood, firstName, lastName, phone, physicalAddress, latitude, longitude);
+    onBecomeSeller(shopName, location, neighborhood, firstName, lastName, phone, physicalAddress, logoUrl, latitude, longitude);
 
     alert("Félicitations ! Votre demande de création de boutique a été envoyée. Elle est en attente de validation par un administrateur. Vous serez notifié une fois qu'elle sera active.");
     onRegistrationSuccess();
@@ -106,6 +133,18 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
                 <div>
                   <h3 className="text-lg font-semibold border-b pb-2 mb-4 dark:border-gray-600 dark:text-white">Informations sur la boutique</h3>
                   <div className="space-y-4">
+                     <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Logo de la boutique</label>
+                        <div className="mt-1 flex items-center gap-4">
+                            <span className="inline-block h-20 w-20 rounded-md overflow-hidden bg-gray-100 dark:bg-gray-700">
+                                {logoUrl ? <img src={logoUrl} alt="Aperçu du logo" className="h-full w-full object-contain" /> : <div className="h-full w-full flex items-center justify-center"><PhotoIcon className="h-10 w-10 text-gray-400"/></div>}
+                            </span>
+                            <label htmlFor="logo-upload" className="cursor-pointer bg-white dark:bg-gray-700 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600">
+                                Choisir un fichier
+                                <input id="logo-upload" name="logo-upload" type="file" className="sr-only" onChange={handleLogoChange} accept="image/*" />
+                            </label>
+                        </div>
+                    </div>
                     <div>
                         <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom de la boutique</label>
                         <input type="text" id="shopName" value={shopName} onChange={(e) => setShopName(e.target.value)} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-kmer-green focus:border-kmer-green dark:bg-gray-700 dark:border-gray-600" required />

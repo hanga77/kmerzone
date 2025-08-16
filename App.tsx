@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -560,20 +562,24 @@ const App: React.FC = () => {
   useEffect(() => {
     if (!siteSettings.isRentEnabled) return;
     const now = new Date();
-    setAllStores(prevStores => {
-        const updatedStores = prevStores.map(store => {
-            if (store.subscriptionStatus === 'active' && store.subscriptionDueDate && new Date(store.subscriptionDueDate) < now) {
-                return { ...store, subscriptionStatus: 'overdue' as const };
-            }
-            return store;
-        });
-        if (JSON.stringify(updatedStores) !== JSON.stringify(prevStores)) {
-          return updatedStores;
-        }
-        return prevStores;
-    });
-  // Rerun check when orders change (simulates time passing) or settings change
-  }, [siteSettings.isRentEnabled, allOrders, setAllStores]);
+
+    const storesToUpdate = allStores.filter(store =>
+      store.subscriptionStatus === 'active' &&
+      store.subscriptionDueDate &&
+      new Date(store.subscriptionDueDate) < now
+    );
+
+    if (storesToUpdate.length > 0) {
+      const storeIdsToUpdate = storesToUpdate.map(s => s.id);
+      setAllStores(prevStores =>
+        prevStores.map(store =>
+          storeIdsToUpdate.includes(store.id)
+            ? { ...store, subscriptionStatus: 'overdue' }
+            : store
+        )
+      );
+    }
+  }, [siteSettings.isRentEnabled, allOrders, allStores, setAllStores]);
 
 
   const navigate = useCallback((page: Page) => {
@@ -924,7 +930,7 @@ const App: React.FC = () => {
     }
   }, [user, addSiteActivityLog, setAllCategories]);
   
-  const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, latitude?: number, longitude?: number) => {
+  const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string, latitude?: number, longitude?: number) => {
     if (!user) return;
     const currentUser = user;
     
@@ -934,7 +940,7 @@ const App: React.FC = () => {
 
     setAllStores(prev => {
         const newStore: Store = {
-          id: new Date().getTime().toString(), name: shopName, logoUrl: `https://picsum.photos/seed/${shopName.replace(/\s+/g, '-')}/200/100`, category: 'Nouvelle Boutique',
+          id: new Date().getTime().toString(), name: shopName, logoUrl: logoUrl, category: 'Nouvelle Boutique',
           warnings: [], status: 'pending', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress,
           documents: requiredDocs,
           latitude,

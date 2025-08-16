@@ -33,7 +33,7 @@ export interface Product {
   variantDetails?: VariantDetail[];
   status: 'published' | 'draft';
   shippingCost?: number;
-  // New fields for product characteristics
+  // Generic fields
   brand?: string;
   weight?: string; // e.g. "500g", "1kg"
   dimensions?: string; // e.g. "10x5x3 cm"
@@ -44,6 +44,16 @@ export interface Product {
   serialNumber?: string;
   productionDate?: string; // ISO Date string
   expirationDate?: string; // ISO Date string
+  // Category-specific fields
+  // Books
+  author?: string;
+  publisher?: string;
+  publicationYear?: number;
+  isbn?: string;
+  // Electronics
+  color?: string;
+  modelNumber?: string;
+  warranty?: string; // e.g., "1 an"
 }
 
 export interface FlashSaleProduct {
@@ -87,6 +97,12 @@ export interface Warning {
   reason: string;
 }
 
+export interface Story {
+  id: string;
+  imageUrl: string;
+  createdAt: string; // ISO String
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -106,6 +122,8 @@ export interface Store {
   subscriptionStatus?: 'active' | 'overdue' | 'inactive';
   subscriptionDueDate?: string; // ISO String
   paymentHistory?: { date: string; amount: number }[];
+  stories?: Story[];
+  premiumStatus?: 'standard' | 'premium';
 }
 
 export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent';

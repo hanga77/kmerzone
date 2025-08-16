@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Store } from '../types';
+import { StarIcon } from './Icons';
 
 interface StoreCardProps {
   store: Store;
@@ -10,8 +11,13 @@ const StoreCard: React.FC<StoreCardProps> = ({ store, onVisitStore }) => {
   return (
     <button 
       onClick={() => onVisitStore(store.name)} 
-      className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col items-center text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-kmer-green focus:ring-offset-2"
+      className="w-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col items-center text-center transition-all duration-300 hover:shadow-xl hover:-translate-y-1 focus:outline-none focus:ring-2 focus:ring-kmer-green focus:ring-offset-2 relative"
     >
+      {store.premiumStatus === 'premium' && (
+        <div className="absolute top-2 right-2 bg-kmer-yellow text-white p-1 rounded-full" title="Boutique Premium">
+          <StarIcon className="w-4 h-4" />
+        </div>
+      )}
       <div className="w-32 h-20 mb-4 flex items-center justify-center">
         <img src={store.logoUrl} alt={`${store.name} logo`} className="max-w-full max-h-full object-contain rounded" />
       </div>

@@ -39,6 +39,7 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
+  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
   const { cart } = useCart();
   const { wishlist } = useWishlist();
   const { user, logout } = useAuth();
@@ -49,6 +50,20 @@ const Header: React.FC<HeaderProps> = (props) => {
 
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const translations = {
+    searchPlaceholder: { fr: 'Rechercher un produit...', en: 'Search for a product...' },
+    login: { fr: 'Connexion', en: 'Login' },
+    wishlist: { fr: 'Favoris', en: 'Wishlist' },
+    messages: { fr: 'Messages', en: 'Messages' },
+    cart: { fr: 'Panier', en: 'Cart' },
+    categories: { fr: 'Catégories', en: 'Categories' },
+    promotions: { fr: 'Promotions', en: 'Promotions' },
+    flashSales: { fr: 'Ventes Flash', en: 'Flash Sales' },
+    stores: { fr: 'Boutiques', en: 'Stores' },
+    becomeSeller: { fr: 'Devenir vendeur', en: 'Become a seller' },
+    becomePremium: { fr: 'Devenir Premium', en: 'Become Premium' },
+  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -118,7 +133,7 @@ const Header: React.FC<HeaderProps> = (props) => {
             >
               <input 
                 type="text" 
-                placeholder="Rechercher un produit..."
+                placeholder={translations.searchPlaceholder[language]}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
@@ -161,23 +176,26 @@ const Header: React.FC<HeaderProps> = (props) => {
                 )}
               </div>
             ) : (
-              <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label="Connexion" />
+              <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label={translations.login[language]} />
             )}
             
             {user && !['superadmin', 'delivery_agent'].includes(user.role) && (
               <>
-                <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label="Favoris" count={wishlistItemCount} />
-                {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label="Messages" count={totalUnreadCount} />}
-                <ActionButton onClick={onNavigateCart} icon={<ShoppingCartIcon className="h-6 w-6" />} label="Panier" count={cartItemCount} />
+                <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={translations.wishlist[language]} count={wishlistItemCount} />
+                {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={translations.messages[language]} count={totalUnreadCount} />}
+                <ActionButton onClick={onNavigateCart} icon={<ShoppingCartIcon className="h-6 w-6" />} label={translations.cart[language]} count={cartItemCount} />
               </>
             )}
             
             {user?.role === 'superadmin' && isChatEnabled && (
-               <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label="Messages" count={totalUnreadCount} />
+               <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={translations.messages[language]} count={totalUnreadCount} />
             )}
 
             <button onClick={toggleTheme} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                 {theme === 'dark' ? <SunIcon className="h-6 w-6" /> : <MoonIcon className="h-6 w-6" />}
+            </button>
+             <button onClick={() => setLanguage(lang => lang === 'fr' ? 'en' : 'fr')} className="p-2 rounded-full text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                {language.toUpperCase()}
             </button>
           </div>
           
@@ -200,7 +218,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
                 className="flex items-center text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold"
               >
-                Catégories
+                {translations.categories[language]}
                 <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform ${isCategoryMenuOpen ? 'rotate-180' : ''}`} />
               </button>
               {isCategoryMenuOpen && (
@@ -217,13 +235,13 @@ const Header: React.FC<HeaderProps> = (props) => {
                 </div>
               )}
             </div>
-            <button onClick={onNavigateToPromotions} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><TagIcon className="w-5 h-5 text-kmer-red"/>Promotions</button>
-            <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>Ventes Flash</button>
-            <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">Boutiques</button>
-            {(!user || user.role === 'customer') && <button onClick={onNavigateToBecomeSeller} className="text-kmer-green hover:underline font-bold">Devenir vendeur</button>}
+            <button onClick={onNavigateToPromotions} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><TagIcon className="w-5 h-5 text-kmer-red"/>{translations.promotions[language]}</button>
+            <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>{translations.flashSales[language]}</button>
+            <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">{translations.stores[language]}</button>
+            {(!user || user.role === 'customer') && <button onClick={onNavigateToBecomeSeller} className="text-kmer-green hover:underline font-bold">{translations.becomeSeller[language]}</button>}
             {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
                 <button onClick={onNavigateToBecomePremium} className="text-kmer-yellow hover:text-yellow-400 font-bold flex items-center gap-1">
-                    <StarIcon className="w-5 h-5"/>Devenir Premium
+                    <StarIcon className="w-5 h-5"/>{translations.becomePremium[language]}
                 </button>
             )}
           </nav>
@@ -231,8 +249,8 @@ const Header: React.FC<HeaderProps> = (props) => {
       </div>
 
       {isMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700">
-          <div className="p-4 space-y-4">
+        <div className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 max-h-[calc(100vh-68px)]">
+          <div className="p-4 space-y-4 overflow-y-auto h-full">
             <form onSubmit={(e) => handleSearchSubmit(e, mobileSearchQuery)}>
               <div className="relative">
                 <input

@@ -156,11 +156,22 @@ const ReviewForm: React.FC<{ productId: string, onAddReview: (productId: string,
 
 const ProductCharacteristics: React.FC<{ product: Product }> = ({ product }) => {
   const characteristics = [
+    // Generic
     { label: 'Marque', value: product.brand },
     { label: 'Genre', value: product.gender },
     { label: 'Matériau', value: product.material },
     { label: 'Poids', value: product.weight },
     { label: 'Dimensions', value: product.dimensions },
+    // Electronics
+    { label: 'Modèle', value: product.modelNumber },
+    { label: 'Couleur', value: product.color },
+    { label: 'Garantie', value: product.warranty },
+    // Books
+    { label: 'Auteur', value: product.author },
+    { label: 'Éditeur', value: product.publisher },
+    { label: 'Année', value: product.publicationYear },
+    { label: 'ISBN', value: product.isbn },
+    // Others
     { label: 'N° de série', value: product.serialNumber },
     { label: 'Date de production', value: product.productionDate ? new Date(product.productionDate).toLocaleDateString('fr-FR') : undefined },
     { label: 'Date d\'expiration', value: product.expirationDate ? new Date(product.expirationDate).toLocaleDateString('fr-FR') : undefined },
