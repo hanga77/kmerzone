@@ -70,9 +70,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </div>
             <h3 className="text-lg font-bold mb-4 text-white">Moyens de Paiement</h3>
             <div className="flex items-center space-x-4 flex-wrap gap-y-2">
-              <OrangeMoneyLogo className="h-5" />
+              <OrangeMoneyLogo className="h-6" />
               <MtnMomoLogo className="h-6" />
-              <VisaIcon className="h-4" />
+              <VisaIcon className="h-6" />
               <MastercardIcon className="h-6"/>
               <PaypalIcon className="h-6"/>
             </div>

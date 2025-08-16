@@ -18,6 +18,7 @@ interface SuperAdminDashboardProps {
     onUpdateCategoryImage: (categoryId: string, imageUrl: string) => void;
     onWarnStore: (storeId: string, reason: string) => void;
     onToggleStoreStatus: (storeId: string) => void;
+    onToggleStorePremiumStatus: (storeId: string) => void;
     onApproveStore: (storeId: string) => void;
     onRejectStore: (storeId: string) => void;
     onSaveFlashSale: (flashSaleData: Omit<FlashSale, 'id' | 'products'>) => void;
@@ -198,7 +199,7 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
     );
 };
 
-const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'onApproveStore' | 'onRejectStore' | 'onToggleStoreStatus' | 'onWarnStore' | 'onRequestDocument' | 'onVerifyDocumentStatus' | 'siteSettings' | 'onActivateSubscription'>> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onRequestDocument, onVerifyDocumentStatus, siteSettings, onActivateSubscription }) => {
+const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'onApproveStore' | 'onRejectStore' | 'onToggleStoreStatus' | 'onToggleStorePremiumStatus' | 'onWarnStore' | 'onRequestDocument' | 'onVerifyDocumentStatus' | 'siteSettings' | 'onActivateSubscription'>> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onToggleStorePremiumStatus, onWarnStore, onRequestDocument, onVerifyDocumentStatus, siteSettings, onActivateSubscription }) => {
     const [warningStore, setWarningStore] = useState<Store | null>(null);
     const [warningReason, setWarningReason] = useState('');
 
@@ -249,7 +250,10 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                     {allStores.map(store => (
                         <details key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group" open={store.status === 'pending'}>
                             <summary className="font-semibold cursor-pointer dark:text-white flex justify-between items-center">
-                                <span>{store.name}</span>
+                                <span className="flex items-center gap-2">
+                                  {store.name}
+                                  {store.premiumStatus === 'premium' && <StarIcon className="w-5 h-5 text-kmer-yellow" title="Boutique Premium" />}
+                                </span>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${
                                     store.status === 'active' ? 'bg-green-100 text-green-800' :
                                     store.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
@@ -267,6 +271,11 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                         {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
                                         {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
                                         {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors">Avertir</button>}
+                                        {store.status === 'active' && (
+                                            <button onClick={() => onToggleStorePremiumStatus(store.id)} className={`text-sm text-white px-3 py-1.5 rounded-md transition-colors ${store.premiumStatus === 'premium' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-kmer-yellow hover:bg-yellow-500'}`}>
+                                                {store.premiumStatus === 'premium' ? 'Retirer Premium' : 'Promouvoir en Premium'}
+                                            </button>
+                                        )}
                                     </div>
                                 </div>
                                 

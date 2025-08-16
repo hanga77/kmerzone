@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeftIcon, OrangeMoneyLogo, MtnMomoLogo, CreditCardIcon, PaypalIcon, TruckIcon, BuildingStorefrontIcon } from './Icons';
+import { ArrowLeftIcon, OrangeMoneyLogo, MtnMomoLogo, PaypalIcon, TruckIcon, BuildingStorefrontIcon, VisaIcon, MastercardIcon } from './Icons';
 import type { Order, Address, Product, FlashSale, PickupPoint, NewOrderData, CartItem, PromoCode, Store } from '../types';
 
 interface CheckoutProps {
@@ -290,12 +290,15 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                 <label className={`flex items-center p-4 border rounded-lg cursor-pointer dark:border-gray-600 ${paymentMethod === 'Card' ? 'border-kmer-green ring-2 ring-kmer-green' : 'border-gray-300'}`}>
                   <input type="radio" name="paymentMethod" value="Card" checked={paymentMethod === 'Card'} onChange={() => setPaymentMethod('Card')} className="h-4 w-4 text-kmer-green focus:ring-kmer-green" />
                   <span className="ml-4 flex-grow font-semibold dark:text-white">Carte de crédit</span>
-                  <CreditCardIcon className="h-8 text-gray-600 dark:text-gray-300" />
+                  <div className="flex items-center gap-2">
+                    <VisaIcon className="h-8"/>
+                    <MastercardIcon className="h-8"/>
+                  </div>
                 </label>
                 <label className={`flex items-center p-4 border rounded-lg cursor-pointer dark:border-gray-600 ${paymentMethod === 'PayPal' ? 'border-kmer-green ring-2 ring-kmer-green' : 'border-gray-300'}`}>
                   <input type="radio" name="paymentMethod" value="PayPal" checked={paymentMethod === 'PayPal'} onChange={() => setPaymentMethod('PayPal')} className="h-4 w-4 text-kmer-green focus:ring-kmer-green" />
                   <span className="ml-4 flex-grow font-semibold dark:text-white">PayPal</span>
-                  <PaypalIcon className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <PaypalIcon className="h-8" />
                 </label>
               </div>
                <div className="mt-6 pt-6 border-t dark:border-gray-700">

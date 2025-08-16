@@ -123,7 +123,7 @@ export interface Store {
   subscriptionDueDate?: string; // ISO String
   paymentHistory?: { date: string; amount: number }[];
   stories?: Story[];
-  premiumStatus?: 'standard' | 'premium';
+  premiumStatus: 'standard' | 'premium';
 }
 
 export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent';

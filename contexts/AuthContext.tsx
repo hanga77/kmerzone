@@ -47,6 +47,24 @@ const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatc
   return [state, setState];
 };
 
+function isDeepEqual(obj1: any, obj2: any): boolean {
+    if (obj1 === obj2) return true;
+
+    if (obj1 && obj2 && typeof obj1 === 'object' && typeof obj2 === 'object') {
+        if (Object.keys(obj1).length !== Object.keys(obj2).length) return false;
+
+        for (const key in obj1) {
+            if (Object.prototype.hasOwnProperty.call(obj2, key)) {
+                if (!isDeepEqual(obj1[key], obj2[key])) return false;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = usePersistentState<User | null>('currentUser', null);
@@ -58,9 +76,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (user) {
       const updatedUserInList = allUsers.find(u => u.id === user.id);
-      // A simple string comparison is sufficient here to prevent infinite loops.
-      // It detects if the user object in the main list has changed.
-      if (updatedUserInList && JSON.stringify(user) !== JSON.stringify(updatedUserInList)) {
+      if (updatedUserInList && !isDeepEqual(user, updatedUserInList)) {
         setUser(updatedUserInList);
       }
     }

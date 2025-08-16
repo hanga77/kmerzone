@@ -405,6 +405,11 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                                 <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{store.name}</h1>
                                 <div className={`flex items-center gap-1 text-sm font-semibold ${storeStatusInfo[store.status].color}`}>
                                     {storeStatusInfo[store.status].icon} {storeStatusInfo[store.status].text}
+                                    {store.premiumStatus === 'premium' && (
+                                      <span className="flex items-center gap-1 text-kmer-yellow" title="Boutique Premium">
+                                        <StarIcon className="w-4 h-4" /> Premium
+                                      </span>
+                                    )}
                                 </div>
                             </div>
                         </div>

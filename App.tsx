@@ -374,10 +374,10 @@ const initialProducts: Product[] = [
 ];
 
 const initialStores: Store[] = [
-    { id: '1', name: 'Mama Africa', logoUrl: 'https://picsum.photos/seed/mama/200/100', category: 'Restaurant & Alimentation', warnings: [], status: 'active', location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Mama', sellerLastName: 'Africa', sellerPhone: '699887766', physicalAddress: '123 Rue de la Joie', documents: [], latitude: 3.8665, longitude: 11.521, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [] },
-    { id: '2', name: 'Kmer Fashion', logoUrl: 'https://picsum.photos/seed/kmerfashion/200/100', category: 'Mode', warnings: [{id: 'warn1', date: '2023-10-01T10:00:00Z', reason: 'Non-respect des délais de livraison.'}], status: 'active', location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Adèle', sellerLastName: 'Ngo', sellerPhone: '677665544', physicalAddress: '45 Avenue de la Mode', documents: [], latitude: 4.0483, longitude: 9.702, subscriptionStatus: 'overdue', subscriptionDueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [] },
-    { id: '3', name: 'Electro Plus', logoUrl: 'https://picsum.photos/seed/electro/200/100', category: 'Électronique', warnings: [{id: 'warn2', date: '2023-09-15T10:00:00Z', reason: 'Publicité mensongère sur un produit.'}, {id: 'warn3', date: '2023-10-05T14:00:00Z', reason: 'Mauvaise évaluation client non résolue.'}], status: 'active', location: 'Yaoundé', neighborhood: 'Centre Ville', sellerFirstName: 'Eric', sellerLastName: 'Kamdem', sellerPhone: '655443322', physicalAddress: '789 Boulevard du 20 Mai', documents: [], latitude: 3.8721, longitude: 11.5213, subscriptionStatus: 'inactive' },
-    { id: '4', name: 'Douala Soaps', logoUrl: 'https://picsum.photos/seed/soap-store/200/100', category: 'Artisanat', warnings: [], status: 'active', location: 'Douala', neighborhood: 'Marché Central', sellerFirstName: 'Fatima', sellerLastName: 'Gaye', sellerPhone: '688776655', physicalAddress: 'Boutique 15', documents: [], latitude: 4.0475, longitude: 9.692, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [] },
+    { id: '1', name: 'Mama Africa', logoUrl: 'https://picsum.photos/seed/mama/200/100', category: 'Restaurant & Alimentation', warnings: [], status: 'active', location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Mama', sellerLastName: 'Africa', sellerPhone: '699887766', physicalAddress: '123 Rue de la Joie', documents: [], latitude: 3.8665, longitude: 11.521, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [], premiumStatus: 'premium' },
+    { id: '2', name: 'Kmer Fashion', logoUrl: 'https://picsum.photos/seed/kmerfashion/200/100', category: 'Mode', warnings: [{id: 'warn1', date: '2023-10-01T10:00:00Z', reason: 'Non-respect des délais de livraison.'}], status: 'active', location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Adèle', sellerLastName: 'Ngo', sellerPhone: '677665544', physicalAddress: '45 Avenue de la Mode', documents: [], latitude: 4.0483, longitude: 9.702, subscriptionStatus: 'overdue', subscriptionDueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [], premiumStatus: 'standard' },
+    { id: '3', name: 'Electro Plus', logoUrl: 'https://picsum.photos/seed/electro/200/100', category: 'Électronique', warnings: [{id: 'warn2', date: '2023-09-15T10:00:00Z', reason: 'Publicité mensongère sur un produit.'}, {id: 'warn3', date: '2023-10-05T14:00:00Z', reason: 'Mauvaise évaluation client non résolue.'}], status: 'active', location: 'Yaoundé', neighborhood: 'Centre Ville', sellerFirstName: 'Eric', sellerLastName: 'Kamdem', sellerPhone: '655443322', physicalAddress: '789 Boulevard du 20 Mai', documents: [], latitude: 3.8721, longitude: 11.5213, subscriptionStatus: 'inactive', premiumStatus: 'standard' },
+    { id: '4', name: 'Douala Soaps', logoUrl: 'https://picsum.photos/seed/soap-store/200/100', category: 'Artisanat', warnings: [], status: 'active', location: 'Douala', neighborhood: 'Marché Central', sellerFirstName: 'Fatima', sellerLastName: 'Gaye', sellerPhone: '688776655', physicalAddress: 'Boutique 15', documents: [], latitude: 4.0475, longitude: 9.692, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [], premiumStatus: 'standard' },
 ];
 
 const initialCategories: Category[] = [
@@ -579,7 +579,7 @@ const App: React.FC = () => {
         )
       );
     }
-  }, [siteSettings.isRentEnabled, allOrders, allStores, setAllStores]);
+  }, [siteSettings.isRentEnabled, allStores, setAllStores]);
 
 
   const navigate = useCallback((page: Page) => {
@@ -946,6 +946,7 @@ const App: React.FC = () => {
           latitude,
           longitude,
           subscriptionStatus: 'inactive',
+          premiumStatus: 'standard',
         };
         return [...prev, newStore];
     });
@@ -1002,6 +1003,18 @@ const App: React.FC = () => {
             const newWarnings = newStatus === 'active' ? [] : store.warnings;
             addSiteActivityLog(currentUser, "Mise à jour statut boutique", `Boutique '${store.name}' : '${store.status}' -> '${newStatus}'.`);
             return { ...store, status: newStatus, warnings: newWarnings };
+        }
+        return store;
+    }));
+  }, [user, addSiteActivityLog, setAllStores]);
+
+  const handleToggleStorePremiumStatus = useCallback((storeId: string) => {
+    if (!user || user.role !== 'superadmin') return;
+    setAllStores(prevStores => prevStores.map(store => {
+        if (store.id === storeId) {
+            const newStatus = store.premiumStatus === 'premium' ? 'standard' : 'premium';
+            addSiteActivityLog(user, "Mise à jour Statut Premium Boutique", `Boutique '${store.name}' est maintenant ${newStatus === 'premium' ? 'Premium' : 'Standard'}.`);
+            return { ...store, premiumStatus: newStatus };
         }
         return store;
     }));
@@ -1351,7 +1364,7 @@ const App: React.FC = () => {
       case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
       case 'product-form': return <ProductForm onCancel={navigateToSellerDashboard} onSave={handleSaveProduct} productToEdit={productToEdit} categories={allCategories} onAddCategory={addCategory} />;
       case 'seller-profile': return currentStore && <SellerProfile store={currentStore} onBack={navigateToSellerDashboard} onUpdateProfile={handleUpdateSellerProfile} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} advertisements={advertisements} onAddAdvertisement={handleAddAdvertisement} onUpdateAdvertisement={handleUpdateAdvertisement} onDeleteAdvertisement={handleDeleteAdvertisement} />;
+      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} advertisements={advertisements} onAddAdvertisement={handleAddAdvertisement} onUpdateAdvertisement={handleUpdateAdvertisement} onDeleteAdvertisement={handleDeleteAdvertisement} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} />;
       case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
       case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
       case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={handleUpdateOrderStatus} />;

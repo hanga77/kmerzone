@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Product, Store, FlashSale } from '../types';
 import ProductCard from './ProductCard';
-import { ArrowLeftIcon, StarIcon } from './Icons';
+import { ArrowLeftIcon, StarIcon, CheckCircleIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
 
@@ -27,6 +27,18 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
         <ArrowLeftIcon className="w-5 h-5" />
         Retour
       </button>
+      
+      {store?.premiumStatus === 'premium' && (
+        <div className="mb-8 p-4 bg-kmer-yellow/10 border-l-4 border-kmer-yellow text-yellow-800 dark:text-yellow-200 rounded-r-lg">
+          <div className="flex items-center gap-3">
+            <StarIcon className="w-8 h-8 text-kmer-yellow" />
+            <div>
+              <h3 className="font-bold text-lg">Boutique Premium</h3>
+              <p className="text-sm">Ce vendeur est reconnu pour sa fiabilité et la qualité de ses services.</p>
+            </div>
+          </div>
+        </div>
+      )}
 
        <div className="lg:flex lg:gap-8">
         <ProductFilters
@@ -42,11 +54,6 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
                   <div>
                     <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
                         Boutique <span className="text-kmer-green">{vendorName}</span>
-                        {store?.premiumStatus === 'premium' && (
-                          <span className="bg-kmer-yellow text-white p-1.5 rounded-full" title="Boutique Premium">
-                            <StarIcon className="w-5 h-5" />
-                          </span>
-                        )}
                     </h1>
                      {store && <p className="text-gray-500 dark:text-gray-400">{store.location}</p>}
                   </div>
