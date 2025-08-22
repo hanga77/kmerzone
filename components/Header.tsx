@@ -249,8 +249,8 @@ const Header: React.FC<HeaderProps> = (props) => {
       </div>
 
       {isMenuOpen && (
-        <div className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 max-h-[calc(100vh-68px)]">
-          <div className="p-4 space-y-4 overflow-y-auto h-full">
+        <div className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 max-h-[calc(100vh-68px)] flex flex-col">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
             <form onSubmit={(e) => handleSearchSubmit(e, mobileSearchQuery)}>
               <div className="relative">
                 <input
@@ -265,8 +265,10 @@ const Header: React.FC<HeaderProps> = (props) => {
                 </button>
               </div>
             </form>
-            
-            <nav className="flex flex-col space-y-2">
+          </div>
+          
+          <div className="flex-grow overflow-y-auto p-4">
+            <nav className="flex flex-col space-y-4">
               {user?.role === 'superadmin' ? (
                 <>
                   <button onClick={() => {onNavigateToAnalyticsDashboard(); setIsMenuOpen(false);}} className="text-left font-semibold py-2 flex items-center gap-2"><BarChartIcon className="w-5 h-5"/>Tableau de Bord Analytique</button>
@@ -278,32 +280,41 @@ const Header: React.FC<HeaderProps> = (props) => {
                   <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Ventes Flash</button>
                   <button onClick={() => {onNavigateToStores(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Boutiques</button>
                   
-                  <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                      <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Catégories</h3>
-                     {categories.slice(0, 8).map(cat => (
-                       <button key={cat.id} onClick={() => {onNavigateToCategory(cat.name); setIsMenuOpen(false);}} className="text-left block py-1.5">{cat.name}</button>
-                     ))}
+                     <div className="flex flex-col items-start">
+                        {categories.slice(0, 8).map(cat => (
+                          <button key={cat.id} onClick={() => {onNavigateToCategory(cat.name); setIsMenuOpen(false);}} className="text-left block py-1.5">{cat.name}</button>
+                        ))}
+                     </div>
                   </div>
                 </>
               ) : null}
 
-
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                  <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Mon Compte</h3>
-                 {user ? userMenuItems.map(item => (
-                   <button key={item.label} onClick={() => {item.action(); setIsMenuOpen(false);}} className="text-left flex items-center gap-3 py-1.5">{item.icon} {item.label}</button>
-                 )) : (
-                   <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Connexion / Inscription</button>
-                 )}
-                 {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
-                  <button onClick={() => {onNavigateToBecomePremium(); setIsMenuOpen(false);}} className="text-left font-bold text-kmer-yellow py-2">Devenir Premium</button>
-                 )}
-                 {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="text-left text-kmer-green font-bold py-2">Devenir vendeur</button>}
+                 <div className="flex flex-col items-start">
+                    {user ? userMenuItems.map(item => (
+                      <button key={item.label} onClick={() => {item.action(); setIsMenuOpen(false);}} className="text-left flex items-center gap-3 py-1.5">{item.icon} {item.label}</button>
+                    )) : (
+                      <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Connexion / Inscription</button>
+                    )}
+                    {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
+                      <button onClick={() => {onNavigateToBecomePremium(); setIsMenuOpen(false);}} className="text-left font-bold text-kmer-yellow py-2">Devenir Premium</button>
+                    )}
+                    {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="text-left text-kmer-green font-bold py-2">Devenir vendeur</button>}
+                 </div>
               </div>
-
             </nav>
-            {user && <button onClick={() => {logout(); setIsMenuOpen(false);}} className="w-full mt-4 bg-gray-100 dark:bg-gray-700 font-bold py-2 rounded-lg">Se déconnecter</button>}
           </div>
+          
+          {user && (
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <button onClick={() => {logout(); setIsMenuOpen(false);}} className="w-full bg-gray-100 dark:bg-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2">
+                   <ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter
+                </button>
+            </div>
+          )}
         </div>
       )}
     </header>

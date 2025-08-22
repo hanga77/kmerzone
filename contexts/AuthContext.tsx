@@ -32,13 +32,23 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // This ensures that if loyalty status or other details are updated elsewhere,
   // the currently logged-in user's session reflects those changes immediately.
   useEffect(() => {
-    if (user) {
-      const updatedUserInList = allUsers.find(u => u.id === user.id);
-      if (updatedUserInList && JSON.stringify(user) !== JSON.stringify(updatedUserInList)) {
-        setUser(updatedUserInList);
+    // This effect uses the functional form of `setUser` to avoid adding `user` as a dependency,
+    // which was causing an infinite re-render loop.
+    setUser(currentUser => {
+      if (!currentUser) return null;
+      
+      const updatedUserInList = allUsers.find(u => u.id === currentUser.id);
+
+      // Compare the stringified versions to check for changes. If a change is found,
+      // return the new user object to update the state.
+      if (updatedUserInList && JSON.stringify(currentUser) !== JSON.stringify(updatedUserInList)) {
+        return updatedUserInList;
       }
-    }
-  }, [allUsers, user, setUser]);
+      
+      // If no changes, return the existing user object to prevent a re-render.
+      return currentUser;
+    });
+  }, [allUsers, setUser]);
 
   const login = useCallback((email: string, password?: string): boolean => {
     // This is a simplified login.
@@ -93,21 +103,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [allUsers, setAllUsers, setUser]);
 
   const updateUser = useCallback((updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => {
-    setUser(currentUser => {
-        if (!currentUser) return null;
-        
-        const updatedUser = { 
-            ...currentUser, 
-            ...updates, 
-            // If shopName is being set, user becomes a seller
-            role: updates.shopName ? 'seller' as const : currentUser.role 
-        };
-        
-        setAllUsers(prevUsers => prevUsers.map(u => u.id === currentUser.id ? updatedUser : u));
-
-        return updatedUser;
-    });
-  }, [setAllUsers, setUser]);
+    if (user) {
+        setAllUsers(prevUsers =>
+            prevUsers.map(u => {
+                if (u.id === user.id) {
+                    return {
+                        ...u,
+                        ...updates,
+                        role: updates.shopName ? ('seller' as const) : u.role,
+                    };
+                }
+                return u;
+            })
+        );
+    }
+  }, [user, setAllUsers]);
 
   const logout = useCallback(() => {
     setUser(null);
