@@ -65,7 +65,8 @@ const statusTranslations: Record<OrderStatus, { title: string, description: stri
     cancelled: { title: 'Annulé', description: 'Votre commande a été annulée.' },
     'refund-requested': { title: 'Remboursement demandé', description: 'Votre demande est en cours d\'examen.' },
     refunded: { title: 'Remboursé', description: 'Cette commande a été remboursée.' },
-    returned: { title: 'Retourné', description: 'Le colis a été retourné.' }
+    returned: { title: 'Retourné', description: 'Le colis a été retourné.' },
+    'depot-issue': { title: 'Problème au dépôt', description: 'Un problème a été signalé avec votre colis au dépôt.' }
 };
 
 
@@ -133,6 +134,11 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
             ) : order.status === 'refunded' ? (
                 <div className="p-4 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 rounded-lg">
                     Cette commande a été remboursée.
+                </div>
+            ) : order.status === 'depot-issue' ? (
+                <div className="p-4 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
+                    <p className="font-bold">Problème signalé au dépôt</p>
+                    <p>{order.discrepancy?.reason}</p>
                 </div>
             ) : (
                 <div className="flex justify-between items-start">

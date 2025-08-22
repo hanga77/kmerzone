@@ -1,13 +1,14 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { Order, OrderStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon } from './Icons';
+import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
 interface DepotAgentDashboardProps {
   allOrders: Order[];
   onCheckIn: (orderId: string, storageLocationId: string) => void;
+  onReportDiscrepancy: (orderId: string, reason: string) => void;
 }
 
 const statusTranslations: {[key in OrderStatus]: string} = {
@@ -20,7 +21,8 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   cancelled: 'Annulé',
   'refund-requested': 'Remboursement demandé',
   refunded: 'Remboursé',
-  returned: 'Retourné'
+  returned: 'Retourné',
+  'depot-issue': 'Problème au dépôt'
 };
 
 const ScannerModal: React.FC<{
@@ -129,11 +131,75 @@ const StorageModal: React.FC<{
     );
 };
 
-const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, onCheckIn }) => {
+const DiscrepancyModal: React.FC<{
+    order: Order;
+    onClose: () => void;
+    onSubmit: (orderId: string, reason: string) => void;
+}> = ({ order, onClose, onSubmit }) => {
+    const [reason, setReason] = useState('');
+
+    const handleSubmit = () => {
+        if (!reason.trim()) {
+            alert("Veuillez fournir un motif.");
+            return;
+        }
+        onSubmit(order.id, reason);
+    };
+
+    return (
+         <div className="fixed inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold mb-2 dark:text-white">Signaler un problème</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Commande : {order.id}</p>
+                <textarea
+                    value={reason}
+                    onChange={(e) => setReason(e.target.value)}
+                    rows={4}
+                    className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+                    placeholder="Ex: Colis endommagé, code-barres incorrect, etc."
+                />
+                <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-md">Annuler</button>
+                    <button onClick={handleSubmit} className="bg-red-500 text-white px-4 py-2 rounded-md">Signaler</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
+const ActionChoiceModal: React.FC<{
+    order: Order;
+    onClose: () => void;
+    onAssign: () => void;
+    onReport: () => void;
+}> = ({ order, onClose, onAssign, onReport }) => {
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full text-center">
+                 <CheckIcon className="w-12 h-12 mx-auto text-green-500"/>
+                <h3 className="text-xl font-bold mt-4 mb-2 dark:text-white">Colis scanné avec succès !</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">Commande : {order.id}</p>
+                <div className="flex flex-col gap-3">
+                    <button onClick={onAssign} className="w-full bg-kmer-green text-white font-bold py-3 rounded-lg hover:bg-green-700">
+                        Assigner un emplacement de stockage
+                    </button>
+                    <button onClick={onReport} className="w-full bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 font-bold py-3 rounded-lg hover:bg-red-200">
+                        Signaler un problème (ex: colis abîmé)
+                    </button>
+                </div>
+                 <button onClick={onClose} className="mt-6 text-sm text-gray-500 hover:underline">Fermer</button>
+            </div>
+        </div>
+    );
+};
+
+const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, onCheckIn, onReportDiscrepancy }) => {
   const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'scanner' | 'inventory' | 'returns'>('overview');
+  const [modalState, setModalState] = useState<'closed' | 'scanner' | 'choice' | 'storage' | 'discrepancy'>('closed');
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
-  const [orderToCheckIn, setOrderToCheckIn] = useState<Order | null>(null);
+  const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
   
   const ordersForDepot = useMemo(() => allOrders.filter(o => o.status === 'picked-up'), [allOrders]);
   const inventory = useMemo(() => allOrders.filter(o => o.status === 'at-depot'), [allOrders]);
@@ -151,14 +217,25 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
         setScanResult({ success: false, message: `Colis déjà traité (Statut: ${statusTranslations[order.status]})` });
         return;
     }
-    setScanResult({ success: true, message: `Colis ${order.id} validé. Veuillez choisir un emplacement.` });
-    setOrderToCheckIn(order);
+    setScanResult({ success: true, message: `Colis ${order.id} validé.` });
+    setScannedOrder(order);
+    setModalState('choice');
+  };
+  
+  const closeModal = () => {
+    setModalState('closed');
+    setScanResult(null);
+    setScannedOrder(null);
   };
 
   const handleAssignLocation = (orderId: string, locationId: string) => {
       onCheckIn(orderId, locationId);
-      setOrderToCheckIn(null);
-      setActiveTab('scanner');
+      closeModal();
+  };
+  
+  const handleDiscrepancySubmit = (orderId: string, reason: string) => {
+    onReportDiscrepancy(orderId, reason);
+    closeModal();
   };
 
   const analytics = useMemo(() => ({
@@ -180,8 +257,11 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
 
   return (
     <>
-      {activeTab === 'scanner' && <ScannerModal onClose={() => { setActiveTab('overview'); setScanResult(null); }} onScanSuccess={handleScanSuccess} scanResult={scanResult} />}
-      {orderToCheckIn && <StorageModal orderId={orderToCheckIn.id} occupiedSlots={occupiedSlots} onAssign={handleAssignLocation} onClose={() => { setOrderToCheckIn(null); setScanResult(null); }} />}
+      {modalState === 'scanner' && <ScannerModal onClose={closeModal} onScanSuccess={handleScanSuccess} scanResult={scanResult} />}
+      {modalState === 'choice' && scannedOrder && <ActionChoiceModal order={scannedOrder} onClose={closeModal} onAssign={() => setModalState('storage')} onReport={() => setModalState('discrepancy')} />}
+      {modalState === 'storage' && scannedOrder && <StorageModal orderId={scannedOrder.id} occupiedSlots={occupiedSlots} onAssign={handleAssignLocation} onClose={closeModal} />}
+      {modalState === 'discrepancy' && scannedOrder && <DiscrepancyModal order={scannedOrder} onClose={closeModal} onSubmit={handleDiscrepancySubmit} />}
+      
       <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
           <header className="bg-white dark:bg-gray-800 shadow-sm">
               <div className="container mx-auto px-4 sm:px-6 py-4">
@@ -192,7 +272,7 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
                   <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
                       <div className="flex space-x-2">
                           <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                          <TabButton icon={<QrCodeIcon className="w-5 h-5"/>} label="Arrivages" isActive={activeTab === 'scanner'} onClick={() => { setScanResult(null); setActiveTab('scanner'); }} count={analytics.itemsToReceive} />
+                          <TabButton icon={<QrCodeIcon className="w-5 h-5"/>} label="Arrivages" isActive={activeTab === 'scanner'} onClick={() => { setModalState('scanner'); setActiveTab('scanner'); }} count={analytics.itemsToReceive} />
                           <TabButton icon={<ArchiveBoxIcon className="w-5 h-5"/>} label="Inventaire" isActive={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} count={analytics.itemsInStock} />
                           <TabButton icon={<ArrowPathIcon className="w-5 h-5"/>} label="Retours" isActive={activeTab === 'returns'} onClick={() => setActiveTab('returns')} />
                       </div>

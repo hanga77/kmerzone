@@ -20,7 +20,8 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   cancelled: 'Annulé',
   'refund-requested': 'Remboursement demandé',
   refunded: 'Remboursé',
-  'returned': 'Retourné'
+  returned: 'Retourné',
+  'depot-issue': 'Problème au dépôt'
 };
 
 const getActionForOrder = (order: Order) => {

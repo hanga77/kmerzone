@@ -49,6 +49,7 @@ interface SuperAdminDashboardProps {
     onAddAdvertisement: (ad: Omit<Advertisement, 'id'>) => void;
     onUpdateAdvertisement: (ad: Advertisement) => void;
     onDeleteAdvertisement: (adId: string) => void;
+    onCreateUserByAdmin: (userData: Omit<User, 'id' | 'loyalty'>) => void;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
@@ -87,7 +88,8 @@ const statusTranslations: Record<OrderStatus, string> = {
     cancelled: 'Annulé',
     'refund-requested': 'Remboursement demandé',
     refunded: 'Remboursé',
-    returned: 'Retourné'
+    returned: 'Retourné',
+    'depot-issue': 'Problème au dépôt'
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -101,6 +103,7 @@ const getStatusClass = (status: OrderStatus) => {
         case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
         case 'refund-requested': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        case 'depot-issue': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 };
@@ -350,8 +353,19 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
     );
 };
 
-const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUserRole'>> = ({ allUsers, onUpdateUserRole }) => {
+const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUserRole' | 'onCreateUserByAdmin'>> = ({ allUsers, onUpdateUserRole, onCreateUserByAdmin }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [isCreatingUser, setIsCreatingUser] = useState(false);
+    const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'customer' as UserRole });
+
+    const handleCreateUser = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newUserData.name && newUserData.email) {
+            onCreateUserByAdmin(newUserData);
+            setIsCreatingUser(false);
+            setNewUserData({ name: '', email: '', role: 'customer' as UserRole });
+        }
+    };
 
     const filteredUsers = useMemo(() => {
         return allUsers.filter(user =>
@@ -372,17 +386,39 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
         <div className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h2 className="text-xl font-bold dark:text-white">Gestion des Utilisateurs</h2>
-                <div className="relative w-full sm:w-auto">
-                    <input
-                        type="text"
-                        placeholder="Rechercher un utilisateur..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-full dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="flex items-center gap-2">
+                     <button onClick={() => setIsCreatingUser(true)} className="bg-kmer-green text-white font-bold py-2 px-3 rounded-lg flex items-center gap-2 text-sm"><PlusIcon className="w-4 h-4"/> Créer</button>
+                    <div className="relative w-full sm:w-auto">
+                        <input
+                            type="text"
+                            placeholder="Rechercher un utilisateur..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-full dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    </div>
                 </div>
             </div>
+             {isCreatingUser && (
+                <form onSubmit={handleCreateUser} className="p-4 my-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border dark:border-gray-700 space-y-4">
+                    <h3 className="font-semibold text-lg dark:text-white">Créer un nouvel utilisateur</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <input type="text" placeholder="Nom complet" value={newUserData.name} onChange={e => setNewUserData(d => ({ ...d, name: e.target.value }))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                        <input type="email" placeholder="Email" value={newUserData.email} onChange={e => setNewUserData(d => ({ ...d, email: e.target.value }))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                        <select value={newUserData.role} onChange={e => setNewUserData(d => ({ ...d, role: e.target.value as UserRole }))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                            <option value="customer">Client</option>
+                            <option value="seller">Vendeur</option>
+                            <option value="delivery_agent">Livreur</option>
+                            <option value="depot_agent">Agent Dépôt</option>
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button type="button" onClick={() => setIsCreatingUser(false)} className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 py-2 rounded-md">Annuler</button>
+                        <button type="submit" className="bg-kmer-green text-white font-semibold px-4 py-2 rounded-md">Créer l'utilisateur</button>
+                    </div>
+                </form>
+            )}
             <div className="overflow-x-auto bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
                 <table className="w-full min-w-[600px] text-sm text-left">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -932,13 +968,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
         'orders': <OrderManagementPanel {...props} />,
         'stores': <StoreManagementPanel {...props} />,
         'users': <UserManagementPanel {...props} />,
-        'logs': <LogsPanel siteActivityLogs={props.siteActivityLogs} />,
+        'map': <MapPanel {...props} />,
+        'categories': <CategoryManagementPanel {...props} />,
         'flash_sales': <FlashSaleManagementPanel {...props} />,
         'pickup_points': <PickupPointManagementPanel {...props} />,
-        'categories': <CategoryManagementPanel {...props} />,
         'payouts': <PayoutManagementPanel {...props} />,
-        'map': <MapPanel {...props} />,
         'advertisements': <AdvertisementManagementPanel {...props} />,
+        'logs': <LogsPanel siteActivityLogs={props.siteActivityLogs} />,
         'settings': <SettingsPanel {...props} />,
     };
     

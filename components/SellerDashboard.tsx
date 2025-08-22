@@ -42,6 +42,7 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   'refund-requested': 'Remboursement demandé',
   refunded: 'Remboursé',
   returned: 'Retourné',
+  'depot-issue': 'Problème au dépôt',
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -55,6 +56,7 @@ const getStatusClass = (status: OrderStatus) => {
         case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
         case 'refund-requested': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        case 'depot-issue': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 };
@@ -368,9 +370,9 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
 
-    const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded'].includes(o.status)), [sellerOrders]);
+    const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
     const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
-    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested'].includes(o.status)), [sellerOrders]);
+    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
 
     const analytics = useMemo(() => {
         const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.subtotal, 0);
@@ -386,7 +388,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
             totalRevenue,
             avgRating: avgRating.toFixed(1),
         };
-    }, [products, sellerOrders, inProgressOrders, deliveredOrders]);
+    }, [products, deliveredOrders, inProgressOrders]);
     
     if (!user || user.role !== 'seller' || !store) {
         return (
@@ -455,7 +457,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="En cours" isActive={activeTab === 'orders-in-progress'} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
                            <TabButton icon={<CheckCircleIcon className="w-5 h-5"/>} label="Livrées" isActive={activeTab === 'orders-delivered'} onClick={() => setActiveTab('orders-delivered')} />
-                           <TabButton icon={<XIconSmall className="w-5 h-5"/>} label="Annulées" isActive={activeTab === 'orders-cancelled'} onClick={() => setActiveTab('orders-cancelled')} count={cancelledRefundedOrders.length} />
+                           <TabButton icon={<XIconSmall className="w-5 h-5"/>} label="Annulées / Remb." isActive={activeTab === 'orders-cancelled'} onClick={() => setActiveTab('orders-cancelled')} count={cancelledRefundedOrders.length} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
                            <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
                            {isChatEnabled && <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label="Messages" isActive={false} onClick={() => setIsWidgetOpen(true)} count={totalUnreadCount} />}

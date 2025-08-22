@@ -152,7 +152,7 @@ export interface Address {
     city: string;
 }
 
-export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded' | 'returned';
+export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded' | 'returned' | 'depot-issue';
 
 export interface PromoCode {
   code: string;
@@ -186,6 +186,12 @@ export interface TrackingEvent {
     details: string;
 }
 
+export interface Discrepancy {
+    reason: string;
+    reportedAt: string; // ISO String
+    reportedBy: string; // User ID
+}
+
 export interface Order extends NewOrderData {
     id: string;
     status: OrderStatus;
@@ -198,6 +204,7 @@ export interface Order extends NewOrderData {
     storageLocationId?: string;
     checkedInAt?: string; // ISO string
     checkedInBy?: string; // user id of depot agent
+    discrepancy?: Discrepancy;
 }
 
 export interface Payout {
@@ -233,6 +240,11 @@ export interface SiteSettings {
   requiredSellerDocuments: Record<string, boolean>;
   isRentEnabled: boolean;
   rentAmount: number;
+  maintenanceMode: {
+    isEnabled: boolean;
+    message: string;
+    reopenDate: string; // ISO String
+  };
 }
 
 export interface SiteActivityLog {

@@ -23,6 +23,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
         case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
         case 'refund-requested': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        case 'depot-issue': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
@@ -38,6 +39,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
     'refund-requested': 'Remboursement demandé',
     refunded: 'Remboursé',
     returned: 'Retourné',
+    'depot-issue': 'Problème au dépôt',
   };
 
   return (
