@@ -1,5 +1,8 @@
 
 
+
+
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -37,6 +40,7 @@ import PromotionModal from './components/PromotionModal';
 import { useCart } from './contexts/CartContext';
 import ChatWidget from './components/ChatWidget';
 import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon } from './components/Icons';
+import { usePersistentState } from './hooks/usePersistentState';
 
 type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info';
 
@@ -414,30 +418,6 @@ const initialPickupPoints: PickupPoint[] = [
     { id: 'pp4', name: 'KMER ZONE Bastos', streetNumber: '101', street: 'Rue des Ambassades', city: 'Yaoundé', neighborhood: 'Bastos', latitude: 3.882, longitude: 11.509 },
 ];
 
-const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-  const [state, setState] = useState<T>(() => {
-    try {
-      const storedValue = localStorage.getItem(key);
-      if (storedValue) {
-        return JSON.parse(storedValue);
-      }
-    } catch (error) {
-      console.error(`Error reading localStorage key “${key}”:`, error);
-    }
-    return defaultValue;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch (error) {
-      console.error(`Error setting localStorage key “${key}”:`, error);
-    }
-  }, [key, state]);
-
-  return [state, setState];
-};
-
 
 const App: React.FC = () => {
   const [currentPage, setCurrentPage] = useState<Page>('home');
@@ -579,7 +559,7 @@ const App: React.FC = () => {
         )
       );
     }
-  }, [siteSettings.isRentEnabled, allStores, setAllStores]);
+  }, [siteSettings.isRentEnabled, allStores]);
 
 
   const navigate = useCallback((page: Page) => {

@@ -207,7 +207,10 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
                 <div className="mt-2 text-xs text-gray-600 dark:text-gray-400 space-y-1">
                   <div className="flex items-start gap-2">
                     <BuildingStorefrontIcon className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5" />
-                    <p><span className="font-semibold">Départ:</span> {sellerStore?.name || 'Inconnu'} ({sellerStore?.physicalAddress}, {sellerStore?.location})</p>
+                    <div>
+                        <p><span className="font-semibold">Départ:</span> {sellerStore?.name || 'Inconnu'} ({sellerStore?.physicalAddress}, {sellerStore?.location})</p>
+                        {sellerStore?.sellerPhone && <p className="font-mono text-xs text-gray-500 dark:text-gray-400">Tél: {sellerStore.sellerPhone}</p>}
+                    </div>
                   </div>
                   <div className="flex items-start gap-2">
                     {order.deliveryMethod === 'home-delivery' ? <TruckIcon className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5"/> : <MapPinIcon className="w-4 h-4 text-gray-500 flex-shrink-0 mt-0.5"/>}

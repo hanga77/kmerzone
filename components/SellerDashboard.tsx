@@ -135,7 +135,7 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
 const OrdersPanel: React.FC<{orders: Order[], onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void}> = ({ orders, onUpdateOrderStatus }) => {
     return (
       <div className="p-6">
-        <h2 className="text-xl font-bold dark:text-white mb-4">Mes Commandes</h2>
+        <h2 className="text-xl font-bold dark:text-white mb-4">Commandes en cours</h2>
         <div className="space-y-2">
           {orders.map((o: Order) => (
             <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
@@ -168,6 +168,29 @@ const OrdersPanel: React.FC<{orders: Order[], onUpdateOrderStatus: (orderId: str
       </div>
     );
 };
+
+const CompletedOrdersPanel: React.FC<{ orders: Order[] }> = ({ orders }) => (
+    <div className="p-6">
+        <h2 className="text-xl font-bold dark:text-white mb-4">Commandes terminées</h2>
+        <div className="space-y-2">
+            {orders.map((o: Order) => (
+                <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <p className="font-semibold dark:text-gray-200">{o.id}</p>
+                            <p className="text-sm text-gray-500">{new Date(o.orderDate).toLocaleDateString()}</p>
+                        </div>
+                        <div className="text-right">
+                            <p className="font-semibold dark:text-gray-200">{o.total.toLocaleString('fr-CM')} FCFA</p>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(o.status)}`}>{statusTranslations[o.status]}</span>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    </div>
+);
+
 
 const PromoCodeForm: React.FC<{
   sellerId: string;
@@ -340,9 +363,12 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onPayRent,
   siteSettings,
 }) => {
-    const [activeTab, setActiveTab] = useState('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders-in-progress' | 'completed-orders' | 'promotions' | 'documents'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
+
+    const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded'].includes(o.status)), [sellerOrders]);
+    const completedOrders = useMemo(() => sellerOrders.filter(o => ['delivered', 'cancelled', 'refunded'].includes(o.status)), [sellerOrders]);
 
     const analytics = useMemo(() => {
         const totalRevenue = sellerOrders
@@ -382,8 +408,10 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
         switch(activeTab) {
             case 'products':
                 return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onToggleStatus={onToggleStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
-            case 'orders':
-                return <OrdersPanel orders={sellerOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
+            case 'orders-in-progress':
+                return <OrdersPanel orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
+            case 'completed-orders':
+                return <CompletedOrdersPanel orders={completedOrders} />;
             case 'promotions':
                  return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode}/>;
             case 'documents':
@@ -423,7 +451,8 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                         <div className="flex space-x-2 overflow-x-auto">
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
-                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} count={analytics.openOrders} />
+                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes en cours" isActive={activeTab === 'orders-in-progress'} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
+                           <TabButton icon={<CheckCircleIcon className="w-5 h-5"/>} label="Commandes terminées" isActive={activeTab === 'completed-orders'} onClick={() => setActiveTab('completed-orders')} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
                            <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
                            {isChatEnabled && <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label="Messages" isActive={false} onClick={() => setIsWidgetOpen(true)} count={totalUnreadCount} />}

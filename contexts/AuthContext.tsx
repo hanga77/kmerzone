@@ -1,5 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { User, UserRole } from '../types';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 interface AuthContextType {
   user: User | null;
@@ -23,49 +24,6 @@ const initialUsers: User[] = [
     { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
 ];
 
-const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-  const [state, setState] = useState<T>(() => {
-    try {
-      const storedValue = localStorage.getItem(key);
-      if (storedValue) {
-        return JSON.parse(storedValue);
-      }
-    } catch (error) {
-      console.error(`Error reading localStorage key “${key}”:`, error);
-    }
-    return defaultValue;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch (error) {
-      console.error(`Error setting localStorage key “${key}”:`, error);
-    }
-  }, [key, state]);
-
-  return [state, setState];
-};
-
-function isDeepEqual(obj1: any, obj2: any): boolean {
-    if (obj1 === obj2) return true;
-
-    if (obj1 && obj2 && typeof obj1 === 'object' && typeof obj2 === 'object') {
-        if (Object.keys(obj1).length !== Object.keys(obj2).length) return false;
-
-        for (const key in obj1) {
-            if (Object.prototype.hasOwnProperty.call(obj2, key)) {
-                if (!isDeepEqual(obj1[key], obj2[key])) return false;
-            } else {
-                return false;
-            }
-        }
-        return true;
-    }
-    return false;
-}
-
-
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = usePersistentState<User | null>('currentUser', null);
   const [allUsers, setAllUsers] = usePersistentState<User[]>('allUsers', initialUsers);
@@ -76,7 +34,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     if (user) {
       const updatedUserInList = allUsers.find(u => u.id === user.id);
-      if (updatedUserInList && !isDeepEqual(user, updatedUserInList)) {
+      if (updatedUserInList && JSON.stringify(user) !== JSON.stringify(updatedUserInList)) {
         setUser(updatedUserInList);
       }
     }
