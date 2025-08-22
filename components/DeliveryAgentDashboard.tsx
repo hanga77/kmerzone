@@ -20,6 +20,7 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   cancelled: 'Annulé',
   'refund-requested': 'Remboursement demandé',
   refunded: 'Remboursé',
+  'returned': 'Retourné'
 };
 
 const getActionForOrder = (order: Order) => {
@@ -27,12 +28,13 @@ const getActionForOrder = (order: Order) => {
       case 'ready-for-pickup':
         return { text: 'Scanner la prise en charge', newStatus: 'picked-up' as OrderStatus };
       case 'picked-up':
-        return { text: "Scanner l'arrivée au dépôt", newStatus: 'at-depot' as OrderStatus };
+        // The delivery agent's job is done for this package. It now needs to be scanned in at the depot.
+        return null;
       case 'at-depot':
         if (order.deliveryMethod === 'home-delivery') {
           return { text: 'Scanner pour livraison', newStatus: 'out-for-delivery' as OrderStatus };
         }
-        return null; // For pickup orders, agent's job is done here.
+        return null; // For pickup orders, depot agent handles it.
       case 'out-for-delivery':
         return { text: 'Scanner comme Livré', newStatus: 'delivered' as OrderStatus };
       default:

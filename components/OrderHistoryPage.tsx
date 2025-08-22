@@ -37,6 +37,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
     cancelled: 'Annulé',
     'refund-requested': 'Remboursement demandé',
     refunded: 'Remboursé',
+    returned: 'Retourné',
   };
 
   return (

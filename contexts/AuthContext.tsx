@@ -22,6 +22,7 @@ const initialUsers: User[] = [
     { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
     { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
     { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
+    { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
 ];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -103,21 +104,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [allUsers, setAllUsers, setUser]);
 
   const updateUser = useCallback((updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => {
-    if (user) {
-        setAllUsers(prevUsers =>
-            prevUsers.map(u => {
-                if (u.id === user.id) {
-                    return {
-                        ...u,
-                        ...updates,
-                        role: updates.shopName ? ('seller' as const) : u.role,
-                    };
-                }
-                return u;
-            })
-        );
-    }
-  }, [user, setAllUsers]);
+    if (!user) return; // Add a guard clause for safety
+    setAllUsers(prevUsers =>
+      prevUsers.map(u => {
+        if (u.id === user.id) {
+          return {
+            ...u,
+            ...updates,
+            role: updates.shopName ? ('seller' as const) : u.role,
+          };
+        }
+        return u;
+      })
+    );
+  }, [user, setAllUsers]); // Add `user` to the dependency array to prevent stale closures.
 
   const logout = useCallback(() => {
     setUser(null);

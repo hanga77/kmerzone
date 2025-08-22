@@ -1,8 +1,3 @@
-
-
-
-
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -27,6 +22,7 @@ import FlashSalesPage from './components/FlashSalesPage';
 import SearchResultsPage from './components/SearchResultsPage';
 import WishlistPage from './components/WishlistPage';
 import DeliveryAgentDashboard from './components/DeliveryAgentDashboard';
+import DepotAgentDashboard from './components/DepotAgentDashboard';
 import ComparisonPage from './components/ComparisonPage';
 import ComparisonBar from './components/ComparisonBar';
 import BecomePremiumPage from './components/BecomePremiumPage';
@@ -42,7 +38,7 @@ import ChatWidget from './components/ChatWidget';
 import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon } from './components/Icons';
 import { usePersistentState } from './hooks/usePersistentState';
 
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info';
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info';
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -596,6 +592,8 @@ const App: React.FC = () => {
               navigate('superadmin-dashboard');
           } else if (user.role === 'delivery_agent') {
               navigate('delivery-agent-dashboard');
+          } else if (user.role === 'depot_agent') {
+              navigate('depot-agent-dashboard');
           }
       } 
       else if (prevUser && !user) { // Logout
@@ -1262,6 +1260,33 @@ const App: React.FC = () => {
     addSiteActivityLog(user, 'Mise à jour Profil Boutique', `Le profil de la boutique a été mis à jour.`);
   }, [user, addSiteActivityLog, setAllStores, updateUser]);
 
+  const handleCheckInAtDepot = useCallback((orderId: string, storageLocationId: string) => {
+    if (!user || user.role !== 'depot_agent') return;
+
+    setAllOrders(prevOrders => {
+        const order = prevOrders.find(o => o.id === orderId);
+        if (!order) return prevOrders;
+
+        const newStatus: OrderStatus = 'at-depot';
+        addSiteActivityLog(user, "Arrivée au dépôt", `Colis #${orderId} enregistré au dépôt et assigné à l'emplacement ${storageLocationId}.`);
+        
+        const newTrackingEvent: TrackingEvent = {
+            status: newStatus,
+            date: new Date().toISOString(),
+            details: `Colis enregistré par ${user.name} et stocké à l'emplacement ${storageLocationId}.`,
+            location: 'Dépôt KMER ZONE'
+        };
+        
+        return prevOrders.map(o => o.id === orderId ? { 
+            ...o, 
+            status: newStatus, 
+            trackingHistory: [...o.trackingHistory, newTrackingEvent],
+            storageLocationId,
+            checkedInAt: new Date().toISOString(),
+            checkedInBy: user.id,
+        } : o);
+    });
+  }, [user, addSiteActivityLog, setAllOrders]);
 
   const navigateToHome = useCallback(() => { navigate('home'); setAppliedPromoCode(null); }, [navigate]);
   const navigateToCart = useCallback(() => navigate('cart'), [navigate]);
@@ -1276,6 +1301,7 @@ const App: React.FC = () => {
   const navigateToFlashSales = useCallback(() => navigate('flash-sales'), [navigate]);
   const navigateToWishlist = useCallback(() => navigate('wishlist'), [navigate]);
   const navigateToDeliveryAgentDashboard = useCallback(() => navigate('delivery-agent-dashboard'), [navigate]);
+  const navigateToDepotAgentDashboard = useCallback(() => navigate('depot-agent-dashboard'), [navigate]);
   const navigateToComparison = useCallback(() => navigate('comparison'), [navigate]);
   const navigateToBecomePremium = useCallback(() => navigate('become-premium'), [navigate]);
   const navigateToAnalyticsDashboard = useCallback(() => navigate('analytics-dashboard'), [navigate]);
@@ -1348,6 +1374,7 @@ const App: React.FC = () => {
       case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
       case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
       case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={handleUpdateOrderStatus} />;
+      case 'depot-agent-dashboard': return user && <DepotAgentDashboard allOrders={allOrders} onCheckIn={handleCheckInAtDepot} />;
       case 'comparison': return <ComparisonPage onBack={navigateToHome} />;
       case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={navigateToHome} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} />;
       case 'analytics-dashboard': return <AnalyticsDashboard onBack={navigateToSuperAdminDashboard} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} />;
@@ -1379,6 +1406,7 @@ const App: React.FC = () => {
         onNavigateToFlashSales={navigateToFlashSales}
         onNavigateToWishlist={navigateToWishlist}
         onNavigateToDeliveryAgentDashboard={navigateToDeliveryAgentDashboard}
+        onNavigateToDepotAgentDashboard={navigateToDepotAgentDashboard}
         onSearch={handleSearch}
         isChatEnabled={isChatEnabled}
         onNavigateToBecomePremium={navigateToBecomePremium}

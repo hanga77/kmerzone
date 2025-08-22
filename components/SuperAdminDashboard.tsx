@@ -86,7 +86,8 @@ const statusTranslations: Record<OrderStatus, string> = {
     delivered: 'Livré',
     cancelled: 'Annulé',
     'refund-requested': 'Remboursement demandé',
-    refunded: 'Remboursé'
+    refunded: 'Remboursé',
+    returned: 'Retourné'
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -364,6 +365,7 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
         seller: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
         superadmin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
         delivery_agent: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
+        depot_agent: 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300',
     };
 
     return (

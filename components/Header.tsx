@@ -22,6 +22,7 @@ interface HeaderProps {
   onNavigateToFlashSales: () => void;
   onNavigateToWishlist: () => void;
   onNavigateToDeliveryAgentDashboard: () => void;
+  onNavigateToDepotAgentDashboard: () => void;
   onNavigateToBecomePremium: () => void;
   onNavigateToAnalyticsDashboard: () => void;
   onNavigateToReviewModeration: () => void;
@@ -32,7 +33,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToBecomePremium, onNavigateToAnalyticsDashboard, onNavigateToReviewModeration, onSearch, isChatEnabled, isPremiumProgramEnabled } = props;
+  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAnalyticsDashboard, onNavigateToReviewModeration, onSearch, isChatEnabled, isPremiumProgramEnabled } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -104,7 +105,8 @@ const Header: React.FC<HeaderProps> = (props) => {
         { label: 'Mon Profil', action: onNavigateToSellerProfile, icon: <Cog8ToothIcon className="h-5 w-5" /> }
     ] : []),
     ...(user?.role === 'delivery_agent' ? [{ label: 'Tableau de bord Livreur', action: onNavigateToDeliveryAgentDashboard, icon: <TruckIcon className="h-5 w-5" /> }] : []),
-    ...(user && !['superadmin', 'delivery_agent'].includes(user.role) ? [{ label: 'Mes Commandes', action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> }] : [])
+    ...(user?.role === 'depot_agent' ? [{ label: 'Tableau de bord Dépôt', action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
+    ...(user && !['superadmin', 'delivery_agent', 'depot_agent'].includes(user.role) ? [{ label: 'Mes Commandes', action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> }] : [])
   ];
 
   const ActionButton: React.FC<{onClick: () => void, icon: React.ReactNode, label: string, count?: number}> = ({onClick, icon, label, count}) => (
@@ -179,7 +181,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label={translations.login[language]} />
             )}
             
-            {user && !['superadmin', 'delivery_agent'].includes(user.role) && (
+            {user && !['superadmin', 'delivery_agent', 'depot_agent'].includes(user.role) && (
               <>
                 <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={translations.wishlist[language]} count={wishlistItemCount} />
                 {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={translations.messages[language]} count={totalUnreadCount} />}
@@ -211,7 +213,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               <button onClick={onNavigateToAnalyticsDashboard} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-2"><BarChartIcon className="w-5 h-5"/>Tableau de Bord Analytique</button>
               <button onClick={onNavigateToReviewModeration} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-2"><ShieldCheckIcon className="w-5 h-5"/>Modération des Avis</button>
            </nav>
-        ) : user?.role !== 'delivery_agent' ? (
+        ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
           <nav className="hidden lg:flex items-center justify-center space-x-6 border-t border-gray-200 dark:border-gray-700 mt-3 pt-2">
             <div className="relative" ref={categoryMenuRef}>
               <button
@@ -274,7 +276,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                   <button onClick={() => {onNavigateToAnalyticsDashboard(); setIsMenuOpen(false);}} className="text-left font-semibold py-2 flex items-center gap-2"><BarChartIcon className="w-5 h-5"/>Tableau de Bord Analytique</button>
                   <button onClick={() => {onNavigateToReviewModeration(); setIsMenuOpen(false);}} className="text-left font-semibold py-2 flex items-center gap-2"><ShieldCheckIcon className="w-5 h-5"/>Modération des Avis</button>
                 </>
-              ) : user?.role !== 'delivery_agent' ? (
+              ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
                 <>
                   <button onClick={() => {onNavigateToPromotions(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Promotions</button>
                   <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Ventes Flash</button>

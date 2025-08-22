@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall } from './Icons';
 
 interface SellerDashboardProps {
   store?: Store;
@@ -41,6 +41,7 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   cancelled: 'Annulé',
   'refund-requested': 'Remboursement demandé',
   refunded: 'Remboursé',
+  returned: 'Retourné',
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -132,7 +133,7 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
     );
 };
 
-const OrdersPanel: React.FC<{orders: Order[], onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void}> = ({ orders, onUpdateOrderStatus }) => {
+const OrdersInProgressPanel: React.FC<{orders: Order[], onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void}> = ({ orders, onUpdateOrderStatus }) => {
     return (
       <div className="p-6">
         <h2 className="text-xl font-bold dark:text-white mb-4">Commandes en cours</h2>
@@ -169,9 +170,9 @@ const OrdersPanel: React.FC<{orders: Order[], onUpdateOrderStatus: (orderId: str
     );
 };
 
-const CompletedOrdersPanel: React.FC<{ orders: Order[] }> = ({ orders }) => (
+const SimpleOrdersPanel: React.FC<{ title: string, orders: Order[] }> = ({ title, orders }) => (
     <div className="p-6">
-        <h2 className="text-xl font-bold dark:text-white mb-4">Commandes terminées</h2>
+        <h2 className="text-xl font-bold dark:text-white mb-4">{title}</h2>
         <div className="space-y-2">
             {orders.map((o: Order) => (
                 <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
@@ -363,17 +364,16 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onPayRent,
   siteSettings,
 }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders-in-progress' | 'completed-orders' | 'promotions' | 'documents'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
 
     const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded'].includes(o.status)), [sellerOrders]);
-    const completedOrders = useMemo(() => sellerOrders.filter(o => ['delivered', 'cancelled', 'refunded'].includes(o.status)), [sellerOrders]);
+    const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
+    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested'].includes(o.status)), [sellerOrders]);
 
     const analytics = useMemo(() => {
-        const totalRevenue = sellerOrders
-            .filter(o => o.status === 'delivered')
-            .reduce((sum, order) => sum + order.subtotal, 0);
+        const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.subtotal, 0);
 
         const allReviews = products.flatMap(p => p.reviews);
         const avgRating = allReviews.length > 0
@@ -382,11 +382,11 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
 
         return {
             totalProducts: products.length,
-            openOrders: sellerOrders.filter(o => ['confirmed', 'ready-for-pickup'].includes(o.status)).length,
+            openOrders: inProgressOrders.length,
             totalRevenue,
             avgRating: avgRating.toFixed(1),
         };
-    }, [products, sellerOrders]);
+    }, [products, sellerOrders, inProgressOrders, deliveredOrders]);
     
     if (!user || user.role !== 'seller' || !store) {
         return (
@@ -409,9 +409,11 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
             case 'products':
                 return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onToggleStatus={onToggleStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
             case 'orders-in-progress':
-                return <OrdersPanel orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
-            case 'completed-orders':
-                return <CompletedOrdersPanel orders={completedOrders} />;
+                return <OrdersInProgressPanel orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
+            case 'orders-delivered':
+                return <SimpleOrdersPanel title="Commandes Livrées" orders={deliveredOrders} />;
+            case 'orders-cancelled':
+                return <SimpleOrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} />;
             case 'promotions':
                  return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode}/>;
             case 'documents':
@@ -451,8 +453,9 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                         <div className="flex space-x-2 overflow-x-auto">
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
-                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes en cours" isActive={activeTab === 'orders-in-progress'} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
-                           <TabButton icon={<CheckCircleIcon className="w-5 h-5"/>} label="Commandes terminées" isActive={activeTab === 'completed-orders'} onClick={() => setActiveTab('completed-orders')} />
+                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="En cours" isActive={activeTab === 'orders-in-progress'} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
+                           <TabButton icon={<CheckCircleIcon className="w-5 h-5"/>} label="Livrées" isActive={activeTab === 'orders-delivered'} onClick={() => setActiveTab('orders-delivered')} />
+                           <TabButton icon={<XIconSmall className="w-5 h-5"/>} label="Annulées" isActive={activeTab === 'orders-cancelled'} onClick={() => setActiveTab('orders-cancelled')} count={cancelledRefundedOrders.length} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
                            <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
                            {isChatEnabled && <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label="Messages" isActive={false} onClick={() => setIsWidgetOpen(true)} count={totalUnreadCount} />}

@@ -64,7 +64,8 @@ const statusTranslations: Record<OrderStatus, { title: string, description: stri
     delivered: { title: 'Livré', description: 'Votre colis a été remis.' },
     cancelled: { title: 'Annulé', description: 'Votre commande a été annulée.' },
     'refund-requested': { title: 'Remboursement demandé', description: 'Votre demande est en cours d\'examen.' },
-    refunded: { title: 'Remboursé', description: 'Cette commande a été remboursée.' }
+    refunded: { title: 'Remboursé', description: 'Cette commande a été remboursée.' },
+    returned: { title: 'Retourné', description: 'Le colis a été retourné.' }
 };
 
 

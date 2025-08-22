@@ -1,0 +1,235 @@
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import type { Order, OrderStatus } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon } from './Icons';
+
+declare const Html5Qrcode: any;
+
+interface DepotAgentDashboardProps {
+  allOrders: Order[];
+  onCheckIn: (orderId: string, storageLocationId: string) => void;
+}
+
+const statusTranslations: {[key in OrderStatus]: string} = {
+  confirmed: 'Confirmée',
+  'ready-for-pickup': 'Prêt pour enlèvement',
+  'picked-up': 'Pris en charge',
+  'at-depot': 'Au dépôt',
+  'out-for-delivery': 'En livraison',
+  delivered: 'Livré',
+  cancelled: 'Annulé',
+  'refund-requested': 'Remboursement demandé',
+  refunded: 'Remboursé',
+  returned: 'Retourné'
+};
+
+const ScannerModal: React.FC<{
+    onClose: () => void;
+    onScanSuccess: (decodedText: string) => void;
+    scanResult: { success: boolean, message: string } | null;
+}> = ({ onClose, onScanSuccess, scanResult }) => {
+    const html5QrCodeRef = useRef<any>(null);
+    const [scannerError, setScannerError] = useState<string | null>(null);
+
+    useEffect(() => {
+        if (!Html5Qrcode) {
+            setScannerError("La bibliothèque de scan n'a pas pu être chargée.");
+            return;
+        }
+
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCodeRef.current = html5QrCode;
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        const startScanner = async () => {
+            try {
+                if (!html5QrCodeRef.current?.isScanning) {
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        config,
+                        (decodedText: string) => onScanSuccess(decodedText),
+                        (errorMessage: string) => {}
+                    );
+                }
+            } catch (err) {
+                setScannerError("Impossible d'activer la caméra. Veuillez vérifier les permissions.");
+            }
+        };
+        const timer = setTimeout(startScanner, 100);
+
+        return () => {
+            clearTimeout(timer);
+            if (html5QrCodeRef.current?.isScanning) {
+                html5QrCodeRef.current.stop().catch(() => {});
+            }
+        };
+    }, [onScanSuccess]);
+
+    useEffect(() => {
+        if (scanResult && html5QrCodeRef.current?.isScanning) {
+            html5QrCodeRef.current.stop().catch(() => {});
+        }
+    }, [scanResult]);
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-lg w-full text-white">
+                <h3 className="text-xl font-bold mb-4 text-center">Scanner le Colis à Enregistrer</h3>
+                <div className="w-full h-64 bg-gray-800 rounded-md flex items-center justify-center">
+                    <div id="reader" className="w-full" hidden={!!scanResult || !!scannerError}></div>
+                    {scannerError && <p className="text-red-400">{scannerError}</p>}
+                    {scanResult && (
+                        <div className={`text-center p-4 ${scanResult.success ? 'text-green-300' : 'text-red-300'}`}>
+                           {scanResult.success ? <CheckIcon className="w-12 h-12 mx-auto"/> : <ExclamationTriangleIcon className="w-12 h-12 mx-auto"/>}
+                           <p className="font-semibold mt-2">{scanResult.message}</p>
+                        </div>
+                    )}
+                </div>
+                <button onClick={onClose} className="mt-4 w-full bg-gray-700 hover:bg-gray-600 font-bold py-2 rounded-lg">Fermer</button>
+            </div>
+        </div>
+    );
+};
+
+const StorageModal: React.FC<{
+    orderId: string;
+    occupiedSlots: string[];
+    onAssign: (orderId: string, locationId: string) => void;
+    onClose: () => void;
+}> = ({ orderId, occupiedSlots, onAssign, onClose }) => {
+    const locations = Array.from({ length: 100 }, (_, i) => {
+        const row = String.fromCharCode(65 + Math.floor(i / 10));
+        const col = (i % 10) + 1;
+        return `${row}${col}`;
+    });
+
+    return (
+       <div className="fixed inset-0 bg-black bg-opacity-75 z-[60] flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full">
+                <h3 className="text-xl font-bold mb-4 dark:text-white">Choisir un emplacement de stockage pour {orderId}</h3>
+                <div className="grid grid-cols-10 gap-2">
+                    {locations.map(loc => {
+                        const isOccupied = occupiedSlots.includes(loc);
+                        return (
+                            <button
+                                key={loc}
+                                onClick={() => onAssign(orderId, loc)}
+                                disabled={isOccupied}
+                                className={`h-12 w-12 rounded-md font-mono text-xs font-bold transition-colors
+                                  ${isOccupied ? 'bg-gray-300 dark:bg-gray-600 text-gray-500 cursor-not-allowed' : 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800'}`}
+                            >
+                                {loc}
+                            </button>
+                        );
+                    })}
+                </div>
+                 <button onClick={onClose} className="mt-6 w-full bg-gray-200 dark:bg-gray-700 font-bold py-2 rounded-lg">Annuler</button>
+            </div>
+        </div>
+    );
+};
+
+const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, onCheckIn }) => {
+  const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = useState<'overview' | 'scanner' | 'inventory' | 'returns'>('overview');
+  const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
+  const [orderToCheckIn, setOrderToCheckIn] = useState<Order | null>(null);
+  
+  const ordersForDepot = useMemo(() => allOrders.filter(o => o.status === 'picked-up'), [allOrders]);
+  const inventory = useMemo(() => allOrders.filter(o => o.status === 'at-depot'), [allOrders]);
+  const occupiedSlots = useMemo(() => inventory.map(o => o.storageLocationId!).filter(Boolean), [inventory]);
+
+  const handleScanSuccess = (decodedText: string) => {
+    if (scanResult) return;
+    const order = allOrders.find(o => o.id === decodedText || o.trackingNumber === decodedText);
+
+    if (!order) {
+        setScanResult({ success: false, message: "Code-barres inconnu." });
+        return;
+    }
+    if (order.status !== 'picked-up') {
+        setScanResult({ success: false, message: `Colis déjà traité (Statut: ${statusTranslations[order.status]})` });
+        return;
+    }
+    setScanResult({ success: true, message: `Colis ${order.id} validé. Veuillez choisir un emplacement.` });
+    setOrderToCheckIn(order);
+  };
+
+  const handleAssignLocation = (orderId: string, locationId: string) => {
+      onCheckIn(orderId, locationId);
+      setOrderToCheckIn(null);
+      setActiveTab('scanner');
+  };
+
+  const analytics = useMemo(() => ({
+      itemsToReceive: ordersForDepot.length,
+      itemsInStock: inventory.length,
+      capacity: `${Math.round((occupiedSlots.length / 100) * 100)}%`,
+  }), [ordersForDepot, inventory, occupiedSlots]);
+
+  if (!user || user.role !== 'depot_agent') {
+    return <div className="p-8 text-center text-red-500">Accès non autorisé.</div>;
+  }
+  
+  const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
+    <button onClick={onClick} className={`relative flex items-center gap-2 px-3 py-3 text-sm font-semibold rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${isActive ? 'text-kmer-green border-kmer-green' : 'text-gray-500 border-transparent hover:text-kmer-green'}`}>
+        {icon} <span className="hidden sm:inline">{label}</span>
+        {count !== undefined && count > 0 && <span className="ml-1 text-xs bg-kmer-red text-white rounded-full px-1.5 py-0.5">{count}</span>}
+    </button>
+  );
+
+  return (
+    <>
+      {activeTab === 'scanner' && <ScannerModal onClose={() => { setActiveTab('overview'); setScanResult(null); }} onScanSuccess={handleScanSuccess} scanResult={scanResult} />}
+      {orderToCheckIn && <StorageModal orderId={orderToCheckIn.id} occupiedSlots={occupiedSlots} onAssign={handleAssignLocation} onClose={() => { setOrderToCheckIn(null); setScanResult(null); }} />}
+      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+          <header className="bg-white dark:bg-gray-800 shadow-sm">
+              <div className="container mx-auto px-4 sm:px-6 py-4">
+                  <div className="flex justify-between items-center">
+                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Dépôt</h1>
+                    <button onClick={logout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
+                  </div>
+                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
+                      <div className="flex space-x-2">
+                          <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                          <TabButton icon={<QrCodeIcon className="w-5 h-5"/>} label="Arrivages" isActive={activeTab === 'scanner'} onClick={() => { setScanResult(null); setActiveTab('scanner'); }} count={analytics.itemsToReceive} />
+                          <TabButton icon={<ArchiveBoxIcon className="w-5 h-5"/>} label="Inventaire" isActive={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} count={analytics.itemsInStock} />
+                          <TabButton icon={<ArrowPathIcon className="w-5 h-5"/>} label="Retours" isActive={activeTab === 'returns'} onClick={() => setActiveTab('returns')} />
+                      </div>
+                  </div>
+              </div>
+          </header>
+          <main className="container mx-auto px-4 sm:px-6 py-6">
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                  {activeTab === 'overview' && (
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold">{analytics.itemsToReceive}</p><p className="text-sm text-gray-500">Colis en attente</p></div>
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold">{analytics.itemsInStock}</p><p className="text-sm text-gray-500">Colis en stock</p></div>
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold">{analytics.capacity}</p><p className="text-sm text-gray-500">Capacité utilisée</p></div>
+                      </div>
+                  )}
+                  {activeTab === 'inventory' && (
+                       <div>
+                           <h2 className="text-xl font-bold mb-4">Inventaire Actuel</h2>
+                           <div className="space-y-2">
+                            {inventory.length > 0 ? inventory.map(order => (
+                                <div key={order.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
+                                    <div>
+                                        <p className="font-semibold">{order.id}</p>
+                                        <p className="text-sm text-gray-500">Client: {order.shippingAddress.fullName}</p>
+                                    </div>
+                                    <p className="font-mono text-lg font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-md">{order.storageLocationId}</p>
+                                </div>
+                            )) : <p className="text-sm text-gray-500">Aucun article en stock.</p>}
+                           </div>
+                       </div>
+                  )}
+                   {activeTab === 'returns' && <p className="text-gray-500">La gestion des retours sera bientôt disponible.</p>}
+              </div>
+          </main>
+      </div>
+    </>
+  );
+};
+
+export default DepotAgentDashboard;

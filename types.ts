@@ -126,7 +126,7 @@ export interface Store {
   premiumStatus: 'standard' | 'premium';
 }
 
-export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent';
+export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent';
 
 export interface UserLoyalty {
   status: 'standard' | 'premium' | 'premium_plus';
@@ -152,7 +152,7 @@ export interface Address {
     city: string;
 }
 
-export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded';
+export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded' | 'returned';
 
 export interface PromoCode {
   code: string;
@@ -195,6 +195,9 @@ export interface Order extends NewOrderData {
     refundReason?: string;
     trackingHistory: TrackingEvent[];
     agentId?: string;
+    storageLocationId?: string;
+    checkedInAt?: string; // ISO string
+    checkedInBy?: string; // user id of depot agent
 }
 
 export interface Payout {
