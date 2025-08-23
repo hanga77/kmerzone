@@ -3,7 +3,9 @@ import QRCode from 'qrcode';
 import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon } from './Icons';
+
+declare const Html5Qrcode: any;
 
 interface SellerDashboardProps {
   store?: Store;
@@ -93,63 +95,108 @@ const StatCard: React.FC<{icon: React.ReactNode, label: string, value: string | 
     </div>
 );
 
-const OrderCard: React.FC<{order: Order, onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void}> = ({ order, onUpdateOrderStatus }) => {
-    const qrCodeRef = useRef<HTMLCanvasElement>(null);
-    const printableRef = useRef<HTMLDivElement>(null);
+const ScannerModal: React.FC<{
+    onClose: () => void;
+    onScanSuccess: (decodedText: string) => void;
+    scanResult: { success: boolean, message: string } | null;
+}> = ({ onClose, onScanSuccess, scanResult }) => {
+    const html5QrCodeRef = useRef<any>(null);
+    const [scannerError, setScannerError] = useState<string | null>(null);
+    const viewRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
-        if (qrCodeRef.current && order.trackingNumber) {
-            QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 80, margin: 1 }, (error) => {
-                if (error) console.error(error);
-            });
+        if (!Html5Qrcode) {
+            console.error("Html5Qrcode library not loaded!");
+            setScannerError("La bibliothèque de scan n'a pas pu être chargée. Veuillez rafraîchir la page.");
+            return;
         }
-    }, [order.trackingNumber]);
 
-    const handlePrint = () => {
-        const printableElement = printableRef.current;
-        if (printableElement) {
-            const printWindow = window.open('', '_blank');
-            printWindow?.document.write(`<html><head><title>Étiquette ${order.id}</title>`);
-            printWindow?.document.write('<style>@page { size: A6; margin: 10mm; } body { font-family: sans-serif; } .label { border: 2px solid black; padding: 10px; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; } h3 { margin: 0; font-size: 16px; } p { margin: 2px 0; font-size: 12px; } .qr-section { text-align: center; } canvas { width: 80px; height: 80px; } .items { font-size: 10px; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px; }</style>');
-            printWindow?.document.write('</head><body>');
-            printWindow?.document.write(printableElement.innerHTML);
-            printWindow?.document.write('</body></html>');
-            printWindow?.document.close();
-            printWindow?.print();
+        const html5QrCode = new Html5Qrcode("reader");
+        html5QrCodeRef.current = html5QrCode;
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+
+        const startScanner = async () => {
+            try {
+                if (!html5QrCodeRef.current?.isScanning) {
+                    setScannerError(null);
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        config,
+                        (decodedText: string, decodedResult: any) => {
+                           onScanSuccess(decodedText);
+                        },
+                        (errorMessage: string) => {}
+                    );
+                }
+            } catch (err) {
+                console.error("Failed to start scanner", err);
+                setScannerError("Impossible d'activer la caméra. Veuillez vérifier les permissions dans votre navigateur.");
+            }
+        };
+
+        const timer = setTimeout(startScanner, 100);
+
+        return () => {
+            clearTimeout(timer);
+            if (html5QrCodeRef.current?.isScanning) {
+                html5QrCodeRef.current.stop().catch((err: any) => console.error("Failed to stop scanner on unmount", err));
+            }
+        };
+    }, [onScanSuccess]);
+
+    useEffect(() => {
+        if (scanResult && html5QrCodeRef.current?.isScanning) {
+            html5QrCodeRef.current.stop().catch((err: any) => console.error("Failed to stop scanner on result", err));
+            if (viewRef.current) {
+                viewRef.current.style.display = 'none';
+            }
         }
-    };
+    }, [scanResult]);
 
     return (
-        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md">
-            <div ref={printableRef} className="printable hidden">
-                <div className="label">
-                    <div>
-                        <h3>KMER ZONE - Commande #{order.id}</h3>
-                        <p><b>Date:</b> {new Date(order.orderDate).toLocaleDateString()}</p>
-                        <p><b>Destinataire:</b> {order.shippingAddress.fullName}</p>
-                        <p>{order.shippingAddress.address}, {order.shippingAddress.city}</p>
-                        <p><b>Tél:</b> {order.shippingAddress.phone}</p>
-                    </div>
-                    <div className="items">
-                        <b>Contenu:</b> {order.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}
-                    </div>
-                    <div className="qr-section">
-                        <canvas id={`qr-${order.id}`}></canvas>
-                        <script>
-                            {`
-                            // This script won't run in the popup, so QR must be generated as image data url
-                            const canvas = document.getElementById('qr-${order.id}');
-                            const dataUrl = document.querySelector('[data-qr-id="${order.id}"]').toDataURL();
-                            const img = new Image();
-                            img.src = dataUrl;
-                            img.onload = () => canvas.getContext('2d').drawImage(img, 0, 0);
-                            `}
-                        </script>
-                        <p>{order.trackingNumber}</p>
-                    </div>
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
+            <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-6 max-w-lg w-full relative text-white">
+                <h3 className="text-xl font-bold mb-4 text-center">Scanner le code-barres du colis</h3>
+                
+                <div className="w-full h-64 bg-gray-800 rounded-md overflow-hidden flex items-center justify-center">
+                    <div id="reader" ref={viewRef} className="w-full"></div>
+                    
+                    {scannerError && (
+                         <div className="text-center p-4">
+                            <ExclamationTriangleIcon className="w-12 h-12 text-red-400 mb-4 mx-auto"/>
+                            <p className="text-red-300 font-semibold">Erreur de Caméra</p>
+                            <p className="text-sm text-red-300/80">{scannerError}</p>
+                        </div>
+                    )}
+                    
+                    {scanResult && (
+                        <div className="text-center p-4">
+                            <div className={`p-3 rounded-full mb-4 inline-block ${scanResult.success ? 'bg-green-600/30' : 'bg-red-600/30'}`}>
+                               {scanResult.success ? <CheckCircleIcon className="w-10 h-10 text-green-300"/> : <ExclamationTriangleIcon className="w-10 h-10 text-red-300"/>}
+                            </div>
+                            <p className={`font-semibold text-lg ${scanResult.success ? 'text-green-300' : 'text-red-300'}`}>
+                               {scanResult.message}
+                            </p>
+                        </div>
+                    )}
                 </div>
-            </div>
 
+                {!scanResult && !scannerError && (
+                    <p className="text-center text-gray-400 text-sm mt-4">Visez le code-barres avec votre caméra.</p>
+                )}
+                
+                <button onClick={onClose} className="mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">
+                    Fermer
+                </button>
+            </div>
+        </div>
+    );
+};
+
+const OrderCard: React.FC<{order: Order, onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void, onScan: (order: Order) => void, onPrint: (order: Order) => void}> = ({ order, onUpdateOrderStatus, onScan, onPrint }) => {
+    
+    return (
+        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md">
              <div className="flex flex-col sm:flex-row justify-between sm:items-center">
                 <div>
                     <p className="font-semibold dark:text-gray-200">{order.id}</p>
@@ -161,27 +208,19 @@ const OrderCard: React.FC<{order: Order, onUpdateOrderStatus: (orderId: string, 
                 </div>
             </div>
              <div className="mt-3 pt-3 border-t dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <canvas ref={qrCodeRef} data-qr-id={order.id} className="rounded-md bg-white"></canvas>
-                    <div>
-                        <p className="text-xs font-semibold dark:text-gray-300">N° de Suivi:</p>
-                        <p className="font-mono text-sm dark:text-white">{order.trackingNumber}</p>
-                    </div>
+                <div className="text-sm">
+                    <p className="font-semibold">Client: {order.shippingAddress.fullName}</p>
+                    <p>{order.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}</p>
                 </div>
                  <div className="flex items-center gap-2 w-full sm:w-auto">
-                    {['confirmed'].includes(order.status) && (
-                        <select
-                          value={order.status}
-                          onChange={(e) => onUpdateOrderStatus(order.id, e.target.value as OrderStatus)}
-                          className="text-xs border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white focus:ring-kmer-green w-full"
-                        >
-                            <option value="confirmed" disabled>Confirmée</option>
-                            <option value="ready-for-pickup">Marquer comme Prêt</option>
-                        </select>
-                    )}
-                     <button onClick={handlePrint} className="flex items-center gap-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-3 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 w-full sm:w-auto justify-center">
-                        <PrinterIcon className="w-4 h-4"/> Imprimer l'étiquette
+                    <button onClick={() => onPrint(order)} className="flex items-center gap-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-3 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 w-full sm:w-auto justify-center">
+                        <PrinterIcon className="w-4 h-4"/> Imprimer
                     </button>
+                    {order.status === 'confirmed' && (
+                        <button onClick={() => onScan(order)} className="flex items-center gap-2 text-sm bg-kmer-green text-white font-semibold px-3 py-2 rounded-md hover:bg-green-700 w-full sm:w-auto justify-center">
+                           <QrCodeIcon className="w-4 h-4"/> Scanner le colis
+                        </button>
+                    )}
                 </div>
             </div>
         </div>
@@ -233,12 +272,12 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
     );
 };
 
-const OrdersPanel: React.FC<{ title: string, orders: Order[], onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void }> = ({ title, orders, onUpdateOrderStatus }) => {
+const OrdersPanel: React.FC<{ title: string, orders: Order[], onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void, onScan: (order: Order) => void, onPrint: (order: Order) => void }> = ({ title, orders, onUpdateOrderStatus, onScan, onPrint }) => {
     return (
       <div className="p-6">
         <h2 className="text-xl font-bold dark:text-white mb-4">{title}</h2>
         <div className="space-y-4">
-          {orders.map((o: Order) => <OrderCard key={o.id} order={o} onUpdateOrderStatus={onUpdateOrderStatus} />)}
+          {orders.map((o: Order) => <OrderCard key={o.id} order={o} onUpdateOrderStatus={onUpdateOrderStatus} onScan={onScan} onPrint={onPrint} />)}
         </div>
       </div>
     );
@@ -475,6 +514,48 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
     const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
+    const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
+    const printableRef = useRef<HTMLDivElement>(null);
+    const qrCodeRef = useRef<HTMLCanvasElement>(null);
+    const [scanningOrder, setScanningOrder] = useState<Order | null>(null);
+    const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
+
+    useEffect(() => {
+        if (printingOrder && qrCodeRef.current && printableRef.current) {
+            QRCode.toCanvas(qrCodeRef.current, printingOrder.trackingNumber || '', { width: 80, margin: 1 }, (error) => {
+                if (error) { 
+                    console.error('QR Code Generation Error:', error);
+                    setPrintingOrder(null);
+                    return;
+                }
+                setTimeout(() => {
+                    window.print();
+                    setPrintingOrder(null); 
+                }, 100);
+            });
+        }
+    }, [printingOrder]);
+
+    const handleScanSuccess = (decodedText: string) => {
+      if (!scanningOrder || scanResult) return;
+  
+      if (decodedText !== scanningOrder.trackingNumber) {
+        setScanResult({ success: false, message: "Le code scanné ne correspond pas à cette commande." });
+        return;
+      }
+      if (scanningOrder.status !== 'confirmed') {
+        setScanResult({ success: false, message: `Cette commande n'est pas en attente de préparation (Statut: ${statusTranslations[scanningOrder.status]})` });
+        return;
+      }
+  
+      onUpdateOrderStatus(scanningOrder.id, 'ready-for-pickup');
+      setScanResult({ success: true, message: `Commande ${scanningOrder.id} marquée comme "Prête pour enlèvement".` });
+    };
+
+    const closeScanner = () => {
+      setScanningOrder(null);
+      setScanResult(null);
+    };
 
     const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
     const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
@@ -519,11 +600,11 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
             case 'stories':
                 return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
             case 'orders-in-progress':
-                return <OrdersPanel title="Commandes en cours" orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
+                return <OrdersPanel title="Commandes en cours" orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
             case 'orders-delivered':
-                return <OrdersPanel title="Commandes Livrées" orders={deliveredOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
+                return <OrdersPanel title="Commandes Livrées" orders={deliveredOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
             case 'orders-cancelled':
-                return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
+                return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
             case 'promotions':
                  return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode}/>;
             case 'documents':
@@ -535,7 +616,35 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
     };
     
     return (
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+      <>
+        {scanningOrder && (
+            <ScannerModal 
+                onClose={closeScanner}
+                onScanSuccess={handleScanSuccess}
+                scanResult={scanResult}
+            />
+        )}
+         {printingOrder && (
+            <div className="printable fixed -left-[9999px] top-0">
+                <div ref={printableRef} className="w-[105mm] h-[148mm] p-2 border-2 border-black flex flex-col justify-between font-sans text-xs">
+                    <div>
+                        <h3 className="font-bold text-base">KMER ZONE - Commande #{printingOrder.id}</h3>
+                        <p><b>Date:</b> {new Date(printingOrder.orderDate).toLocaleDateString()}</p>
+                        <p><b>Destinataire:</b> {printingOrder.shippingAddress.fullName}</p>
+                        <p>{printingOrder.shippingAddress.address}, {printingOrder.shippingAddress.city}</p>
+                        <p><b>Tél:</b> {printingOrder.shippingAddress.phone}</p>
+                    </div>
+                    <div className="text-[10px] border-t border-gray-400 pt-1 mt-1">
+                        <b>Contenu:</b> {printingOrder.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}
+                    </div>
+                    <div className="text-center">
+                        <canvas ref={qrCodeRef}></canvas>
+                        <p className="font-mono">{printingOrder.trackingNumber}</p>
+                    </div>
+                </div>
+            </div>
+        )}
+        <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
             <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
                 <div className="container mx-auto px-4 sm:px-6 py-4">
                     <div className="flex justify-between items-center">
@@ -605,6 +714,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                 </div>
             </main>
       </div>
+    </>
     );
 };
 

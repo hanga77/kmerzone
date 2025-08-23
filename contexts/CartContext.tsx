@@ -28,16 +28,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { user } = useAuth();
 
   const addToCart = useCallback((product: Product, quantity: number = 1, selectedVariant?: Record<string, string>) => {
-    if (user && user.role === 'seller' && user.shopName === product.vendor) {
-      alert("Vous ne pouvez pas acheter les produits de votre propre boutique.");
-      return;
+    if (user && ['superadmin', 'seller', 'delivery_agent', 'depot_agent'].includes(user.role)) {
+        alert("Votre rôle ne vous autorise pas à effectuer des achats sur la plateforme.");
+        return;
     }
     
-    if (user && user.role === 'superadmin') {
-      alert("Le super-administrateur ne peut pas ajouter de produits au panier.");
-      return;
-    }
-
     let itemAdded = false;
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id && areVariantsEqual(item.selectedVariant, selectedVariant));

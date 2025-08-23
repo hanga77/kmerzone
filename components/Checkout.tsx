@@ -60,6 +60,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
   const markersRef = useRef<any[]>([]);
+  const [selectedCity, setSelectedCity] = useState('Douala');
 
   const [shippingAddress, setShippingAddress] = useState<Address>({
     fullName: user?.name || '',
@@ -143,7 +144,9 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
   const [paymentMethod, setPaymentMethod] = useState('OM');
   const [useInstallments, setUseInstallments] = useState(false);
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('08:00 - 10:00');
-  const [selectedPickupPointId, setSelectedPickupPointId] = useState(allPickupPoints.length > 0 ? allPickupPoints[0].id : '');
+
+  const filteredPickupPoints = useMemo(() => allPickupPoints.filter(p => p.city === selectedCity), [allPickupPoints, selectedCity]);
+  const [selectedPickupPointId, setSelectedPickupPointId] = useState(filteredPickupPoints.length > 0 ? filteredPickupPoints[0].id : '');
 
   // Map Initialization & Cleanup
     useEffect(() => {
@@ -154,12 +157,10 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                     attribution: '&copy; OpenStreetMap contributors'
                 }).addTo(mapRef.current);
             } else if (mapRef.current) {
-                // Invalidate size to fix rendering issues when the map is shown
                 setTimeout(() => mapRef.current.invalidateSize(), 100);
             }
-        } else { // deliveryMethod is 'home-delivery'
+        } else {
             if (mapRef.current) {
-                // If the map exists, destroy it to prevent it from showing up
                 mapRef.current.remove();
                 mapRef.current = null;
             }
@@ -172,7 +173,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
             markersRef.current.forEach(marker => marker.remove());
             markersRef.current = [];
 
-            allPickupPoints.forEach(point => {
+            filteredPickupPoints.forEach(point => {
                 if (point.latitude && point.longitude) {
                     const marker = L.marker([point.latitude, point.longitude]).addTo(mapRef.current);
                     marker.bindPopup(`<b>${point.name}</b><br>${point.street}, ${point.neighborhood}`);
@@ -183,11 +184,16 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                 }
             });
         }
-    }, [deliveryMethod, allPickupPoints]);
+    }, [deliveryMethod, filteredPickupPoints]);
 
-    // Map Panning
+    // Map Panning for city and point selection
     useEffect(() => {
-        if (mapRef.current && deliveryMethod === 'pickup' && selectedPickupPointId) {
+        if (mapRef.current && deliveryMethod === 'pickup') {
+            const cityCoords = {
+                Douala: { lat: 4.05, lng: 9.70, zoom: 12 },
+                Yaoundé: { lat: 3.86, lng: 11.52, zoom: 12 }
+            };
+
             const point = allPickupPoints.find(p => p.id === selectedPickupPointId);
             if (point?.latitude && point?.longitude) {
                 mapRef.current.flyTo([point.latitude, point.longitude], 14);
@@ -196,10 +202,19 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                     return latLng.lat === point.latitude && latLng.lng === point.longitude;
                 });
                 if (marker) marker.openPopup();
+            } else if (cityCoords[selectedCity as keyof typeof cityCoords]) {
+                const { lat, lng, zoom } = cityCoords[selectedCity as keyof typeof cityCoords];
+                mapRef.current.flyTo([lat, lng], zoom);
             }
         }
-    }, [selectedPickupPointId, deliveryMethod, allPickupPoints]);
+    }, [selectedCity, selectedPickupPointId, deliveryMethod, allPickupPoints]);
 
+  const handleCityChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+      const newCity = e.target.value;
+      setSelectedCity(newCity);
+      const newCityPoints = allPickupPoints.filter(p => p.city === newCity);
+      setSelectedPickupPointId(newCityPoints.length > 0 ? newCityPoints[0].id : '');
+  };
 
   const handleAddressChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setShippingAddress({ ...shippingAddress, [e.target.name]: e.target.value });
@@ -237,7 +252,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
       appliedPromoCode: appliedPromoCode || undefined,
     };
     await onOrderConfirm(orderData);
-    // No need to setIsProcessing(false) as the component will unmount upon success
   };
 
   if (cart.length === 0) {
@@ -253,10 +267,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
   }
   
   const deliveryTimeSlots = ["08:00 – 10:00", "12:00 – 14:00", "14:00 – 16:00"];
-  const pickupPointsByCity = allPickupPoints.reduce((acc, pp) => {
-    (acc[pp.city] = acc[pp.city] || []).push(pp);
-    return acc;
-  }, {} as Record<string, PickupPoint[]>);
 
   return (
     <div className="bg-gray-100 dark:bg-gray-950 min-h-[80vh]">
@@ -325,20 +335,32 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                  <div>
                     <h2 className="text-xl font-bold mb-4 dark:text-white">Choisissez votre point de dépôt</h2>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
-                        <div>
-                            <select 
-                                id="pickup-point" 
-                                value={selectedPickupPointId} 
-                                onChange={(e) => setSelectedPickupPointId(e.target.value)} 
-                                className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-kmer-green focus:border-kmer-green dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                                size={5}
-                            >
-                                {Object.entries(pickupPointsByCity).map(([city, points]) => (
-                                    <optgroup key={city} label={city}>
-                                        {points.map(pp => <option key={pp.id} value={pp.id}>{pp.name} - {pp.neighborhood}</option>)}
-                                    </optgroup>
-                                ))}
-                            </select>
+                        <div className="space-y-4">
+                            <div>
+                                <label htmlFor="pickup-city" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">1. Choisissez une ville</label>
+                                <select 
+                                    id="pickup-city"
+                                    value={selectedCity} 
+                                    onChange={handleCityChange} 
+                                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-kmer-green focus:border-kmer-green dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                >
+                                    <option value="Douala">Douala</option>
+                                    <option value="Yaoundé">Yaoundé</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label htmlFor="pickup-point" className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">2. Choisissez un point de dépôt</label>
+                                <select 
+                                    id="pickup-point" 
+                                    value={selectedPickupPointId} 
+                                    onChange={(e) => setSelectedPickupPointId(e.target.value)} 
+                                    className="block w-full border-gray-300 rounded-md shadow-sm focus:ring-kmer-green focus:border-kmer-green dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                                    size={5}
+                                    required={deliveryMethod === 'pickup'}
+                                >
+                                    {filteredPickupPoints.map(pp => <option key={pp.id} value={pp.id}>{pp.name} - {pp.neighborhood}</option>)}
+                                </select>
+                            </div>
                         </div>
                         <div ref={mapContainerRef} className="h-64 md:h-80 w-full rounded-lg shadow-md z-0" style={{ minHeight: '250px' }}></div>
                     </div>

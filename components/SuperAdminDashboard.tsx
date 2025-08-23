@@ -1,8 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon } from './Icons';
+import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
+import QRCode from 'qrcode';
 
 declare const L: any;
 
@@ -76,7 +77,7 @@ const AssignAgentModal: React.FC<{
                 </select>
                 <div className="flex justify-end gap-2 mt-4">
                     <button onClick={onClose} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md">Annuler</button>
-                    <button onClick={handleAssign} className="px-4 py-2 bg-blue-500 text-white rounded-md" disabled={!selectedAgent}>Assigner</button>
+                    <button onClick={handleAssign} className="px-4 py-2 bg-blue-500 text-white rounded-md" disabled={!selectedAgent}>Valider l'assignation</button>
                 </div>
             </div>
         </div>
@@ -216,9 +217,42 @@ const DashboardOverviewPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders
 
 const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onUpdateOrderStatus' | 'onAssignAgent'> & { onOpenAssignModal: (orderId: string) => void }> = ({ allOrders, allUsers, onUpdateOrderStatus, onAssignAgent, onOpenAssignModal }) => {
     const deliveryAgents = useMemo(() => allUsers.filter(u => u.role === 'delivery_agent'), [allUsers]);
+    const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
+    const printableRef = useRef<HTMLDivElement>(null);
+    const qrCodeRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        if (printingOrder && qrCodeRef.current && printableRef.current) {
+            QRCode.toCanvas(qrCodeRef.current, printingOrder.trackingNumber || '', { width: 80, margin: 1 }, (error) => {
+                if (error) console.error(error);
+                // Delay print to ensure QR code has rendered
+                setTimeout(() => window.print(), 100);
+            });
+        }
+    }, [printingOrder]);
     
     return (
         <div className="p-4 sm:p-6">
+             {printingOrder && (
+                <div className="printable fixed -left-[9999px] top-0">
+                    <div ref={printableRef} className="w-[105mm] h-[148mm] p-2 border-2 border-black flex flex-col justify-between font-sans text-xs">
+                        <div>
+                            <h3 className="font-bold text-base">KMER ZONE - Commande #{printingOrder.id}</h3>
+                            <p><b>Date:</b> {new Date(printingOrder.orderDate).toLocaleDateString()}</p>
+                            <p><b>Destinataire:</b> {printingOrder.shippingAddress.fullName}</p>
+                            <p>{printingOrder.shippingAddress.address}, {printingOrder.shippingAddress.city}</p>
+                            <p><b>Tél:</b> {printingOrder.shippingAddress.phone}</p>
+                        </div>
+                        <div className="text-[10px] border-t border-gray-400 pt-1 mt-1">
+                            <b>Contenu:</b> {printingOrder.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}
+                        </div>
+                        <div className="text-center">
+                            <canvas ref={qrCodeRef}></canvas>
+                            <p className="font-mono">{printingOrder.trackingNumber}</p>
+                        </div>
+                    </div>
+                </div>
+            )}
             <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion des Commandes</h2>
             <div className="space-y-3">
                 {allOrders.map(order => {
@@ -263,6 +297,11 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
                                         )}
                                     </div>
                                 </div>
+                                <div className="flex-shrink-0">
+                                   <button onClick={() => setPrintingOrder(order)} className="flex items-center gap-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-3 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 w-full sm:w-auto justify-center">
+                                      <PrinterIcon className="w-4 h-4"/> Imprimer l'étiquette
+                                  </button>
+                                </div>
                             </div>
                         </div>
                     )
@@ -275,6 +314,36 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
 const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'onApproveStore' | 'onRejectStore' | 'onToggleStoreStatus' | 'onToggleStorePremiumStatus' | 'onWarnStore' | 'onRequestDocument' | 'onVerifyDocumentStatus' | 'siteSettings' | 'onActivateSubscription'>> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onToggleStorePremiumStatus, onWarnStore, onRequestDocument, onVerifyDocumentStatus, siteSettings, onActivateSubscription }) => {
     const [warningStore, setWarningStore] = useState<Store | null>(null);
     const [warningReason, setWarningReason] = useState('');
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const mapRef = useRef<any>(null);
+    const [cityFilter, setCityFilter] = useState<'all' | 'Douala' | 'Yaoundé'>('all');
+
+     const cityCoordinates = {
+        'Douala': { lat: 4.0511, lng: 9.7679, zoom: 12 },
+        'Yaoundé': { lat: 3.8480, lng: 11.5021, zoom: 12 },
+        'all': { lat: 3.95, lng: 10.6, zoom: 7 }
+    };
+
+    useEffect(() => {
+        if (mapContainerRef.current && !mapRef.current) {
+            mapRef.current = L.map(mapContainerRef.current).setView([cityCoordinates.all.lat, cityCoordinates.all.lng], cityCoordinates.all.zoom);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
+        }
+    }, []);
+
+    useEffect(() => {
+        if (mapRef.current) {
+            mapRef.current.eachLayer((layer: any) => { if (layer instanceof L.Marker) mapRef.current.removeLayer(layer); });
+            const { lat, lng, zoom } = cityCoordinates[cityFilter];
+            mapRef.current.flyTo([lat, lng], zoom);
+            const filteredStores = allStores.filter(s => cityFilter === 'all' || s.location === cityFilter);
+            filteredStores.forEach(store => {
+                if (store.latitude && store.longitude) {
+                    L.marker([store.latitude, store.longitude]).addTo(mapRef.current).bindPopup(`<b>${store.name}</b><br>${store.physicalAddress}`);
+                }
+            });
+        }
+    }, [cityFilter, allStores]);
 
     const handleWarn = () => {
         if (warningStore && warningReason) {
@@ -319,6 +388,19 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
             )}
             <div className="p-4 sm:p-6">
                 <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion des Boutiques</h2>
+                
+                <div className="mb-6 p-4 border dark:border-gray-700 rounded-lg">
+                    <div className="flex justify-between items-center mb-2">
+                        <h3 className="font-semibold text-lg dark:text-white">Carte des Boutiques</h3>
+                         <select value={cityFilter} onChange={e => setCityFilter(e.target.value as any)} className="p-1 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-600">
+                            <option value="all">Toutes</option>
+                            <option value="Douala">Douala</option>
+                            <option value="Yaoundé">Yaoundé</option>
+                        </select>
+                    </div>
+                    <div ref={mapContainerRef} className="h-64 w-full rounded-md bg-gray-200 dark:bg-gray-900/50"></div>
+                </div>
+                
                 <div className="space-y-4">
                     {allStores.map(store => (
                         <details key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group" open={store.status === 'pending'}>
@@ -944,20 +1026,42 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
 
             <div className="p-4 border dark:border-gray-700 rounded-lg space-y-4">
                 <h3 className="font-semibold dark:text-white">Programme Premium</h3>
-                <label className="flex items-center gap-3"><input type="checkbox" name="isPremiumProgramEnabled" checked={localSettings.isPremiumProgramEnabled} onChange={handleChange} className="h-4 w-4 rounded"/><span>Activer le Programme Premium</span></label>
-                 <div className="grid grid-cols-2 gap-4">
-                    <input type="number" name="premiumThresholds.orders" value={localSettings.premiumThresholds.orders} onChange={handleChange} className="w-full p-2 border rounded" />
-                    <input type="number" name="premiumThresholds.spending" value={localSettings.premiumThresholds.spending} onChange={handleChange} className="w-full p-2 border rounded" />
-                    <input type="number" name="premiumCautionAmount" value={localSettings.premiumCautionAmount} onChange={handleChange} className="w-full p-2 border rounded" />
+                <p className="text-sm text-gray-500 dark:text-gray-400 -mt-2">Configurez les règles du programme de fidélité pour les clients.</p>
+                <label className="flex items-center gap-3 pt-2"><input type="checkbox" name="isPremiumProgramEnabled" checked={localSettings.isPremiumProgramEnabled} onChange={handleChange} className="h-4 w-4 rounded"/><span>Activer le Programme Premium</span></label>
+                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label className="block text-sm font-medium">Nb. de commandes pour devenir Premium</label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Le client devient Premium après ce nombre de commandes livrées.</p>
+                        <input type="number" name="premiumThresholds.orders" value={localSettings.premiumThresholds.orders} onChange={handleChange} className="mt-1 w-full p-2 border rounded" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium">Montant dépensé pour devenir Premium (FCFA)</label>
+                         <p className="text-xs text-gray-500 dark:text-gray-400">Le client devient Premium après avoir dépensé ce montant total.</p>
+                        <input type="number" name="premiumThresholds.spending" value={localSettings.premiumThresholds.spending} onChange={handleChange} className="mt-1 w-full p-2 border rounded" />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium">Montant de la caution pour accès immédiat (FCFA)</label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Permet aux clients de payer pour devenir Premium instantanément.</p>
+                        <input type="number" name="premiumCautionAmount" value={localSettings.premiumCautionAmount} onChange={handleChange} className="mt-1 w-full p-2 border rounded" />
+                    </div>
                 </div>
-                <label className="flex items-center gap-3"><input type="checkbox" name="isPremiumPlusEnabled" checked={localSettings.isPremiumPlusEnabled} onChange={handleChange} className="h-4 w-4 rounded"/><span>Activer Premium+</span></label>
-                <input type="number" name="premiumPlusAnnualFee" value={localSettings.premiumPlusAnnualFee} onChange={handleChange} className="w-full p-2 border rounded" />
+                <div className="pt-4 border-t dark:border-gray-600 space-y-3">
+                    <label className="flex items-center gap-3"><input type="checkbox" name="isPremiumPlusEnabled" checked={localSettings.isPremiumPlusEnabled} onChange={handleChange} className="h-4 w-4 rounded"/><span>Activer l'abonnement Premium+</span></label>
+                     <div>
+                        <label className="block text-sm font-medium">Frais annuels Premium+ (FCFA)</label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">Le coût de l'abonnement annuel pour le statut Premium+.</p>
+                        <input type="number" name="premiumPlusAnnualFee" value={localSettings.premiumPlusAnnualFee} onChange={handleChange} className="mt-1 w-full p-2 border rounded" />
+                    </div>
+                </div>
             </div>
 
              <div className="p-4 border dark:border-gray-700 rounded-lg space-y-4">
-                <h3 className="font-semibold dark:text-white">Gestion des Loyer</h3>
+                <h3 className="font-semibold dark:text-white">Gestion des Loyers de Boutique</h3>
                  <label className="flex items-center gap-3"><input type="checkbox" name="isRentEnabled" checked={localSettings.isRentEnabled} onChange={handleChange} className="h-4 w-4 rounded"/><span>Activer le Loyer pour les boutiques</span></label>
-                <input type="number" name="rentAmount" value={localSettings.rentAmount} onChange={handleChange} className="w-full p-2 border rounded" />
+                <div>
+                    <label className="block text-sm font-medium">Montant du loyer mensuel (FCFA)</label>
+                    <input type="number" name="rentAmount" value={localSettings.rentAmount} onChange={handleChange} className="mt-1 w-full p-2 border rounded" />
+                </div>
             </div>
 
             <div className="flex justify-end mt-6">

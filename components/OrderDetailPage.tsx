@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import type { Order, OrderStatus, PickupPoint, TrackingEvent } from '../types';
-import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon } from './Icons';
+import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon, PrinterIcon } from './Icons';
 
 interface OrderDetailPageProps {
   order: Order;
@@ -106,18 +106,27 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
   const relevantStatusSteps = order.deliveryMethod === 'pickup' 
     ? statusSteps.filter(step => step !== 'out-for-delivery') 
     : statusSteps;
+    
+  const handlePrint = () => {
+    window.print();
+  };
 
   return (
     <>
     {isRefundModalOpen && <RefundRequestModal onClose={() => setIsRefundModalOpen(false)} onSubmit={handleRefundSubmit} />}
     <div className="bg-gray-100 dark:bg-gray-950 min-h-[80vh] py-12">
       <div className="container mx-auto px-4 sm:px-6">
-        <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
-          <ArrowLeftIcon className="w-5 h-5" />
-          Retour à l'historique
-        </button>
+        <div className="flex justify-between items-center mb-8">
+            <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold">
+              <ArrowLeftIcon className="w-5 h-5" />
+              Retour à l'historique
+            </button>
+             <button onClick={handlePrint} className="flex items-center gap-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 font-semibold py-2 px-4 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600">
+                <PrinterIcon className="w-5 h-5"/> Imprimer la facture
+            </button>
+        </div>
 
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sm:p-8">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sm:p-8 printable">
           <div className="flex flex-col sm:flex-row justify-between sm:items-center border-b dark:border-gray-700 pb-4 mb-6">
             <div>
               <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Détails de la commande</h1>
