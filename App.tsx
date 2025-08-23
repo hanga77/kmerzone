@@ -33,7 +33,7 @@ import ForbiddenPage from './components/ForbiddenPage';
 import ServerErrorPage from './components/ServerErrorPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
@@ -448,6 +448,8 @@ const initialPickupPoints: PickupPoint[] = [
 ];
 
 const initialSiteSettings: SiteSettings = {
+  logoUrl: '',
+  isStoriesEnabled: true,
   isPremiumProgramEnabled: true,
   premiumThresholds: { orders: 10, spending: 50000 },
   premiumCautionAmount: 10000,
@@ -508,6 +510,18 @@ export default function App() {
   useEffect(() => {
     comparison.setProducts(allProducts);
   }, [allProducts, comparison.setProducts]);
+
+  useEffect(() => {
+    const favicon = document.getElementById('favicon') as HTMLLinkElement;
+    if (favicon) {
+      if (siteSettings.logoUrl) {
+        favicon.href = siteSettings.logoUrl;
+      } else {
+        // Fallback to default SVG if logoUrl is removed
+        favicon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2384CC16' d='M3,3V9H4.96L5.95,12L4.96,15H3V21H9V20H10V18H11V17H13V18H14V20H15V21H21V15H19.05L18.06,12L19.05,9H21V3M5,5H7V7H5M17,5H19V7H17M5,17H7V19H5M17,17H19V19H17M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z' /%3E%3C/svg%3E";
+      }
+    }
+  }, [siteSettings.logoUrl]);
   
   const addLog = useCallback((action: string, details: string) => {
     if (!user) return;
@@ -557,6 +571,35 @@ export default function App() {
     setPage('home');
   }, [logout]);
 
+  const handleAddStory = useCallback((storeId: string, imageUrl: string) => {
+    setAllStores(prevStores => prevStores.map(s => {
+        if (s.id === storeId) {
+            const newStory: Story = {
+                id: `story-${Date.now()}`,
+                imageUrl,
+                createdAt: new Date().toISOString()
+            };
+            return {
+                ...s,
+                stories: [...(s.stories || []), newStory]
+            };
+        }
+        return s;
+    }));
+  }, [setAllStores]);
+
+  const handleDeleteStory = useCallback((storeId: string, storyId: string) => {
+      setAllStores(prevStores => prevStores.map(s => {
+          if (s.id === storeId) {
+              return {
+                  ...s,
+                  stories: (s.stories || []).filter(story => story.id !== storyId)
+              };
+          }
+          return s;
+      }));
+  }, [setAllStores]);
+
 
   if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
       return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
@@ -583,7 +626,7 @@ export default function App() {
   
   const renderPage = () => {
     switch(page) {
-      case 'home': return <HomePage categories={allCategories} products={allProducts} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onCategoryClick={(c) => { setSelectedCategory(c); setPage('category'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onViewStories={setViewingStoriesOfStore} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'home': return <HomePage categories={allCategories} products={allProducts} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onCategoryClick={(c) => { setSelectedCategory(c); setPage('category'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onViewStories={setViewingStoriesOfStore} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
       case 'product': return selectedProduct && <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => { setSelectedProduct(null); setPage(selectedCategory ? 'category' : (searchQuery ? 'search-results' : 'home')); }} onAddReview={(productId, review) => {setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: [...p.reviews, review]} : p))}} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onProductClick={(p) => setSelectedProduct(p)} onOpenLogin={() => setIsLoginOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
       case 'cart': return <CartView onBack={() => setPage('home')} onNavigateToCheckout={() => setPage('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
       case 'checkout': return <Checkout onBack={() => setPage('cart')} onOrderConfirm={async (orderData) => { 
@@ -605,7 +648,7 @@ export default function App() {
       case 'stores': return <StoresPage stores={allStores} onBack={() => setPage('home')} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} />;
       case 'become-seller': return <BecomeSeller onBack={() => setPage('home')} onBecomeSeller={(shopName, location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, logoUrl, latitude, longitude) => { const newStore: Store = { id: `store-${Date.now()}`, name: shopName, logoUrl, category: 'Divers', warnings: [], status: 'pending', premiumStatus: 'standard', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, latitude, longitude, documents: siteSettings.requiredSellerDocuments['CNI (Carte Nationale d\'Identité)'] ? [{name: "CNI (Carte Nationale d'Identité)", status: 'requested'}] : [] }; setAllStores(prev => [...prev, newStore]); }} onRegistrationSuccess={() => setPage('home')} siteSettings={siteSettings} />;
       case 'category': return selectedCategory && <CategoryPage categoryName={selectedCategory} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedCategory(null); setPage('home'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
-      case 'seller-dashboard': return user?.shopName && <SellerDashboard store={allStores.find(s=>s.name === user.shopName)} products={allProducts.filter(p => p.vendor === user.shopName)} categories={allCategories} flashSales={flashSales} sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))} promoCodes={allPromoCodes.filter(pc => pc.sellerId === user.id)} onBack={() => setPage('home')} onAddProduct={() => setPage('product-form')} onEditProduct={(p) => { setSelectedProduct(p); setPage('product-form'); }} onDeleteProduct={(id) => setAllProducts(products => products.filter(p => p.id !== id))} onToggleStatus={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, status: p.status === 'published' ? 'draft' : 'published'} : p))} onNavigateToProfile={() => setPage('seller-profile')} onSetPromotion={(p) => setSelectedProduct(p)} onRemovePromotion={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: undefined} : p))} onProposeForFlashSale={(flashSaleId, productId, flashPrice, sellerShopName) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: [...fs.products, {productId, flashPrice, sellerShopName, status: 'pending'}]} : fs)); }} onUploadDocument={(storeId, documentName, fileUrl) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: s.documents.map(d => d.name === documentName ? {...d, status: 'uploaded', fileUrl} : d)} : s)); }} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onCreatePromoCode={(codeData) => setAllPromoCodes(prev => [...prev, {...codeData, uses: 0}])} onDeletePromoCode={(code) => setAllPromoCodes(prev => prev.filter(c => c.code !== code))} isChatEnabled={isChatEnabled} onPayRent={(storeId) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()} : s)); alert('Paiement du loyer effectué !'); }} siteSettings={siteSettings} />;
+      case 'seller-dashboard': return user?.shopName && <SellerDashboard store={allStores.find(s=>s.name === user.shopName)} products={allProducts.filter(p => p.vendor === user.shopName)} categories={allCategories} flashSales={flashSales} sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))} promoCodes={allPromoCodes.filter(pc => pc.sellerId === user.id)} onBack={() => setPage('home')} onAddProduct={() => setPage('product-form')} onEditProduct={(p) => { setSelectedProduct(p); setPage('product-form'); }} onDeleteProduct={(id) => setAllProducts(products => products.filter(p => p.id !== id))} onToggleStatus={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, status: p.status === 'published' ? 'draft' : 'published'} : p))} onNavigateToProfile={() => setPage('seller-profile')} onSetPromotion={(p) => setSelectedProduct(p)} onRemovePromotion={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: undefined} : p))} onProposeForFlashSale={(flashSaleId, productId, flashPrice, sellerShopName) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: [...fs.products, {productId, flashPrice, sellerShopName, status: 'pending'}]} : fs)); }} onUploadDocument={(storeId, documentName, fileUrl) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: s.documents.map(d => d.name === documentName ? {...d, status: 'uploaded', fileUrl} : d)} : s)); }} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onCreatePromoCode={(codeData) => setAllPromoCodes(prev => [...prev, {...codeData, uses: 0}])} onDeletePromoCode={(code) => setAllPromoCodes(prev => prev.filter(c => c.code !== code))} isChatEnabled={isChatEnabled} onPayRent={(storeId) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()} : s)); alert('Paiement du loyer effectué !'); }} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} />;
       case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedVendor(null); setPage('stores'); }} onVendorClick={(v) => setSelectedVendor(v)} isComparisonEnabled={isComparisonEnabled} />;
       case 'product-form': return <ProductForm onSave={(p) => { setAllProducts(products => { const exists = products.some(prod => prod.id === p.id); return exists ? products.map(prod => prod.id === p.id ? p : prod) : [...products, p]; }); setSelectedProduct(null); setPage('seller-dashboard'); }} onCancel={() => { setSelectedProduct(null); setPage('seller-dashboard'); }} productToEdit={selectedProduct} categories={allCategories} onAddCategory={(name) => {const newCat = {id: `cat-${Date.now()}`, name, imageUrl: ''}; setAllCategories(cats => [...cats, newCat]); return newCat;}} />;
       case 'seller-profile': return user?.shopName && <SellerProfile store={allStores.find(s => s.name === user.shopName)!} onBack={() => setPage('seller-dashboard')} onUpdateProfile={(storeId, updatedData) => {setAllStores(stores => stores.map(s => s.id === storeId ? {...s, name: updatedData.shopName, location: updatedData.location, logoUrl: updatedData.logoUrl} : s)); setAllUsers(users => users.map(u => u.id === user.id ? {...u, shopName: updatedData.shopName} : u))}} />;
@@ -655,11 +698,12 @@ export default function App() {
         onSearch={(q) => { setSearchQuery(q); setPage('search-results'); }}
         isChatEnabled={isChatEnabled}
         isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
+        logoUrl={siteSettings.logoUrl}
       />
       <main className="min-h-[calc(100vh-145px)]">
           {renderPage()}
       </main>
-      <Footer onNavigate={(title, content) => { setInfoPageContent({title, content}); setPage('info'); }} />
+      <Footer onNavigate={(title, content) => { setInfoPageContent({title, content}); setPage('info'); }} logoUrl={siteSettings.logoUrl} />
       {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
       {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={closeModal} onNavigateToCart={() => { closeModal(); setPage('cart'); }} />}
       {user?.role === 'seller' && selectedProduct?.vendor === user.shopName && <PromotionModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSave={(id, promoPrice, startDate, endDate) => { setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate} : p)); setSelectedProduct(null); }} />}

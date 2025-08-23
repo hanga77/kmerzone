@@ -17,6 +17,7 @@ interface HomePageProps {
     onVisitStore: (storeName: string) => void;
     onViewStories: (store: Store) => void;
     isComparisonEnabled: boolean;
+    isStoriesEnabled: boolean;
 }
 
 const StoryCarousel: React.FC<{ stores: Store[], onViewStories: (store: Store) => void }> = ({ stores, onViewStories }) => {
@@ -127,7 +128,7 @@ const AdCarousel: React.FC<{ advertisements: Advertisement[] }> = ({ advertiseme
 };
 
 
-const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled }) => {
+const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled, isStoriesEnabled }) => {
     
     const popularProductsRef = React.useRef<HTMLDivElement>(null);
     const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
@@ -161,7 +162,7 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 </section>
             )}
 
-            <StoryCarousel stores={stores} onViewStories={onViewStories} />
+            {isStoriesEnabled && <StoryCarousel stores={stores} onViewStories={onViewStories} />}
 
              {/* Promotions Section */}
             <section className="py-16 bg-white dark:bg-gray-800/30">

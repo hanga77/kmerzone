@@ -1,6 +1,6 @@
-# KMER ZONE - Spécifications Techniques Détaillées du Backend
+# KMER ZONE - Spécifications Techniques Détaillées du Backend (MongoDB Edition)
 
-Ce document sert de guide complet pour la construction du serveur API RESTful de la marketplace **KMER ZONE**. Il détaille l'architecture, les modèles de données, la logique métier et les points d'API nécessaires pour alimenter l'application frontend.
+Ce document sert de guide complet pour la construction du serveur API RESTful pour la marketplace **KMER ZONE**, en utilisant une base de données NoSQL. Il détaille l'architecture, les modèles de données, la logique métier et les points d'API nécessaires pour alimenter l'application frontend.
 
 ## 🚀 Vue d'ensemble
 
@@ -15,8 +15,8 @@ Le backend est le cerveau de la plateforme. Ses responsabilités principales son
 -   **Runtime :** [Node.js](https://nodejs.org/) (v18.x ou LTS)
 -   **Langage :** [TypeScript](https://www.typescriptlang.org/)
 -   **Framework :** [Express.js](https://expressjs.com/)
--   **Base de Données :** [PostgreSQL](https://www.postgresql.org/)
--   **ORM :** [Prisma](https://www.prisma.io/)
+-   **Base de Données :** [MongoDB](https://www.mongodb.com/) (Atlas ou auto-hébergé)
+-   **ODM :** [Mongoose](https://mongoosejs.com/)
 -   **Authentification :** [JSON Web Tokens (JWT)](https://jwt.io/)
 -   **Validation :** [Zod](https://zod.dev/)
 
@@ -25,259 +25,183 @@ Le backend est le cerveau de la plateforme. Ses responsabilités principales son
 ## ⚙️ Guide d'Installation
 
 ### 1. Prérequis
--   Node.js (v18+), NPM/Yarn, PostgreSQL, Git
+-   Node.js (v18+), NPM/Yarn, MongoDB, Git
 
 ### 2. Démarrage
 1.  **Cloner le dépôt :** `git clone [URL_DU_DEPOT_BACKEND]`
 2.  **Installer les dépendances :** `npm install`
 3.  **Configurer `.env`** en se basant sur `.env.example`:
     ```ini
-    DATABASE_URL="postgresql://USER:PASSWORD@localhost:5432/kmerzone?schema=public"
+    # URI de connexion MongoDB (local ou Atlas)
+    MONGODB_URI="mongodb://localhost:27017/kmerzone"
+    
+    # Port du serveur
     PORT=5000
+    
+    # Clé secrète pour les JWT (très importante)
     JWT_SECRET="UNE_PHRASE_SECRETE_TRES_LONGUE_ET_COMPLEXE"
     ```
-4.  **Appliquer les migrations BDD :** `npx prisma migrate dev --name init`
-5.  **(Optionnel) Populer la BDD :** `npx prisma db seed`
-6.  **Lancer le serveur :** `npm run dev`
+4.  **Lancer le serveur en mode développement :** `npm run dev`
 
 ---
 
-## 🔐 Authentification & Rôles
+## 🗂️ Modèles de Données (Mongoose Schemas)
 
-Le système repose sur JWT. L'utilisateur se connecte, reçoit un token, et doit l'inclure dans l'en-tête `Authorization` de chaque requête protégée (`Authorization: Bearer <token>`).
+Voici des exemples de schémas Mongoose pour les collections principales.
 
--   **Rôles :** `customer`, `seller`, `delivery_agent`, `superadmin`.
+### User (`User.model.ts`)
+```typescript
+import { Schema, model } from 'mongoose';
 
----
-
-## 🌐 Documentation Détaillée des Points d'API
-
-### Authentification (`/api/auth`)
-
-#### `POST /register`
--   **Accès :** Public
--   **Description :** Crée un nouveau compte client.
--   **Body :**
-    ```json
-    {
-      "name": "Jean Dupont",
-      "email": "jean@example.com",
-      "password": "password123"
-    }
-    ```
--   **Succès (201) :**
-    ```json
-    {
-      "user": { "id": "user_...", "name": "Jean Dupont", "email": "jean@example.com", "role": "customer", "loyalty": { ... } },
-      "token": "ey..."
-    }
-    ```
--   **Erreur (409) :** `{"message": "Cet email est déjà utilisé."}`
-
-#### `POST /login`
--   **Accès :** Public
--   **Description :** Connecte un utilisateur et retourne un JWT.
--   **Body :**
-    ```json
-    {
-      "email": "jean@example.com",
-      "password": "password123"
-    }
-    ```
--   **Succès (200) :**
-    ```json
-    {
-      "user": { "id": "user_...", "name": "Jean Dupont", "role": "customer", ... },
-      "token": "ey..."
-    }
-    ```
--   **Erreur (401) :** `{"message": "Email ou mot de passe incorrect."}`
-
-#### `GET /me`
--   **Accès :** Privé (tous les rôles connectés)
--   **Description :** Retourne les informations de l'utilisateur connecté.
--   **Header :** `Authorization: Bearer <token>`
--   **Succès (200) :** `{ "user": { "id": "user_...", ... } }`
-
----
-
-### Produits (`/api/products`)
-
-#### `GET /`
--   **Accès :** Public
--   **Description :** Liste tous les produits publiés avec filtres et pagination.
--   **Query Params :** `?category=Vêtements&vendor=Kmer%20Fashion&minPrice=10000&maxPrice=20000&sortBy=price-asc&page=1&limit=12`
--   **Succès (200) :**
-    ```json
-    {
-      "products": [ { "id": "...", "name": "Robe en Tissu Pagne", ... } ],
-      "totalPages": 5,
-      "currentPage": 1
-    }
-    ```
-
-#### `GET /:id`
--   **Accès :** Public
--   **Description :** Récupère les détails d'un produit spécifique.
--   **Succès (200) :** `{ "product": { ... } }`
--   **Erreur (404) :** `{"message": "Produit non trouvé."}`
-
----
-
-### Commandes (`/api/orders`)
-
-#### `POST /`
--   **Accès :** `Customer`
--   **Header :** `Authorization: Bearer <token>`
--   **Description :** Crée une nouvelle commande. La logique backend doit vérifier le stock.
--   **Body :**
-    ```json
-    {
-      "items": [{"productId": "prod_...", "quantity": 1, "selectedVariant": {"Taille": "M"}}],
-      "deliveryMethod": "home-delivery",
-      "shippingAddress": { "fullName": "Jean Dupont", "phone": "699887766", "address": "123 Rue de la Joie", "city": "Douala" },
-      "pickupPointId": null,
-      "appliedPromoCode": "SOLDE10"
-    }
-    ```
--   **Succès (201) :** `{ "order": { "id": "CMD-...", ... } }`
--   **Erreur (400) :** `{"message": "Le produit '...' est en rupture de stock."}`
-
-#### `GET /mine`
--   **Accès :** `Customer`
--   **Header :** `Authorization: Bearer <token>`
--   **Description :** Récupère l'historique des commandes de l'utilisateur connecté.
--   **Succès (200) :** `{ "orders": [ { ... }, { ... } ] }`
-
----
-
-### Boutiques (`/api/stores`)
-
-#### `POST /become-seller`
--   **Accès :** `Customer`
--   **Header :** `Authorization: Bearer <token>`
--   **Description :** Soumet une demande pour devenir vendeur.
--   **Body :**
-    ```json
-    {
-        "shopName": "Ma Belle Boutique",
-        "location": "Douala",
-        "neighborhood": "Akwa",
-        "sellerFirstName": "Marie",
-        "sellerLastName": "Claire",
-        "sellerPhone": "677665544",
-        "physicalAddress": "En face de la pharmacie Akwa",
-        "latitude": 4.0483,
-        "longitude": 9.702
-    }
-    ```
--   **Succès (201) :** `{ "store": { "id": "store_...", "status": "pending", ... } }`
-
----
-
-### Vendeur (`/api/seller`)
-
-**Note :** Toutes les routes de cette section requièrent le rôle `seller`.
-
-#### `PUT /products/:id`
--   **Description :** Met à jour un produit appartenant au vendeur.
--   **Body (exemple partiel) :** `{ "price": 14500, "stock": 5 }`
--   **Succès (200) :** `{ "product": { ... } }`
-
-#### `PATCH /orders/:id/status`
--   **Description :** Met à jour le statut d'une commande (limité à 'confirmed' -> 'ready-for-pickup').
--   **Body :** `{"status": "ready-for-pickup"}`
--   **Succès (200) :** `{ "order": { ... } }`
-
----
-
-### Super Administration (`/api/admin`)
-
-**Note :** Toutes les routes de cette section requièrent le rôle `superadmin`.
-
-#### `PATCH /stores/:id/status`
--   **Description :** Approuve, rejette, suspend ou réactive une boutique.
--   **Body :** `{"status": "active"}`
--   **Succès (200) :** `{ "store": { "id": "...", "status": "active" } }`
-
-#### `POST /stores/:id/warn`
--   **Description :** Envoie un avertissement à une boutique.
--   **Body :** `{"reason": "Non-respect des délais de livraison."}`
--   **Succès (200) :** `{ "store": { ...warnings: [...] } }`
-
-#### `PATCH /stores/:storeId/documents/:docName/status`
--   **Description :** Approuve ou rejette un document soumis par un vendeur.
--   **Body :**
-    ```json
-    {
-      "status": "rejected",
-      "reason": "La photo est floue."
-    }
-    ```
--   **Succès (200) :** `{ "document": { ... } }`
-
-
-#### `PATCH /users/:id/role`
--   **Description :** Modifie le rôle d'un utilisateur.
--   **Body :** `{"role": "delivery_agent"}`
--   **Succès (200) :** `{ "user": { "id": "...", "role": "delivery_agent" } }`
-
-#### `PUT /settings`
--   **Description :** Met à jour les paramètres du site.
--   **Body :**
-    ```json
-    {
-      "isRentEnabled": true,
-      "rentAmount": 5000,
-      "requiredSellerDocuments": {
-        "CNI (Carte Nationale d'Identité)": true,
-        "Registre de Commerce": false,
-        "Photo du gérant": true,
-        "Plan de localisation": false
-      },
-      ...
-    }
-    ```
--   **Succès (200) :** `{ "settings": { ... } }`
-
-#### `POST /payouts`
--   **Description :** Enregistre un versement à un vendeur.
--   **Body :**
-    ```json
-    {
-      "storeId": "store_...",
-      "amount": 50000
-    }
-    ```
--   **Succès (201) :** `{ "payout": { "id": "payout_...", ... } }`
--   **Erreur (400) :** `{"message": "Le montant du versement dépasse le solde dû."}`
-   
-#### `POST /categories`
-- **Description :** Crée une nouvelle catégorie.
-- **Body :** 
-  ```json
-  {
-      "name": "Articles de Sport",
-      "imageUrl": "https://example.com/sport.jpg"
+const UserSchema = new Schema({
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true, lowercase: true },
+  password: { type: String, required: true, select: false }, // Ne pas retourner le mot de passe par défaut
+  role: { 
+    type: String, 
+    enum: ['customer', 'seller', 'superadmin', 'delivery_agent', 'depot_agent'], 
+    default: 'customer' 
+  },
+  shopName: { type: String }, // Pour les vendeurs
+  loyalty: {
+      status: { type: String, enum: ['standard', 'premium', 'premium_plus'], default: 'standard' },
+      orderCount: { type: Number, default: 0 },
+      totalSpent: { type: Number, default: 0 }
   }
-  ```
-- **Succès (201) :** `{ "category": { "id": "cat_...", ... } }`
+}, { timestamps: true });
 
-#### `PATCH /reviews/moderate`
-- **Description :** Approuve ou rejette un avis client.
-- **Body :**
-  ```json
-  {
-      "reviewId": 123,
-      "status": "approved"
-  }
-  ```
-- **Succès (200) :** `{ "review": { ... } }`
+export default model('User', UserSchema);
+```
+
+### Product (`Product.model.ts`)
+```typescript
+import { Schema, model, Types } from 'mongoose';
+
+const ReviewSchema = new Schema({
+    author: { type: String, required: true },
+    rating: { type: Number, required: true },
+    comment: { type: String, required: true },
+    date: { type: Date, default: Date.now },
+    status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' }
+});
+
+const ProductSchema = new Schema({
+    name: { type: String, required: true, index: true },
+    price: { type: Number, required: true },
+    promotionPrice: { type: Number },
+    description: { type: String, required: true },
+    category: { type: String, required: true, index: true },
+    vendor: { type: String, required: true, index: true },
+    stock: { type: Number, required: true, default: 0 },
+    imageUrls: [String],
+    reviews: [ReviewSchema],
+    status: { type: String, enum: ['published', 'draft'], default: 'draft' }
+    // ... autres champs comme `brand`, `weight`, etc.
+}, { timestamps: true });
+
+export default model('Product', ProductSchema);
+```
+
+### Order (`Order.model.ts`)
+```typescript
+import { Schema, model, Types } from 'mongoose';
+
+const TrackingEventSchema = new Schema({
+    status: String,
+    date: { type: Date, default: Date.now },
+    location: String,
+    details: String
+});
+
+const OrderSchema = new Schema({
+    userId: { type: Types.ObjectId, ref: 'User', required: true },
+    items: [{
+        productId: { type: Types.ObjectId, ref: 'Product' },
+        name: String,
+        price: Number,
+        quantity: Number,
+        // ...
+    }],
+    total: { type: Number, required: true },
+    status: { 
+        type: String, 
+        enum: ['confirmed', 'ready-for-pickup', 'picked-up', 'at-depot', 'out-for-delivery', 'delivered', 'cancelled', 'refund-requested', 'refunded'], 
+        default: 'confirmed' 
+    },
+    shippingAddress: {
+        fullName: String,
+        phone: String,
+        address: String,
+        city: String
+    },
+    trackingNumber: { type: String, unique: true },
+    trackingHistory: [TrackingEventSchema]
+}, { timestamps: true });
+
+export default model('Order', OrderSchema);
+```
 
 ---
 
-## 🏢 Logique Métier Clé
+## 🌐 Documentation des Points d'API
 
--   **Cycle de vie d'une commande :** Le statut évolue de `confirmed` à `delivered`. Chaque changement de statut doit être enregistré dans la table `TrackingEvent`.
--   **Gestion des Loyers :** Un `cron job` (tâche planifiée) doit s'exécuter quotidiennement pour vérifier les boutiques dont l'abonnement est échu et changer leur statut à `overdue`.
--   **Calcul des Paiements :** Le solde dû à un vendeur est `(Revenu Total des commandes livrées - Commission) - Total Déjà Versé`. La commission est un pourcentage fixe défini dans les `SiteSettings`.
+La structure des points d'API reste la même que celle décrite pour la version PostgreSQL. La principale différence réside dans l'implémentation interne, qui utilisera Mongoose pour interagir avec MongoDB.
+
+**Exemple : Créer une commande (`POST /api/orders`)**
+La logique métier devra :
+1.  Vérifier que l'utilisateur est authentifié (`customer`).
+2.  Valider le corps de la requête (items, adresse, etc.).
+3.  Pour chaque article, vérifier le stock dans la collection `Product`. Utiliser une transaction MongoDB pour assurer l'atomicité.
+4.  Si le stock est suffisant, décrémenter le stock pour chaque produit.
+5.  Créer un nouveau document dans la collection `Order`.
+6.  Retourner la commande créée.
+
+---
+
+## ⚖️ Politique de Confidentialité de KMER ZONE
+
+**Dernière mise à jour :** [Date]
+
+Bienvenue sur KMER ZONE. Votre vie privée est d'une importance capitale pour nous. Cette Politique de Confidentialité explique quelles informations nous collectons, comment nous les utilisons, et quels sont vos droits.
+
+### 1. Informations que nous collectons
+
+-   **Informations de compte :** Lorsque vous créez un compte, nous collectons votre nom, votre adresse e-mail et votre mot de passe (crypté).
+-   **Informations de profil et de boutique (pour les vendeurs) :** Nom de la boutique, contacts, adresse physique, documents d'identification pour vérification.
+-   **Informations sur les transactions :** Détails des produits que vous achetez ou vendez, informations de livraison, historique des commandes. Nous ne stockons PAS directement vos informations de paiement (numéros de carte, etc.). Celles-ci sont gérées de manière sécurisée par nos partenaires de paiement.
+-   **Communications :** Messages échangés avec d'autres utilisateurs ou avec notre support client via la plateforme.
+-   **Données d'utilisation :** Informations sur la manière dont vous interagissez avec notre site (pages visitées, produits consultés, etc.).
+
+### 2. Comment nous utilisons vos informations
+
+-   **Pour fournir nos services :** Gérer votre compte, traiter vos commandes, faciliter les livraisons et les paiements.
+-   **Pour améliorer notre plateforme :** Analyser l'utilisation pour optimiser l'expérience utilisateur et développer de nouvelles fonctionnalités.
+-   **Pour la sécurité :** Vérifier les comptes, prévenir la fraude et assurer la sécurité de notre marketplace.
+-   **Pour communiquer avec vous :** Vous envoyer des notifications sur vos commandes, des mises à jour de nos services ou des offres marketing (avec votre consentement).
+
+### 3. Partage de vos informations
+
+Nous ne vendons jamais vos données personnelles. Nous pouvons partager vos informations uniquement dans les cas suivants :
+-   **Entre utilisateurs :** Nous partageons les informations nécessaires pour finaliser une transaction (par exemple, l'adresse de livraison avec le vendeur et le livreur).
+-   **Avec des prestataires de services :** Nous travaillons avec des tiers pour le paiement, la livraison et l'hébergement, qui n'ont accès qu'aux informations nécessaires pour leurs services.
+-   **Pour des raisons légales :** Si la loi l'exige ou pour protéger nos droits et notre sécurité.
+
+### 4. Sécurité de vos données
+
+Nous mettons en œuvre des mesures de sécurité techniques et organisationnelles robustes pour protéger vos données contre l'accès non autorisé, l'altération ou la destruction. Cela inclut le cryptage des mots de passe et l'utilisation de connexions sécurisées (SSL).
+
+### 5. Vos droits
+
+Conformément à la réglementation en vigueur, vous disposez des droits suivants :
+-   **Droit d'accès :** Vous pouvez demander une copie des informations que nous détenons sur vous.
+-   **Droit de rectification :** Vous pouvez corriger les informations inexactes dans votre profil.
+-   **Droit à l'effacement :** Vous pouvez demander la suppression de votre compte et de vos données associées (sous réserve des obligations légales de conservation).
+
+Pour exercer ces droits, veuillez nous contacter.
+
+### 6. Contact
+
+Pour toute question concernant cette politique de confidentialité, veuillez nous contacter à l'adresse suivante : **[Adresse email de contact, ex: support@kmerzone.com]**.
+
+**[Nom de l'entreprise/l'opérateur de KMER ZONE]**
+**[Adresse de l'entreprise]**

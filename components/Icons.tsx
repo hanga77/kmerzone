@@ -2,20 +2,29 @@ import React from 'react';
 
 type IconProps = {
   className?: string;
+  logoUrl?: string;
 };
 
-export const LogoIcon: React.FC<IconProps> = (props) => (
-  <div {...props} className={`flex items-center gap-2 ${props.className || ''}`}>
+export const LogoIcon: React.FC<IconProps> = ({ className, logoUrl }) => {
+  const logoImage = logoUrl ? (
+    <img src={logoUrl} alt="Kmer Zone Logo" className="h-10 object-contain" />
+  ) : (
     <svg viewBox="0 0 36 36" className="h-10 w-10" aria-hidden="true">
         <path fill="#FCD116" d="M17.4,32.3c6.7,0,13.2-3.2,13.2-11.4c0-5.3-2.6-10.1-8.2-11.4c-2.3-0.5-5.7,1.1-7.2,2.8c-2.7,3.1-2,7.4,0.3,9.7C17.2,23.1,17.4,32.3,17.4,32.3z"/>
         <path fill="#CE1126" d="M20.2,20.6c0-4.7-3.8-8.5-8.5-8.5s-8.5,3.8-8.5,8.5s3.8,8.5,8.5,8.5S20.2,25.3,20.2,20.6z M15.9,20.6c0-2.3-1.9-4.2-4.2-4.2s-4.2,1.9-4.2,4.2s1.9,4.2,4.2,4.2S15.9,22.9,15.9,20.6z"/>
         <path fill="#84CC16" d="M30.4,10.1C29.3,4.9,23.4,2,18.2,3.1S8,8.4,9.1,13.6c0.6,2.8,2.7,5,5.4,5.6C21.9,20.5,28.8,16.5,30.4,10.1z"/>
     </svg>
-    <span className="text-2xl font-bold tracking-tight text-kmer-green dark:text-gray-200" style={{ fontFamily: 'Poppins, sans-serif' }}>
-      Kmer Zone
-    </span>
-  </div>
-);
+  );
+
+  return (
+    <div className={`flex items-center gap-2 ${className || ''}`}>
+      {logoImage}
+      <span className="text-2xl font-bold tracking-tight text-kmer-green dark:text-gray-200" style={{ fontFamily: 'Poppins, sans-serif' }}>
+        Kmer Zone
+      </span>
+    </div>
+  );
+};
 
 
 export const SearchIcon: React.FC<IconProps> = (props) => (

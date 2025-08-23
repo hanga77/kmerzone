@@ -231,6 +231,8 @@ export interface PickupPoint {
 export type Theme = 'light' | 'dark';
 
 export interface SiteSettings {
+  logoUrl: string;
+  isStoriesEnabled: boolean;
   isPremiumProgramEnabled: boolean;
   premiumThresholds: {
     orders: number;

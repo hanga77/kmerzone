@@ -1,9 +1,9 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon } from './Icons';
 
 interface SellerDashboardProps {
   store?: Store;
@@ -28,6 +28,8 @@ interface SellerDashboardProps {
   isChatEnabled: boolean;
   onPayRent: (storeId: string) => void;
   siteSettings: SiteSettings;
+  onAddStory: (storeId: string, imageUrl: string) => void;
+  onDeleteStory: (storeId: string, storyId: string) => void;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -393,6 +395,61 @@ const DocumentsPanel: React.FC<{
     );
 };
 
+const StoriesPanel: React.FC<{
+    store: Store;
+    onAddStory: (storeId: string, imageUrl: string) => void;
+    onDeleteStory: (storeId: string, storyId: string) => void;
+}> = ({ store, onAddStory, onDeleteStory }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const activeStories = useMemo(() => {
+        const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        return (store.stories || []).filter(s => new Date(s.createdAt) > twentyFourHoursAgo);
+    }, [store.stories]);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const file = e.target.files[0];
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                onAddStory(store.id, reader.result as string);
+            };
+            reader.readAsDataURL(file);
+        }
+    };
+
+    return (
+        <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold dark:text-white">Gérer mes Stories</h2>
+                <input type="file" ref={fileInputRef} onChange={handleFileChange} accept="image/*" className="hidden" />
+                <button onClick={() => fileInputRef.current?.click()} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                    <PlusIcon className="w-5 h-5"/> Ajouter une Story
+                </button>
+            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Les stories sont visibles pendant 24 heures sur la page d'accueil.</p>
+
+            {activeStories.length > 0 ? (
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+                    {activeStories.map(story => (
+                        <div key={story.id} className="relative group aspect-[9/16] rounded-lg overflow-hidden shadow-md">
+                            <img src={story.imageUrl} alt="Story" className="w-full h-full object-cover" />
+                            <div className="absolute inset-0 bg-black/30"></div>
+                            <button onClick={() => onDeleteStory(store.id, story.id)} className="absolute top-2 right-2 bg-red-500/80 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <TrashIcon className="w-4 h-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400 border-2 border-dashed rounded-lg">
+                    <p>Vous n'avez aucune story active.</p>
+                    <p className="text-sm">Ajoutez-en une pour mettre en avant vos produits !</p>
+                </div>
+            )}
+        </div>
+    );
+};
+
 const SellerDashboard: React.FC<SellerDashboardProps> = ({
   store,
   products,
@@ -412,8 +469,10 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   isChatEnabled,
   onPayRent,
   siteSettings,
+  onAddStory,
+  onDeleteStory,
 }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
 
@@ -457,6 +516,8 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
         switch(activeTab) {
             case 'products':
                 return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onToggleStatus={onToggleStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
+            case 'stories':
+                return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
             case 'orders-in-progress':
                 return <OrdersPanel title="Commandes en cours" orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
             case 'orders-delivered':
@@ -502,6 +563,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                         <div className="flex space-x-2 overflow-x-auto">
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
+                           <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="En cours" isActive={activeTab === 'orders-in-progress'} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
                            <TabButton icon={<CheckCircleIcon className="w-5 h-5"/>} label="Livrées" isActive={activeTab === 'orders-delivered'} onClick={() => setActiveTab('orders-delivered')} />
                            <TabButton icon={<XIconSmall className="w-5 h-5"/>} label="Annulées / Remb." isActive={activeTab === 'orders-cancelled'} onClick={() => setActiveTab('orders-cancelled')} count={cancelledRefundedOrders.length} />

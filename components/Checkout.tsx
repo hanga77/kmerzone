@@ -145,15 +145,24 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
   const [deliveryTimeSlot, setDeliveryTimeSlot] = useState('08:00 - 10:00');
   const [selectedPickupPointId, setSelectedPickupPointId] = useState(allPickupPoints.length > 0 ? allPickupPoints[0].id : '');
 
-  // Map Initialization
+  // Map Initialization & Cleanup
     useEffect(() => {
-        if (deliveryMethod === 'pickup' && mapContainerRef.current && !mapRef.current) {
-            mapRef.current = L.map(mapContainerRef.current).setView([3.8480, 11.5021], 7);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; OpenStreetMap contributors'
-            }).addTo(mapRef.current);
-        } else if (mapRef.current) {
-            setTimeout(() => mapRef.current.invalidateSize(), 100);
+        if (deliveryMethod === 'pickup') {
+            if (mapContainerRef.current && !mapRef.current) {
+                mapRef.current = L.map(mapContainerRef.current).setView([3.8480, 11.5021], 7);
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(mapRef.current);
+            } else if (mapRef.current) {
+                // Invalidate size to fix rendering issues when the map is shown
+                setTimeout(() => mapRef.current.invalidateSize(), 100);
+            }
+        } else { // deliveryMethod is 'home-delivery'
+            if (mapRef.current) {
+                // If the map exists, destroy it to prevent it from showing up
+                mapRef.current.remove();
+                mapRef.current = null;
+            }
         }
     }, [deliveryMethod]);
 

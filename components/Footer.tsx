@@ -3,6 +3,7 @@ import { FacebookIcon, TwitterIcon, InstagramIcon, OrangeMoneyLogo, MtnMomoLogo,
 
 interface FooterProps {
   onNavigate: (title: string, content: string) => void;
+  logoUrl: string;
 }
 
 const infoContent = {
@@ -28,14 +29,14 @@ const infoContent = {
   }
 };
 
-const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
+const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl }) => {
   return (
     <footer className="bg-gray-800 text-white dark:bg-gray-950">
       <div className="container mx-auto px-6 py-12">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
           {/* About KMER ZONE */}
           <div className="flex flex-col items-start">
-            <LogoIcon className="h-10 mb-4" />
+            <LogoIcon className="h-10 mb-4" logoUrl={logoUrl} />
             <p className="text-gray-400">Le meilleur du Cameroun, à portée de main. Notre mission est de connecter les commerçants locaux aux consommateurs.</p>
           </div>
 
