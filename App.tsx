@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -24,21 +22,27 @@ import FlashSalesPage from './components/FlashSalesPage';
 import SearchResultsPage from './components/SearchResultsPage';
 import WishlistPage from './components/WishlistPage';
 import DeliveryAgentDashboard from './components/DeliveryAgentDashboard';
+import DepotAgentDashboard from './components/DepotAgentDashboard';
 import ComparisonPage from './components/ComparisonPage';
 import ComparisonBar from './components/ComparisonBar';
 import BecomePremiumPage from './components/BecomePremiumPage';
 import InfoPage from './components/InfoPage';
+import MaintenancePage from './components/MaintenancePage';
+import NotFoundPage from './components/NotFoundPage';
+import ForbiddenPage from './components/ForbiddenPage';
+import ServerErrorPage from './components/ServerErrorPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import PromotionModal from './components/PromotionModal';
 import { useCart } from './contexts/CartContext';
 import ChatWidget from './components/ChatWidget';
 import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon } from './components/Icons';
+import { usePersistentState } from './hooks/usePersistentState';
 
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info';
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error';
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -365,1054 +369,300 @@ const initialProducts: Product[] = [
       reviews: [], stock: 30, category: 'Beauté et santé', status: 'published',
       brand: 'Douala Soaps', weight: '250ml'
     },
-    { 
-      id: '18', name: 'Beurre de karité pur', price: 3000, imageUrls: [], vendor: 'Douala Soaps',
-      description: "Beurre de karité non raffiné, riche en vitamines A et E, pour une hydratation intense du corps et des cheveux.",
-      reviews: [], stock: 35, category: 'Beauté et santé', status: 'published',
+     { 
+      id: '18', name: 'Beurre de karité', price: 3000, imageUrls: [], vendor: 'Douala Soaps',
+      description: "Beurre de karité brut et non raffiné, parfait pour hydrater en profondeur la peau et les cheveux secs.",
+      reviews: [], stock: 60, category: 'Beauté et santé', status: 'published',
       brand: 'Douala Soaps', weight: '150g'
-    },
-];
-
-const initialStores: Store[] = [
-    { id: '1', name: 'Mama Africa', logoUrl: 'https://picsum.photos/seed/mama/200/100', category: 'Restaurant & Alimentation', warnings: [], status: 'active', location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Mama', sellerLastName: 'Africa', sellerPhone: '699887766', physicalAddress: '123 Rue de la Joie', documents: [], latitude: 3.8665, longitude: 11.521, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 15 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [], premiumStatus: 'premium' },
-    { id: '2', name: 'Kmer Fashion', logoUrl: 'https://picsum.photos/seed/kmerfashion/200/100', category: 'Mode', warnings: [{id: 'warn1', date: '2023-10-01T10:00:00Z', reason: 'Non-respect des délais de livraison.'}], status: 'active', location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Adèle', sellerLastName: 'Ngo', sellerPhone: '677665544', physicalAddress: '45 Avenue de la Mode', documents: [], latitude: 4.0483, longitude: 9.702, subscriptionStatus: 'overdue', subscriptionDueDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [], premiumStatus: 'standard' },
-    { id: '3', name: 'Electro Plus', logoUrl: 'https://picsum.photos/seed/electro/200/100', category: 'Électronique', warnings: [{id: 'warn2', date: '2023-09-15T10:00:00Z', reason: 'Publicité mensongère sur un produit.'}, {id: 'warn3', date: '2023-10-05T14:00:00Z', reason: 'Mauvaise évaluation client non résolue.'}], status: 'active', location: 'Yaoundé', neighborhood: 'Centre Ville', sellerFirstName: 'Eric', sellerLastName: 'Kamdem', sellerPhone: '655443322', physicalAddress: '789 Boulevard du 20 Mai', documents: [], latitude: 3.8721, longitude: 11.5213, subscriptionStatus: 'inactive', premiumStatus: 'standard' },
-    { id: '4', name: 'Douala Soaps', logoUrl: 'https://picsum.photos/seed/soap-store/200/100', category: 'Artisanat', warnings: [], status: 'active', location: 'Douala', neighborhood: 'Marché Central', sellerFirstName: 'Fatima', sellerLastName: 'Gaye', sellerPhone: '688776655', physicalAddress: 'Boutique 15', documents: [], latitude: 4.0475, longitude: 9.692, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 25 * 24 * 60 * 60 * 1000).toISOString(), paymentHistory: [], premiumStatus: 'standard' },
+    }
 ];
 
 const initialCategories: Category[] = [
-    { id: 'cat1', name: 'Électronique', imageUrl: 'https://picsum.photos/seed/electronics/300/200' },
-    { id: 'cat2', name: 'Vêtements', imageUrl: 'https://picsum.photos/seed/clothing/300/200' },
-    { id: 'cat3', name: 'Chaussures', imageUrl: 'https://picsum.photos/seed/shoes-cat/300/200' },
-    { id: 'cat4', name: 'Maison et jardin', imageUrl: 'https://picsum.photos/seed/home-garden/300/200' },
-    { id: 'cat5', name: 'Biens pour enfants', imageUrl: 'https://picsum.photos/seed/kids-goods/300/200' },
-    { id: 'cat6', name: 'Beauté et santé', imageUrl: 'https://picsum.photos/seed/beauty-health/300/200' },
-    { id: 'cat7', name: 'Appareils électroménagers', imageUrl: 'https://picsum.photos/seed/appliances-cat/300/200' },
-    { id: 'cat8', name: 'Sports et loisirs', imageUrl: 'https://picsum.photos/seed/sports-leisure/300/200' },
-    { id: 'cat9', name: 'Construction et réparation', imageUrl: 'https://picsum.photos/seed/construction/300/200' },
-    { id: 'cat10', name: 'Alimentation alimentaire', imageUrl: 'https://picsum.photos/seed/food-cat/300/200' },
-    { id: 'cat11', name: 'Pharmacies', imageUrl: 'https://picsum.photos/seed/pharmacy/300/200' },
-    { id: 'cat12', name: 'Produits pour animaux', imageUrl: 'https://picsum.photos/seed/pet-products/300/200' },
-    { id: 'cat13', name: 'Livres', imageUrl: 'https://picsum.photos/seed/books/300/200' },
-    { id: 'cat14', name: 'Mobilier', imageUrl: 'https://picsum.photos/seed/furniture/300/200' },
-    { id: 'cat15', name: 'Loisirs et créativité', imageUrl: 'https://picsum.photos/seed/hobbies/300/200' },
-    { id: 'cat16', name: 'Bijoux', imageUrl: 'https://picsum.photos/seed/jewelry-cat/300/200' },
-    { id: 'cat17', name: 'Accessoires', imageUrl: 'https://picsum.photos/seed/accessories/300/200' },
-    { id: 'cat18', name: 'Jeux et consoles', imageUrl: 'https://picsum.photos/seed/gaming/300/200' },
-    { id: 'cat19', name: 'Marchandises de bureau', imageUrl: 'https://picsum.photos/seed/office-supplies/300/200' },
-    { id: 'cat20', name: 'Produits pour adultes', imageUrl: 'https://picsum.photos/seed/adult-products/300/200' },
-    { id: 'cat21', name: 'Antiquités et collectes', imageUrl: 'https://picsum.photos/seed/antiques/300/200' },
-    { id: 'cat22', name: 'Produits numériques', imageUrl: 'https://picsum.photos/seed/digital-products/300/200' },
-    { id: 'cat23', name: 'Chimie domestique et hygiène', imageUrl: 'https://picsum.photos/seed/hygiene/300/200' },
-    { id: 'cat24', name: 'Musique et vidéo', imageUrl: 'https://picsum.photos/seed/music-video/300/200' },
+    { id: '1', name: 'Alimentation alimentaire', imageUrl: 'https://picsum.photos/seed/food/400/300' },
+    { id: '2', name: 'Vêtements', imageUrl: 'https://picsum.photos/seed/fashion/400/300' },
+    { id: '3', name: 'Chimie domestique et hygiène', imageUrl: 'https://picsum.photos/seed/soap/400/300' },
+    { id: '4', name: 'Électronique', imageUrl: 'https://picsum.photos/seed/electronics/400/300' },
+    { id: '5', name: 'Beauté et santé', imageUrl: 'https://picsum.photos/seed/beauty/400/300' },
+    { id: '6', name: 'Appareils électroménagers', imageUrl: 'https://picsum.photos/seed/appliances/400/300' },
+    { id: '7', name: 'Accessoires', imageUrl: 'https://picsum.photos/seed/accessories/400/300' },
+    { id: '8', name: 'Chaussures', imageUrl: 'https://picsum.photos/seed/shoes/400/300' },
+];
+
+const initialStores: Store[] = [
+    { 
+        id: 'store-1', name: 'Kmer Fashion', logoUrl: '', category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
+        location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Aïcha', sellerLastName: 'Bakari', sellerPhone: '699887766',
+        physicalAddress: '45 Avenue de la Mode, Akwa', latitude: 4.0483, longitude: 9.7020, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-15T00:00:00.000Z',
+        documents: [
+            { name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' },
+            { name: "Registre de Commerce", status: 'uploaded', fileUrl: '...' },
+        ],
+        stories: [{id: 's1', imageUrl: 'https://picsum.photos/seed/story1/300/500', createdAt: new Date().toISOString() }]
+    },
+    { 
+        id: 'store-2', name: 'Mama Africa', logoUrl: '', category: 'Alimentation', warnings: [], status: 'active', premiumStatus: 'standard',
+        location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Jeanne', sellerLastName: 'Abena', sellerPhone: '677665544',
+        physicalAddress: '12 Rue des Saveurs, Bastos', latitude: 3.8968, longitude: 11.5213, subscriptionStatus: 'overdue', subscriptionDueDate: '2024-07-10T00:00:00.000Z',
+        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'requested' }]
+    },
+    { 
+        id: 'store-3', name: 'Electro Plus', logoUrl: '', category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'standard',
+        location: 'Yaoundé', neighborhood: 'Mokolo', sellerFirstName: 'Paul', sellerLastName: 'Kouam', sellerPhone: '655443322',
+        physicalAddress: 'Grand Marché Mokolo, Stand 52', latitude: 3.8731, longitude: 11.5152, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-20T00:00:00.000Z',
+        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }]
+    },
+    { 
+        id: 'store-4', name: 'Douala Soaps', logoUrl: '', category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
+        location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
+        physicalAddress: 'Rue Njo-Njo, Bonapriso', latitude: 4.0321, longitude: 9.715, subscriptionStatus: 'inactive',
+        documents: [{ name: "Registre de Commerce", status: 'rejected', rejectionReason: 'Document illisible.' }]
+    },
+     { 
+        id: 'store-5', name: 'Yaoundé Style', logoUrl: '', category: 'Mode et Vêtements', warnings: [], status: 'pending', premiumStatus: 'standard',
+        location: 'Yaoundé', neighborhood: 'Mvog-Ada', sellerFirstName: 'Franck', sellerLastName: 'Essomba', sellerPhone: '698765432',
+        physicalAddress: 'Avenue Kennedy', latitude: 3.8647, longitude: 11.521,
+        documents: []
+    },
+];
+
+const initialFlashSales: FlashSale[] = [
+    {
+      id: 'fs1',
+      name: 'Vente Flash de la Rentrée',
+      startDate: '2024-07-20T00:00:00.000Z',
+      endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Ends in 3 days
+      products: [
+        { productId: '4', sellerShopName: 'Electro Plus', flashPrice: 68000, status: 'approved' },
+        { productId: '2', sellerShopName: 'Kmer Fashion', flashPrice: 12000, status: 'approved' },
+        { productId: '16', sellerShopName: 'Douala Soaps', flashPrice: 2000, status: 'pending' },
+        { productId: '5', sellerShopName: 'Mama Africa', flashPrice: 4500, status: 'rejected' },
+      ],
+    },
 ];
 
 const initialPickupPoints: PickupPoint[] = [
-    { id: 'pp1', name: 'Point Relais Akwa', streetNumber: '123', street: 'Rue de la Liberté', additionalInfo: 'Près de la boulangerie Saker', city: 'Douala', neighborhood: 'Akwa', latitude: 4.049, longitude: 9.695 },
-    { id: 'pp2', name: 'KMER ZONE Bonamoussadi', streetNumber: '456', street: 'Avenue Kayo', additionalInfo: 'Carrefour Kayo', city: 'Douala', neighborhood: 'Bonamoussadi', latitude: 4.101, longitude: 9.734 },
-    { id: 'pp3', name: 'Point Relais Mvog-Mbi', streetNumber: '789', street: 'Boulevard Nsam', additionalInfo: 'Au rond-point', city: 'Yaoundé', neighborhood: 'Mvog-Mbi', latitude: 3.844, longitude: 11.512 },
-    { id: 'pp4', name: 'KMER ZONE Bastos', streetNumber: '101', street: 'Rue des Ambassades', city: 'Yaoundé', neighborhood: 'Bastos', latitude: 3.882, longitude: 11.509 },
+    { id: 'pp1', name: 'Relais KMER ZONE - Akwa', city: 'Douala', neighborhood: 'Akwa', street: 'Rue de la Joie', latitude: 4.047, longitude: 9.704 },
+    { id: 'pp2', name: 'Relais KMER ZONE - Bonamoussadi', city: 'Douala', neighborhood: 'Bonamoussadi', street: 'Carrefour Kotto', latitude: 4.09, longitude: 9.74 },
+    { id: 'pp3', name: 'Relais KMER ZONE - Bastos', city: 'Yaoundé', neighborhood: 'Bastos', street: 'Avenue des Banques', latitude: 3.89, longitude: 11.52 },
 ];
 
-const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-  const [state, setState] = useState<T>(() => {
-    try {
-      const storedValue = localStorage.getItem(key);
-      if (storedValue) {
-        return JSON.parse(storedValue);
-      }
-    } catch (error) {
-      console.error(`Error reading localStorage key “${key}”:`, error);
-    }
-    return defaultValue;
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch (error) {
-      console.error(`Error setting localStorage key “${key}”:`, error);
-    }
-  }, [key, state]);
-
-  return [state, setState];
+const initialSiteSettings: SiteSettings = {
+  isPremiumProgramEnabled: true,
+  premiumThresholds: { orders: 10, spending: 50000 },
+  premiumCautionAmount: 10000,
+  isPremiumPlusEnabled: true,
+  premiumPlusAnnualFee: 25000,
+  requiredSellerDocuments: {
+      "CNI (Carte Nationale d'Identité)": true,
+      "Registre de Commerce": true,
+      "Photo du gérant": false,
+      "Plan de localisation": false,
+  },
+  isRentEnabled: true,
+  rentAmount: 5000,
+  maintenanceMode: {
+      isEnabled: false,
+      message: "Nous effectuons une mise à jour. Nous serons de retour très bientôt !",
+      reopenDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+  }
 };
 
+const initialAdvertisements: Advertisement[] = [
+    { id: 'ad1', imageUrl: 'https://picsum.photos/seed/ad1/1200/300', linkUrl: '#', location: 'homepage-banner', isActive: true },
+    { id: 'ad2', imageUrl: 'https://picsum.photos/seed/ad2/1200/300', linkUrl: '#', location: 'homepage-banner', isActive: true },
+];
 
-const App: React.FC = () => {
-  const [currentPage, setCurrentPage] = useState<Page>('home');
+export default function App() {
+  const [page, setPage] = useState<Page>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+  const [infoPageContent, setInfoPageContent] = useState({ title: '', content: '' });
   const [searchQuery, setSearchQuery] = useState('');
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [infoPageContent, setInfoPageContent] = useState<{title: string, content: string} | null>(null);
-
-  const { user, allUsers, updateUser, setAllUsers } = useAuth();
-  const { isModalOpen, modalProduct, closeModal } = useUI();
-  const { setProducts: setComparisonProducts } = useComparison();
-  const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
-  const { clearCart } = useCart();
-  const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
-
-  // Site feature flags & settings
-  const [isChatEnabled, setIsChatEnabled] = usePersistentState<boolean>('isChatEnabled', true);
-  const [isComparisonEnabled, setIsComparisonEnabled] = usePersistentState<boolean>('isComparisonEnabled', true);
-  const [siteSettings, setSiteSettings] = usePersistentState<SiteSettings>('siteSettings', {
-    isPremiumProgramEnabled: true,
-    premiumThresholds: {
-        orders: 5,
-        spending: 100000,
-    },
-    premiumCautionAmount: 15000,
-    isPremiumPlusEnabled: true,
-    premiumPlusAnnualFee: 30000,
-    requiredSellerDocuments: {
-        "CNI (Carte Nationale d'Identité)": true,
-        "Registre de Commerce": true,
-        "Photo du gérant": false,
-        "Plan de localisation": false,
-    },
-    isRentEnabled: true,
-    rentAmount: 5000,
-  });
+  const [siteSettings, setSiteSettings] = usePersistentState<SiteSettings>('siteSettings', initialSiteSettings);
 
   const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
-  const [allStores, setAllStores] = usePersistentState<Store[]>('allStores', initialStores);
   const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
-  const [allPickupPoints, setAllPickupPoints] = usePersistentState<PickupPoint[]>('allPickupPoints', initialPickupPoints);
-
-  const [allPromoCodes, setAllPromoCodes] = usePersistentState<PromoCode[]>('allPromoCodes', []);
+  const [allStores, setAllStores] = usePersistentState<Store[]>('allStores', initialStores);
   const [allOrders, setAllOrders] = usePersistentState<Order[]>('allOrders', []);
+  const [allPromoCodes, setAllPromoCodes] = usePersistentState<PromoCode[]>('allPromoCodes', []);
   const [siteActivityLogs, setSiteActivityLogs] = usePersistentState<SiteActivityLog[]>('siteActivityLogs', []);
-  const [flashSales, setFlashSales] = usePersistentState<FlashSale[]>('flashSales', []);
-  const [payouts, setPayouts] = usePersistentState<Payout[]>('payouts', []);
-  const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', [
-    { id: 'ad1', imageUrl: 'https://picsum.photos/seed/ad1/800/200', linkUrl: '#', location: 'homepage-banner', isActive: true },
-    { id: 'ad2', imageUrl: 'https://picsum.photos/seed/ad2/800/200', linkUrl: '#', location: 'homepage-banner', isActive: false },
-    { id: 'ad3', imageUrl: 'https://picsum.photos/seed/ad3/800/200', linkUrl: '#', location: 'homepage-banner', isActive: true },
-  ]);
+  const [flashSales, setFlashSales] = usePersistentState<FlashSale[]>('flashSales', initialFlashSales);
+  const [allPickupPoints, setAllPickupPoints] = usePersistentState<PickupPoint[]>('allPickupPoints', initialPickupPoints);
+  const [payouts, setPayouts] = usePersistentState<Payout[]>('allPayouts', []);
+  const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', initialAdvertisements);
 
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
+  const [isChatEnabled, setIsChatEnabled] = usePersistentState('isChatEnabled', true);
+  const [isComparisonEnabled, setIsComparisonEnabled] = usePersistentState('isComparisonEnabled', true);
+  const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
+  
+  const { user, allUsers, setAllUsers, logout } = useAuth();
+  const { clearCart } = useCart();
+  const comparison = useComparison();
+  const { modalProduct, isModalOpen, closeModal } = useUI();
+  
   useEffect(() => {
-    setComparisonProducts(allProducts);
-  }, [allProducts, setComparisonProducts]);
-
-  const addSiteActivityLog = useCallback((user: User, action: string, details: string) => {
-    setSiteActivityLogs(prev => [{
-      id: new Date().getTime().toString(),
+    comparison.setProducts(allProducts);
+  }, [allProducts, comparison.setProducts]);
+  
+  const addLog = useCallback((action: string, details: string) => {
+    if (!user) return;
+    const newLog: SiteActivityLog = {
+      id: `log-${Date.now()}`,
       timestamp: new Date().toISOString(),
       user: { id: user.id, name: user.name, role: user.role },
       action,
       details,
-    }, ...prev]);
-  }, [setSiteActivityLogs]);
+    };
+    setSiteActivityLogs(prev => [newLog, ...prev]);
+  }, [user, setSiteActivityLogs]);
 
-  // Rent Management Logic
-  const handleActivateSubscription = useCallback((storeId: string) => {
-    if (!user || user.role !== 'superadmin') return;
-    setAllStores(prev => prev.map(s => {
-      if (s.id === storeId && s.status === 'active' && s.subscriptionStatus !== 'active') {
-        const dueDate = new Date();
-        dueDate.setDate(dueDate.getDate() + 30);
-        addSiteActivityLog(user, 'Activation Abonnement', `Abonnement activé pour la boutique '${s.name}'.`);
-        return {
-          ...s,
-          subscriptionStatus: 'active',
-          subscriptionDueDate: dueDate.toISOString(),
-          paymentHistory: s.paymentHistory || []
-        };
-      }
-      return s;
-    }));
-  }, [user, addSiteActivityLog, setAllStores]);
-
-  const handlePayRent = useCallback((storeId: string) => {
-    if (!user || user.role !== 'seller') return;
-    
-    const store = allStores.find(s => s.id === storeId);
-    if (!store) return;
-
-    if (window.confirm(`Confirmez-vous le paiement du loyer de ${siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA pour votre boutique ?`)) {
-        setAllStores(prev => prev.map(s => {
-            if (s.id === storeId) {
-                const newDueDate = s.subscriptionDueDate ? new Date(s.subscriptionDueDate) : new Date();
-                if(newDueDate < new Date()) { // If overdue, start from today
-                    newDueDate.setTime(Date.now());
-                }
-                newDueDate.setDate(newDueDate.getDate() + 30);
-                addSiteActivityLog(user, 'Paiement Loyer', `Loyer payé pour la boutique '${s.name}'.`);
-                return {
-                    ...s,
-                    subscriptionStatus: 'active',
-                    subscriptionDueDate: newDueDate.toISOString(),
-                    paymentHistory: [
-                        ...(s.paymentHistory || []),
-                        { date: new Date().toISOString(), amount: siteSettings.rentAmount }
-                    ]
-                };
-            }
-            return s;
-        }));
+  const handleCreateUserByAdmin = useCallback((userData: Omit<User, 'id' | 'loyalty'>) => {
+    const newUser: User = {
+      ...userData,
+      id: `user_${Date.now()}`,
+      loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
+    };
+    setAllUsers(prev => [...prev, newUser]);
+    if(user && user.role === 'superadmin') {
+      addLog('User Created', `Admin ${user.name} created user ${newUser.name} with role ${newUser.role}.`);
     }
-  }, [user, addSiteActivityLog, allStores, siteSettings.rentAmount, setAllStores]);
+  }, [setAllUsers, addLog, user]);
 
-  // Effect to check for overdue payments
-  useEffect(() => {
-    if (!siteSettings.isRentEnabled) return;
-    const now = new Date();
-
-    const storesToUpdate = allStores.filter(store =>
-      store.subscriptionStatus === 'active' &&
-      store.subscriptionDueDate &&
-      new Date(store.subscriptionDueDate) < now
-    );
-
-    if (storesToUpdate.length > 0) {
-      const storeIdsToUpdate = storesToUpdate.map(s => s.id);
-      setAllStores(prevStores =>
-        prevStores.map(store =>
-          storeIdsToUpdate.includes(store.id)
-            ? { ...store, subscriptionStatus: 'overdue' }
-            : store
-        )
-      );
-    }
-  }, [siteSettings.isRentEnabled, allStores, setAllStores]);
-
-
-  const navigate = useCallback((page: Page) => {
-    setCurrentPage(page);
-    window.scrollTo(0, 0);
-  }, []);
-  
-  const navigateToProduct = useCallback((product: Product) => { setSelectedProduct(product); navigate('product'); }, [navigate]);
-
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const page = params.get('page');
-    const productId = params.get('id');
-
-    if (page === 'product' && productId) {
-      const productToShow = allProducts.find(p => p.id === productId);
-      if (productToShow) {
-        navigateToProduct(productToShow);
-      }
-    }
-  }, [allProducts, navigateToProduct]);
-
-  const prevUserRef = useRef(user);
-  useEffect(() => {
-      const prevUser = prevUserRef.current;
-      if (!prevUser && user) { // Login
-          addSiteActivityLog(user, 'Connexion', `L'utilisateur s'est connecté.`);
-           if (user.role === 'seller' || user.role === 'superadmin' || user.role === 'delivery_agent') {
-              clearCart();
-          }
-          if (user.role === 'seller') {
-              navigate('seller-dashboard');
-          } else if (user.role === 'superadmin') {
-              navigate('superadmin-dashboard');
-          } else if (user.role === 'delivery_agent') {
-              navigate('delivery-agent-dashboard');
-          }
-      } 
-      else if (prevUser && !user) { // Logout
-          addSiteActivityLog(prevUser, 'Déconnexion', `L'utilisateur s'est déconnecté.`);
-          clearCart();
-          if (prevUser.role === 'seller' || prevUser.role === 'superadmin') {
-            navigate('home');
-          }
-      }
-      else if (prevUser && user && prevUser.role !== 'seller' && user.role === 'seller') {
-          addSiteActivityLog(user, 'Inscription Vendeur', `Est devenu vendeur avec la boutique '${user.shopName}'.`);
-      }
-      prevUserRef.current = user;
-  }, [user, addSiteActivityLog, navigate, clearCart]);
-
-  const addCategory = useCallback((categoryName: string): Category => {
-    let newCategory: Category | undefined;
-    setAllCategories(prev => {
-        const existingCategory = prev.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-        if (existingCategory) {
-            newCategory = existingCategory;
-            return prev;
-        }
-        newCategory = {
-            id: new Date().getTime().toString(), 
-            name: categoryName,
-            imageUrl: `https://picsum.photos/seed/${categoryName.toLowerCase().replace(/\s+/g, '-')}/300/200`
-        };
-        return [...prev, newCategory];
-    });
-    return newCategory!;
-  }, [setAllCategories]);
-
-  const addReview = useCallback((productId: string, review: Review) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllProducts(prevProducts => {
-        const product = prevProducts.find(p => p.id === productId);
-        if (product) {
-            addSiteActivityLog(currentUser, 'Avis Soumis', `A soumis un avis sur '${product.name}'.`);
-        }
-        return prevProducts.map(p => p.id === productId ? { ...p, reviews: [...p.reviews, review] } : p)
-    });
-  }, [user, addSiteActivityLog, setAllProducts]);
-
-  const handleReviewModeration = useCallback((productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => {
-    if (!user || user.role !== 'superadmin') return;
-    const currentUser = user;
-    setAllProducts(prevProducts => {
-      const newProducts = prevProducts.map(p => {
-        if (p.id === productId) {
-          const newReviews = p.reviews.map(r => {
-            if (r.author === reviewIdentifier.author && r.date === reviewIdentifier.date) {
-              return { ...r, status: newStatus };
-            }
-            return r;
-          });
-          return { ...p, reviews: newReviews };
-        }
-        return p;
-      });
-
-      const product = prevProducts.find(p => p.id === productId);
-      if (product) {
-        const action = newStatus === 'approved' ? 'Approbation Avis' : 'Rejet Avis';
-        addSiteActivityLog(currentUser, action, `Avis sur '${product.name}' par '${reviewIdentifier.author}'.`);
-      }
-      
-      return newProducts;
-    });
-  }, [user, addSiteActivityLog, setAllProducts]);
-  
-  const handleSaveProduct = useCallback((productData: Product) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllProducts(prevProducts => {
-        const isEditing = prevProducts.some(p => p.id === productData.id);
-        const action = isEditing ? 'Modification Produit' : 'Création Produit';
-        const details = `${isEditing ? 'A mis à jour le' : 'A créé le'} produit '${productData.name}'.`;
-        addSiteActivityLog(currentUser, action, details);
-        return isEditing 
-            ? prevProducts.map(p => p.id === productData.id ? productData : p) 
-            : [...prevProducts, productData];
-    });
-    setProductToEdit(null);
-    navigate('seller-dashboard');
-  }, [user, addSiteActivityLog, navigate, setAllProducts]);
-  
-  const handleDeleteProduct = useCallback((productId: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllProducts(prevProducts => {
-        const product = prevProducts.find(p => p.id === productId);
-        if (product) {
-            addSiteActivityLog(currentUser, 'Suppression Produit', `A supprimé le produit '${product.name}'.`);
-        }
-        return prevProducts.filter(p => p.id !== productId);
-    });
-  }, [user, addSiteActivityLog, setAllProducts]);
-  
-  const handleToggleProductStatus = useCallback((productId: string) => {
-    setAllProducts(prev => prev.map(p => p.id === productId ? { ...p, status: p.status === 'published' ? 'draft' : 'published' } : p));
-  }, [setAllProducts]);
-
-  const handleOpenPromotionModal = useCallback((product: Product) => setPromotionModalProduct(product), []);
-  const handleClosePromotionModal = useCallback(() => setPromotionModalProduct(null), []);
-  
-  const handleSetPromotion = useCallback((productId: string, promoPrice: number, startDate?: string, endDate?: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllProducts(prev => {
-        const productToUpdate = prev.find(p => p.id === productId);
-        if (productToUpdate) {
-            addSiteActivityLog(currentUser, 'Promotion Produit', `A mis en promotion le produit '${productToUpdate.name}' à ${promoPrice.toLocaleString('fr-CM')} FCFA.`);
-        }
-        return prev.map(p => p.id === productId ? { ...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate } : p)
-    });
-    handleClosePromotionModal();
-  }, [user, addSiteActivityLog, handleClosePromotionModal, setAllProducts]);
-  
-  const handleRemovePromotion = useCallback((productId: string) => {
-    if (window.confirm("Êtes-vous sûr de vouloir retirer cette promotion ?")) {
+  const handleReportDiscrepancy = useCallback((orderId: string, reason: string) => {
       if (!user) return;
-      const currentUser = user;
-      setAllProducts(prev => {
-        const productToUpdate = prev.find(p => p.id === productId);
-         if (productToUpdate) {
-             addSiteActivityLog(currentUser, 'Fin Promotion', `A retiré la promotion pour le produit '${productToUpdate.name}'.`);
+      setAllOrders(prevOrders => prevOrders.map(o => {
+          if (o.id === orderId) {
+              addLog('Order Issue Reported', `Depot agent ${user.name} reported issue for order ${orderId}: ${reason}`);
+              return {
+                  ...o,
+                  status: 'depot-issue',
+                  discrepancy: {
+                      reason,
+                      reportedAt: new Date().toISOString(),
+                      reportedBy: user.id
+                  }
+              };
           }
-        return prev.map(p => {
-          if (p.id === productId) { 
-            const { promotionPrice, promotionStartDate, promotionEndDate, ...rest } = p; 
-            return rest; 
-          }
-          return p;
-        })
-      });
-    }
-  }, [user, addSiteActivityLog, setAllProducts]);
-
-  const handleConfirmOrder = useCallback(async (orderData: NewOrderData) => {
-    if (!user) return;
-    const currentUser = user;
-
-    // Simulate payment processing time
-    await new Promise(resolve => setTimeout(resolve, 3000));
-    
-    setAllOrders(prevOrders => {
-        let storeName = 'Inconnue';
-        if (orderData.items.length > 0) {
-            storeName = orderData.items[0].vendor;
-        }
-
-        const newOrder: Order = {
-            id: `CMD-${new Date().getTime()}`,
-            orderDate: new Date().toISOString(),
-            status: 'confirmed',
-            trackingNumber: `KZ${Math.floor(Math.random() * 100000000)}`,
-            ...orderData,
-            trackingHistory: [{
-                status: 'confirmed',
-                date: new Date().toISOString(),
-                details: 'Commande reçue et en attente de préparation par le vendeur.',
-                location: `Boutique: ${storeName}`
-            }]
-        };
-
-        if (orderData.appliedPromoCode) {
-            setAllPromoCodes(prev => prev.map(pc => 
-                pc.code === orderData.appliedPromoCode!.code ? { ...pc, uses: pc.uses + 1 } : pc
-            ));
-        }
-        
-        addSiteActivityLog(currentUser, 'Nouvelle Commande', `A passé la commande #${newOrder.id} pour un total de ${newOrder.total.toLocaleString('fr-CM')} FCFA.`);
-        return [...prevOrders, newOrder];
-    });
-    
-    clearCart();
-    setAppliedPromoCode(null);
-    navigate('order-success');
-  }, [user, addSiteActivityLog, clearCart, navigate, setAllOrders, setAllPromoCodes]);
-
-  const handleUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus) => {
-    if (!user) return;
-    const currentUser = user;
-    
-    setAllOrders(prevOrders => {
-        const order = prevOrders.find(o => o.id === orderId);
-        if (!order) return prevOrders;
-
-        addSiteActivityLog(currentUser, "Mise à jour statut commande", `Commande #${orderId} : '${order.status}' -> '${status}'`);
-        
-        if (status === 'delivered' && siteSettings.isPremiumProgramEnabled) {
-            setAllUsers(prevUsers => {
-                return prevUsers.map(u => {
-                    if (u.id === order.userId) {
-                        const deliveredOrders = [...prevOrders.filter(o => o.userId === order.userId && o.status === 'delivered'), order];
-                        const orderCount = deliveredOrders.length;
-                        const totalSpent = deliveredOrders.reduce((sum, o) => sum + o.total, 0);
-                        
-                        const newStatus = (orderCount >= siteSettings.premiumThresholds.orders && totalSpent >= siteSettings.premiumThresholds.spending) ? 'premium' : 'standard';
-
-                        if (u.loyalty.status !== 'premium' && newStatus === 'premium') {
-                            addSiteActivityLog({ ...user, role: 'superadmin', name: 'Système' }, 'Mise à jour Fidélité', `L'utilisateur ${u.name} est passé au statut Premium par fidélité.`);
-                             return { ...u, loyalty: { orderCount, totalSpent, status: 'premium', premiumStatusMethod: 'loyalty' }};
-                        }
-
-                        return { ...u, loyalty: { ...u.loyalty, orderCount, totalSpent }};
-                    }
-                    return u;
-                });
-            });
-        }
-        
-        let newEventDetails = '';
-        let newEventLocation = '';
-        
-        setAllStores(prevStores => {
-            const store = prevStores.find(s => s.name === order.items[0].vendor);
-            switch(status) {
-              case 'ready-for-pickup': newEventDetails = "Le vendeur a préparé le colis pour l'enlèvement."; newEventLocation = `Boutique: ${store?.name || 'Inconnue'}`; break;
-              case 'picked-up': newEventDetails = `L'agent ${currentUser.name} a scanné et récupéré le colis.`; newEventLocation = `Centre de tri, ${store?.location || 'Inconnu'}`; break;
-              case 'at-depot': newEventDetails = "Le colis est arrivé au centre de distribution local."; newEventLocation = `Centre de distribution, ${order.shippingAddress.city}`; break;
-              case 'out-for-delivery': newEventDetails = `Le livreur ${currentUser.name} a scanné le colis et a commencé sa tournée.`; newEventLocation = `En tournée, ${order.shippingAddress.city}`; break;
-              case 'delivered': newEventDetails = order.status === 'refund-requested' ? 'La demande de remboursement a été rejetée. La commande reste considérée comme livrée.' : 'Le colis a été livré avec succès.'; newEventLocation = order.status === 'refund-requested' ? 'Service Client' : order.shippingAddress.address; break;
-              case 'refunded': newEventDetails = 'La demande de remboursement a été approuvée par un administrateur.'; newEventLocation = 'Service Client'; break;
-            }
-            return prevStores;
-        });
-
-        const newTrackingEvent: TrackingEvent = { status, date: new Date().toISOString(), details: newEventDetails, location: newEventLocation };
-        return prevOrders.map(o => o.id === orderId ? { ...o, status, trackingHistory: [...o.trackingHistory, newTrackingEvent] } : o);
-    });
-  }, [user, addSiteActivityLog, setAllUsers, siteSettings, setAllOrders, setAllStores]);
-
-  const handleCancelOrder = useCallback((orderId: string) => {
-    if (!user) return;
-    const currentUser = user;
-    
-    setAllOrders(prevOrders => {
-      const orderToCancel = prevOrders.find(o => o.id === orderId);
-      if (!orderToCancel) return prevOrders;
-
-      const confirmationMessage = `Êtes-vous sûr de vouloir annuler cette commande ? Des frais d'annulation de 15% (${(orderToCancel.total * 0.15).toLocaleString('fr-CM')} FCFA) seront appliqués.`;
-      if (!window.confirm(confirmationMessage)) return prevOrders;
-
-      const cancellationFee = orderToCancel.total * 0.15;
-      const newTrackingEvent: TrackingEvent = {
-        status: 'cancelled',
-        date: new Date().toISOString(),
-        details: `Commande annulée par le client. Frais appliqués: ${cancellationFee.toLocaleString('fr-CM')} FCFA.`,
-        location: 'Client'
-      };
-      addSiteActivityLog(currentUser, "Annulation Commande", `Commande #${orderId} annulée avec des frais de ${cancellationFee.toLocaleString('fr-CM')} FCFA.`);
-      return prevOrders.map(o => o.id === orderId ? { ...o, status: 'cancelled', cancellationFee, trackingHistory: [...o.trackingHistory, newTrackingEvent] } : o);
-    });
-    
-    navigate('order-history');
-  }, [user, addSiteActivityLog, navigate, setAllOrders]);
-
-
-  const handleRequestRefund = useCallback((orderId: string, reason: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllOrders(prevOrders => {
-        const newTrackingEvent: TrackingEvent = { status: 'refund-requested', date: new Date().toISOString(), details: `Demande de remboursement soumise. Motif: ${reason}`, location: 'Client' };
-        addSiteActivityLog(currentUser, "Demande de remboursement", `Demande pour la commande #${orderId}. Motif: ${reason}`);
-        return prevOrders.map(o => o.id === orderId ? { ...o, status: 'refund-requested', refundReason: reason, trackingHistory: [...o.trackingHistory, newTrackingEvent] } : o);
-    });
-    navigate('order-history');
-  }, [user, addSiteActivityLog, navigate, setAllOrders]);
-
-  const handleUpdateCategoryImage = useCallback((categoryId: string, imageUrl: string) => {
-    if (!user || user.role !== 'superadmin') return;
-    const currentUser = user;
-    setAllCategories(prev => {
-        const category = prev.find(c => c.id === categoryId);
-        if(category){
-            addSiteActivityLog(currentUser, "Mise à jour image catégorie", `Catégorie '${category.name}'`);
-        }
-        return prev.map(c => c.id === categoryId ? { ...c, imageUrl } : c);
-    });
-  }, [user, addSiteActivityLog, setAllCategories]);
-  
-  const handleAdminAddCategory = useCallback((categoryName: string) => {
-    if (!user || user.role !== 'superadmin') return;
-    setAllCategories(prev => {
-        if (prev.find(c => c.name.toLowerCase() === categoryName.toLowerCase())) {
-            alert("Cette catégorie existe déjà.");
-            return prev;
-        }
-        const newCategory: Category = {
-            id: `cat-${new Date().getTime()}`,
-            name: categoryName,
-            imageUrl: `https://picsum.photos/seed/${categoryName.toLowerCase().replace(/\s+/g, '-')}/300/200`
-        };
-        addSiteActivityLog(user, "Ajout Catégorie", `A créé la catégorie '${categoryName}'.`);
-        return [...prev, newCategory];
-    });
-  }, [user, addSiteActivityLog, setAllCategories]);
-
-  const handleAdminDeleteCategory = useCallback((categoryId: string) => {
-    if (!user || user.role !== 'superadmin') return;
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette catégorie ? Cela pourrait affecter les produits existants.")) {
-        setAllCategories(prev => {
-            const category = prev.find(c => c.id === categoryId);
-            if(category) {
-                addSiteActivityLog(user, "Suppression Catégorie", `A supprimé la catégorie '${category.name}'.`);
-            }
-            return prev.filter(c => c.id !== categoryId);
-        });
-    }
-  }, [user, addSiteActivityLog, setAllCategories]);
-  
-  const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string, latitude?: number, longitude?: number) => {
-    if (!user) return;
-    const currentUser = user;
-    
-    const requiredDocs = Object.entries(siteSettings.requiredSellerDocuments)
-        .filter(([, isRequired]) => isRequired)
-        .map(([docName]) => ({ name: docName, status: 'requested' as const }));
-
-    setAllStores(prev => {
-        const newStore: Store = {
-          id: new Date().getTime().toString(), name: shopName, logoUrl: logoUrl, category: 'Nouvelle Boutique',
-          warnings: [], status: 'pending', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress,
-          documents: requiredDocs,
-          latitude,
-          longitude,
-          subscriptionStatus: 'inactive',
-          premiumStatus: 'standard',
-        };
-        return [...prev, newStore];
-    });
-    addSiteActivityLog(currentUser, 'Demande de Boutique', `A soumis une demande pour la boutique '${shopName}'.`);
-    updateUser({ shopName, location });
-  }, [user, addSiteActivityLog, updateUser, siteSettings.requiredSellerDocuments, setAllStores]);
-  
-  const handleApproveStore = useCallback((storeId: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllStores(prev => {
-        const store = prev.find(s => s.id === storeId);
-        if(store) { addSiteActivityLog(currentUser, "Approbation boutique", `La boutique '${store.name}' a été approuvée.`); }
-        return prev.map(s => s.id === storeId ? { ...s, status: 'active' } : s);
-    });
-  }, [user, addSiteActivityLog, setAllStores]);
-  
-  const handleRejectStore = useCallback((storeId: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllStores(prev => {
-        const store = prev.find(s => s.id === storeId);
-        if(store) { addSiteActivityLog(currentUser, "Rejet boutique", `La boutique '${store.name}' a été rejetée.`); }
-        return prev.map(s => s.id === storeId ? { ...s, status: 'suspended' } : s);
-    });
-  }, [user, addSiteActivityLog, setAllStores]);
-  
-  const handleWarnStore = useCallback((storeId: string, reason: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllStores(prevStores => prevStores.map(store => {
-        if (store.id === storeId) {
-            const newWarning: Warning = {
-              id: `warn-${new Date().getTime()}`,
-              date: new Date().toISOString(),
-              reason: reason,
-            };
-            const newWarnings = [...store.warnings, newWarning];
-            const newStatus = newWarnings.length >= 3 ? 'suspended' : store.status;
-            addSiteActivityLog(currentUser, "Avertissement boutique", `Boutique '${store.name}' a reçu un avertissement (${newWarnings.length}/3). Motif: ${reason}`);
-            if (newStatus === 'suspended' && store.status === 'active') { addSiteActivityLog(currentUser, "Suspension automatique boutique", `Boutique '${store.name}' suspendue après 3 avertissements.`); }
-            return { ...store, warnings: newWarnings, status: newStatus };
-        }
-        return store;
-    }));
-  }, [user, addSiteActivityLog, setAllStores]);
-  
-  const handleToggleStoreStatus = useCallback((storeId: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllStores(prevStores => prevStores.map(store => {
-        if (store.id === storeId) {
-            const newStatus = store.status === 'active' ? 'suspended' : 'active';
-            const newWarnings = newStatus === 'active' ? [] : store.warnings;
-            addSiteActivityLog(currentUser, "Mise à jour statut boutique", `Boutique '${store.name}' : '${store.status}' -> '${newStatus}'.`);
-            return { ...store, status: newStatus, warnings: newWarnings };
-        }
-        return store;
-    }));
-  }, [user, addSiteActivityLog, setAllStores]);
-
-  const handleToggleStorePremiumStatus = useCallback((storeId: string) => {
-    if (!user || user.role !== 'superadmin') return;
-    setAllStores(prevStores => prevStores.map(store => {
-        if (store.id === storeId) {
-            const newStatus = store.premiumStatus === 'premium' ? 'standard' : 'premium';
-            addSiteActivityLog(user, "Mise à jour Statut Premium Boutique", `Boutique '${store.name}' est maintenant ${newStatus === 'premium' ? 'Premium' : 'Standard'}.`);
-            return { ...store, premiumStatus: newStatus };
-        }
-        return store;
-    }));
-  }, [user, addSiteActivityLog, setAllStores]);
-
-    const handleRequestDocument = useCallback((storeId: string, documentName: string) => {
-        if (!user) return;
-        const currentUser = user;
-        setAllStores(prev => {
-            const store = prev.find(s => s.id === storeId);
-            if (store) { addSiteActivityLog(currentUser, 'Demande de document', `Document '${documentName}' demandé à la boutique '${store?.name}'.`); }
-            return prev.map(s => s.id === storeId ? { ...s, documents: [...s.documents, { name: documentName, status: 'requested' }] } : s)
-        });
-    }, [user, addSiteActivityLog, setAllStores]);
-
-    const handleUploadDocument = useCallback((storeId: string, documentName: string, fileUrl: string) => {
-        if (!user) return;
-        setAllStores(prev => prev.map(s => s.id === storeId ? { ...s, documents: s.documents.map(d => d.name === documentName ? { ...d, status: 'uploaded', fileUrl: fileUrl } : d) } : s));
-        addSiteActivityLog(user, 'Soumission de document', `Document '${documentName}' soumis.`);
-    }, [user, addSiteActivityLog, setAllStores]);
-
-    const handleVerifyDocumentStatus = useCallback((storeId: string, documentName: string, status: 'verified' | 'rejected', reason?: string) => {
-        if (!user) return;
-        const currentUser = user;
-        setAllStores(prev => {
-            const store = prev.find(s => s.id === storeId);
-            if (store) { addSiteActivityLog(currentUser, 'Vérification de document', `Document '${documentName}' de la boutique '${store?.name}' a été ${status === 'verified' ? 'vérifié' : 'vérifié'}.`); }
-            return prev.map(s => s.id === storeId ? { ...s, documents: s.documents.map(d => d.name === documentName ? { ...d, status: status, rejectionReason: reason } : d) } : s)
-        });
-    }, [user, addSiteActivityLog, setAllStores]);
-
-  const handleSaveFlashSale = useCallback((flashSaleData: Omit<FlashSale, 'id' | 'products'>) => {
-      if (!user) return;
-      const currentUser = user;
-      setFlashSales(prev => {
-        const newFlashSale: FlashSale = { ...flashSaleData, id: new Date().getTime().toString(), products: [] };
-        addSiteActivityLog(currentUser, 'Création Vente Flash', `L'événement '${newFlashSale.name}' a été créé.`);
-        return [...prev, newFlashSale];
-      });
-  }, [user, addSiteActivityLog, setFlashSales]);
-
-  const handleProposeForFlashSale = useCallback((flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => {
-      if (!user) return;
-      const currentUser = user;
-      setFlashSales(prev => prev.map(fs => {
-          if (fs.id === flashSaleId) {
-              const newProduct = { productId, flashPrice, sellerShopName, status: 'pending' as const };
-              addSiteActivityLog(currentUser, 'Proposition Vente Flash', `Le vendeur '${sellerShopName}' a proposé le produit ID ${productId} pour l'événement '${fs.name}'.`);
-              return { ...fs, products: [...fs.products, newProduct] };
-          }
-          return fs;
+          return o;
       }));
-  }, [user, addSiteActivityLog, setFlashSales]);
+  }, [setAllOrders, addLog, user]);
 
-  const handleUpdateFlashSaleSubmissionStatus = useCallback((flashSaleId: string, productId: string, status: 'approved' | 'rejected') => {
-      if (!user) return;
-      const currentUser = user;
-      setFlashSales(prev => {
-        return prev.map(fs => {
-            if (fs.id === flashSaleId) {
-                setAllProducts(prevProds => {
-                    const product = prevProds.find(p => p.id === productId);
-                    if (product) {
-                        addSiteActivityLog(currentUser, 'Gestion Vente Flash', `Le produit '${product.name}' a été ${status === 'approved' ? 'approuvé' : 'rejeté'} pour la vente '${fs.name}'.`);
-                    }
-                    return prevProds;
-                });
-                return { ...fs, products: fs.products.map(p => p.productId === productId ? { ...p, status } : p) };
-            }
-            return fs;
-        })
-      });
-  }, [user, addSiteActivityLog, setFlashSales, setAllProducts]);
-  
-  const handleBatchUpdateFlashSaleStatus = useCallback((flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => {
-    if (!user) return;
-    const currentUser = user;
-    setFlashSales(prev => prev.map(fs => {
-      if (fs.id === flashSaleId) {
-        addSiteActivityLog(currentUser, 'Gestion Vente Flash par lot', `${productIds.length} produit(s) ont été ${status === 'approved' ? 'approuvés' : 'rejetés'} pour la vente '${fs.name}'.`);
-        return { ...fs, products: fs.products.map(p => productIds.includes(p.productId) ? { ...p, status } : p) };
-      }
-      return fs;
-    }));
-  }, [user, addSiteActivityLog, setFlashSales]);
-
-  const handleSearch = useCallback((query: string) => {
-    setSearchQuery(query);
-    navigate('search-results');
-  }, [navigate]);
-
-  const handleAddPickupPoint = useCallback((pointData: Omit<PickupPoint, 'id'>) => {
-    if (!user || user.role !== 'superadmin') return;
-    const currentUser = user;
-    setAllPickupPoints(prev => {
-        const newPoint: PickupPoint = { id: `pp-${new Date().getTime()}`, ...pointData };
-        addSiteActivityLog(currentUser, 'Ajout Point Dépôt', `Le point de dépôt '${newPoint.name}' a été créé.`);
-        return [...prev, newPoint];
-    });
-  }, [user, addSiteActivityLog, setAllPickupPoints]);
-
-  const handleUpdatePickupPoint = useCallback((updatedPoint: PickupPoint) => {
-      if (!user) return;
-      setAllPickupPoints(prev => {
-        addSiteActivityLog(user, 'Modification Point Dépôt', `Le point de dépôt '${updatedPoint.name}' a été mis à jour.`);
-        return prev.map(p => p.id === updatedPoint.id ? updatedPoint : p)
-      });
-  }, [user, addSiteActivityLog, setAllPickupPoints]);
-  
-  const handleDeletePickupPoint = useCallback((pointId: string) => {
-    if (!user) return;
-    const currentUser = user;
-    
-    setAllPickupPoints(prevPoints => {
-        const pointToDelete = prevPoints.find(p => p.id === pointId);
-        if (window.confirm(`Êtes-vous sûr de vouloir supprimer le point de dépôt "${pointToDelete?.name}"?`)) {
-          if(pointToDelete) { addSiteActivityLog(currentUser, 'Suppression Point Dépôt', `Le point de dépôt '${pointToDelete.name}' a été supprimé.`); }
-          return prevPoints.filter(p => p.id !== pointId);
-        }
-        return prevPoints;
-    });
-  }, [user, addSiteActivityLog, setAllPickupPoints]);
-
-  const handleUpdateUserRole = useCallback((userId: string, newRole: UserRole) => {
-    if (!user || user.role !== 'superadmin') return;
-    if (window.confirm(`Êtes-vous sûr de vouloir changer le rôle de cet utilisateur en '${newRole}' ? Cette action est irréversible.`)) {
-      setAllUsers(prevUsers => {
-        const userToUpdate = prevUsers.find(u => u.id === userId);
-        if (userToUpdate) {
-          addSiteActivityLog(user, 'Changement de Rôle', `Le rôle de '${userToUpdate.name}' a été changé de '${userToUpdate.role}' à '${newRole}'.`);
-        }
-        return prevUsers.map(u => u.id === userId ? { ...u, role: newRole } : u);
-      });
-    }
-  }, [user, addSiteActivityLog, setAllUsers]);
-
-  const handleAssignAgent = useCallback((orderId: string, agentId: string) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllOrders(prevOrders => {
-        const order = prevOrders.find(o => o.id === orderId);
-        const agent = allUsers.find(u => u.id === agentId);
-        if (order && agent) {
-            addSiteActivityLog(currentUser, "Assignation Agent", `Agent '${agent.name}' assigné à la commande #${order.id}.`);
-        }
-        return prevOrders.map(o => o.id === orderId ? { ...o, agentId } : o);
-    });
-  }, [user, addSiteActivityLog, allUsers, setAllOrders]);
-  
-  const handleCreatePromoCode = useCallback((codeData: Omit<PromoCode, 'uses'>) => {
-    if (!user) return;
-    const currentUser = user;
-    setAllPromoCodes(prev => {
-        const newCode: PromoCode = { ...codeData, uses: 0 };
-        addSiteActivityLog(currentUser, 'Création Code Promo', `A créé le code promo '${newCode.code}'.`);
-        return [...prev, newCode];
-    });
-  }, [user, addSiteActivityLog, setAllPromoCodes]);
-
-  const handleDeletePromoCode = useCallback((code: string) => {
-    if (!user) return;
-    const currentUser = user;
-    if (window.confirm(`Êtes-vous sûr de vouloir supprimer le code promo "${code}" ?`)) {
-        setAllPromoCodes(prev => {
-            addSiteActivityLog(currentUser, 'Suppression Code Promo', `A supprimé le code promo '${code}'.`);
-            return prev.filter(pc => pc.code !== code);
-        });
-    }
-  }, [user, addSiteActivityLog, setAllPromoCodes]);
-  
-  const handleToggleChatFeature = useCallback(() => setIsChatEnabled(prev => !prev), [setIsChatEnabled]);
-  const handleToggleComparisonFeature = useCallback(() => setIsComparisonEnabled(prev => !prev), [setIsComparisonEnabled]);
-  
-  const handleUpdateSiteSettings = useCallback((newSettings: SiteSettings) => {
-      setSiteSettings(newSettings);
-      if(user) addSiteActivityLog(user, 'Mise à jour Paramètres', `Les paramètres du site ont été mis à jour.`);
-  }, [user, addSiteActivityLog, setSiteSettings]);
-
-  const handleBecomePremiumByCaution = useCallback(() => {
-    if (!user) return;
-    setAllUsers(prev => prev.map(u => {
-      if (u.id === user.id) {
-          addSiteActivityLog(user, 'Adhésion Premium', `Est devenu Premium en payant la caution de ${siteSettings.premiumCautionAmount.toLocaleString('fr-CM')} FCFA.`);
-          return {
-            ...u,
-            loyalty: { ...u.loyalty, status: 'premium', premiumStatusMethod: 'deposit' }
-          };
-      }
-      return u;
-    }));
-    alert("Félicitations ! Vous êtes maintenant un membre KMER Premium.");
-    navigate('home');
-  }, [user, setAllUsers, addSiteActivityLog, siteSettings.premiumCautionAmount, navigate]);
-  
-  const handleUpgradeToPremiumPlus = useCallback(() => {
-    if (!user) return;
-    setAllUsers(prev => prev.map(u => {
-      if (u.id === user.id) {
-          addSiteActivityLog(user, 'Adhésion Premium+', `Est devenu Premium+ en payant l'abonnement de ${siteSettings.premiumPlusAnnualFee.toLocaleString('fr-CM')} FCFA.`);
-          return {
-            ...u,
-            loyalty: { ...u.loyalty, status: 'premium_plus', premiumStatusMethod: 'subscription' }
-          };
-      }
-      return u;
-    }));
-    alert("Félicitations ! Vous êtes maintenant un membre KMER Premium+.");
-    navigate('home');
-  }, [user, setAllUsers, addSiteActivityLog, siteSettings.premiumPlusAnnualFee, navigate]);
-
-  const handlePayoutSeller = useCallback((storeId: string, amount: number) => {
-    if (!user || user.role !== 'superadmin') return;
-    if (amount <= 0) return;
-
-    if (window.confirm(`Confirmez-vous le versement de ${amount.toLocaleString('fr-CM')} FCFA à cette boutique ?`)) {
-        const newPayout: Payout = {
-            storeId,
-            amount,
-            date: new Date().toISOString(),
-        };
-        setPayouts(prev => [...prev, newPayout]);
-        
-        const store = allStores.find(s => s.id === storeId);
-        addSiteActivityLog(user, 'Paiement Vendeur', `A versé ${amount.toLocaleString('fr-CM')} FCFA à la boutique '${store?.name}'.`);
-    }
-  }, [user, addSiteActivityLog, allStores, setPayouts]);
-
-  const handleAddAdvertisement = useCallback((ad: Omit<Advertisement, 'id'>) => {
-    if (!user || user.role !== 'superadmin') return;
-    const newAd = { ...ad, id: `ad-${Date.now()}` };
-    setAdvertisements(prev => [...prev, newAd]);
-    addSiteActivityLog(user, 'Ajout Publicité', `A ajouté une nouvelle publicité.`);
-  }, [user, addSiteActivityLog, setAdvertisements]);
-
-  const handleUpdateAdvertisement = useCallback((updatedAd: Advertisement) => {
-    if (!user || user.role !== 'superadmin') return;
-    setAdvertisements(prev => prev.map(ad => ad.id === updatedAd.id ? updatedAd : ad));
-    addSiteActivityLog(user, 'Mise à jour Publicité', `A mis à jour la publicité ${updatedAd.id}.`);
-  }, [user, addSiteActivityLog, setAdvertisements]);
-
-  const handleDeleteAdvertisement = useCallback((adId: string) => {
-    if (!user || user.role !== 'superadmin') return;
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer cette publicité ?")) {
-      setAdvertisements(prev => prev.filter(ad => ad.id !== adId));
-      addSiteActivityLog(user, 'Suppression Publicité', `A supprimé la publicité ${adId}.`);
-    }
-  }, [user, addSiteActivityLog, setAdvertisements]);
-
-  const handleUpdateSellerProfile = useCallback((storeId: string, updatedData: { shopName: string, location: string, logoUrl: string }) => {
-    if (!user) return;
-    const { shopName, location, logoUrl } = updatedData;
-
-    // Update the store in allStores
-    setAllStores(prevStores => prevStores.map(s => 
-        s.id === storeId ? { ...s, name: shopName, location, logoUrl } : s
-    ));
-    
-    // Update the user object to keep it in sync
-    updateUser({
-        name: shopName, // user.name is often the shop name for a seller
-        shopName,
-        location
-    });
-
-    addSiteActivityLog(user, 'Mise à jour Profil Boutique', `Le profil de la boutique a été mis à jour.`);
-  }, [user, addSiteActivityLog, setAllStores, updateUser]);
+  const handleLogout = useCallback(() => {
+    logout();
+    setPage('home');
+  }, [logout]);
 
 
-  const navigateToHome = useCallback(() => { navigate('home'); setAppliedPromoCode(null); }, [navigate]);
-  const navigateToCart = useCallback(() => navigate('cart'), [navigate]);
-  const navigateToCheckout = useCallback(() => navigate('checkout'), [navigate]);
-  const navigateToStores = useCallback(() => navigate('stores'), [navigate]);
-  const navigateToPromotions = useCallback(() => navigate('promotions'), [navigate]);
-  const navigateToBecomeSeller = useCallback(() => navigate('become-seller'), [navigate]);
-  const navigateToSellerDashboard = useCallback(() => navigate('seller-dashboard'), [navigate]);
-  const navigateToSellerProfile = useCallback(() => navigate('seller-profile'), [navigate]);
-  const navigateToSuperAdminDashboard = useCallback(() => navigate('superadmin-dashboard'), [navigate]);
-  const navigateToOrderHistory = useCallback(() => navigate('order-history'), [navigate]);
-  const navigateToFlashSales = useCallback(() => navigate('flash-sales'), [navigate]);
-  const navigateToWishlist = useCallback(() => navigate('wishlist'), [navigate]);
-  const navigateToDeliveryAgentDashboard = useCallback(() => navigate('delivery-agent-dashboard'), [navigate]);
-  const navigateToComparison = useCallback(() => navigate('comparison'), [navigate]);
-  const navigateToBecomePremium = useCallback(() => navigate('become-premium'), [navigate]);
-  const navigateToAnalyticsDashboard = useCallback(() => navigate('analytics-dashboard'), [navigate]);
-  const navigateToReviewModeration = useCallback(() => navigate('review-moderation'), [navigate]);
-  
-  const navigateToInfoPage = useCallback((title: string, content: string) => {
-    setInfoPageContent({ title, content });
-    navigate('info');
-  }, [navigate]);
+  if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
+      return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
+  }
 
-  const navigateToCategory = useCallback((categoryName: string) => { setSelectedCategory(categoryName); navigate('category'); }, [navigate]);
-  const navigateToVendorPage = useCallback((vendorName: string) => { setSelectedVendor(vendorName); navigate('vendor-page'); }, [navigate]);
-  const navigateToProductForm = useCallback((product: Product | null) => { setProductToEdit(product); navigate('product-form'); }, [navigate]);
-  
-  const navigateToOrderDetail = useCallback((order: Order) => { 
-    setSelectedOrder(order); 
-    navigate('order-detail'); 
-  }, [navigate]);
-
-  const onOpenLogin = useCallback(() => setIsLoginOpen(true), []);
-  const onAddProduct = useCallback(() => navigateToProductForm(null), [navigateToProductForm]);
-
-  const activeStores = useMemo(() => allStores.filter(s => s.status === 'active'), [allStores]);
-  
-  const storesForDisplay = useMemo(() => user?.role === 'seller'
-    ? activeStores.filter(s => s.name !== user.shopName)
-    : activeStores, [activeStores, user]);
-    
-  const currentStore = useMemo(() => user?.shopName ? allStores.find(s => s.name === user.shopName) : undefined, [allStores, user]);
-  
-  const publishedProducts = useMemo(() => {
-    const activeStoreNames = activeStores.map(s => s.name);
-    return allProducts.filter(p => p.status === 'published' && activeStoreNames.includes(p.vendor));
-  }, [allProducts, activeStores]);
-
-  const sellerProducts = useMemo(() => user?.shopName ? allProducts.filter(p => p.vendor === user.shopName) : [], [allProducts, user?.shopName]);
-  const sellerOrders = useMemo(() => user?.shopName ? allOrders.filter(order => order.items.some(item => item.vendor === user.shopName)) : [], [allOrders, user?.shopName]);
-  const sellerPromoCodes = useMemo(() => user?.id ? allPromoCodes.filter(pc => pc.sellerId === user.id) : [], [allPromoCodes, user?.id]);
-  const sellerCategories = useMemo(() => {
-    if (!user?.shopName) return [];
-    const categoriesInUse = new Set(sellerProducts.map(p => p.category));
-    return allCategories.filter(c => categoriesInUse.has(c.name));
-  }, [allCategories, sellerProducts, user?.shopName]);
-  
-  const userOrders = useMemo(() => user?.id ? allOrders.filter(order => order.userId === user.id) : [], [allOrders, user?.id]);
-
-  const renderContent = () => {
-    switch (currentPage) {
-      case 'product': return selectedProduct && <ProductDetail product={selectedProduct} allProducts={publishedProducts} allUsers={allUsers} stores={allStores} onBack={navigateToHome} onAddReview={addReview} onVendorClick={navigateToVendorPage} onProductClick={navigateToProduct} flashSales={flashSales} onOpenLogin={onOpenLogin} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
-      case 'cart': return <CartView onBack={navigateToHome} onNavigateToCheckout={navigateToCheckout} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
-      case 'checkout': return <Checkout onBack={navigateToCart} onOrderConfirm={handleConfirmOrder} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
-      case 'order-success': return <OrderSuccess onNavigateHome={navigateToHome} onNavigateToOrders={navigateToOrderHistory} />;
-      case 'stores': return <StoresPage stores={storesForDisplay} onBack={navigateToHome} onVisitStore={navigateToVendorPage} />;
-      case 'promotions': return <PromotionsPage allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
-      case 'flash-sales': return <FlashSalesPage allProducts={publishedProducts} flashSales={flashSales} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} allStores={allStores} isComparisonEnabled={isComparisonEnabled} />;
-      case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
-      case 'wishlist': return <WishlistPage allProducts={allProducts} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} allStores={allStores} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
-      case 'become-seller': return <BecomeSeller onBack={navigateToHome} onBecomeSeller={handleBecomeSeller} onRegistrationSuccess={navigateToSellerDashboard} siteSettings={siteSettings} />;
-      case 'category': return selectedCategory && <CategoryPage categoryName={selectedCategory} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
-      case 'seller-dashboard': return user && <SellerDashboard 
-                                                  store={currentStore} products={sellerProducts} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={navigateToHome} 
-                                                  onAddProduct={onAddProduct} onEditProduct={navigateToProductForm} onDeleteProduct={handleDeleteProduct} onToggleStatus={handleToggleProductStatus} 
-                                                  onNavigateToProfile={navigateToSellerProfile} categories={sellerCategories} onSetPromotion={handleOpenPromotionModal} onRemovePromotion={handleRemovePromotion} 
-                                                  flashSales={flashSales} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderStatus}
-                                                  onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} />;
-      case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={publishedProducts} allStores={allStores} onProductClick={navigateToProduct} onBack={navigateToHome} onVendorClick={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />;
-      case 'product-form': return <ProductForm onCancel={navigateToSellerDashboard} onSave={handleSaveProduct} productToEdit={productToEdit} categories={allCategories} onAddCategory={addCategory} />;
-      case 'seller-profile': return currentStore && <SellerProfile store={currentStore} onBack={navigateToSellerDashboard} onUpdateProfile={handleUpdateSellerProfile} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddPickupPoint} onUpdatePickupPoint={handleUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={handleToggleChatFeature} onToggleComparisonFeature={handleToggleComparisonFeature} siteSettings={siteSettings} onUpdateSiteSettings={handleUpdateSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} advertisements={advertisements} onAddAdvertisement={handleAddAdvertisement} onUpdateAdvertisement={handleUpdateAdvertisement} onDeleteAdvertisement={handleDeleteAdvertisement} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} />;
-      case 'order-history': return user && <OrderHistoryPage userOrders={userOrders} onBack={navigateToHome} onSelectOrder={navigateToOrderDetail} />;
-      case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={navigateToOrderHistory} allPickupPoints={allPickupPoints} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} />;
-      case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={handleUpdateOrderStatus} />;
-      case 'comparison': return <ComparisonPage onBack={navigateToHome} />;
-      case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={navigateToHome} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} />;
-      case 'analytics-dashboard': return <AnalyticsDashboard onBack={navigateToSuperAdminDashboard} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} />;
-      case 'review-moderation': return <ReviewModeration onBack={navigateToSuperAdminDashboard} allProducts={allProducts} onReviewModeration={handleReviewModeration} />;
-      case 'info': return infoPageContent && <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={navigateToHome} />;
-      case 'home': default: return <HomePage categories={allCategories} products={publishedProducts} stores={storesForDisplay} onProductClick={navigateToProduct} onCategoryClick={navigateToCategory} onVendorClick={navigateToVendorPage} onVisitStore={navigateToVendorPage} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} advertisements={advertisements.filter(ad => ad.isActive)} />;
-    }
+  // Access Control Logic
+  const roleProtectedPages: Partial<Record<Page, UserRole[]>> = {
+    'seller-dashboard': ['seller'],
+    'product-form': ['seller'],
+    'seller-profile': ['seller'],
+    'superadmin-dashboard': ['superadmin'],
+    'delivery-agent-dashboard': ['delivery_agent'],
+    'depot-agent-dashboard': ['depot_agent'],
+    'analytics-dashboard': ['superadmin'],
+    'review-moderation': ['superadmin'],
+    'order-history': ['customer', 'seller'],
+    'wishlist': ['customer', 'seller'],
   };
 
+  const currentPageRoles = roleProtectedPages[page];
+  if (currentPageRoles && (!user || !currentPageRoles.includes(user.role))) {
+    return <ForbiddenPage onNavigateHome={() => setPage('home')} />;
+  }
+  
+  const renderPage = () => {
+    switch(page) {
+      case 'home': return <HomePage categories={allCategories} products={allProducts} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onCategoryClick={(c) => { setSelectedCategory(c); setPage('category'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'product': return selectedProduct && <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => { setSelectedProduct(null); setPage(selectedCategory ? 'category' : (searchQuery ? 'search-results' : 'home')); }} onAddReview={(productId, review) => {setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: [...p.reviews, review]} : p))}} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onProductClick={(p) => setSelectedProduct(p)} onOpenLogin={() => setIsLoginOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
+      case 'cart': return <CartView onBack={() => setPage('home')} onNavigateToCheckout={() => setPage('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
+      case 'checkout': return <Checkout onBack={() => setPage('cart')} onOrderConfirm={async (orderData) => { 
+        if (orderData.deliveryMethod === 'home-delivery') {
+            const cityCoords = orderData.shippingAddress.city === 'Douala' 
+                ? { lat: 4.05, lng: 9.70 } 
+                : { lat: 3.86, lng: 11.52 };
+            orderData.shippingAddress.latitude = cityCoords.lat + (Math.random() - 0.5) * 0.1;
+            orderData.shippingAddress.longitude = cityCoords.lng + (Math.random() - 0.5) * 0.1;
+        }
+        const newOrder: Order = { ...orderData, id: `CMD-${new Date().getTime()}`, orderDate: new Date().toISOString(), status: 'confirmed', trackingHistory: [{status: 'confirmed', date: new Date().toISOString(), location: 'Plateforme', details: 'Commande confirmée et en attente de préparation.'}], trackingNumber: `KZ${Date.now()}`}; 
+        setAllOrders(prev => [newOrder, ...prev]); 
+        clearCart(); 
+        setAppliedPromoCode(null); 
+        setSelectedOrder(newOrder);
+        setPage('order-success'); 
+        }} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores}/>;
+      case 'order-success': return selectedOrder && <OrderSuccess order={selectedOrder} onNavigateHome={() => { setPage('home'); setSelectedOrder(null); }} onNavigateToOrders={() => { setPage('order-history'); setSelectedOrder(null); }} />;
+      case 'stores': return <StoresPage stores={allStores} onBack={() => setPage('home')} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} />;
+      case 'become-seller': return <BecomeSeller onBack={() => setPage('home')} onBecomeSeller={(shopName, location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, logoUrl, latitude, longitude) => { const newStore: Store = { id: `store-${Date.now()}`, name: shopName, logoUrl, category: 'Divers', warnings: [], status: 'pending', premiumStatus: 'standard', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, latitude, longitude, documents: siteSettings.requiredSellerDocuments['CNI (Carte Nationale d\'Identité)'] ? [{name: "CNI (Carte Nationale d'Identité)", status: 'requested'}] : [] }; setAllStores(prev => [...prev, newStore]); }} onRegistrationSuccess={() => setPage('home')} siteSettings={siteSettings} />;
+      case 'category': return selectedCategory && <CategoryPage categoryName={selectedCategory} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedCategory(null); setPage('home'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'seller-dashboard': return user?.shopName && <SellerDashboard store={allStores.find(s=>s.name === user.shopName)} products={allProducts.filter(p => p.vendor === user.shopName)} categories={allCategories} flashSales={flashSales} sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))} promoCodes={allPromoCodes.filter(pc => pc.sellerId === user.id)} onBack={() => setPage('home')} onAddProduct={() => setPage('product-form')} onEditProduct={(p) => { setSelectedProduct(p); setPage('product-form'); }} onDeleteProduct={(id) => setAllProducts(products => products.filter(p => p.id !== id))} onToggleStatus={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, status: p.status === 'published' ? 'draft' : 'published'} : p))} onNavigateToProfile={() => setPage('seller-profile')} onSetPromotion={(p) => setSelectedProduct(p)} onRemovePromotion={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: undefined} : p))} onProposeForFlashSale={(flashSaleId, productId, flashPrice, sellerShopName) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: [...fs.products, {productId, flashPrice, sellerShopName, status: 'pending'}]} : fs)); }} onUploadDocument={(storeId, documentName, fileUrl) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: s.documents.map(d => d.name === documentName ? {...d, status: 'uploaded', fileUrl} : d)} : s)); }} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onCreatePromoCode={(codeData) => setAllPromoCodes(prev => [...prev, {...codeData, uses: 0}])} onDeletePromoCode={(code) => setAllPromoCodes(prev => prev.filter(c => c.code !== code))} isChatEnabled={isChatEnabled} onPayRent={(storeId) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()} : s)); alert('Paiement du loyer effectué !'); }} siteSettings={siteSettings} />;
+      case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedVendor(null); setPage('stores'); }} onVendorClick={(v) => setSelectedVendor(v)} isComparisonEnabled={isComparisonEnabled} />;
+      case 'product-form': return <ProductForm onSave={(p) => { setAllProducts(products => { const exists = products.some(prod => prod.id === p.id); return exists ? products.map(prod => prod.id === p.id ? p : prod) : [...products, p]; }); setSelectedProduct(null); setPage('seller-dashboard'); }} onCancel={() => { setSelectedProduct(null); setPage('seller-dashboard'); }} productToEdit={selectedProduct} categories={allCategories} onAddCategory={(name) => {const newCat = {id: `cat-${Date.now()}`, name, imageUrl: ''}; setAllCategories(cats => [...cats, newCat]); return newCat;}} />;
+      case 'seller-profile': return user?.shopName && <SellerProfile store={allStores.find(s => s.name === user.shopName)!} onBack={() => setPage('seller-dashboard')} onUpdateProfile={(storeId, updatedData) => {setAllStores(stores => stores.map(s => s.id === storeId ? {...s, name: updatedData.shopName, location: updatedData.location, logoUrl: updatedData.logoUrl} : s)); setAllUsers(users => users.map(u => u.id === user.id ? {...u, shopName: updatedData.shopName} : u))}} />;
+      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onUpdateCategoryImage={(catId, url) => setAllCategories(cats => cats.map(c => c.id === catId ? {...c, imageUrl: url} : c))} onWarnStore={(storeId, reason) => { const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason }; setAllStores(stores => stores.map(s => s.id === storeId ? {...s, warnings: [...s.warnings, newWarning]} : s)); }} onToggleStoreStatus={(storeId) => setAllStores(stores => stores.map(s => s.id === storeId ? {...s, status: s.status === 'active' ? 'suspended' : 'active'} : s))} onToggleStorePremiumStatus={(storeId) => setAllStores(stores => stores.map(s => s.id === storeId ? {...s, premiumStatus: s.premiumStatus === 'premium' ? 'standard' : 'premium'} : s))} onApproveStore={(storeId) => setAllStores(stores => stores.map(s => s.id === storeId ? {...s, status: 'active'} : s))} onRejectStore={(storeId) => setAllStores(stores => stores.filter(s => s.id !== storeId))} onSaveFlashSale={(data) => {const newFS: FlashSale = {...data, id: `fs-${Date.now()}`, products: []}; setFlashSales(fs => [...fs, newFS]);}} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={(flashSaleId, productId, status) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: fs.products.map(p => p.productId === productId ? {...p, status} : p)} : fs)); }} onBatchUpdateFlashSaleStatus={(flashSaleId, productIds, status) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: fs.products.map(p => productIds.includes(p.productId) ? {...p, status} : p)} : fs)) }} onRequestDocument={(storeId, documentName) => setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: [...s.documents, {name: documentName, status: 'requested'}]} : s))} onVerifyDocumentStatus={(storeId, docName, status, reason) => setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: s.documents.map(d => d.name === docName ? {...d, status, rejectionReason: reason} : d)} : s))} allPickupPoints={allPickupPoints} onAddPickupPoint={(data) => setAllPickupPoints(prev => [...prev, {...data, id: `pp-${Date.now()}`}])} onUpdatePickupPoint={(point) => setAllPickupPoints(prev => prev.map(p => p.id === point.id ? point : p))} onDeletePickupPoint={(id) => setAllPickupPoints(prev => prev.filter(p => p.id !== id))} onAssignAgent={(orderId, agentId) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, agentId} : o))} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(e => !e)} onToggleComparisonFeature={() => setIsComparisonEnabled(e => !e)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={(name) => {const newCat = {id: `cat-${Date.now()}`, name, imageUrl: ''}; setAllCategories(cats => [...cats, newCat]);}} onAdminDeleteCategory={(id) => setAllCategories(cats => cats.filter(c => c.id !== id))} onUpdateUserRole={(userId, role) => setAllUsers(users => users.map(u => u.id === userId ? {...u, role} : u))} payouts={payouts} onPayoutSeller={(storeId, amount) => { setPayouts(prev => [...prev, {storeId, amount, date: new Date().toISOString()}]); alert(`Paiement de ${amount} FCFA effectué.`); }} onActivateSubscription={(storeId) => setAllStores(stores => stores.map(s => s.id === storeId ? {...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()} : s))} advertisements={advertisements} onAddAdvertisement={(ad) => setAdvertisements(prev => [...prev, {...ad, id: `ad-${Date.now()}`}])} onUpdateAdvertisement={(ad) => setAdvertisements(prev => prev.map(a => a.id === ad.id ? ad : a))} onDeleteAdvertisement={(id) => setAdvertisements(prev => prev.filter(a => a.id !== id))} onCreateUserByAdmin={handleCreateUserByAdmin} />;
+      case 'order-history': return <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user?.id)} onBack={() => setPage('home')} onSelectOrder={(o) => {setSelectedOrder(o); setPage('order-detail');}} />;
+      case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={() => {setSelectedOrder(null); setPage('order-history');}} allPickupPoints={allPickupPoints} onCancelOrder={(id) => {setAllOrders(orders => orders.map(o => o.id === id ? {...o, status: 'cancelled'} : o)); setSelectedOrder(null); setPage('order-history')}} onRequestRefund={(id, reason) => {setAllOrders(orders => orders.map(o => o.id === id ? {...o, status: 'refund-requested', refundReason: reason} : o)); setSelectedOrder(o => ({...o!, status: 'refund-requested'}));}} />;
+      case 'promotions': return <PromotionsPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onLogout={handleLogout} />;
+      case 'depot-agent-dashboard': return <DepotAgentDashboard allOrders={allOrders} onCheckIn={(orderId, storageLocationId) => { setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status: 'at-depot', storageLocationId, checkedInAt: new Date().toISOString(), checkedInBy: user?.id} : o)); }} onReportDiscrepancy={handleReportDiscrepancy} onLogout={handleLogout} />;
+      case 'comparison': return <ComparisonPage onBack={() => setPage('home')} />;
+      case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => setPage('home')} onBecomePremiumByCaution={() => { if(user) { setAllUsers(users => users.map(u => u.id === user.id ? {...u, loyalty: {...u.loyalty, status: 'premium', premiumStatusMethod: 'deposit'}} : u)); alert('Félicitations, vous êtes maintenant membre Premium !'); setPage('home'); } }} onUpgradeToPremiumPlus={() => { if(user) { setAllUsers(users => users.map(u => u.id === user.id ? {...u, loyalty: {...u.loyalty, status: 'premium_plus', premiumStatusMethod: 'subscription'}} : u)); alert('Félicitations, vous êtes maintenant membre Premium+ !'); setPage('home'); } }} />;
+      case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => setPage('home')} />;
+      case 'analytics-dashboard': return <AnalyticsDashboard onBack={() => setPage('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} />;
+      case 'review-moderation': return <ReviewModeration onBack={() => setPage('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={(productId, reviewIdentifier, newStatus) => { setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: p.reviews.map(r => r.author === reviewIdentifier.author && r.date === reviewIdentifier.date ? {...r, status: newStatus} : r)} : p)); }} />;
+      case 'forbidden': return <ForbiddenPage onNavigateHome={() => setPage('home')} />;
+      case 'server-error': return <ServerErrorPage onNavigateHome={() => setPage('home')} />;
+      default: return <NotFoundPage onNavigateHome={() => setPage('home')} />;
+    }
+  };
+  
   return (
-    <div className="min-h-screen text-gray-800 dark:bg-gray-900 dark:text-gray-200">
-      {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
-      {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={closeModal} onNavigateToCart={() => { closeModal(); navigateToCart();}} />}
-      {promotionModalProduct && <PromotionModal product={promotionModalProduct} onClose={handleClosePromotionModal} onSave={handleSetPromotion} />}
-      {isChatEnabled && user && <ChatWidget allUsers={allUsers} allProducts={allProducts} />}
+    <>
       <Header 
-        categories={allCategories}
-        onNavigateHome={navigateToHome} 
-        onNavigateCart={navigateToCart}
-        onNavigateToStores={navigateToStores}
-        onNavigateToPromotions={navigateToPromotions}
-        onNavigateToCategory={navigateToCategory}
-        onNavigateToBecomeSeller={navigateToBecomeSeller}
-        onNavigateToSellerDashboard={navigateToSellerDashboard}
-        onNavigateToSellerProfile={navigateToSellerProfile}
-        onOpenLogin={onOpenLogin}
-        onNavigateToOrderHistory={navigateToOrderHistory}
-        onNavigateToSuperAdminDashboard={navigateToSuperAdminDashboard}
-        onNavigateToFlashSales={navigateToFlashSales}
-        onNavigateToWishlist={navigateToWishlist}
-        onNavigateToDeliveryAgentDashboard={navigateToDeliveryAgentDashboard}
-        onSearch={handleSearch}
+        categories={allCategories} 
+        onNavigateHome={() => setPage('home')} 
+        onNavigateCart={() => setPage('cart')} 
+        onNavigateToStores={() => setPage('stores')} 
+        onNavigateToPromotions={() => setPage('promotions')} 
+        onNavigateToCategory={(c) => {setSelectedCategory(c); setPage('category');}} 
+        onNavigateToBecomeSeller={() => setPage('become-seller')} 
+        onNavigateToSellerDashboard={() => setPage('seller-dashboard')} 
+        onNavigateToSellerProfile={() => setPage('seller-profile')}
+        onNavigateToOrderHistory={() => setPage('order-history')}
+        onNavigateToSuperAdminDashboard={() => setPage('superadmin-dashboard')}
+        onNavigateToFlashSales={() => setPage('flash-sales')}
+        onNavigateToWishlist={() => setPage('wishlist')}
+        onNavigateToDeliveryAgentDashboard={() => setPage('delivery-agent-dashboard')}
+        onNavigateToDepotAgentDashboard={() => setPage('depot-agent-dashboard')}
+        onNavigateToBecomePremium={() => setPage('become-premium')}
+        onNavigateToAnalyticsDashboard={() => setPage('analytics-dashboard')}
+        onNavigateToReviewModeration={() => setPage('review-moderation')}
+        onOpenLogin={() => setIsLoginOpen(true)}
+        onLogout={handleLogout}
+        onSearch={(q) => { setSearchQuery(q); setPage('search-results'); }}
         isChatEnabled={isChatEnabled}
-        onNavigateToBecomePremium={navigateToBecomePremium}
         isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
-        onNavigateToAnalyticsDashboard={navigateToAnalyticsDashboard}
-        onNavigateToReviewModeration={navigateToReviewModeration}
       />
-      <main className="pb-16">
-        {renderContent()}
+      <main className="min-h-[calc(100vh-145px)]">
+          {renderPage()}
       </main>
-      <Footer onNavigate={navigateToInfoPage} />
-      {isComparisonEnabled && <ComparisonBar onCompareClick={navigateToComparison} />}
-    </div>
+      <Footer onNavigate={(title, content) => { setInfoPageContent({title, content}); setPage('info'); }} />
+      {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
+      {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={closeModal} onNavigateToCart={() => { closeModal(); setPage('cart'); }} />}
+      {user?.role === 'seller' && selectedProduct?.vendor === user.shopName && <PromotionModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSave={(id, promoPrice, startDate, endDate) => { setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate} : p)); setSelectedProduct(null); }} />}
+      {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} />}
+      {isComparisonEnabled && <ComparisonBar onCompareClick={() => setPage('comparison')}/>}
+    </>
   );
 }
-
-export default App;

@@ -22,17 +22,19 @@ interface HeaderProps {
   onNavigateToFlashSales: () => void;
   onNavigateToWishlist: () => void;
   onNavigateToDeliveryAgentDashboard: () => void;
+  onNavigateToDepotAgentDashboard: () => void;
   onNavigateToBecomePremium: () => void;
   onNavigateToAnalyticsDashboard: () => void;
   onNavigateToReviewModeration: () => void;
   onOpenLogin: () => void;
+  onLogout: () => void;
   onSearch: (query: string) => void;
   isChatEnabled: boolean;
   isPremiumProgramEnabled: boolean;
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToBecomePremium, onNavigateToAnalyticsDashboard, onNavigateToReviewModeration, onSearch, isChatEnabled, isPremiumProgramEnabled } = props;
+  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAnalyticsDashboard, onNavigateToReviewModeration, onSearch, isChatEnabled, isPremiumProgramEnabled } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -42,7 +44,7 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [language, setLanguage] = useState<'fr' | 'en'>('fr');
   const { cart } = useCart();
   const { wishlist } = useWishlist();
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { setIsWidgetOpen, totalUnreadCount } = useChatContext();
   const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
@@ -104,7 +106,8 @@ const Header: React.FC<HeaderProps> = (props) => {
         { label: 'Mon Profil', action: onNavigateToSellerProfile, icon: <Cog8ToothIcon className="h-5 w-5" /> }
     ] : []),
     ...(user?.role === 'delivery_agent' ? [{ label: 'Tableau de bord Livreur', action: onNavigateToDeliveryAgentDashboard, icon: <TruckIcon className="h-5 w-5" /> }] : []),
-    ...(user && !['superadmin', 'delivery_agent'].includes(user.role) ? [{ label: 'Mes Commandes', action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> }] : [])
+    ...(user?.role === 'depot_agent' ? [{ label: 'Tableau de bord Dépôt', action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
+    ...(user && !['superadmin', 'delivery_agent', 'depot_agent'].includes(user.role) ? [{ label: 'Mes Commandes', action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> }] : [])
   ];
 
   const ActionButton: React.FC<{onClick: () => void, icon: React.ReactNode, label: string, count?: number}> = ({onClick, icon, label, count}) => (
@@ -169,7 +172,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                        </button>
                     ))}
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                    <button onClick={logout} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <button onClick={() => { onLogout(); setIsUserMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                        <ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter
                     </button>
                   </div>
@@ -179,7 +182,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label={translations.login[language]} />
             )}
             
-            {user && !['superadmin', 'delivery_agent'].includes(user.role) && (
+            {user && !['superadmin', 'delivery_agent', 'depot_agent'].includes(user.role) && (
               <>
                 <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={translations.wishlist[language]} count={wishlistItemCount} />
                 {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={translations.messages[language]} count={totalUnreadCount} />}
@@ -200,8 +203,8 @@ const Header: React.FC<HeaderProps> = (props) => {
           </div>
           
           <div className="lg:hidden flex items-center">
-            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white" aria-label="Ouvrir le menu">
-              <MenuIcon className="h-6 w-6" />
+            <button onClick={() => setIsMenuOpen(!isMenuOpen)} className="p-2 rounded-md text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-white">
+              {isMenuOpen ? <XIcon className="h-6 w-6" /> : <MenuIcon className="h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -211,7 +214,7 @@ const Header: React.FC<HeaderProps> = (props) => {
               <button onClick={onNavigateToAnalyticsDashboard} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-2"><BarChartIcon className="w-5 h-5"/>Tableau de Bord Analytique</button>
               <button onClick={onNavigateToReviewModeration} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-2"><ShieldCheckIcon className="w-5 h-5"/>Modération des Avis</button>
            </nav>
-        ) : user?.role !== 'delivery_agent' ? (
+        ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
           <nav className="hidden lg:flex items-center justify-center space-x-6 border-t border-gray-200 dark:border-gray-700 mt-3 pt-2">
             <div className="relative" ref={categoryMenuRef}>
               <button
@@ -248,98 +251,75 @@ const Header: React.FC<HeaderProps> = (props) => {
         ) : null}
       </div>
 
-      {/* Mobile Menu Drawer */}
-      <div className={`lg:hidden fixed inset-0 z-50 ${isMenuOpen ? '' : 'pointer-events-none'}`} role="dialog" aria-modal="true">
-          {/* Overlay */}
-          <div className={`fixed inset-0 bg-black/60 transition-opacity ${isMenuOpen ? 'opacity-100' : 'opacity-0'}`} onClick={() => setIsMenuOpen(false)} aria-hidden="true"></div>
-
-          {/* Drawer */}
-          <div className={`fixed inset-y-0 left-0 w-4/5 max-w-sm bg-white dark:bg-gray-800 shadow-xl transform transition-transform duration-300 ease-in-out ${isMenuOpen ? 'translate-x-0' : '-translate-x-full'}`}>
-              <div className="flex flex-col h-full">
-                  <div className="p-4 flex justify-between items-center border-b border-gray-200 dark:border-gray-700">
-                      <button onClick={() => { onNavigateHome(); setIsMenuOpen(false); }} aria-label="Accueil Kmer Zone">
-                          <LogoIcon className="h-8" />
-                      </button>
-                      <button onClick={() => setIsMenuOpen(false)} className="p-1 text-gray-500 dark:text-gray-400">
-                          <XIcon className="h-6 w-6" />
-                      </button>
-                  </div>
-                  
-                  <div className="flex-grow overflow-y-auto">
-                      <form onSubmit={(e) => handleSearchSubmit(e, mobileSearchQuery)} className="p-4">
-                          <div className="relative">
-                              <input
-                                  type="text"
-                                  placeholder="Rechercher..."
-                                  value={mobileSearchQuery}
-                                  onChange={(e) => setMobileSearchQuery(e.target.value)}
-                                  className="w-full pl-10 pr-4 py-2.5 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-kmer-green"
-                              />
-                              <button type="submit" className="absolute inset-y-0 left-0 flex items-center pl-3.5 text-gray-500 dark:text-gray-400">
-                                  <SearchIcon className="h-5 w-5" />
-                              </button>
-                          </div>
-                      </form>
-
-                      <nav className="py-2 px-4 space-y-2 text-lg font-medium">
-                           {user?.role === 'superadmin' ? (
-                              <>
-                                <button onClick={() => {onNavigateToAnalyticsDashboard(); setIsMenuOpen(false);}} className="w-full text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"><BarChartIcon className="w-5 h-5"/>Tableau de Bord BI</button>
-                                <button onClick={() => {onNavigateToReviewModeration(); setIsMenuOpen(false);}} className="w-full text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center gap-3"><ShieldCheckIcon className="w-5 h-5"/>Modération Avis</button>
-                              </>
-                            ) : user?.role !== 'delivery_agent' ? (
-                              <>
-                                <button onClick={() => {onNavigateToPromotions(); setIsMenuOpen(false);}} className="w-full text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Promotions</button>
-                                <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="w-full text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Ventes Flash</button>
-                                <button onClick={() => {onNavigateToStores(); setIsMenuOpen(false);}} className="w-full text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">Boutiques</button>
-                              </>
-                            ) : null}
-                      </nav>
-
-                      <div className="border-t border-gray-200 dark:border-gray-700 mx-4"></div>
-
-                      <div className="px-4 py-4">
-                          <h3 className="font-bold text-gray-500 dark:text-gray-400 px-3 mb-1">Catégories</h3>
-                          <nav className="space-y-1 text-gray-800 dark:text-gray-300">
-                              {categories.slice(0, 8).map(cat => (
-                                 <button key={cat.id} onClick={() => {onNavigateToCategory(cat.name); setIsMenuOpen(false);}} className="w-full text-left block p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">{cat.name}</button>
-                              ))}
-                          </nav>
-                      </div>
-                      
-                      <div className="border-t border-gray-200 dark:border-gray-700 mx-4"></div>
-
-                      <div className="px-4 py-4">
-                           <h3 className="font-bold text-gray-500 dark:text-gray-400 px-3 mb-1">Mon Compte</h3>
-                           <nav className="space-y-1">
-                               {user ? (
-                                 <>
-                                   {userMenuItems.map(item => (
-                                     <button key={item.label} onClick={() => {item.action(); setIsMenuOpen(false);}} className="w-full text-left flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">{item.icon} {item.label}</button>
-                                   ))}
-                                 </>
-                               ) : (
-                                  <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="w-full text-left flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 font-semibold"><UserCircleIcon className="w-5 h-5"/> Connexion / Inscription</button>
-                               )}
-                               
-                                <div className="px-3 pt-2 flex items-center gap-6">
-                                  {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
-                                    <button onClick={() => {onNavigateToBecomePremium(); setIsMenuOpen(false);}} className="font-bold text-kmer-yellow hover:underline">Devenir Premium</button>
-                                   )}
-                                   {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="font-bold text-kmer-green hover:underline">Devenir vendeur</button>}
-                                </div>
-                           </nav>
-                      </div>
-                  </div>
-                  
-                  {user && 
-                      <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-                          <button onClick={() => {logout(); setIsMenuOpen(false);}} className="w-full text-left flex items-center gap-3 p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"><ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter</button>
-                      </div>
-                  }
+      {isMenuOpen && (
+        <div className="lg:hidden absolute top-full left-0 w-full bg-white dark:bg-gray-800 shadow-lg border-t border-gray-200 dark:border-gray-700 max-h-[calc(100vh-68px)] flex flex-col">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+            <form onSubmit={(e) => handleSearchSubmit(e, mobileSearchQuery)}>
+              <div className="relative">
+                <input
+                  type="text"
+                  placeholder="Rechercher..."
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  className="w-full pl-4 pr-10 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-kmer-green"
+                />
+                <button type="submit" className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 dark:text-gray-400">
+                  <SearchIcon className="h-5 w-5" />
+                </button>
               </div>
+            </form>
           </div>
-      </div>
+          
+          <div className="flex-grow overflow-y-auto p-4">
+            <nav className="flex flex-col space-y-4">
+              {user?.role === 'superadmin' ? (
+                <>
+                  <button onClick={() => {onNavigateToAnalyticsDashboard(); setIsMenuOpen(false);}} className="text-left font-semibold py-2 flex items-center gap-2"><BarChartIcon className="w-5 h-5"/>Tableau de Bord Analytique</button>
+                  <button onClick={() => {onNavigateToReviewModeration(); setIsMenuOpen(false);}} className="text-left font-semibold py-2 flex items-center gap-2"><ShieldCheckIcon className="w-5 h-5"/>Modération des Avis</button>
+                </>
+              ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
+                <>
+                  <button onClick={() => {onNavigateToPromotions(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Promotions</button>
+                  <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Ventes Flash</button>
+                  <button onClick={() => {onNavigateToStores(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Boutiques</button>
+                  
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                     <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Catégories</h3>
+                     <div className="flex flex-col items-start">
+                        {categories.slice(0, 8).map(cat => (
+                          <button key={cat.id} onClick={() => {onNavigateToCategory(cat.name); setIsMenuOpen(false);}} className="text-left block py-1.5">{cat.name}</button>
+                        ))}
+                     </div>
+                  </div>
+                </>
+              ) : null}
+
+              <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                 <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Mon Compte</h3>
+                 <div className="flex flex-col items-start">
+                    {user ? userMenuItems.map(item => (
+                      <button key={item.label} onClick={() => {item.action(); setIsMenuOpen(false);}} className="text-left flex items-center gap-3 py-1.5">{item.icon} {item.label}</button>
+                    )) : (
+                      <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Connexion / Inscription</button>
+                    )}
+                    {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
+                      <button onClick={() => {onNavigateToBecomePremium(); setIsMenuOpen(false);}} className="text-left font-bold text-kmer-yellow py-2">Devenir Premium</button>
+                    )}
+                    {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="text-left text-kmer-green font-bold py-2">Devenir vendeur</button>}
+                 </div>
+              </div>
+            </nav>
+          </div>
+          
+          {user && (
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
+                <button onClick={() => {onLogout(); setIsMenuOpen(false);}} className="w-full bg-gray-100 dark:bg-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2">
+                   <ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter
+                </button>
+            </div>
+          )}
+        </div>
+      )}
     </header>
   );
 };

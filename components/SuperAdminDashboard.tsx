@@ -49,6 +49,7 @@ interface SuperAdminDashboardProps {
     onAddAdvertisement: (ad: Omit<Advertisement, 'id'>) => void;
     onUpdateAdvertisement: (ad: Advertisement) => void;
     onDeleteAdvertisement: (adId: string) => void;
+    onCreateUserByAdmin: (userData: Omit<User, 'id' | 'loyalty'>) => void;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
@@ -86,7 +87,9 @@ const statusTranslations: Record<OrderStatus, string> = {
     delivered: 'Livré',
     cancelled: 'Annulé',
     'refund-requested': 'Remboursement demandé',
-    refunded: 'Remboursé'
+    refunded: 'Remboursé',
+    returned: 'Retourné',
+    'depot-issue': 'Problème au dépôt'
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -100,6 +103,7 @@ const getStatusClass = (status: OrderStatus) => {
         case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
         case 'refund-requested': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+        case 'depot-issue': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 };
@@ -148,52 +152,59 @@ const DashboardOverviewPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders
     );
 };
 
-const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onUpdateOrderStatus' | 'onAssignAgent'>> = ({ allOrders, allUsers, onUpdateOrderStatus, onAssignAgent }) => {
+const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onUpdateOrderStatus' | 'onAssignAgent'> & { onOpenAssignModal: (orderId: string) => void }> = ({ allOrders, allUsers, onUpdateOrderStatus, onAssignAgent, onOpenAssignModal }) => {
     const deliveryAgents = useMemo(() => allUsers.filter(u => u.role === 'delivery_agent'), [allUsers]);
     
     return (
         <div className="p-4 sm:p-6">
             <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion des Commandes</h2>
             <div className="space-y-3">
-                {allOrders.map(order => (
-                    <div key={order.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                        <div className="flex flex-col sm:flex-row justify-between sm:items-center">
-                            <div>
-                                <p className="font-bold text-kmer-green">{order.id}</p>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">{new Date(order.orderDate).toLocaleString('fr-FR')}</p>
+                {allOrders.map(order => {
+                    const assignedAgent = deliveryAgents.find(agent => agent.id === order.agentId);
+                    return (
+                        <div key={order.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                            <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+                                <div>
+                                    <p className="font-bold text-kmer-green">{order.id}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">{new Date(order.orderDate).toLocaleString('fr-FR')}</p>
+                                </div>
+                                <div className="mt-2 sm:mt-0 text-left sm:text-right">
+                                    <p className="font-semibold text-gray-800 dark:text-white">{order.total.toLocaleString('fr-CM')} FCFA</p>
+                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
+                                        {statusTranslations[order.status]}
+                                    </span>
+                                </div>
                             </div>
-                            <div className="mt-2 sm:mt-0 text-left sm:text-right">
-                                <p className="font-semibold text-gray-800 dark:text-white">{order.total.toLocaleString('fr-CM')} FCFA</p>
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
-                                    {statusTranslations[order.status]}
-                                </span>
+                            <div className="mt-4 pt-3 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                                <div className="flex-1">
+                                    <label className="text-xs font-medium dark:text-gray-300">Changer le statut :</label>
+                                    <select 
+                                        value={order.status}
+                                        onChange={e => onUpdateOrderStatus(order.id, e.target.value as OrderStatus)}
+                                        className="text-xs mt-1 w-full sm:w-auto border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 focus:ring-kmer-green"
+                                    >
+                                        {Object.keys(statusTranslations).map(s => <option key={s} value={s}>{statusTranslations[s as OrderStatus]}</option>)}
+                                    </select>
+                                </div>
+                                <div className="flex-1">
+                                    <label className="text-xs font-medium dark:text-gray-300">Livreur assigné :</label>
+                                    <div className="mt-1">
+                                        {assignedAgent ? (
+                                            <div className="flex items-center gap-2">
+                                                <span className="font-semibold dark:text-white bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-md">{assignedAgent.name}</span>
+                                                <button onClick={() => onOpenAssignModal(order.id)} className="text-xs text-blue-500 hover:underline">(Changer)</button>
+                                            </div>
+                                        ) : (
+                                            <button onClick={() => onOpenAssignModal(order.id)} className="text-sm bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded-md hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-800/50">
+                                                Assigner
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <div className="mt-4 pt-3 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                            <div className="flex-1">
-                                <label className="text-xs font-medium dark:text-gray-300">Changer le statut :</label>
-                                <select 
-                                    value={order.status}
-                                    onChange={e => onUpdateOrderStatus(order.id, e.target.value as OrderStatus)}
-                                    className="text-xs mt-1 w-full sm:w-auto border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 focus:ring-kmer-green"
-                                >
-                                    {Object.keys(statusTranslations).map(s => <option key={s} value={s}>{statusTranslations[s as OrderStatus]}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex-1">
-                                <label className="text-xs font-medium dark:text-gray-300">Assigner un livreur :</label>
-                                <select
-                                    value={order.agentId || ''}
-                                    onChange={e => onAssignAgent(order.id, e.target.value)}
-                                    className="text-xs mt-1 w-full sm:w-auto border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 focus:ring-kmer-green"
-                                >
-                                    <option value="">Non assigné</option>
-                                    {deliveryAgents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                ))}
+                    )
+                })}
             </div>
         </div>
     );
@@ -349,8 +360,19 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
     );
 };
 
-const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUserRole'>> = ({ allUsers, onUpdateUserRole }) => {
+const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUserRole' | 'onCreateUserByAdmin'>> = ({ allUsers, onUpdateUserRole, onCreateUserByAdmin }) => {
     const [searchTerm, setSearchTerm] = useState('');
+    const [isCreatingUser, setIsCreatingUser] = useState(false);
+    const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'customer' as UserRole });
+
+    const handleCreateUser = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (newUserData.name && newUserData.email) {
+            onCreateUserByAdmin(newUserData);
+            setIsCreatingUser(false);
+            setNewUserData({ name: '', email: '', role: 'customer' as UserRole });
+        }
+    };
 
     const filteredUsers = useMemo(() => {
         return allUsers.filter(user =>
@@ -364,23 +386,46 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
         seller: 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300',
         superadmin: 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300',
         delivery_agent: 'bg-orange-100 text-orange-800 dark:bg-orange-900/50 dark:text-orange-300',
+        depot_agent: 'bg-teal-100 text-teal-800 dark:bg-teal-900/50 dark:text-teal-300',
     };
 
     return (
         <div className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h2 className="text-xl font-bold dark:text-white">Gestion des Utilisateurs</h2>
-                <div className="relative w-full sm:w-auto">
-                    <input
-                        type="text"
-                        placeholder="Rechercher un utilisateur..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-full dark:bg-gray-700 dark:border-gray-600"
-                    />
-                    <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="flex items-center gap-2">
+                     <button onClick={() => setIsCreatingUser(true)} className="bg-kmer-green text-white font-bold py-2 px-3 rounded-lg flex items-center gap-2 text-sm"><PlusIcon className="w-4 h-4"/> Créer</button>
+                    <div className="relative w-full sm:w-auto">
+                        <input
+                            type="text"
+                            placeholder="Rechercher un utilisateur..."
+                            value={searchTerm}
+                            onChange={e => setSearchTerm(e.target.value)}
+                            className="w-full sm:w-64 pl-10 pr-4 py-2 border rounded-full dark:bg-gray-700 dark:border-gray-600"
+                        />
+                        <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    </div>
                 </div>
             </div>
+             {isCreatingUser && (
+                <form onSubmit={handleCreateUser} className="p-4 my-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border dark:border-gray-700 space-y-4">
+                    <h3 className="font-semibold text-lg dark:text-white">Créer un nouvel utilisateur</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <input type="text" placeholder="Nom complet" value={newUserData.name} onChange={e => setNewUserData(d => ({ ...d, name: e.target.value }))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                        <input type="email" placeholder="Email" value={newUserData.email} onChange={e => setNewUserData(d => ({ ...d, email: e.target.value }))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                        <select value={newUserData.role} onChange={e => setNewUserData(d => ({ ...d, role: e.target.value as UserRole }))} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                            <option value="customer">Client</option>
+                            <option value="seller">Vendeur</option>
+                            <option value="delivery_agent">Livreur</option>
+                            <option value="depot_agent">Agent Dépôt</option>
+                        </select>
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button type="button" onClick={() => setIsCreatingUser(false)} className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 py-2 rounded-md">Annuler</button>
+                        <button type="submit" className="bg-kmer-green text-white font-semibold px-4 py-2 rounded-md">Créer l'utilisateur</button>
+                    </div>
+                </form>
+            )}
             <div className="overflow-x-auto bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
                 <table className="w-full min-w-[600px] text-sm text-left">
                     <thead className="bg-gray-50 dark:bg-gray-700/50">
@@ -458,6 +503,13 @@ const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'o
         setSettings(s => ({ ...s, [field]: value }));
     };
 
+    const handleMaintenanceChange = (field: keyof SiteSettings['maintenanceMode'], value: any) => {
+        setSettings(s => ({
+            ...s,
+            maintenanceMode: { ...s.maintenanceMode, [field]: value }
+        }));
+    };
+
     const handleThresholdChange = (field: keyof SiteSettings['premiumThresholds'], value: any) => {
         setSettings(s => ({
             ...s,
@@ -485,6 +537,36 @@ const SettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'o
                 <div className="space-y-4">
                     <ToggleSwitch label="Activer le Chat" description="Permet aux clients de discuter avec les vendeurs." enabled={props.isChatEnabled} onChange={props.onToggleChatFeature} />
                     <ToggleSwitch label="Activer la Comparaison" description="Permet aux clients de comparer jusqu'à 4 produits." enabled={props.isComparisonEnabled} onChange={props.onToggleComparisonFeature} />
+                </div>
+            </div>
+
+            <div className="bg-white dark:bg-gray-800/50 p-6 rounded-lg shadow-sm">
+                <h3 className="text-lg font-bold mb-4 border-b pb-2 dark:border-gray-700 dark:text-white">Mode Maintenance</h3>
+                <div className="space-y-4">
+                    <ToggleSwitch 
+                        label="Activer le mode maintenance"
+                        description="Rend le site inaccessible aux visiteurs et vendeurs."
+                        enabled={settings.maintenanceMode.isEnabled}
+                        onChange={() => handleMaintenanceChange('isEnabled', !settings.maintenanceMode.isEnabled)}
+                    />
+                     <div>
+                        <label className="block text-sm font-medium dark:text-gray-300">Message de maintenance</label>
+                        <input
+                            type="text"
+                            value={settings.maintenanceMode.message}
+                            onChange={e => handleMaintenanceChange('message', e.target.value)}
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        />
+                    </div>
+                     <div>
+                        <label className="block text-sm font-medium dark:text-gray-300">Date et heure de réouverture</label>
+                        <input
+                            type="datetime-local"
+                            value={settings.maintenanceMode.reopenDate.substring(0, 16)}
+                            onChange={e => handleMaintenanceChange('reopenDate', new Date(e.target.value).toISOString())}
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        />
+                    </div>
                 </div>
             </div>
 
@@ -924,24 +1006,54 @@ const AdvertisementManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'adv
 
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState('overview');
+    const [assignAgentModal, setAssignAgentModal] = useState<{ isOpen: boolean; orderId: string | null }>({ isOpen: false, orderId: null });
+    const { onAssignAgent, allUsers } = props;
+    const deliveryAgents = useMemo(() => allUsers.filter(u => u.role === 'delivery_agent'), [allUsers]);
+
+    const handleAssignAgent = (agentId: string) => {
+        if (assignAgentModal.orderId) {
+            onAssignAgent(assignAgentModal.orderId, agentId);
+        }
+        setAssignAgentModal({ isOpen: false, orderId: null });
+    };
     
-    const panelComponents = {
+    const panelComponents: Record<string, React.ReactNode> = {
         'overview': <DashboardOverviewPanel {...props} />,
-        'orders': <OrderManagementPanel {...props} />,
+        'orders': <OrderManagementPanel {...props} onOpenAssignModal={(orderId) => setAssignAgentModal({ isOpen: true, orderId })} />,
         'stores': <StoreManagementPanel {...props} />,
         'users': <UserManagementPanel {...props} />,
-        'logs': <LogsPanel siteActivityLogs={props.siteActivityLogs} />,
+        'map': <MapPanel {...props} />,
+        'categories': <CategoryManagementPanel {...props} />,
         'flash_sales': <FlashSaleManagementPanel {...props} />,
         'pickup_points': <PickupPointManagementPanel {...props} />,
-        'categories': <CategoryManagementPanel {...props} />,
         'payouts': <PayoutManagementPanel {...props} />,
-        'map': <MapPanel {...props} />,
         'advertisements': <AdvertisementManagementPanel {...props} />,
+        'logs': <LogsPanel siteActivityLogs={props.siteActivityLogs} />,
         'settings': <SettingsPanel {...props} />,
     };
     
     return (
         <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+            {assignAgentModal.isOpen && (
+                <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-bold dark:text-white">Assigner un livreur</h3>
+                            <button onClick={() => setAssignAgentModal({ isOpen: false, orderId: null })}><XIcon className="w-6 h-6"/></button>
+                        </div>
+                        <div className="space-y-2 max-h-64 overflow-y-auto">
+                            {deliveryAgents.map(agent => (
+                                <button key={agent.id} onClick={() => handleAssignAgent(agent.id)} className="w-full text-left p-3 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    {agent.name}
+                                </button>
+                            ))}
+                        </div>
+                        <button onClick={() => handleAssignAgent('')} className="w-full text-left p-3 mt-2 text-red-600 dark:text-red-400 font-semibold rounded-md hover:bg-red-50 dark:hover:bg-red-900/50">
+                            Désassigner le livreur
+                        </button>
+                    </div>
+                </div>
+            )}
             <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-[76px] z-20">
                 <div className="container mx-auto px-4 sm:px-6 py-4">
                      <div className="flex items-center gap-4">
