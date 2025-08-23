@@ -15,10 +15,11 @@ interface HomePageProps {
     onCategoryClick: (categoryName: string) => void;
     onVendorClick: (vendorName: string) => void;
     onVisitStore: (storeName: string) => void;
+    onViewStories: (store: Store) => void;
     isComparisonEnabled: boolean;
 }
 
-const StoryCarousel: React.FC<{ stores: Store[] }> = ({ stores }) => {
+const StoryCarousel: React.FC<{ stores: Store[], onViewStories: (store: Store) => void }> = ({ stores, onViewStories }) => {
     const storesWithStories = stores.filter(store => {
         if (!store.stories || store.stories.length === 0) return false;
         // Show stories from the last 24 hours
@@ -35,7 +36,7 @@ const StoryCarousel: React.FC<{ stores: Store[] }> = ({ stores }) => {
                 <div className="flex space-x-4 overflow-x-auto pb-4">
                     {storesWithStories.map(store => (
                         <div key={store.id} className="flex-shrink-0 text-center">
-                            <button className="w-20 h-20 p-1 rounded-full border-2 border-kmer-red hover:border-kmer-yellow transition-colors">
+                            <button onClick={() => onViewStories(store)} className="w-20 h-20 p-1 rounded-full border-2 border-kmer-red hover:border-kmer-yellow transition-colors">
                                 <img src={store.logoUrl} alt={store.name} className="w-full h-full object-contain rounded-full bg-white" />
                             </button>
                             <p className="text-xs mt-2 font-semibold truncate w-20">{store.name}</p>
@@ -126,7 +127,7 @@ const AdCarousel: React.FC<{ advertisements: Advertisement[] }> = ({ advertiseme
 };
 
 
-const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, isComparisonEnabled }) => {
+const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled }) => {
     
     const popularProductsRef = React.useRef<HTMLDivElement>(null);
     const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
@@ -160,7 +161,7 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 </section>
             )}
 
-            <StoryCarousel stores={stores} />
+            <StoryCarousel stores={stores} onViewStories={onViewStories} />
 
              {/* Promotions Section */}
             <section className="py-16 bg-white dark:bg-gray-800/30">

@@ -36,6 +36,7 @@ import { useComparison } from './contexts/ComparisonContext';
 import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
+import StoryViewer from './components/StoryViewer';
 import PromotionModal from './components/PromotionModal';
 import { useCart } from './contexts/CartContext';
 import ChatWidget from './components/ChatWidget';
@@ -478,6 +479,7 @@ export default function App() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [viewingStoriesOfStore, setViewingStoriesOfStore] = useState<Store | null>(null);
   const [infoPageContent, setInfoPageContent] = useState({ title: '', content: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [siteSettings, setSiteSettings] = usePersistentState<SiteSettings>('siteSettings', initialSiteSettings);
@@ -581,7 +583,7 @@ export default function App() {
   
   const renderPage = () => {
     switch(page) {
-      case 'home': return <HomePage categories={allCategories} products={allProducts} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onCategoryClick={(c) => { setSelectedCategory(c); setPage('category'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'home': return <HomePage categories={allCategories} products={allProducts} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onCategoryClick={(c) => { setSelectedCategory(c); setPage('category'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onViewStories={setViewingStoriesOfStore} isComparisonEnabled={isComparisonEnabled}/>;
       case 'product': return selectedProduct && <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => { setSelectedProduct(null); setPage(selectedCategory ? 'category' : (searchQuery ? 'search-results' : 'home')); }} onAddReview={(productId, review) => {setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: [...p.reviews, review]} : p))}} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onProductClick={(p) => setSelectedProduct(p)} onOpenLogin={() => setIsLoginOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
       case 'cart': return <CartView onBack={() => setPage('home')} onNavigateToCheckout={() => setPage('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
       case 'checkout': return <Checkout onBack={() => setPage('cart')} onOrderConfirm={async (orderData) => { 
@@ -661,6 +663,7 @@ export default function App() {
       {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
       {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={closeModal} onNavigateToCart={() => { closeModal(); setPage('cart'); }} />}
       {user?.role === 'seller' && selectedProduct?.vendor === user.shopName && <PromotionModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSave={(id, promoPrice, startDate, endDate) => { setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate} : p)); setSelectedProduct(null); }} />}
+      {viewingStoriesOfStore && <StoryViewer store={viewingStoriesOfStore} onClose={() => setViewingStoriesOfStore(null)} />}
       {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} />}
       {isComparisonEnabled && <ComparisonBar onCompareClick={() => setPage('comparison')}/>}
     </>
