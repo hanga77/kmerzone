@@ -1,7 +1,7 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { Chat, Message, Product, User, Store } from '../types';
 import { useAuth } from './AuthContext';
-import { GoogleGenAI } from "@google/genai";
+// L'importation statique a été supprimée pour éviter les erreurs de plantage dans les environnements de navigateur.
 
 interface ChatContextType {
   chats: Chat[];
@@ -59,22 +59,28 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isWidgetOpen, setIsWidgetOpen] = useState(false);
   const [isTyping, setIsTyping] = useState<Record<string, boolean>>({});
+  const [ai, setAi] = useState<any | null>(null);
 
-  const ai = useMemo(() => {
-    // This check is required because `process.env.API_KEY` is not available
-    // in the browser during a static Vercel deployment without a build step.
-    // This prevents the entire application from crashing.
+  useEffect(() => {
+    // Importer et initialiser dynamiquement le module GenAI
+    // Cela empêche les plantages dans les environnements où `process` n'est pas défini (comme les déploiements statiques de Vercel)
     if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      import('@google/genai').then(({ GoogleGenAI }) => {
         try {
-            return new GoogleGenAI({ apiKey: process.env.API_KEY });
+          const genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          setAi(genAI);
         } catch (error) {
-            console.error('Error initializing Google GenAI:', error);
-            return null;
+          console.error('Error initializing Google GenAI:', error);
+          setAi(null);
         }
+      }).catch(error => {
+        console.error('Failed to load @google/genai module:', error);
+        setAi(null);
+      });
+    } else {
+        console.warn('Google GenAI API key not found. Chat feature will be disabled.');
     }
-    console.warn('Google GenAI API key not found. Chat feature will be disabled.');
-    return null;
-  }, []);
+  }, []); // Exécuter une seule fois au montage du composant
 
   const startChat = useCallback((seller: User, store: Store, product?: Product) => {
     if (!user) {
