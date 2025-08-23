@@ -64,7 +64,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // This check is required because `process.env.API_KEY` is not available
     // in the browser during a static Vercel deployment without a build step.
     // This prevents the entire application from crashing.
-    if (process.env.API_KEY) {
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
         try {
             return new GoogleGenAI({ apiKey: process.env.API_KEY });
         } catch (error) {
