@@ -596,9 +596,10 @@ export default function App() {
         setAllOrders(prev => [newOrder, ...prev]); 
         clearCart(); 
         setAppliedPromoCode(null); 
+        setSelectedOrder(newOrder);
         setPage('order-success'); 
         }} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores}/>;
-      case 'order-success': return <OrderSuccess onNavigateHome={() => setPage('home')} onNavigateToOrders={() => setPage('order-history')} />;
+      case 'order-success': return selectedOrder && <OrderSuccess order={selectedOrder} onNavigateHome={() => { setPage('home'); setSelectedOrder(null); }} onNavigateToOrders={() => { setPage('order-history'); setSelectedOrder(null); }} />;
       case 'stores': return <StoresPage stores={allStores} onBack={() => setPage('home')} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} />;
       case 'become-seller': return <BecomeSeller onBack={() => setPage('home')} onBecomeSeller={(shopName, location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, logoUrl, latitude, longitude) => { const newStore: Store = { id: `store-${Date.now()}`, name: shopName, logoUrl, category: 'Divers', warnings: [], status: 'pending', premiumStatus: 'standard', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, latitude, longitude, documents: siteSettings.requiredSellerDocuments['CNI (Carte Nationale d\'Identité)'] ? [{name: "CNI (Carte Nationale d'Identité)", status: 'requested'}] : [] }; setAllStores(prev => [...prev, newStore]); }} onRegistrationSuccess={() => setPage('home')} siteSettings={siteSettings} />;
       case 'category': return selectedCategory && <CategoryPage categoryName={selectedCategory} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedCategory(null); setPage('home'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
