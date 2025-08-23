@@ -980,7 +980,7 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
         }
     };
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
         const keys = name.split('.');
@@ -1061,6 +1061,22 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
                 <div>
                     <label className="block text-sm font-medium">Montant du loyer mensuel (FCFA)</label>
                     <input type="number" name="rentAmount" value={localSettings.rentAmount} onChange={handleChange} className="mt-1 w-full p-2 border rounded" />
+                </div>
+            </div>
+
+            <div className="p-4 border dark:border-gray-700 rounded-lg space-y-4">
+                <h3 className="font-semibold dark:text-white">Mode Maintenance</h3>
+                <label className="flex items-center gap-3">
+                    <input type="checkbox" name="maintenanceMode.isEnabled" checked={localSettings.maintenanceMode.isEnabled} onChange={handleChange} className="h-4 w-4 rounded"/>
+                    <span>Activer le mode maintenance</span>
+                </label>
+                <div>
+                    <label className="block text-sm font-medium">Message de maintenance</label>
+                    <textarea name="maintenanceMode.message" value={localSettings.maintenanceMode.message} onChange={handleChange} rows={3} className="mt-1 w-full p-2 border rounded" />
+                </div>
+                <div>
+                    <label className="block text-sm font-medium">Date de réouverture estimée</label>
+                    <input type="datetime-local" name="maintenanceMode.reopenDate" value={localSettings.maintenanceMode.reopenDate ? localSettings.maintenanceMode.reopenDate.slice(0, 16) : ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded" />
                 </div>
             </div>
 
