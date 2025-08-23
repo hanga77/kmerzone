@@ -551,6 +551,36 @@ export default function App() {
     initialSetupDone.current = true;
 
   }, [allOrders.length, setAllOrders]);
+  
+  useEffect(() => {
+    // Populate logs on first load if empty to demonstrate the feature
+    if (siteActivityLogs.length === 0) {
+        const initialLogs: SiteActivityLog[] = [
+            {
+                id: `log-${Date.now() - 10000}`,
+                timestamp: new Date(Date.now() - 10000).toISOString(),
+                user: { id: 'admin-1', name: 'Super Admin', role: 'superadmin' },
+                action: 'Store Approved',
+                details: 'Admin approved store Kmer Fashion.',
+            },
+            {
+                id: `log-${Date.now() - 20000}`,
+                timestamp: new Date(Date.now() - 20000).toISOString(),
+                user: { id: 'admin-1', name: 'Super Admin', role: 'superadmin' },
+                action: 'Order Status Updated',
+                details: 'Admin updated order CMD-TEST-SELLER to status ready-for-pickup.',
+            },
+             {
+                id: `log-${Date.now() - 30000}`,
+                timestamp: new Date(Date.now() - 30000).toISOString(),
+                user: { id: 'seller-1', name: 'Kmer Fashion', role: 'seller' },
+                action: 'Product Added',
+                details: 'Seller Kmer Fashion added a new product: Robe en Tissu Pagne',
+            },
+        ];
+        setSiteActivityLogs(initialLogs);
+    }
+  }, []); // Empty dependency array ensures this runs only once on mount
 
 
   useEffect(() => {
