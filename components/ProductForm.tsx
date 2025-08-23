@@ -428,7 +428,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
               type="button"
               onClick={handleAddVariantType}
               disabled={variants.length >= 3}
-              className="mt-4 text-sm font-semibold text-kmer-green hover:underline disabled:text-gray-400"
+              className="mt-4 text-sm font-semibold text-kmer-green hover:underline disabled:text-gray-400 dark:disabled:text-gray-500"
             >
               + Ajouter un type de variante
             </button>

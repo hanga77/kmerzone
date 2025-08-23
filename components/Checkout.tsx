@@ -426,7 +426,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                <button 
                  type="submit" 
                  disabled={isProcessing}
-                 className="w-full mt-6 bg-kmer-red text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 disabled:cursor-wait flex items-center justify-center"
+                 className="w-full mt-6 bg-kmer-red text-white font-bold py-3 rounded-lg hover:bg-red-700 transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-wait flex items-center justify-center"
                >
                 {isProcessing ? (
                   <>

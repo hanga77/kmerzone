@@ -41,7 +41,7 @@ const ComparisonBar: React.FC<ComparisonBarProps> = ({ onCompareClick }) => {
             <button 
                 onClick={onCompareClick} 
                 disabled={comparisonList.length < 2}
-                className="bg-kmer-green font-bold py-2 px-5 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-500 disabled:cursor-not-allowed"
+                className="bg-kmer-green font-bold py-2 px-5 rounded-lg hover:bg-green-700 transition-colors disabled:bg-gray-500 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
             >
                 Comparer ({comparisonList.length})
             </button>

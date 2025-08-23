@@ -172,7 +172,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
                 <div>
                     <h3 className="text-lg font-semibold border-b pb-2 mb-4 dark:border-gray-600 dark:text-white">Emplacement de la Boutique</h3>
                     <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg space-y-4">
-                        <button type="button" onClick={handleDetectLocation} disabled={isDetecting} className="w-full bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-blue-300">
+                        <button type="button" onClick={handleDetectLocation} disabled={isDetecting} className="w-full bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 disabled:bg-blue-300 dark:disabled:bg-blue-800">
                             {isDetecting ? 'Détection en cours...' : 'Détecter ma position automatiquement'}
                         </button>
                         <p className="text-center text-sm text-gray-500 dark:text-gray-400">Ou entrez les coordonnées manuellement :</p>

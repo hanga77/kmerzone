@@ -212,7 +212,7 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
                 <img src={p.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={p.name} className="w-12 h-12 object-cover rounded-md" />
                 <div>
                   <p className="font-semibold dark:text-gray-200">{p.name}</p>
-                  <p className="text-sm text-gray-500">{p.price.toLocaleString('fr-CM')} FCFA - {p.stock} en stock</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{p.price.toLocaleString('fr-CM')} FCFA - {p.stock} en stock</p>
                   <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{p.status === 'published' ? 'Publié' : 'Brouillon'}</span>
                 </div>
               </div>
@@ -532,7 +532,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                         </div>
                         <button
                             onClick={() => onPayRent(store.id)}
-                            className="bg-white text-black font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-200 transition-colors flex-shrink-0"
+                            className="bg-white text-gray-900 font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-200 transition-colors flex-shrink-0"
                         >
                             Payer le loyer ({siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA)
                         </button>

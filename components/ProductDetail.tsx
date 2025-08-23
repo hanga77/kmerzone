@@ -444,7 +444,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
                      <button 
                       onClick={handleAddToCart}
                       disabled={product.stock === 0 || isOwner}
-                      className={`w-full flex justify-center items-center gap-3 py-3 px-6 text-white font-bold rounded-lg text-lg transition-colors bg-kmer-red hover:bg-red-700 disabled:bg-gray-400 disabled:cursor-not-allowed`}
+                      className={`w-full flex justify-center items-center gap-3 py-3 px-6 text-white font-bold rounded-lg text-lg transition-colors bg-kmer-red hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed`}
                       >
                       {isOwner ? "C'est votre produit" : (product.stock === 0 ? "Épuisé" : <><ShoppingCartIcon className="w-6 h-6" /> Ajouter au panier</>)}
                     </button>
@@ -452,7 +452,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
                       <button 
                           onClick={handleContactSeller}
                           disabled={isOwner}
-                          className="w-full flex justify-center items-center gap-2 py-3 px-6 text-kmer-green font-bold rounded-lg bg-kmer-green/10 hover:bg-kmer-green/20 transition-colors disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed"
+                          className="w-full flex justify-center items-center gap-2 py-3 px-6 text-kmer-green font-bold rounded-lg bg-kmer-green/10 hover:bg-kmer-green/20 transition-colors disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
                       >
                           <ChatBubbleBottomCenterTextIcon className="w-6 h-6"/> Contacter le vendeur
                       </button>
