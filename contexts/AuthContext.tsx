@@ -1,6 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { User, UserRole } from '../types';
-import { usePersistentState } from '../hooks/usePersistentState';
 
 interface AuthContextType {
   user: User | null;
@@ -22,8 +21,50 @@ const initialUsers: User[] = [
     { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
     { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
     { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
 ];
+
+const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const storedValue = localStorage.getItem(key);
+      if (storedValue) {
+        return JSON.parse(storedValue);
+      }
+    } catch (error) {
+      console.error(`Error reading localStorage key “${key}”:`, error);
+    }
+    return defaultValue;
+  });
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(key, JSON.stringify(state));
+    } catch (error) {
+      console.error(`Error setting localStorage key “${key}”:`, error);
+    }
+  }, [key, state]);
+
+  return [state, setState];
+};
+
+function isDeepEqual(obj1: any, obj2: any): boolean {
+    if (obj1 === obj2) return true;
+
+    if (obj1 && obj2 && typeof obj1 === 'object' && typeof obj2 === 'object') {
+        if (Object.keys(obj1).length !== Object.keys(obj2).length) return false;
+
+        for (const key in obj1) {
+            if (Object.prototype.hasOwnProperty.call(obj2, key)) {
+                if (!isDeepEqual(obj1[key], obj2[key])) return false;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    }
+    return false;
+}
+
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = usePersistentState<User | null>('currentUser', null);
@@ -33,23 +74,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // This ensures that if loyalty status or other details are updated elsewhere,
   // the currently logged-in user's session reflects those changes immediately.
   useEffect(() => {
-    // This effect uses the functional form of `setUser` to avoid adding `user` as a dependency,
-    // which was causing an infinite re-render loop.
-    setUser(currentUser => {
-      if (!currentUser) return null;
-      
-      const updatedUserInList = allUsers.find(u => u.id === currentUser.id);
-
-      // Compare the stringified versions to check for changes. If a change is found,
-      // return the new user object to update the state.
-      if (updatedUserInList && JSON.stringify(currentUser) !== JSON.stringify(updatedUserInList)) {
-        return updatedUserInList;
+    if (user) {
+      const updatedUserInList = allUsers.find(u => u.id === user.id);
+      if (updatedUserInList && !isDeepEqual(user, updatedUserInList)) {
+        setUser(updatedUserInList);
       }
-      
-      // If no changes, return the existing user object to prevent a re-render.
-      return currentUser;
-    });
-  }, [allUsers, setUser]);
+    }
+  }, [allUsers, user, setUser]);
 
   const login = useCallback((email: string, password?: string): boolean => {
     // This is a simplified login.
@@ -104,20 +135,21 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [allUsers, setAllUsers, setUser]);
 
   const updateUser = useCallback((updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => {
-    if (!user) return; // Add a guard clause for safety
-    setAllUsers(prevUsers =>
-      prevUsers.map(u => {
-        if (u.id === user.id) {
-          return {
-            ...u,
-            ...updates,
-            role: updates.shopName ? ('seller' as const) : u.role,
-          };
-        }
-        return u;
-      })
-    );
-  }, [user, setAllUsers]); // Add `user` to the dependency array to prevent stale closures.
+    setUser(currentUser => {
+        if (!currentUser) return null;
+        
+        const updatedUser = { 
+            ...currentUser, 
+            ...updates, 
+            // If shopName is being set, user becomes a seller
+            role: updates.shopName ? 'seller' as const : currentUser.role 
+        };
+        
+        setAllUsers(prevUsers => prevUsers.map(u => u.id === currentUser.id ? updatedUser : u));
+
+        return updatedUser;
+    });
+  }, [setAllUsers, setUser]);
 
   const logout = useCallback(() => {
     setUser(null);

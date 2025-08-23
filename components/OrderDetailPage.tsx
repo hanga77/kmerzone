@@ -1,7 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import QRCode from 'qrcode';
+import React, { useState } from 'react';
 import type { Order, OrderStatus, PickupPoint, TrackingEvent } from '../types';
-import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon } from './Icons';
+import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon } from './Icons';
 
 interface OrderDetailPageProps {
   order: Order;
@@ -65,28 +64,17 @@ const statusTranslations: Record<OrderStatus, { title: string, description: stri
     delivered: { title: 'Livré', description: 'Votre colis a été remis.' },
     cancelled: { title: 'Annulé', description: 'Votre commande a été annulée.' },
     'refund-requested': { title: 'Remboursement demandé', description: 'Votre demande est en cours d\'examen.' },
-    refunded: { title: 'Remboursé', description: 'Cette commande a été remboursée.' },
-    returned: { title: 'Retourné', description: 'Le colis a été retourné.' },
-    'depot-issue': { title: 'Problème au dépôt', description: 'Un problème a été signalé avec votre colis au dépôt.' }
+    refunded: { title: 'Remboursé', description: 'Cette commande a été remboursée.' }
 };
 
 
 const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, onCancelOrder, onRequestRefund }) => {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
-  const qrCodeRef = useRef<HTMLCanvasElement>(null);
   const currentStatusIndex = statusSteps.indexOf(order.status);
   const pickupPoint = order.deliveryMethod === 'pickup' ? allPickupPoints.find(p => p.id === order.pickupPointId) : null;
 
   const canCancel = ['confirmed', 'ready-for-pickup'].includes(order.status);
   const canRequestRefund = order.status === 'delivered';
-
-  useEffect(() => {
-    if (qrCodeRef.current && order.trackingNumber) {
-      QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 128 }, (error) => {
-        if (error) console.error(error);
-      });
-    }
-  }, [order.trackingNumber]);
 
   const handleRefundSubmit = (reason: string) => {
     onRequestRefund(order.id, reason);
@@ -103,6 +91,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
     }
   }
   
+  // Exclude 'out-for-delivery' for pickup orders
   const relevantStatusSteps = order.deliveryMethod === 'pickup' 
     ? statusSteps.filter(step => step !== 'out-for-delivery') 
     : statusSteps;
@@ -111,7 +100,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
     <>
     {isRefundModalOpen && <RefundRequestModal onClose={() => setIsRefundModalOpen(false)} onSubmit={handleRefundSubmit} />}
     <div className="bg-gray-100 dark:bg-gray-950 min-h-[80vh] py-12">
-      <div className="container mx-auto px-4 sm:px-6">
+      <div className="container mx-auto px-6">
         <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
           <ArrowLeftIcon className="w-5 h-5" />
           Retour à l'historique
@@ -132,35 +121,35 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
           {/* Timeline */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-6 dark:text-white">Suivi de la commande</h2>
-            {order.status === 'cancelled' || order.status === 'refund-requested' || order.status === 'refunded' || order.status === 'depot-issue' ? (
-                <div className={`p-4 rounded-lg ${
-                    order.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' :
-                    order.status === 'refund-requested' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' :
-                    order.status === 'depot-issue' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 font-bold' :
-                    'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
-                }`}>
-                    {statusTranslations[order.status].title}
-                    {order.status === 'depot-issue' && <p className="font-normal mt-1">{order.discrepancy?.reason}</p>}
+            {order.status === 'cancelled' ? (
+                <div className="p-4 bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 rounded-lg">
+                    Cette commande a été annulée.
+                </div>
+            ) : order.status === 'refund-requested' ? (
+                <div className="p-4 bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300 rounded-lg">
+                    Votre demande de remboursement est en cours d'examen.
+                </div>
+            ) : order.status === 'refunded' ? (
+                <div className="p-4 bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200 rounded-lg">
+                    Cette commande a été remboursée.
                 </div>
             ) : (
-                <div className="flex flex-col sm:flex-row justify-between items-start">
+                <div className="flex justify-between items-start">
                   {relevantStatusSteps.map((step, index) => {
                     const stepIndexInOriginal = statusSteps.indexOf(step);
                     const isActive = stepIndexInOriginal <= currentStatusIndex;
                     const isCurrent = stepIndexInOriginal === currentStatusIndex;
 
                     return (
-                      <div key={step} className="flex sm:flex-col sm:flex-1 items-center text-center relative w-full sm:w-auto mb-6 sm:mb-0">
-                        <div className={`w-10 h-10 rounded-full flex items-center justify-center border-2 flex-shrink-0 z-10 ${isActive ? 'bg-kmer-green border-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500'}`}>
-                           {isActive ? getStepIcon(step) : <div className="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full"></div>}
+                      <div key={step} className="flex-1 text-center relative">
+                        <div className={`mx-auto w-10 h-10 rounded-full flex items-center justify-center border-2 ${isActive ? 'bg-kmer-green border-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-500'}`}>
+                           {isActive ? getStepIcon(step) : null}
                         </div>
-                        <div className="ml-4 sm:ml-0 sm:mt-2 text-left sm:text-center">
-                          <p className={`text-sm font-semibold ${isActive ? 'text-kmer-green' : 'text-gray-500 dark:text-gray-400'}`}>{statusTranslations[step].title}</p>
-                          {isCurrent && <p className="text-xs text-gray-500 dark:text-gray-400 px-2">{statusTranslations[step].description}</p>}
-                        </div>
+                        <p className={`mt-2 text-sm font-semibold ${isActive ? 'text-kmer-green' : 'text-gray-500 dark:text-gray-400'}`}>{statusTranslations[step].title}</p>
+                        {isCurrent && <p className="text-xs text-gray-500 dark:text-gray-400 px-2">{statusTranslations[step].description}</p>}
                         
                         {index < relevantStatusSteps.length - 1 && (
-                            <div className={`absolute left-5 sm:left-1/2 top-10 sm:top-5 h-full sm:h-0.5 w-0.5 sm:w-full ${index < currentStatusIndex ? 'bg-kmer-green' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
+                            <div className={`absolute top-5 left-1/2 w-full h-0.5 ${index < currentStatusIndex ? 'bg-kmer-green' : 'bg-gray-300 dark:bg-gray-600'}`}></div>
                         )}
                       </div>
                     )
@@ -168,39 +157,35 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                 </div>
             )}
           </div>
-
-           <div className="grid md:grid-cols-2 gap-8 border-t dark:border-gray-700 pt-6 mt-8">
-            <div>
-                <h3 className="font-semibold mb-4 dark:text-white flex items-center gap-2"><QrCodeIcon className="w-5 h-5"/> Suivi par QR Code</h3>
-                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                    <canvas ref={qrCodeRef} className="rounded-lg shadow-sm"></canvas>
-                    <div>
-                      <p className="text-sm font-semibold dark:text-gray-200">Numéro de suivi :</p>
-                      <p className="font-mono text-lg bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-md inline-block">{order.trackingNumber}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Utilisez ce code pour le suivi auprès de nos agents.</p>
-                    </div>
+          
+          {order.trackingHistory && order.trackingHistory.length > 0 && (
+            <div className="mt-8">
+                <h2 className="text-xl font-semibold mb-4 dark:text-white">Historique détaillé du suivi</h2>
+                <div className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50">
+                    <ul className="space-y-4">
+                        {order.trackingHistory
+                            .slice()
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                            .map((event, index) => (
+                                <li key={index} className="flex gap-4">
+                                    <div className="flex flex-col items-center">
+                                        <div className={`w-6 h-6 rounded-full flex items-center justify-center text-white ${index === 0 ? 'bg-kmer-green' : 'bg-gray-400 dark:bg-gray-500'}`}>
+                                            <ClockIcon className="w-4 h-4" />
+                                        </div>
+                                        {index < order.trackingHistory.length - 1 && <div className="w-px flex-grow bg-gray-300 dark:bg-gray-600"></div>}
+                                    </div>
+                                    <div>
+                                        <p className="font-semibold text-gray-800 dark:text-gray-200">{statusTranslations[event.status].title}</p>
+                                        <p className="text-sm text-gray-600 dark:text-gray-400">{event.details}</p>
+                                        <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(event.date).toLocaleString('fr-FR')} - <span className="font-medium">{event.location}</span></p>
+                                    </div>
+                                </li>
+                            ))
+                        }
+                    </ul>
                 </div>
             </div>
-            <div>
-              <h3 className="font-semibold mb-4 dark:text-white">Historique détaillé</h3>
-              <div className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 max-h-48 overflow-y-auto">
-                  <ul className="space-y-4">
-                      {order.trackingHistory.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event, index) => (
-                          <li key={index} className="flex gap-3">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white flex-shrink-0 mt-0.5 ${index === 0 ? 'bg-kmer-green' : 'bg-gray-400 dark:bg-gray-500'}`}>
-                                  <ClockIcon className="w-3 h-3" />
-                              </div>
-                              <div>
-                                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{statusTranslations[event.status].title}</p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(event.date).toLocaleString('fr-FR')} - <span className="font-medium">{event.location}</span></p>
-                              </div>
-                          </li>
-                      ))}
-                  </ul>
-              </div>
-            </div>
-          </div>
-          
+          )}
 
           <div className="grid md:grid-cols-2 gap-8 border-t dark:border-gray-700 pt-6 mt-8">
             <div>

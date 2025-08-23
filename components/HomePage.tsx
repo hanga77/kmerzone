@@ -151,15 +151,6 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
               </div>
             </section>
             
-            {/* Advertisements Section */}
-            {advertisements.length > 0 && (
-                <section className="py-8 bg-gray-100 dark:bg-gray-800/50">
-                    <div className="container mx-auto px-6">
-                        <AdCarousel advertisements={advertisements} />
-                    </div>
-                </section>
-            )}
-
             <StoryCarousel stores={stores} />
 
              {/* Promotions Section */}
@@ -194,7 +185,17 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 </div>
               </div>
             </section>
-            
+
+            {/* Advertisements Section */}
+            {advertisements.length > 0 && (
+                <section className="py-16 bg-gray-200 dark:bg-gray-800">
+                    <div className="container mx-auto px-6">
+                        <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Nos Partenaires</h2>
+                        <AdCarousel advertisements={advertisements} />
+                    </div>
+                </section>
+            )}
+
             {/* Made in Cameroon Section */}
             <section className="py-16 bg-kmer-green/10 dark:bg-kmer-green/20">
               <div className="container mx-auto px-6">

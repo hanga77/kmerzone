@@ -100,7 +100,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
                         <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">agent1@example.com</code></li>
                         <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">agent2@example.com</code></li>
                     </ul>
-                    <p className="text-left"><strong className="text-blue-500">Agent Dépôt:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">depot@example.com</code></p>
                 </div>
               </div>
             </form>

@@ -1,9 +1,8 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import QRCode from 'qrcode';
+import React, { useState, useMemo } from 'react';
 import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon } from './Icons';
 
 interface SellerDashboardProps {
   store?: Store;
@@ -42,8 +41,6 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   cancelled: 'Annulé',
   'refund-requested': 'Remboursement demandé',
   refunded: 'Remboursé',
-  returned: 'Retourné',
-  'depot-issue': 'Problème au dépôt',
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -57,7 +54,6 @@ const getStatusClass = (status: OrderStatus) => {
         case 'cancelled': return 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
         case 'refund-requested': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
-        case 'depot-issue': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 };
@@ -90,101 +86,6 @@ const StatCard: React.FC<{icon: React.ReactNode, label: string, value: string | 
         </div>
     </div>
 );
-
-const OrderCard: React.FC<{order: Order, onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void}> = ({ order, onUpdateOrderStatus }) => {
-    const qrCodeRef = useRef<HTMLCanvasElement>(null);
-    const printableRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        if (qrCodeRef.current && order.trackingNumber) {
-            QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 80, margin: 1 }, (error) => {
-                if (error) console.error(error);
-            });
-        }
-    }, [order.trackingNumber]);
-
-    const handlePrint = () => {
-        const printableElement = printableRef.current;
-        if (printableElement) {
-            const printWindow = window.open('', '_blank');
-            printWindow?.document.write(`<html><head><title>Étiquette ${order.id}</title>`);
-            printWindow?.document.write('<style>@page { size: A6; margin: 10mm; } body { font-family: sans-serif; } .label { border: 2px solid black; padding: 10px; width: 100%; height: 100%; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; } h3 { margin: 0; font-size: 16px; } p { margin: 2px 0; font-size: 12px; } .qr-section { text-align: center; } canvas { width: 80px; height: 80px; } .items { font-size: 10px; border-top: 1px solid #ccc; padding-top: 5px; margin-top: 5px; }</style>');
-            printWindow?.document.write('</head><body>');
-            printWindow?.document.write(printableElement.innerHTML);
-            printWindow?.document.write('</body></html>');
-            printWindow?.document.close();
-            printWindow?.print();
-        }
-    };
-
-    return (
-        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-md">
-            <div ref={printableRef} className="printable hidden">
-                <div className="label">
-                    <div>
-                        <h3>KMER ZONE - Commande #{order.id}</h3>
-                        <p><b>Date:</b> {new Date(order.orderDate).toLocaleDateString()}</p>
-                        <p><b>Destinataire:</b> {order.shippingAddress.fullName}</p>
-                        <p>{order.shippingAddress.address}, {order.shippingAddress.city}</p>
-                        <p><b>Tél:</b> {order.shippingAddress.phone}</p>
-                    </div>
-                    <div className="items">
-                        <b>Contenu:</b> {order.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}
-                    </div>
-                    <div className="qr-section">
-                        <canvas id={`qr-${order.id}`}></canvas>
-                        <script>
-                            {`
-                            // This script won't run in the popup, so QR must be generated as image data url
-                            const canvas = document.getElementById('qr-${order.id}');
-                            const dataUrl = document.querySelector('[data-qr-id="${order.id}"]').toDataURL();
-                            const img = new Image();
-                            img.src = dataUrl;
-                            img.onload = () => canvas.getContext('2d').drawImage(img, 0, 0);
-                            `}
-                        </script>
-                        <p>{order.trackingNumber}</p>
-                    </div>
-                </div>
-            </div>
-
-             <div className="flex flex-col sm:flex-row justify-between sm:items-center">
-                <div>
-                    <p className="font-semibold dark:text-gray-200">{order.id}</p>
-                    <p className="text-sm text-gray-500">{new Date(order.orderDate).toLocaleDateString()}</p>
-                </div>
-                <div className="text-left sm:text-right mt-2 sm:mt-0">
-                    <p className="font-semibold dark:text-gray-200">{order.total.toLocaleString('fr-CM')} FCFA</p>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>{statusTranslations[order.status]}</span>
-                </div>
-            </div>
-             <div className="mt-3 pt-3 border-t dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <canvas ref={qrCodeRef} data-qr-id={order.id} className="rounded-md bg-white"></canvas>
-                    <div>
-                        <p className="text-xs font-semibold dark:text-gray-300">N° de Suivi:</p>
-                        <p className="font-mono text-sm dark:text-white">{order.trackingNumber}</p>
-                    </div>
-                </div>
-                 <div className="flex items-center gap-2 w-full sm:w-auto">
-                    {['confirmed'].includes(order.status) && (
-                        <select
-                          value={order.status}
-                          onChange={(e) => onUpdateOrderStatus(order.id, e.target.value as OrderStatus)}
-                          className="text-xs border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white focus:ring-kmer-green w-full"
-                        >
-                            <option value="confirmed" disabled>Confirmée</option>
-                            <option value="ready-for-pickup">Marquer comme Prêt</option>
-                        </select>
-                    )}
-                     <button onClick={handlePrint} className="flex items-center gap-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-3 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 w-full sm:w-auto justify-center">
-                        <PrinterIcon className="w-4 h-4"/> Imprimer l'étiquette
-                    </button>
-                </div>
-            </div>
-        </div>
-    );
-};
 
 const OverviewPanel: React.FC<{ analytics: any }> = ({ analytics }) => (
     <div className="p-6">
@@ -231,12 +132,38 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
     );
 };
 
-const OrdersPanel: React.FC<{ title: string, orders: Order[], onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void }> = ({ title, orders, onUpdateOrderStatus }) => {
+const OrdersPanel: React.FC<{orders: Order[], onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void}> = ({ orders, onUpdateOrderStatus }) => {
     return (
       <div className="p-6">
-        <h2 className="text-xl font-bold dark:text-white mb-4">{title}</h2>
-        <div className="space-y-4">
-          {orders.map((o: Order) => <OrderCard key={o.id} order={o} onUpdateOrderStatus={onUpdateOrderStatus} />)}
+        <h2 className="text-xl font-bold dark:text-white mb-4">Mes Commandes</h2>
+        <div className="space-y-2">
+          {orders.map((o: Order) => (
+            <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
+                <div className="flex justify-between items-center">
+                    <div>
+                        <p className="font-semibold dark:text-gray-200">{o.id}</p>
+                        <p className="text-sm text-gray-500">{new Date(o.orderDate).toLocaleDateString()}</p>
+                    </div>
+                    <div className="text-right">
+                        <p className="font-semibold dark:text-gray-200">{o.total.toLocaleString('fr-CM')} FCFA</p>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(o.status)}`}>{statusTranslations[o.status]}</span>
+                    </div>
+                </div>
+                {['confirmed', 'ready-for-pickup'].includes(o.status) && (
+                    <div className="mt-2 pt-2 border-t border-gray-200 dark:border-gray-700 flex items-center gap-2">
+                        <span className="text-sm">Marquer comme:</span>
+                        <select
+                          value={o.status}
+                          onChange={(e) => onUpdateOrderStatus(o.id, e.target.value as OrderStatus)}
+                          className="text-xs border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 dark:text-white focus:ring-kmer-green"
+                        >
+                            <option value="confirmed" disabled={o.status !== 'confirmed'}>Confirmée</option>
+                            <option value="ready-for-pickup">Prêt pour enlèvement</option>
+                        </select>
+                    </div>
+                )}
+            </div>
+          ))}
         </div>
       </div>
     );
@@ -413,16 +340,14 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onPayRent,
   siteSettings,
 }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents'>('overview');
+    const [activeTab, setActiveTab] = useState('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
 
-    const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
-    const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
-    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
-
     const analytics = useMemo(() => {
-        const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.subtotal, 0);
+        const totalRevenue = sellerOrders
+            .filter(o => o.status === 'delivered')
+            .reduce((sum, order) => sum + order.subtotal, 0);
 
         const allReviews = products.flatMap(p => p.reviews);
         const avgRating = allReviews.length > 0
@@ -431,11 +356,11 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
 
         return {
             totalProducts: products.length,
-            openOrders: inProgressOrders.length,
+            openOrders: sellerOrders.filter(o => ['confirmed', 'ready-for-pickup'].includes(o.status)).length,
             totalRevenue,
             avgRating: avgRating.toFixed(1),
         };
-    }, [products, deliveredOrders, inProgressOrders]);
+    }, [products, sellerOrders]);
     
     if (!user || user.role !== 'seller' || !store) {
         return (
@@ -457,12 +382,8 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
         switch(activeTab) {
             case 'products':
                 return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onToggleStatus={onToggleStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
-            case 'orders-in-progress':
-                return <OrdersPanel title="Commandes en cours" orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
-            case 'orders-delivered':
-                return <OrdersPanel title="Commandes Livrées" orders={deliveredOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
-            case 'orders-cancelled':
-                return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
+            case 'orders':
+                return <OrdersPanel orders={sellerOrders} onUpdateOrderStatus={onUpdateOrderStatus} />;
             case 'promotions':
                  return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode}/>;
             case 'documents':
@@ -502,9 +423,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                         <div className="flex space-x-2 overflow-x-auto">
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
-                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="En cours" isActive={activeTab === 'orders-in-progress'} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
-                           <TabButton icon={<CheckCircleIcon className="w-5 h-5"/>} label="Livrées" isActive={activeTab === 'orders-delivered'} onClick={() => setActiveTab('orders-delivered')} />
-                           <TabButton icon={<XIconSmall className="w-5 h-5"/>} label="Annulées / Remb." isActive={activeTab === 'orders-cancelled'} onClick={() => setActiveTab('orders-cancelled')} count={cancelledRefundedOrders.length} />
+                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} count={analytics.openOrders} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
                            <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
                            {isChatEnabled && <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label="Messages" isActive={false} onClick={() => setIsWidgetOpen(true)} count={totalUnreadCount} />}
