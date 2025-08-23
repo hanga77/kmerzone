@@ -102,7 +102,7 @@ const StoresMapPage: React.FC<StoresMapPageProps> = ({ stores, onBack, onVisitSt
         <style>{`
           .map-popup-button { 
             color: white; 
-            background-color: #007A5E; 
+            background-color: #84CC16; 
             border: none; 
             padding: 5px 10px; 
             border-radius: 4px; 
@@ -112,7 +112,7 @@ const StoresMapPage: React.FC<StoresMapPageProps> = ({ stores, onBack, onVisitSt
             width: 100%;
           }
           .map-popup-button:hover {
-            background-color: #005c48;
+            background-color: #65A30D;
           }
           .leaflet-popup-content-wrapper {
             border-radius: 8px;
