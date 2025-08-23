@@ -1,9 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { TruckIcon, MapPinIcon, BuildingStorefrontIcon, CheckIcon, ShoppingBagIcon, QrCodeIcon, XIcon, ExclamationTriangleIcon, MapIcon, ListBulletIcon } from './Icons';
-
-declare const L: any; // Leaflet is loaded from a script tag in index.html
+import { TruckIcon, MapPinIcon, BuildingStorefrontIcon, CheckIcon, ShoppingBagIcon, QrCodeIcon, XIcon, ExclamationTriangleIcon } from './Icons';
 
 interface DeliveryAgentDashboardProps {
   allOrders: Order[];
@@ -150,84 +148,16 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
   const { user } = useAuth();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
-
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
   
   const assignedOrders = useMemo(() => {
     if (!user) return [];
     return allOrders.filter(order => order.agentId === user.id)
       .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
   }, [allOrders, user]);
-
-  const tasks = useMemo(() => {
-    if (!user) return [];
-    const taskList: { type: 'pickup' | 'dropoff' | 'delivery', order: Order, location: any }[] = [];
-
-    assignedOrders.forEach(order => {
-        if (order.status === 'ready-for-pickup') {
-            const store = allStores.find(s => s.name === order.items[0].vendor);
-            if (store && store.latitude && store.longitude) {
-                taskList.push({ type: 'pickup', order, location: store });
-            }
-        } else if (order.status === 'picked-up' && order.deliveryMethod === 'pickup') {
-            const depot = allPickupPoints.find(p => p.id === order.pickupPointId);
-            if (depot && depot.latitude && depot.longitude) {
-                taskList.push({ type: 'dropoff', order, location: depot });
-            }
-        } else if (order.status === 'at-depot' && order.deliveryMethod === 'home-delivery') {
-            const { latitude, longitude } = order.shippingAddress;
-            if (latitude && longitude) {
-                taskList.push({ type: 'delivery', order, location: { latitude, longitude, name: order.shippingAddress.fullName, physicalAddress: order.shippingAddress.address } });
-            }
-        }
-    });
-    return taskList;
-  }, [assignedOrders, allStores, allPickupPoints, user]);
   
   const ordersToPickup = assignedOrders.filter(o => o.status === 'ready-for-pickup');
   const ordersInProgress = assignedOrders.filter(o => ['picked-up', 'at-depot', 'out-for-delivery'].includes(o.status));
   const ordersCompleted = assignedOrders.filter(o => ['delivered', 'cancelled', 'refunded'].includes(o.status));
-
-  useEffect(() => {
-    if (viewMode === 'map' && mapContainerRef.current && !mapRef.current) {
-        mapRef.current = L.map(mapContainerRef.current).setView([3.95, 10.6], 7); // Center on Cameroon
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(mapRef.current);
-    }
-    if (viewMode === 'map' && mapRef.current) {
-        setTimeout(() => mapRef.current.invalidateSize(), 100);
-    }
-  }, [viewMode]);
-
-  useEffect(() => {
-      if (mapRef.current && viewMode === 'map') {
-          mapRef.current.eachLayer((layer: any) => {
-              if (layer instanceof L.Marker) mapRef.current.removeLayer(layer);
-          });
-
-          if (tasks.length > 0) {
-            const markers: any[] = [];
-            tasks.forEach(task => {
-                const { type, order, location } = task;
-                const colors = { pickup: '#16a34a', dropoff: '#2563eb', delivery: '#dc2626' };
-                const iconHtml = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${colors[type]}" class="w-8 h-8 drop-shadow-lg"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/></svg>`;
-                const popupContent = `<b>${type.charAt(0).toUpperCase() + type.slice(1)}:</b> ${order.id}<br><b>${type === 'pickup' ? 'Boutique' : (type === 'dropoff' ? 'Dépôt' : 'Client')}:</b> ${location.name}<br>${location.physicalAddress || `${location.street}, ${location.neighborhood}`}`;
-
-                const icon = L.divIcon({ html: iconHtml, className: '', iconSize: [32, 32], iconAnchor: [16, 32], popupAnchor: [0, -32] });
-                const marker = L.marker([location.latitude, location.longitude], { icon }).addTo(mapRef.current).bindPopup(popupContent);
-                markers.push(marker);
-            });
-            if (markers.length > 0) {
-              const group = L.featureGroup(markers);
-              mapRef.current.fitBounds(group.getBounds().pad(0.3));
-            }
-          }
-      }
-  }, [tasks, viewMode]);
-
 
   if (!user || user.role !== 'delivery_agent') {
     return <div className="p-8 text-center text-red-500">Accès non autorisé.</div>;
@@ -337,29 +267,22 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
           <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
               <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Tableau de bord Livreur</h1>
               <div className="flex items-center gap-4">
-                  <div className="bg-white dark:bg-gray-800 p-1 rounded-full shadow-sm">
-                      <button onClick={() => setViewMode('list')} className={`px-3 py-1.5 text-sm font-semibold rounded-full flex items-center gap-1 ${viewMode === 'list' ? 'bg-kmer-green text-white' : 'text-gray-600 dark:text-gray-300'}`}><ListBulletIcon className="w-5 h-5"/> Liste</button>
-                      <button onClick={() => setViewMode('map')} className={`px-3 py-1.5 text-sm font-semibold rounded-full flex items-center gap-1 ${viewMode === 'map' ? 'bg-kmer-green text-white' : 'text-gray-600 dark:text-gray-300'}`}><MapIcon className="w-5 h-5"/> Carte</button>
-                  </div>
                   <button 
                     onClick={() => setIsScannerOpen(true)}
                     className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
                   >
                     <QrCodeIcon className="w-5 h-5" />
-                    Scanner
+                    Scanner un Colis
                   </button>
                   <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
               </div>
           </div>
-            {viewMode === 'list' ? (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-                    <OrderList title="À Récupérer" orders={ordersToPickup} icon={<BuildingStorefrontIcon className="w-6 h-6 text-kmer-red"/>}/>
-                    <OrderList title="En Cours" orders={ordersInProgress} icon={<TruckIcon className="w-6 h-6 text-blue-500"/>}/>
-                    <OrderList title="Terminées" orders={ordersCompleted} icon={<CheckIcon className="w-6 h-6 text-kmer-green"/>}/>
-                </div>
-            ) : (
-                <div ref={mapContainerRef} className="h-[70vh] w-full rounded-lg shadow-md bg-gray-200 dark:bg-gray-800" />
-            )}
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+              <OrderList title="À Récupérer" orders={ordersToPickup} icon={<BuildingStorefrontIcon className="w-6 h-6 text-kmer-red"/>}/>
+              <OrderList title="En Cours" orders={ordersInProgress} icon={<TruckIcon className="w-6 h-6 text-blue-500"/>}/>
+              <OrderList title="Terminées" orders={ordersCompleted} icon={<CheckIcon className="w-6 h-6 text-kmer-green"/>}/>
+          </div>
         </div>
       </div>
     </>
