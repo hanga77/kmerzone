@@ -8,7 +8,6 @@ interface DeliveryAgentDashboardProps {
   allStores: Store[];
   allPickupPoints: PickupPoint[];
   onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
-  onLogout: () => void;
 }
 
 const statusTranslations: {[key in OrderStatus]: string} = {
@@ -144,8 +143,8 @@ const ScannerModal: React.FC<{
 };
 
 
-const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrderStatus, onLogout }) => {
-  const { user } = useAuth();
+const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrderStatus }) => {
+  const { user, logout } = useAuth();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
   
@@ -274,7 +273,7 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
                     <QrCodeIcon className="w-5 h-5" />
                     Scanner un Colis
                   </button>
-                  <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
+                  <button onClick={logout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
               </div>
           </div>
 

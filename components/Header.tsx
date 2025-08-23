@@ -27,14 +27,13 @@ interface HeaderProps {
   onNavigateToAnalyticsDashboard: () => void;
   onNavigateToReviewModeration: () => void;
   onOpenLogin: () => void;
-  onLogout: () => void;
   onSearch: (query: string) => void;
   isChatEnabled: boolean;
   isPremiumProgramEnabled: boolean;
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAnalyticsDashboard, onNavigateToReviewModeration, onSearch, isChatEnabled, isPremiumProgramEnabled } = props;
+  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAnalyticsDashboard, onNavigateToReviewModeration, onSearch, isChatEnabled, isPremiumProgramEnabled } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -44,7 +43,7 @@ const Header: React.FC<HeaderProps> = (props) => {
   const [language, setLanguage] = useState<'fr' | 'en'>('fr');
   const { cart } = useCart();
   const { wishlist } = useWishlist();
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const { setIsWidgetOpen, totalUnreadCount } = useChatContext();
   const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
@@ -172,7 +171,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                        </button>
                     ))}
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
-                    <button onClick={() => { onLogout(); setIsUserMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
+                    <button onClick={logout} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
                        <ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter
                     </button>
                   </div>
@@ -313,7 +312,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           
           {user && (
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-                <button onClick={() => {onLogout(); setIsMenuOpen(false);}} className="w-full bg-gray-100 dark:bg-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2">
+                <button onClick={() => {logout(); setIsMenuOpen(false);}} className="w-full bg-gray-100 dark:bg-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2">
                    <ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter
                 </button>
             </div>

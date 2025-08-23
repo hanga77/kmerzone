@@ -9,7 +9,6 @@ interface DepotAgentDashboardProps {
   allOrders: Order[];
   onCheckIn: (orderId: string, storageLocationId: string) => void;
   onReportDiscrepancy: (orderId: string, reason: string) => void;
-  onLogout: () => void;
 }
 
 const statusTranslations: {[key in OrderStatus]: string} = {
@@ -195,8 +194,8 @@ const ActionChoiceModal: React.FC<{
     );
 };
 
-const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, onCheckIn, onReportDiscrepancy, onLogout }) => {
-  const { user } = useAuth();
+const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, onCheckIn, onReportDiscrepancy }) => {
+  const { user, logout } = useAuth();
   const [activeTab, setActiveTab] = useState<'overview' | 'scanner' | 'inventory' | 'returns'>('overview');
   const [modalState, setModalState] = useState<'closed' | 'scanner' | 'choice' | 'storage' | 'discrepancy'>('closed');
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
@@ -268,7 +267,7 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
               <div className="container mx-auto px-4 sm:px-6 py-4">
                   <div className="flex justify-between items-center">
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Dépôt</h1>
-                    <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
+                    <button onClick={logout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
                   </div>
                   <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
                       <div className="flex space-x-2">
