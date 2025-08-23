@@ -150,6 +150,8 @@ export interface Address {
     phone: string;
     address: string;
     city: string;
+    latitude?: number;
+    longitude?: number;
 }
 
 export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded' | 'returned' | 'depot-issue';
