@@ -39,6 +39,24 @@
           transform: translateY(0);
         }
       }
+      @media print {
+        body * {
+          visibility: hidden;
+        }
+        .printable, .printable * {
+          visibility: visible;
+        }
+        .printable {
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 100%;
+        }
+        @page {
+          size: A6;
+          margin: 10mm;
+        }
+      }
     </style>
      <script>
       // Prevents "flash of light theme"
@@ -59,6 +77,7 @@
     "react-dom": "https://esm.sh/react-dom@18.2.0",
     "react/jsx-runtime": "https://esm.sh/react@18.2.0/jsx-runtime",
     "@google/genai": "https://esm.sh/@google/genai@^1.13.0",
+    "qrcode": "https://esm.sh/qrcode@1.5.3",
     "react-dom/": "https://esm.sh/react-dom@^19.1.1/",
     "react/": "https://esm.sh/react@^19.1.1/"
   }

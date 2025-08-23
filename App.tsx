@@ -29,6 +29,8 @@ import BecomePremiumPage from './components/BecomePremiumPage';
 import InfoPage from './components/InfoPage';
 import MaintenancePage from './components/MaintenancePage';
 import NotFoundPage from './components/NotFoundPage';
+import ForbiddenPage from './components/ForbiddenPage';
+import ServerErrorPage from './components/ServerErrorPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy } from './types';
@@ -40,7 +42,7 @@ import ChatWidget from './components/ChatWidget';
 import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon } from './components/Icons';
 import { usePersistentState } from './hooks/usePersistentState';
 
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found';
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error';
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -496,7 +498,7 @@ export default function App() {
   const [isComparisonEnabled, setIsComparisonEnabled] = usePersistentState('isComparisonEnabled', true);
   const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
   
-  const { user, allUsers, setAllUsers } = useAuth();
+  const { user, allUsers, setAllUsers, logout } = useAuth();
   const { clearCart } = useCart();
   const comparison = useComparison();
   const { modalProduct, isModalOpen, closeModal } = useUI();
@@ -548,9 +550,33 @@ export default function App() {
       }));
   }, [setAllOrders, addLog, user]);
 
+  const handleLogout = useCallback(() => {
+    logout();
+    setPage('home');
+  }, [logout]);
+
 
   if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
       return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
+  }
+
+  // Access Control Logic
+  const roleProtectedPages: Partial<Record<Page, UserRole[]>> = {
+    'seller-dashboard': ['seller'],
+    'product-form': ['seller'],
+    'seller-profile': ['seller'],
+    'superadmin-dashboard': ['superadmin'],
+    'delivery-agent-dashboard': ['delivery_agent'],
+    'depot-agent-dashboard': ['depot_agent'],
+    'analytics-dashboard': ['superadmin'],
+    'review-moderation': ['superadmin'],
+    'order-history': ['customer', 'seller'],
+    'wishlist': ['customer', 'seller'],
+  };
+
+  const currentPageRoles = roleProtectedPages[page];
+  if (currentPageRoles && (!user || !currentPageRoles.includes(user.role))) {
+    return <ForbiddenPage onNavigateHome={() => setPage('home')} />;
   }
   
   const renderPage = () => {
@@ -558,8 +584,22 @@ export default function App() {
       case 'home': return <HomePage categories={allCategories} products={allProducts} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onCategoryClick={(c) => { setSelectedCategory(c); setPage('category'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
       case 'product': return selectedProduct && <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => { setSelectedProduct(null); setPage(selectedCategory ? 'category' : (searchQuery ? 'search-results' : 'home')); }} onAddReview={(productId, review) => {setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: [...p.reviews, review]} : p))}} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onProductClick={(p) => setSelectedProduct(p)} onOpenLogin={() => setIsLoginOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
       case 'cart': return <CartView onBack={() => setPage('home')} onNavigateToCheckout={() => setPage('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
-      case 'checkout': return <Checkout onBack={() => setPage('cart')} onOrderConfirm={async (orderData) => { const newOrder: Order = { ...orderData, id: `CMD-${new Date().getTime()}`, orderDate: new Date().toISOString(), status: 'confirmed', trackingHistory: [{status: 'confirmed', date: new Date().toISOString(), location: 'Plateforme', details: 'Commande confirmée et en attente de préparation.'}], trackingNumber: `KZ${Date.now()}`}; setAllOrders(prev => [newOrder, ...prev]); clearCart(); setAppliedPromoCode(null); setPage('order-success'); }} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores}/>;
-      case 'order-success': return <OrderSuccess onNavigateHome={() => setPage('home')} onNavigateToOrders={() => setPage('order-history')} />;
+      case 'checkout': return <Checkout onBack={() => setPage('cart')} onOrderConfirm={async (orderData) => { 
+        if (orderData.deliveryMethod === 'home-delivery') {
+            const cityCoords = orderData.shippingAddress.city === 'Douala' 
+                ? { lat: 4.05, lng: 9.70 } 
+                : { lat: 3.86, lng: 11.52 };
+            orderData.shippingAddress.latitude = cityCoords.lat + (Math.random() - 0.5) * 0.1;
+            orderData.shippingAddress.longitude = cityCoords.lng + (Math.random() - 0.5) * 0.1;
+        }
+        const newOrder: Order = { ...orderData, id: `CMD-${new Date().getTime()}`, orderDate: new Date().toISOString(), status: 'confirmed', trackingHistory: [{status: 'confirmed', date: new Date().toISOString(), location: 'Plateforme', details: 'Commande confirmée et en attente de préparation.'}], trackingNumber: `KZ${Date.now()}`}; 
+        setAllOrders(prev => [newOrder, ...prev]); 
+        clearCart(); 
+        setAppliedPromoCode(null); 
+        setSelectedOrder(newOrder);
+        setPage('order-success'); 
+        }} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores}/>;
+      case 'order-success': return selectedOrder && <OrderSuccess order={selectedOrder} onNavigateHome={() => { setPage('home'); setSelectedOrder(null); }} onNavigateToOrders={() => { setPage('order-history'); setSelectedOrder(null); }} />;
       case 'stores': return <StoresPage stores={allStores} onBack={() => setPage('home')} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} />;
       case 'become-seller': return <BecomeSeller onBack={() => setPage('home')} onBecomeSeller={(shopName, location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, logoUrl, latitude, longitude) => { const newStore: Store = { id: `store-${Date.now()}`, name: shopName, logoUrl, category: 'Divers', warnings: [], status: 'pending', premiumStatus: 'standard', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, latitude, longitude, documents: siteSettings.requiredSellerDocuments['CNI (Carte Nationale d\'Identité)'] ? [{name: "CNI (Carte Nationale d'Identité)", status: 'requested'}] : [] }; setAllStores(prev => [...prev, newStore]); }} onRegistrationSuccess={() => setPage('home')} siteSettings={siteSettings} />;
       case 'category': return selectedCategory && <CategoryPage categoryName={selectedCategory} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedCategory(null); setPage('home'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
@@ -574,13 +614,15 @@ export default function App() {
       case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
       case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
       case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
-      case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} />;
-      case 'depot-agent-dashboard': return <DepotAgentDashboard allOrders={allOrders} onCheckIn={(orderId, storageLocationId) => { setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status: 'at-depot', storageLocationId, checkedInAt: new Date().toISOString(), checkedInBy: user?.id} : o)); }} onReportDiscrepancy={handleReportDiscrepancy} />;
+      case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onLogout={handleLogout} />;
+      case 'depot-agent-dashboard': return <DepotAgentDashboard allOrders={allOrders} onCheckIn={(orderId, storageLocationId) => { setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status: 'at-depot', storageLocationId, checkedInAt: new Date().toISOString(), checkedInBy: user?.id} : o)); }} onReportDiscrepancy={handleReportDiscrepancy} onLogout={handleLogout} />;
       case 'comparison': return <ComparisonPage onBack={() => setPage('home')} />;
       case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => setPage('home')} onBecomePremiumByCaution={() => { if(user) { setAllUsers(users => users.map(u => u.id === user.id ? {...u, loyalty: {...u.loyalty, status: 'premium', premiumStatusMethod: 'deposit'}} : u)); alert('Félicitations, vous êtes maintenant membre Premium !'); setPage('home'); } }} onUpgradeToPremiumPlus={() => { if(user) { setAllUsers(users => users.map(u => u.id === user.id ? {...u, loyalty: {...u.loyalty, status: 'premium_plus', premiumStatusMethod: 'subscription'}} : u)); alert('Félicitations, vous êtes maintenant membre Premium+ !'); setPage('home'); } }} />;
       case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => setPage('home')} />;
       case 'analytics-dashboard': return <AnalyticsDashboard onBack={() => setPage('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} />;
       case 'review-moderation': return <ReviewModeration onBack={() => setPage('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={(productId, reviewIdentifier, newStatus) => { setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: p.reviews.map(r => r.author === reviewIdentifier.author && r.date === reviewIdentifier.date ? {...r, status: newStatus} : r)} : p)); }} />;
+      case 'forbidden': return <ForbiddenPage onNavigateHome={() => setPage('home')} />;
+      case 'server-error': return <ServerErrorPage onNavigateHome={() => setPage('home')} />;
       default: return <NotFoundPage onNavigateHome={() => setPage('home')} />;
     }
   };
@@ -607,6 +649,7 @@ export default function App() {
         onNavigateToAnalyticsDashboard={() => setPage('analytics-dashboard')}
         onNavigateToReviewModeration={() => setPage('review-moderation')}
         onOpenLogin={() => setIsLoginOpen(true)}
+        onLogout={handleLogout}
         onSearch={(q) => { setSearchQuery(q); setPage('search-results'); }}
         isChatEnabled={isChatEnabled}
         isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
