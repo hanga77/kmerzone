@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { Order, OrderStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon } from './Icons';
+import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon, ChevronDownIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
@@ -168,7 +168,6 @@ const DiscrepancyModal: React.FC<{
     );
 };
 
-
 const ActionChoiceModal: React.FC<{
     order: Order;
     onClose: () => void;
@@ -197,7 +196,7 @@ const ActionChoiceModal: React.FC<{
 
 const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, onCheckIn, onReportDiscrepancy, onLogout }) => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<'overview' | 'scanner' | 'inventory' | 'returns'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'arrivals' | 'inventory'>('overview');
   const [modalState, setModalState] = useState<'closed' | 'scanner' | 'choice' | 'storage' | 'discrepancy'>('closed');
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
   const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
@@ -273,9 +272,8 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
                   <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
                       <div className="flex space-x-2">
                           <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                          <TabButton icon={<QrCodeIcon className="w-5 h-5"/>} label="Arrivages" isActive={activeTab === 'scanner'} onClick={() => { setModalState('scanner'); setActiveTab('scanner'); }} count={analytics.itemsToReceive} />
+                          <TabButton icon={<QrCodeIcon className="w-5 h-5"/>} label="Arrivages" isActive={activeTab === 'arrivals'} onClick={() => setActiveTab('arrivals')} count={analytics.itemsToReceive} />
                           <TabButton icon={<ArchiveBoxIcon className="w-5 h-5"/>} label="Inventaire" isActive={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} count={analytics.itemsInStock} />
-                          <TabButton icon={<ArrowPathIcon className="w-5 h-5"/>} label="Retours" isActive={activeTab === 'returns'} onClick={() => setActiveTab('returns')} />
                       </div>
                   </div>
               </div>
@@ -284,28 +282,65 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
               <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
                   {activeTab === 'overview' && (
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold">{analytics.itemsToReceive}</p><p className="text-sm text-gray-500">Colis en attente</p></div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold">{analytics.itemsInStock}</p><p className="text-sm text-gray-500">Colis en stock</p></div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold">{analytics.capacity}</p><p className="text-sm text-gray-500">Capacité utilisée</p></div>
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold dark:text-white">{analytics.itemsToReceive}</p><p className="text-sm text-gray-500 dark:text-gray-400">Colis en attente de réception</p></div>
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold dark:text-white">{analytics.itemsInStock}</p><p className="text-sm text-gray-500 dark:text-gray-400">Colis en stock</p></div>
+                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold dark:text-white">{analytics.capacity}</p><p className="text-sm text-gray-500 dark:text-gray-400">Capacité de stockage utilisée</p></div>
                       </div>
+                  )}
+                  {activeTab === 'arrivals' && (
+                       <div>
+                           <div className="flex justify-between items-center mb-4">
+                                <h2 className="text-xl font-bold">Arrivages Attendus</h2>
+                                <button onClick={() => setModalState('scanner')} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                                    <QrCodeIcon className="w-5 h-5"/> Scanner une nouvelle arrivée
+                                </button>
+                           </div>
+                           <div className="space-y-2">
+                            {ordersForDepot.length > 0 ? ordersForDepot.map(order => (
+                                <details key={order.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md group">
+                                    <summary className="font-semibold cursor-pointer flex justify-between items-center">
+                                      <span>{order.id} - Client: {order.shippingAddress.fullName}</span>
+                                      <ChevronDownIcon className="w-5 h-5 group-open:rotate-180 transition-transform"/>
+                                    </summary>
+                                    <div className="mt-2 pt-2 border-t dark:border-gray-700 text-sm">
+                                      <p className="font-bold">Contenu du colis :</p>
+                                      <ul className="list-disc pl-5 text-gray-600 dark:text-gray-400">
+                                        {order.items.map(item => (
+                                          <li key={item.id}>{item.name} (x{item.quantity})</li>
+                                        ))}
+                                      </ul>
+                                    </div>
+                                </details>
+                            )) : <p className="text-sm text-gray-500">Aucun colis en transit vers le dépôt.</p>}
+                           </div>
+                       </div>
                   )}
                   {activeTab === 'inventory' && (
                        <div>
                            <h2 className="text-xl font-bold mb-4">Inventaire Actuel</h2>
                            <div className="space-y-2">
                             {inventory.length > 0 ? inventory.map(order => (
-                                <div key={order.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
-                                    <div>
-                                        <p className="font-semibold">{order.id}</p>
-                                        <p className="text-sm text-gray-500">Client: {order.shippingAddress.fullName}</p>
+                                <details key={order.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md group">
+                                    <summary className="font-semibold cursor-pointer flex justify-between items-center">
+                                      <div className="flex items-center gap-4">
+                                        <span>{order.id} - Client: {order.shippingAddress.fullName}</span>
+                                        <span className="font-mono text-base font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-md">{order.storageLocationId}</span>
+                                      </div>
+                                      <ChevronDownIcon className="w-5 h-5 group-open:rotate-180 transition-transform"/>
+                                    </summary>
+                                    <div className="mt-2 pt-2 border-t dark:border-gray-700 text-sm">
+                                      <p className="font-bold">Contenu du colis :</p>
+                                      <ul className="list-disc pl-5 text-gray-600 dark:text-gray-400">
+                                        {order.items.map(item => (
+                                          <li key={item.id}>{item.name} (x{item.quantity})</li>
+                                        ))}
+                                      </ul>
                                     </div>
-                                    <p className="font-mono text-lg font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-md">{order.storageLocationId}</p>
-                                </div>
+                                </details>
                             )) : <p className="text-sm text-gray-500">Aucun article en stock.</p>}
                            </div>
                        </div>
                   )}
-                   {activeTab === 'returns' && <p className="text-gray-500">La gestion des retours sera bientôt disponible.</p>}
               </div>
           </main>
       </div>

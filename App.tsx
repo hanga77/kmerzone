@@ -232,24 +232,24 @@ const ReviewModeration: React.FC<{ onBack: () => void; allProducts: Product[]; o
 
 const initialProducts: Product[] = [
     { 
-      id: '1', name: 'Ndolé Royal', price: 3500, promotionPrice: 3000, imageUrls: [], vendor: 'Mama Africa', 
+      id: '1', name: 'Ndolé Royal', price: 3500, promotionPrice: 3000, imageUrls: ['https://www.preciouscore.com/wp-content/uploads/2021/11/Ndole-recipe.jpg'], vendor: 'Mama Africa', 
       description: "Le plat national du Cameroun, un délicieux mélange de légumes, d'arachides et de viande ou de poisson. Préparé avec amour par Mama Africa.",
       reviews: [
         {author: "Jean P.", rating: 5, comment: "Incroyable ! Comme celui de ma grand-mère.", date: "2023-10-10", status: 'approved'},
         {author: "Marie C.", rating: 4, comment: "Très bon, mais j'aurais aimé un peu plus de crevettes.", date: "2024-07-15", status: 'pending'}
       ],
-      stock: 15, category: 'Alimentation alimentaire', status: 'published',
+      stock: 15, category: 'Alimentation', status: 'published',
       brand: 'Mama Africa Cuisine', weight: '500g', expirationDate: '2024-12-31'
     },
     { 
-      id: '101', name: 'Ndolé Royal', price: 3200, imageUrls: [], vendor: 'Douala Soaps', // Same product, different vendor
+      id: '101', name: 'Ndolé Royal', price: 3200, imageUrls: ['https://www.preciouscore.com/wp-content/uploads/2021/11/Ndole-recipe.jpg'], vendor: 'Douala Soaps', // Same product, different vendor
       description: "Le plat national du Cameroun, version spéciale de Douala Soaps.",
       reviews: [{author: "Test T.", rating: 4, comment: "Très bon aussi!", date: "2023-11-11", status: 'approved'}],
-      stock: 10, category: 'Alimentation alimentaire', status: 'published',
+      stock: 10, category: 'Alimentation', status: 'published',
       brand: 'Douala Cuisine', weight: '450g', expirationDate: '2024-12-25'
     },
     { 
-      id: '2', name: 'Robe en Tissu Pagne', price: 15000, imageUrls: [], vendor: 'Kmer Fashion',
+      id: '2', name: 'Robe en Tissu Pagne', price: 15000, imageUrls: ['https://i.pinimg.com/564x/1f/53/26/1f5326792e353b3a7a40b9b3e150a6b1.jpg'], vendor: 'Kmer Fashion',
       description: "Une robe élégante confectionnée à la main avec du tissu pagne de haute qualité. Parfaite pour toutes les occasions.",
       reviews: [{author: "Aïcha B.", rating: 4, comment: "Très belles couleurs, mais la taille est un peu juste.", date: "2023-10-11", status: 'approved'}],
       stock: 0, category: 'Vêtements', status: 'published',
@@ -269,16 +269,16 @@ const initialProducts: Product[] = [
       brand: 'Kmer Fashion', material: 'Coton (Pagne)', gender: 'Femme'
     },
     { 
-      id: '3', name: 'Savon de Marseille (Local)', price: 1500, imageUrls: [], vendor: 'Douala Soaps',
+      id: '3', name: 'Savon de Marseille (Local)', price: 1500, imageUrls: ['https://www.toutvert.fr/wp-content/uploads/2018/11/savon-de-marseille-vert- Marius-Fabre.jpg'], vendor: 'Douala Soaps',
       description: "Un savon artisanal fabriqué localement selon la méthode traditionnelle. Doux pour la peau et respectueux de l'environnement.",
       reviews: [
         {author: "Client Anonyme", rating: 1, comment: "Ce produit est une arnaque, ne fonctionne pas du tout.", date: "2024-07-20", status: 'pending'}
       ], 
-      stock: 50, category: 'Chimie domestique et hygiène', status: 'published',
+      stock: 50, category: 'Hygiène & Beauté', status: 'published',
       brand: 'Douala Soaps', weight: '150g', material: 'Huile végétale', productionDate: '2023-01-15'
     },
     { 
-      id: '4', name: 'Smartphone Tecno Spark', price: 75000, promotionPrice: 69900, imageUrls: [], vendor: 'Electro Plus',
+      id: '4', name: 'Smartphone Tecno Spark', price: 75000, promotionPrice: 69900, imageUrls: ['https://www.tecno-mobile.com/media/sites/9/2023/10/SPARK-20-list-page-f8f8f8-pc.png'], vendor: 'Electro Plus',
       description: "Un smartphone performant avec un excellent rapport qualité-prix. Idéal pour un usage quotidien, avec un grand écran et une bonne autonomie.",
       reviews: [{author: "Eric K.", rating: 5, comment: "Super téléphone pour le prix, je recommande.", date: "2023-10-12", status: 'approved'}],
       stock: 4, category: 'Électronique', status: 'published',
@@ -286,140 +286,136 @@ const initialProducts: Product[] = [
       promotionStartDate: '2024-07-01', promotionEndDate: '2024-07-31',
     },
     { 
-      id: '5', name: 'Miel d\'Oku', price: 5000, imageUrls: [], vendor: 'Mama Africa',
+      id: '5', name: 'Miel d\'Oku', price: 5000, imageUrls: ['https://cavim.cm/wp-content/uploads/2022/10/oku_honey_500ml.jpg'], vendor: 'Mama Africa',
       description: "Un miel blanc rare et primé, récolté sur les flancs du mont Oku. Connu pour ses propriétés médicinales et son goût unique.",
       reviews: [{author: "Fatima G.", rating: 5, comment: "Le meilleur miel que j'ai jamais goûté.", date: "2023-10-13", status: 'approved'}],
-      stock: 25, category: 'Alimentation alimentaire', status: 'published',
+      stock: 25, category: 'Alimentation', status: 'published',
        brand: 'Oku Honey', weight: '250ml', expirationDate: '2026-01-01'
     },
      { 
-      id: '6', name: 'Sandales en cuir', price: 8000, imageUrls: [], vendor: 'Kmer Fashion',
+      id: '6', name: 'Sandales en cuir', price: 8000, imageUrls: ['https://www.yapili.com/cdn/shop/products/IMG_3959_1100x.jpg?v=1678129532'], vendor: 'Kmer Fashion',
       description: "Sandales en cuir véritable, faites à la main. Confortables et durables.",
       reviews: [], stock: 10, category: 'Chaussures', status: 'draft',
       brand: 'Kmer Fashion', material: 'Cuir', gender: 'Unisexe'
     },
-    // More products for Mama Africa
     { 
-      id: '7', name: 'Poulet DG', price: 6500, imageUrls: [], vendor: 'Mama Africa',
+      id: '7', name: 'Poulet DG', price: 6500, imageUrls: ['https://cheflah.com/wp-content/uploads/2023/02/poulet-dg.jpg'], vendor: 'Mama Africa',
       description: "Un plat de fête succulent avec du poulet frit, des plantains et une sauce riche en légumes. Un régal pour les papilles.",
-      reviews: [], stock: 12, category: 'Alimentation alimentaire', status: 'published',
+      reviews: [], stock: 12, category: 'Alimentation', status: 'published',
       brand: 'Mama Africa Cuisine', weight: '750g'
     },
     { 
-      id: '8', name: 'Jus de Bissap', price: 1000, imageUrls: [], vendor: 'Mama Africa',
+      id: '8', name: 'Jus de Bissap', price: 1000, imageUrls: ['https://www.jeuneafrique.com/cdn-cgi/image/q=100,w=1256,h=628,f=auto,fit=cover/https://www.jeuneafrique.com/medias/2023/07/28/jad20230728-ass-5847921-02-1200x628.jpg'], vendor: 'Mama Africa',
       description: "Boisson rafraîchissante et naturelle à base de fleurs d'hibiscus, sucrée juste comme il faut.",
-      reviews: [], stock: 30, category: 'Alimentation alimentaire', status: 'published',
+      reviews: [], stock: 30, category: 'Alimentation', status: 'published',
       brand: 'Mama Africa Drinks', weight: '500ml'
     },
     { 
-      id: '9', name: 'Beignets Haricots Bouillie', price: 1500, imageUrls: [], vendor: 'Mama Africa',
+      id: '9', name: 'Beignets Haricots Bouillie', price: 1500, imageUrls: ['https://rootsmagazine.fr/wp-content/uploads/2018/12/BHB.jpg'], vendor: 'Mama Africa',
       description: "Le petit-déjeuner ou goûter camerounais par excellence. Des beignets soufflés accompagnés d'une purée de haricots et de bouillie de maïs.",
-      reviews: [], stock: 20, category: 'Alimentation alimentaire', status: 'published',
+      reviews: [], stock: 20, category: 'Alimentation', status: 'published',
       brand: 'Mama Africa Cuisine', weight: '400g'
     },
-    // More products for Kmer Fashion
     { 
-      id: '10', name: 'Chemise en Toghu', price: 25000, imageUrls: [], vendor: 'Kmer Fashion',
+      id: '10', name: 'Chemise en Toghu', price: 25000, imageUrls: ['https://i.pinimg.com/564x/a0/0c/37/a00c3755255673a5a415958253a5f82c.jpg'], vendor: 'Kmer Fashion',
       description: "Chemise de cérémonie pour homme, en velours noir brodé avec les motifs colorés traditionnels du Toghu.",
       reviews: [], stock: 5, category: 'Vêtements', status: 'published',
       variants: [{ name: 'Taille', options: ['M', 'L', 'XL', 'XXL'] }],
       brand: 'Kmer Fashion', material: 'Velours, fil de coton', gender: 'Homme'
     },
     { 
-      id: '11', name: 'Ensemble Boubou Pagne', price: 35000, imageUrls: [], vendor: 'Kmer Fashion',
+      id: '11', name: 'Ensemble Boubou Pagne', price: 35000, imageUrls: ['https://i.pinimg.com/564x/3b/28/7f/3b287f394c502b610c320d3c126d2e67.jpg'], vendor: 'Kmer Fashion',
       description: "Un ensemble boubou ample et confortable, confectionné dans un tissu pagne aux motifs vibrants. Idéal pour un look élégant et décontracté.",
       reviews: [], stock: 7, category: 'Vêtements', status: 'published',
       variants: [{ name: 'Couleur', options: ['Jaune', 'Violet', 'Indigo'] }],
       brand: 'Kmer Fashion', material: 'Coton (Pagne)', gender: 'Femme'
     },
     { 
-      id: '12', name: 'Sac à main en pagne', price: 12000, imageUrls: [], vendor: 'Kmer Fashion',
+      id: '12', name: 'Sac à main en pagne', price: 12000, imageUrls: ['https://i.etsystatic.com/15233190/r/il/6b6807/2823610421/il_fullxfull.2823610421_932f.jpg'], vendor: 'Kmer Fashion',
       description: "Accessoirisez votre tenue avec ce magnifique sac à main fait main, alliant cuir et tissu pagne.",
       reviews: [], stock: 15, category: 'Accessoires', status: 'published',
       brand: 'Kmer Fashion', material: 'Cuir, Coton (Pagne)', gender: 'Femme'
     },
-    // More products for Electro Plus
     { 
-      id: '13', name: 'Téléviseur LED 32"', price: 85000, imageUrls: [], vendor: 'Electro Plus',
+      id: '13', name: 'Téléviseur LED 32"', price: 85000, imageUrls: ['https://www.lg.com/africa_fr/images/tvs/md07555819/gallery/D-01.jpg'], vendor: 'Electro Plus',
       description: "Un téléviseur LED de 32 pouces avec une image de haute qualité et des ports HDMI et USB pour tous vos divertissements.",
       reviews: [], stock: 9, category: 'Électronique', status: 'published',
-      brand: 'Generic TV', dimensions: '73 x 43 x 8 cm', shippingCost: 5000
+      brand: 'LG', dimensions: '73 x 43 x 8 cm', shippingCost: 5000
     },
     { 
-      id: '14', name: 'Fer à repasser à sec', price: 7500, imageUrls: [], vendor: 'Electro Plus',
+      id: '14', name: 'Fer à repasser à sec', price: 7500, imageUrls: ['https://www.binatone.com/wp-content/uploads/2021/08/DI-1255.jpg'], vendor: 'Electro Plus',
       description: "Simple, efficace et durable. Ce fer à repasser à sec est parfait pour un usage quotidien.",
-      reviews: [], stock: 25, category: 'Appareils électroménagers', status: 'published',
-      brand: 'Generic Home', weight: '1.2kg'
+      reviews: [], stock: 25, category: 'Électroménager', status: 'published',
+      brand: 'Binatone', weight: '1.2kg'
     },
     { 
-      id: '15', name: 'Blender / Mixeur', price: 18000, imageUrls: [], vendor: 'Electro Plus',
+      id: '15', name: 'Blender / Mixeur', price: 18000, imageUrls: ['https://www-konga-com-res.cloudinary.com/w_400,f_auto,fl_lossy,dpr_3.0,q_auto/media/catalog/product/B/T/173981_1623145455.jpg'], vendor: 'Electro Plus',
       description: "Un mixeur puissant pour préparer vos jus de fruits, soupes et sauces en un clin d'œil. Bol en plastique robuste de 1.5L.",
-      reviews: [], stock: 18, category: 'Appareils électroménagers', status: 'published',
+      reviews: [], stock: 18, category: 'Électroménager', status: 'published',
       brand: 'Generic Kitchen', dimensions: '20 x 20 x 40 cm', shippingCost: 2000
     },
-    // More products for Douala Soaps
     { 
-      id: '16', name: 'Savon noir gommant', price: 2500, imageUrls: [], vendor: 'Douala Soaps',
+      id: '16', name: 'Savon noir gommant', price: 2500, imageUrls: ['https://i.etsystatic.com/26252924/r/il/a11470/3141131711/il_570xN.3141131711_b12j.jpg'], vendor: 'Douala Soaps',
       description: "Savon noir africain enrichi aux herbes locales pour un gommage naturel et une peau douce et purifiée.",
-      reviews: [], stock: 40, category: 'Chimie domestique et hygiène', status: 'published',
+      reviews: [], stock: 40, category: 'Hygiène & Beauté', status: 'published',
       brand: 'Douala Soaps', weight: '200g', material: 'Cendres de plantes, huiles végétales'
     },
     { 
-      id: '17', name: 'Huile de coco vierge', price: 4000, imageUrls: [], vendor: 'Douala Soaps',
+      id: '17', name: 'Huile de coco vierge', price: 4000, imageUrls: ['https://www.waamcosmetics.com/cdn/shop/products/Huile_de_coco_vierge_100ml.png?v=1672754854'], vendor: 'Douala Soaps',
       description: "Huile de coco 100% pure et pressée à froid. Idéale pour les soins de la peau, des cheveux et pour la cuisson.",
-      reviews: [], stock: 30, category: 'Beauté et santé', status: 'published',
+      reviews: [], stock: 30, category: 'Hygiène & Beauté', status: 'published',
       brand: 'Douala Soaps', weight: '250ml'
     },
      { 
-      id: '18', name: 'Beurre de karité', price: 3000, imageUrls: [], vendor: 'Douala Soaps',
+      id: '18', name: 'Beurre de karité', price: 3000, imageUrls: ['https://www.neo-hemp.com/wp-content/uploads/2022/10/NEO-BEURRE-DE-KARITE-1-1.jpg'], vendor: 'Douala Soaps',
       description: "Beurre de karité brut et non raffiné, parfait pour hydrater en profondeur la peau et les cheveux secs.",
-      reviews: [], stock: 60, category: 'Beauté et santé', status: 'published',
+      reviews: [], stock: 60, category: 'Hygiène & Beauté', status: 'published',
       brand: 'Douala Soaps', weight: '150g'
     }
 ];
 
 const initialCategories: Category[] = [
-    { id: '1', name: 'Alimentation alimentaire', imageUrl: 'https://picsum.photos/seed/food/400/300' },
-    { id: '2', name: 'Vêtements', imageUrl: 'https://picsum.photos/seed/fashion/400/300' },
-    { id: '3', name: 'Chimie domestique et hygiène', imageUrl: 'https://picsum.photos/seed/soap/400/300' },
-    { id: '4', name: 'Électronique', imageUrl: 'https://picsum.photos/seed/electronics/400/300' },
-    { id: '5', name: 'Beauté et santé', imageUrl: 'https://picsum.photos/seed/beauty/400/300' },
-    { id: '6', name: 'Appareils électroménagers', imageUrl: 'https://picsum.photos/seed/appliances/400/300' },
-    { id: '7', name: 'Accessoires', imageUrl: 'https://picsum.photos/seed/accessories/400/300' },
-    { id: '8', name: 'Chaussures', imageUrl: 'https://picsum.photos/seed/shoes/400/300' },
+    { id: '1', name: 'Alimentation', imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+    { id: '2', name: 'Vêtements', imageUrl: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+    { id: '3', name: 'Hygiène & Beauté', imageUrl: 'https://images.pexels.com/photos/3762451/pexels-photo-3762451.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+    { id: '4', name: 'Électronique', imageUrl: 'https://images.pexels.com/photos/1294886/pexels-photo-1294886.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+    { id: '6', name: 'Électroménager', imageUrl: 'https://images.pexels.com/photos/6625902/pexels-photo-6625902.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+    { id: '7', name: 'Accessoires', imageUrl: 'https://images.pexels.com/photos/1103829/pexels-photo-1103829.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+    { id: '8', name: 'Chaussures', imageUrl: 'https://images.pexels.com/photos/267202/pexels-photo-267202.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+    { id: '9', name: 'Maison & Cuisine', imageUrl: 'https://images.pexels.com/photos/6284226/pexels-photo-6284226.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
 ];
 
 const initialStores: Store[] = [
     { 
-        id: 'store-1', name: 'Kmer Fashion', logoUrl: '', category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
+        id: 'store-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
         location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Aïcha', sellerLastName: 'Bakari', sellerPhone: '699887766',
         physicalAddress: '45 Avenue de la Mode, Akwa', latitude: 4.0483, longitude: 9.7020, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-15T00:00:00.000Z',
         documents: [
             { name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' },
             { name: "Registre de Commerce", status: 'uploaded', fileUrl: '...' },
         ],
-        stories: [{id: 's1', imageUrl: 'https://picsum.photos/seed/story1/300/500', createdAt: new Date().toISOString() }]
+        stories: [{id: 's1', imageUrl: 'https://i.pinimg.com/564x/08/94/a3/0894a30e8a719c676767576f3f054812.jpg', createdAt: new Date().toISOString() }]
     },
     { 
-        id: 'store-2', name: 'Mama Africa', logoUrl: '', category: 'Alimentation', warnings: [], status: 'active', premiumStatus: 'standard',
+        id: 'store-2', name: 'Mama Africa', logoUrl: 'https://img.freepik.com/vecteurs-premium/modele-logo-cuisine-africaine_210834-31.jpg', category: 'Alimentation', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Jeanne', sellerLastName: 'Abena', sellerPhone: '677665544',
         physicalAddress: '12 Rue des Saveurs, Bastos', latitude: 3.8968, longitude: 11.5213, subscriptionStatus: 'overdue', subscriptionDueDate: '2024-07-10T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'requested' }]
     },
     { 
-        id: 'store-3', name: 'Electro Plus', logoUrl: '', category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'standard',
+        id: 'store-3', name: 'Electro Plus', logoUrl: 'https://cdn.dribbble.com/users/188652/screenshots/1029415/electro-logo-2.jpg', category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Mokolo', sellerFirstName: 'Paul', sellerLastName: 'Kouam', sellerPhone: '655443322',
         physicalAddress: 'Grand Marché Mokolo, Stand 52', latitude: 3.8731, longitude: 11.5152, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-20T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }]
     },
     { 
-        id: 'store-4', name: 'Douala Soaps', logoUrl: '', category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
+        id: 'store-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
         location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
         physicalAddress: 'Rue Njo-Njo, Bonapriso', latitude: 4.0321, longitude: 9.715, subscriptionStatus: 'inactive',
         documents: [{ name: "Registre de Commerce", status: 'rejected', rejectionReason: 'Document illisible.' }]
     },
      { 
-        id: 'store-5', name: 'Yaoundé Style', logoUrl: '', category: 'Mode et Vêtements', warnings: [], status: 'pending', premiumStatus: 'standard',
+        id: 'store-5', name: 'Yaoundé Style', logoUrl: 'https://img.freepik.com/premium-vector/traditional-african-woman-head-wrap-turban-logo_103045-81.jpg', category: 'Mode et Vêtements', warnings: [], status: 'pending', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Mvog-Ada', sellerFirstName: 'Franck', sellerLastName: 'Essomba', sellerPhone: '698765432',
         physicalAddress: 'Avenue Kennedy', latitude: 3.8647, longitude: 11.521,
         documents: []
@@ -471,8 +467,8 @@ const initialSiteSettings: SiteSettings = {
 };
 
 const initialAdvertisements: Advertisement[] = [
-    { id: 'ad1', imageUrl: 'https://picsum.photos/seed/ad1/1200/300', linkUrl: '#', location: 'homepage-banner', isActive: true },
-    { id: 'ad2', imageUrl: 'https://picsum.photos/seed/ad2/1200/300', linkUrl: '#', location: 'homepage-banner', isActive: true },
+    { id: 'ad1', imageUrl: 'https://images.unsplash.com/photo-1555529771-835f59fc5efe?q=80&w=1920&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
+    { id: 'ad2', imageUrl: 'https://images.unsplash.com/photo-1598327105151-586673437584?q=80&w=1920&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
 ];
 
 export default function App() {
