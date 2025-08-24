@@ -20,8 +20,8 @@ const initialUsers: User[] = [
     { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
     { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
     { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
+    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available' },
+    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available' },
     { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
 ];
 
@@ -33,20 +33,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   // This ensures that if loyalty status or other details are updated elsewhere,
   // the currently logged-in user's session reflects those changes immediately.
   useEffect(() => {
-    // This effect uses the functional form of `setUser` to avoid adding `user` as a dependency,
-    // which was causing an infinite re-render loop.
     setUser(currentUser => {
-      if (!currentUser) return null;
+      if (!currentUser) {
+        return null;
+      }
       
       const updatedUserInList = allUsers.find(u => u.id === currentUser.id);
 
-      // Compare the stringified versions to check for changes. If a change is found,
-      // return the new user object to update the state.
-      if (updatedUserInList && JSON.stringify(currentUser) !== JSON.stringify(updatedUserInList)) {
+      // If user was deleted from the main list, log them out.
+      if (!updatedUserInList) {
+        return null;
+      }
+
+      // Perform a more robust comparison to avoid loops from object property order changes.
+      const isDifferent =
+        currentUser.name !== updatedUserInList.name ||
+        currentUser.email !== updatedUserInList.email ||
+        currentUser.role !== updatedUserInList.role ||
+        currentUser.shopName !== updatedUserInList.shopName ||
+        JSON.stringify(currentUser.loyalty) !== JSON.stringify(updatedUserInList.loyalty);
+
+      if (isDifferent) {
         return updatedUserInList;
       }
       
-      // If no changes, return the existing user object to prevent a re-render.
+      // If nothing has meaningfully changed, return the original state object to prevent re-renders.
       return currentUser;
     });
   }, [allUsers, setUser]);

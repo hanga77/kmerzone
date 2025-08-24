@@ -12,7 +12,7 @@ interface HomePageProps {
     flashSales: FlashSale[];
     advertisements: Advertisement[];
     onProductClick: (product: Product) => void;
-    onCategoryClick: (categoryName: string) => void;
+    onCategoryClick: (categoryId: string) => void;
     onVendorClick: (vendorName: string) => void;
     onVisitStore: (storeName: string) => void;
     onViewStories: (store: Store) => void;
@@ -132,6 +132,13 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
     
     const popularProductsRef = React.useRef<HTMLDivElement>(null);
     const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
+    const mainCategories = categories.filter(c => !c.parentId);
+    const madeInCameroonCategoryId = 'cat-main-3'; // Beauté
+    const madeInCameroonProducts = products.filter(p => {
+        const category = categories.find(c => c.id === p.categoryId);
+        return category?.parentId === madeInCameroonCategoryId || p.categoryId === madeInCameroonCategoryId;
+    }).slice(0, 4);
+
 
     const handleScrollToProducts = () => {
         popularProductsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -181,8 +188,8 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
             <section className="py-16 bg-gray-50 dark:bg-gray-900">
               <div className="container mx-auto px-6">
                 <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Parcourir par catégorie</h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                  {categories.map(cat => <CategoryCard key={cat.id} category={cat} onClick={onCategoryClick} />)}
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-8">
+                  {mainCategories.map(cat => <CategoryCard key={cat.id} category={cat} onClick={onCategoryClick} />)}
                 </div>
               </div>
             </section>
@@ -206,7 +213,7 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 </div>
                 <p className="text-center text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">Découvrez des produits authentiques, fabriqués avec passion par nos artisans et producteurs locaux. Chaque achat est un soutien à notre économie.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {products.filter(p => p.category === 'Chimie domestique et hygiène').slice(0,4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                  {madeInCameroonProducts.map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
                 </div>
               </div>
             </section>

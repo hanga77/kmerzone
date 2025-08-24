@@ -28,7 +28,7 @@ export interface Product {
   description: string;
   reviews: Review[];
   stock: number; // For products without variants, or total stock for variants
-  category: string; // The name of the category
+  categoryId: string; // The ID of the category
   variants?: Variant[];
   variantDetails?: VariantDetail[];
   status: 'published' | 'draft';
@@ -80,6 +80,7 @@ export interface Category {
   id: string;
   name: string;
   imageUrl: string;
+  parentId?: string; // For sub-categories
 }
 
 export type DocumentStatus = 'requested' | 'uploaded' | 'verified' | 'rejected';
@@ -135,6 +136,8 @@ export interface UserLoyalty {
   premiumStatusMethod: 'loyalty' | 'deposit' | 'subscription' | null;
 }
 
+export type UserAvailabilityStatus = 'available' | 'unavailable';
+
 export interface User {
     id: string;
     name: string;
@@ -143,6 +146,7 @@ export interface User {
     shopName?: string;
     location?: string;
     loyalty: UserLoyalty;
+    availabilityStatus?: UserAvailabilityStatus;
 }
 
 export interface Address {
@@ -244,6 +248,7 @@ export interface SiteSettings {
   requiredSellerDocuments: Record<string, boolean>;
   isRentEnabled: boolean;
   rentAmount: number;
+  canSellersCreateCategories: boolean;
   maintenanceMode: {
     isEnabled: boolean;
     message: string;

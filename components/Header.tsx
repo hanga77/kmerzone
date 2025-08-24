@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BarChartIcon, ShieldCheckIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -13,7 +13,7 @@ interface HeaderProps {
   onNavigateCart: () => void;
   onNavigateToStores: () => void;
   onNavigateToPromotions: () => void;
-  onNavigateToCategory: (categoryName: string) => void;
+  onNavigateToCategory: (categoryId: string) => void;
   onNavigateToBecomeSeller: () => void;
   onNavigateToSellerDashboard: () => void;
   onNavigateToSellerProfile: () => void;
@@ -53,6 +53,14 @@ const Header: React.FC<HeaderProps> = (props) => {
 
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  const categoryTree = useMemo(() => {
+    const mainCategories = categories.filter(c => !c.parentId);
+    return mainCategories.map(mainCat => ({
+        ...mainCat,
+        subCategories: categories.filter(c => c.parentId === mainCat.id)
+    }));
+  }, [categories]);
 
   const translations = {
     searchPlaceholder: { fr: 'Rechercher un produit...', en: 'Search for a product...' },
@@ -217,24 +225,35 @@ const Header: React.FC<HeaderProps> = (props) => {
            </nav>
         ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
           <nav className="hidden lg:flex items-center justify-center space-x-6 border-t border-gray-200 dark:border-gray-700 mt-3 pt-2">
-            <div className="relative" ref={categoryMenuRef}>
+            <div className="relative group" onMouseEnter={() => setIsCategoryMenuOpen(true)} onMouseLeave={() => setIsCategoryMenuOpen(false)}>
               <button
-                onClick={() => setIsCategoryMenuOpen(!isCategoryMenuOpen)}
-                className="flex items-center text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold"
+                className="flex items-center text-gray-700 dark:text-gray-200 group-hover:text-kmer-green font-semibold"
               >
                 {translations.categories[language]}
-                <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform ${isCategoryMenuOpen ? 'rotate-180' : ''}`} />
+                <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform group-hover:rotate-180`} />
               </button>
               {isCategoryMenuOpen && (
-                <div className="absolute left-0 mt-2 w-64 bg-white dark:bg-gray-800 rounded-md shadow-xl py-1 z-50">
-                  {categories.map((cat) => (
-                    <button
-                      key={cat.id}
-                      onClick={() => { onNavigateToCategory(cat.name); setIsCategoryMenuOpen(false); }}
-                      className="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      {cat.name}
-                    </button>
+                <div ref={categoryMenuRef} className="absolute left-0 mt-2 w-max bg-white dark:bg-gray-800 rounded-md shadow-xl z-50 flex gap-4 p-4">
+                  {categoryTree.map((mainCat) => (
+                    <div key={mainCat.id} className="min-w-[180px]">
+                      <button 
+                        onClick={() => { onNavigateToCategory(mainCat.id); setIsCategoryMenuOpen(false); }}
+                        className="font-bold text-md text-gray-800 dark:text-gray-100 hover:text-kmer-green mb-2 w-full text-left"
+                      >
+                          {mainCat.name}
+                      </button>
+                      <div className="space-y-1">
+                        {mainCat.subCategories.map(subCat => (
+                          <button
+                            key={subCat.id}
+                            onClick={() => { onNavigateToCategory(subCat.id); setIsCategoryMenuOpen(false); }}
+                            className="w-full text-left block text-sm text-gray-600 dark:text-gray-300 hover:text-kmer-green"
+                          >
+                            {subCat.name}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   ))}
                 </div>
               )}
@@ -287,8 +306,15 @@ const Header: React.FC<HeaderProps> = (props) => {
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                      <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Catégories</h3>
                      <div className="flex flex-col items-start">
-                        {categories.slice(0, 8).map(cat => (
-                          <button key={cat.id} onClick={() => {onNavigateToCategory(cat.name); setIsMenuOpen(false);}} className="text-left block py-1.5">{cat.name}</button>
+                        {categoryTree.map(mainCat => (
+                          <div key={mainCat.id} className="w-full">
+                            <button onClick={() => {onNavigateToCategory(mainCat.id); setIsMenuOpen(false);}} className="text-left block py-1.5 font-semibold">{mainCat.name}</button>
+                            <div className="pl-4">
+                              {mainCat.subCategories.map(subCat => (
+                                <button key={subCat.id} onClick={() => {onNavigateToCategory(subCat.id); setIsMenuOpen(false);}} className="text-left block py-1">{subCat.name}</button>
+                              ))}
+                            </div>
+                          </div>
                         ))}
                      </div>
                   </div>

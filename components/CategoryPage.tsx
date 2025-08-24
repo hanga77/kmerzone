@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
-import type { Product, Store, FlashSale } from '../types';
+import type { Product, Store, FlashSale, Category } from '../types';
 import ProductCard from './ProductCard';
 import { ArrowLeftIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
 
 interface CategoryPageProps {
-  categoryName: string;
+  categoryId: string;
+  allCategories: Category[];
   allProducts: Product[];
   allStores: Store[];
   flashSales: FlashSale[];
@@ -16,11 +17,42 @@ interface CategoryPageProps {
   isComparisonEnabled: boolean;
 }
 
-const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
-  const productsInCategory = useMemo(() => allProducts.filter(p => p.category === categoryName), [allProducts, categoryName]);
+const CategoryPage: React.FC<CategoryPageProps> = ({ categoryId, allCategories, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
+  const { selectedCategory, productsInCategory } = useMemo(() => {
+    const selectedCat = allCategories.find(c => c.id === categoryId);
+    if (!selectedCat) {
+      return { selectedCategory: null, productsInCategory: [] };
+    }
+    
+    let categoryIdsToFilter: string[];
+
+    // If it's a main category (no parentId), get all its sub-category IDs
+    if (!selectedCat.parentId) {
+      const subCategoryIds = allCategories
+        .filter(c => c.parentId === selectedCat.id)
+        .map(c => c.id);
+      categoryIdsToFilter = [selectedCat.id, ...subCategoryIds];
+    } else {
+      // It's a sub-category, just use its own ID
+      categoryIdsToFilter = [selectedCat.id];
+    }
+
+    const filteredProducts = allProducts.filter(p => categoryIdsToFilter.includes(p.categoryId));
+    return { selectedCategory: selectedCat, productsInCategory: filteredProducts };
+  }, [allProducts, categoryId, allCategories]);
+  
   const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(productsInCategory);
 
   const findStoreLocation = (vendorName: string) => allStores.find(s => s.name === vendorName)?.location;
+  
+  if (!selectedCategory) {
+    return (
+      <div className="container mx-auto px-4 sm:px-6 py-12 text-center">
+        <p>Catégorie non trouvée.</p>
+        <button onClick={onBack} className="mt-4 text-kmer-green font-semibold">Retour</button>
+      </div>
+    );
+  }
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-12">
@@ -39,7 +71,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryName, allProducts, 
         <main className="flex-grow">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-              Catégorie: <span className="text-kmer-green">{categoryName}</span>
+              Catégorie: <span className="text-kmer-green">{selectedCategory.name}</span>
             </h1>
             <p className="text-gray-600 dark:text-gray-300">
               {filteredAndSortedProducts.length} sur {productsInCategory.length} produits affichés

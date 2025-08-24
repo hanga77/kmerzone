@@ -13,7 +13,7 @@ interface RecommendedProductsProps {
 }
 
 const RecommendedProducts: React.FC<RecommendedProductsProps> = ({ currentProduct, allProducts, stores, flashSales, onProductClick, onVendorClick, isComparisonEnabled }) => {
-  const recommended = allProducts.filter(p => p.category === currentProduct.category && p.id !== currentProduct.id).slice(0, 4);
+  const recommended = allProducts.filter(p => p.categoryId === currentProduct.categoryId && p.id !== currentProduct.id).slice(0, 4);
   const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
 
   if (recommended.length === 0) {

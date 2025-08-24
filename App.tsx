@@ -33,7 +33,7 @@ import ForbiddenPage from './components/ForbiddenPage';
 import ServerErrorPage from './components/ServerErrorPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
@@ -64,17 +64,21 @@ const AnalyticsSection: React.FC<{ title: string, children: React.ReactNode }> =
     </div>
 );
 
-const AnalyticsDashboard: React.FC<{ onBack: () => void; allOrders: Order[]; allProducts: Product[]; allStores: Store[]; allUsers: User[] }> = ({ onBack, allOrders, allProducts, allStores, allUsers }) => {
+const AnalyticsDashboard: React.FC<{ onBack: () => void; allOrders: Order[]; allProducts: Product[]; allStores: Store[]; allUsers: User[]; allCategories: Category[] }> = ({ onBack, allOrders, allProducts, allStores, allUsers, allCategories }) => {
     const analytics = useMemo(() => {
         const deliveredOrders = allOrders.filter(o => o.status === 'delivered');
         const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
         const totalCustomers = allUsers.filter(u => u.role === 'customer').length;
         const averageOrderValue = deliveredOrders.length > 0 ? totalRevenue / deliveredOrders.length : 0;
 
+        const getFinalPrice = (item: CartItem) => {
+            return item.promotionPrice ?? item.price;
+        };
+
         const topProducts = deliveredOrders
             .flatMap(o => o.items)
             .reduce((acc, item) => {
-                acc[item.id] = (acc[item.id] || 0) + item.price * item.quantity;
+                acc[item.id] = (acc[item.id] || 0) + getFinalPrice(item) * item.quantity;
                 return acc;
             }, {} as Record<string, number>);
         
@@ -86,21 +90,23 @@ const AnalyticsDashboard: React.FC<{ onBack: () => void; allOrders: Order[]; all
         const salesByCategory = deliveredOrders
             .flatMap(o => o.items)
             .reduce((acc, item) => {
-                acc[item.category] = (acc[item.category] || 0) + item.price * item.quantity;
+                const category = allCategories.find(c => c.id === item.categoryId);
+                const categoryName = category?.name || 'Inconnue';
+                acc[categoryName] = (acc[categoryName] || 0) + getFinalPrice(item) * item.quantity;
                 return acc;
             }, {} as Record<string, number>);
         
         const sortedSalesByCategory = Object.entries(salesByCategory).sort(([, a], [, b]) => b - a);
         
         const salesByStore = deliveredOrders
-            .flatMap(o => o.items.map(item => ({ vendor: item.vendor, amount: item.price * item.quantity })))
+            .flatMap(o => o.items.map(item => ({ vendor: item.vendor, amount: getFinalPrice(item) * item.quantity })))
             .reduce((acc, { vendor, amount }) => {
                 acc[vendor] = (acc[vendor] || 0) + amount;
                 return acc;
             }, {} as Record<string, number>);
 
         const sortedTopStores = Object.entries(salesByStore).sort(([, a], [, b]) => b - a).slice(0, 5);
-
+        
         return {
             totalRevenue,
             totalOrders: deliveredOrders.length,
@@ -110,7 +116,7 @@ const AnalyticsDashboard: React.FC<{ onBack: () => void; allOrders: Order[]; all
             salesByCategory: sortedSalesByCategory,
             topStores: sortedTopStores
         };
-    }, [allOrders, allProducts, allUsers]);
+    }, [allOrders, allProducts, allUsers, allCategories]);
 
     return (
         <div className="container mx-auto p-4 sm:p-8 animate-in bg-gray-50 dark:bg-gray-900">
@@ -230,159 +236,65 @@ const ReviewModeration: React.FC<{ onBack: () => void; allProducts: Product[]; o
     );
 };
 
-const initialProducts: Product[] = [
-    { 
-      id: '1', name: 'Ndolé Royal', price: 3500, promotionPrice: 3000, imageUrls: ['https://www.preciouscore.com/wp-content/uploads/2021/11/Ndole-recipe.jpg'], vendor: 'Mama Africa', 
-      description: "Le plat national du Cameroun, un délicieux mélange de légumes, d'arachides et de viande ou de poisson. Préparé avec amour par Mama Africa.",
-      reviews: [
-        {author: "Jean P.", rating: 5, comment: "Incroyable ! Comme celui de ma grand-mère.", date: "2023-10-10", status: 'approved'},
-        {author: "Marie C.", rating: 4, comment: "Très bon, mais j'aurais aimé un peu plus de crevettes.", date: "2024-07-15", status: 'pending'}
-      ],
-      stock: 15, category: 'Alimentation', status: 'published',
-      brand: 'Mama Africa Cuisine', weight: '500g', expirationDate: '2024-12-31'
-    },
-    { 
-      id: '101', name: 'Ndolé Royal', price: 3200, imageUrls: ['https://www.preciouscore.com/wp-content/uploads/2021/11/Ndole-recipe.jpg'], vendor: 'Douala Soaps', // Same product, different vendor
-      description: "Le plat national du Cameroun, version spéciale de Douala Soaps.",
-      reviews: [{author: "Test T.", rating: 4, comment: "Très bon aussi!", date: "2023-11-11", status: 'approved'}],
-      stock: 10, category: 'Alimentation', status: 'published',
-      brand: 'Douala Cuisine', weight: '450g', expirationDate: '2024-12-25'
-    },
-    { 
-      id: '2', name: 'Robe en Tissu Pagne', price: 15000, imageUrls: ['https://i.pinimg.com/564x/1f/53/26/1f5326792e353b3a7a40b9b3e150a6b1.jpg'], vendor: 'Kmer Fashion',
-      description: "Une robe élégante confectionnée à la main avec du tissu pagne de haute qualité. Parfaite pour toutes les occasions.",
-      reviews: [{author: "Aïcha B.", rating: 4, comment: "Très belles couleurs, mais la taille est un peu juste.", date: "2023-10-11", status: 'approved'}],
-      stock: 0, category: 'Vêtements', status: 'published',
-      variants: [
-        { name: 'Taille', options: ['S', 'M', 'L', 'XL'] },
-        { name: 'Couleur', options: ['Bleu', 'Rouge', 'Vert'] }
-      ],
-      variantDetails: [
-        { options: { 'Taille': 'S', 'Couleur': 'Bleu' }, stock: 2, price: 15000 },
-        { options: { 'Taille': 'M', 'Couleur': 'Bleu' }, stock: 3, price: 15000 },
-        { options: { 'Taille': 'L', 'Couleur': 'Bleu' }, stock: 1, price: 15000 },
-        { options: { 'Taille': 'S', 'Couleur': 'Rouge' }, stock: 4, price: 15500 },
-        { options: { 'Taille': 'M', 'Couleur': 'Rouge' }, stock: 0, price: 15500 },
-        { options: { 'Taille': 'L', 'Couleur': 'Rouge' }, stock: 2, price: 15500 },
-        { options: { 'Taille': 'XL', 'Couleur': 'Vert' }, stock: 2, price: 16000 },
-      ],
-      brand: 'Kmer Fashion', material: 'Coton (Pagne)', gender: 'Femme'
-    },
-    { 
-      id: '3', name: 'Savon de Marseille (Local)', price: 1500, imageUrls: ['https://www.toutvert.fr/wp-content/uploads/2018/11/savon-de-marseille-vert- Marius-Fabre.jpg'], vendor: 'Douala Soaps',
-      description: "Un savon artisanal fabriqué localement selon la méthode traditionnelle. Doux pour la peau et respectueux de l'environnement.",
-      reviews: [
-        {author: "Client Anonyme", rating: 1, comment: "Ce produit est une arnaque, ne fonctionne pas du tout.", date: "2024-07-20", status: 'pending'}
-      ], 
-      stock: 50, category: 'Hygiène & Beauté', status: 'published',
-      brand: 'Douala Soaps', weight: '150g', material: 'Huile végétale', productionDate: '2023-01-15'
-    },
-    { 
-      id: '4', name: 'Smartphone Tecno Spark', price: 75000, promotionPrice: 69900, imageUrls: ['https://www.tecno-mobile.com/media/sites/9/2023/10/SPARK-20-list-page-f8f8f8-pc.png'], vendor: 'Electro Plus',
-      description: "Un smartphone performant avec un excellent rapport qualité-prix. Idéal pour un usage quotidien, avec un grand écran et une bonne autonomie.",
-      reviews: [{author: "Eric K.", rating: 5, comment: "Super téléphone pour le prix, je recommande.", date: "2023-10-12", status: 'approved'}],
-      stock: 4, category: 'Électronique', status: 'published',
-      brand: 'Tecno', dimensions: '164 x 76 x 9 mm', weight: '190g', serialNumber: 'TEC-SPK-2023-XYZ123',
-      promotionStartDate: '2024-07-01', promotionEndDate: '2024-07-31',
-    },
-    { 
-      id: '5', name: 'Miel d\'Oku', price: 5000, imageUrls: ['https://cavim.cm/wp-content/uploads/2022/10/oku_honey_500ml.jpg'], vendor: 'Mama Africa',
-      description: "Un miel blanc rare et primé, récolté sur les flancs du mont Oku. Connu pour ses propriétés médicinales et son goût unique.",
-      reviews: [{author: "Fatima G.", rating: 5, comment: "Le meilleur miel que j'ai jamais goûté.", date: "2023-10-13", status: 'approved'}],
-      stock: 25, category: 'Alimentation', status: 'published',
-       brand: 'Oku Honey', weight: '250ml', expirationDate: '2026-01-01'
-    },
-     { 
-      id: '6', name: 'Sandales en cuir', price: 8000, imageUrls: ['https://www.yapili.com/cdn/shop/products/IMG_3959_1100x.jpg?v=1678129532'], vendor: 'Kmer Fashion',
-      description: "Sandales en cuir véritable, faites à la main. Confortables et durables.",
-      reviews: [], stock: 10, category: 'Chaussures', status: 'draft',
-      brand: 'Kmer Fashion', material: 'Cuir', gender: 'Unisexe'
-    },
-    { 
-      id: '7', name: 'Poulet DG', price: 6500, imageUrls: ['https://cheflah.com/wp-content/uploads/2023/02/poulet-dg.jpg'], vendor: 'Mama Africa',
-      description: "Un plat de fête succulent avec du poulet frit, des plantains et une sauce riche en légumes. Un régal pour les papilles.",
-      reviews: [], stock: 12, category: 'Alimentation', status: 'published',
-      brand: 'Mama Africa Cuisine', weight: '750g'
-    },
-    { 
-      id: '8', name: 'Jus de Bissap', price: 1000, imageUrls: ['https://www.jeuneafrique.com/cdn-cgi/image/q=100,w=1256,h=628,f=auto,fit=cover/https://www.jeuneafrique.com/medias/2023/07/28/jad20230728-ass-5847921-02-1200x628.jpg'], vendor: 'Mama Africa',
-      description: "Boisson rafraîchissante et naturelle à base de fleurs d'hibiscus, sucrée juste comme il faut.",
-      reviews: [], stock: 30, category: 'Alimentation', status: 'published',
-      brand: 'Mama Africa Drinks', weight: '500ml'
-    },
-    { 
-      id: '9', name: 'Beignets Haricots Bouillie', price: 1500, imageUrls: ['https://rootsmagazine.fr/wp-content/uploads/2018/12/BHB.jpg'], vendor: 'Mama Africa',
-      description: "Le petit-déjeuner ou goûter camerounais par excellence. Des beignets soufflés accompagnés d'une purée de haricots et de bouillie de maïs.",
-      reviews: [], stock: 20, category: 'Alimentation', status: 'published',
-      brand: 'Mama Africa Cuisine', weight: '400g'
-    },
-    { 
-      id: '10', name: 'Chemise en Toghu', price: 25000, imageUrls: ['https://i.pinimg.com/564x/a0/0c/37/a00c3755255673a5a415958253a5f82c.jpg'], vendor: 'Kmer Fashion',
-      description: "Chemise de cérémonie pour homme, en velours noir brodé avec les motifs colorés traditionnels du Toghu.",
-      reviews: [], stock: 5, category: 'Vêtements', status: 'published',
-      variants: [{ name: 'Taille', options: ['M', 'L', 'XL', 'XXL'] }],
-      brand: 'Kmer Fashion', material: 'Velours, fil de coton', gender: 'Homme'
-    },
-    { 
-      id: '11', name: 'Ensemble Boubou Pagne', price: 35000, imageUrls: ['https://i.pinimg.com/564x/3b/28/7f/3b287f394c502b610c320d3c126d2e67.jpg'], vendor: 'Kmer Fashion',
-      description: "Un ensemble boubou ample et confortable, confectionné dans un tissu pagne aux motifs vibrants. Idéal pour un look élégant et décontracté.",
-      reviews: [], stock: 7, category: 'Vêtements', status: 'published',
-      variants: [{ name: 'Couleur', options: ['Jaune', 'Violet', 'Indigo'] }],
-      brand: 'Kmer Fashion', material: 'Coton (Pagne)', gender: 'Femme'
-    },
-    { 
-      id: '12', name: 'Sac à main en pagne', price: 12000, imageUrls: ['https://i.etsystatic.com/15233190/r/il/6b6807/2823610421/il_fullxfull.2823610421_932f.jpg'], vendor: 'Kmer Fashion',
-      description: "Accessoirisez votre tenue avec ce magnifique sac à main fait main, alliant cuir et tissu pagne.",
-      reviews: [], stock: 15, category: 'Accessoires', status: 'published',
-      brand: 'Kmer Fashion', material: 'Cuir, Coton (Pagne)', gender: 'Femme'
-    },
-    { 
-      id: '13', name: 'Téléviseur LED 32"', price: 85000, imageUrls: ['https://www.lg.com/africa_fr/images/tvs/md07555819/gallery/D-01.jpg'], vendor: 'Electro Plus',
-      description: "Un téléviseur LED de 32 pouces avec une image de haute qualité et des ports HDMI et USB pour tous vos divertissements.",
-      reviews: [], stock: 9, category: 'Électronique', status: 'published',
-      brand: 'LG', dimensions: '73 x 43 x 8 cm', shippingCost: 5000
-    },
-    { 
-      id: '14', name: 'Fer à repasser à sec', price: 7500, imageUrls: ['https://www.binatone.com/wp-content/uploads/2021/08/DI-1255.jpg'], vendor: 'Electro Plus',
-      description: "Simple, efficace et durable. Ce fer à repasser à sec est parfait pour un usage quotidien.",
-      reviews: [], stock: 25, category: 'Électroménager', status: 'published',
-      brand: 'Binatone', weight: '1.2kg'
-    },
-    { 
-      id: '15', name: 'Blender / Mixeur', price: 18000, imageUrls: ['https://www-konga-com-res.cloudinary.com/w_400,f_auto,fl_lossy,dpr_3.0,q_auto/media/catalog/product/B/T/173981_1623145455.jpg'], vendor: 'Electro Plus',
-      description: "Un mixeur puissant pour préparer vos jus de fruits, soupes et sauces en un clin d'œil. Bol en plastique robuste de 1.5L.",
-      reviews: [], stock: 18, category: 'Électroménager', status: 'published',
-      brand: 'Generic Kitchen', dimensions: '20 x 20 x 40 cm', shippingCost: 2000
-    },
-    { 
-      id: '16', name: 'Savon noir gommant', price: 2500, imageUrls: ['https://i.etsystatic.com/26252924/r/il/a11470/3141131711/il_570xN.3141131711_b12j.jpg'], vendor: 'Douala Soaps',
-      description: "Savon noir africain enrichi aux herbes locales pour un gommage naturel et une peau douce et purifiée.",
-      reviews: [], stock: 40, category: 'Hygiène & Beauté', status: 'published',
-      brand: 'Douala Soaps', weight: '200g', material: 'Cendres de plantes, huiles végétales'
-    },
-    { 
-      id: '17', name: 'Huile de coco vierge', price: 4000, imageUrls: ['https://www.waamcosmetics.com/cdn/shop/products/Huile_de_coco_vierge_100ml.png?v=1672754854'], vendor: 'Douala Soaps',
-      description: "Huile de coco 100% pure et pressée à froid. Idéale pour les soins de la peau, des cheveux et pour la cuisson.",
-      reviews: [], stock: 30, category: 'Hygiène & Beauté', status: 'published',
-      brand: 'Douala Soaps', weight: '250ml'
-    },
-     { 
-      id: '18', name: 'Beurre de karité', price: 3000, imageUrls: ['https://www.neo-hemp.com/wp-content/uploads/2022/10/NEO-BEURRE-DE-KARITE-1-1.jpg'], vendor: 'Douala Soaps',
-      description: "Beurre de karité brut et non raffiné, parfait pour hydrater en profondeur la peau et les cheveux secs.",
-      reviews: [], stock: 60, category: 'Hygiène & Beauté', status: 'published',
-      brand: 'Douala Soaps', weight: '150g'
-    }
+const initialCategories: Category[] = [
+  // Main Categories
+  { id: 'cat-main-1', name: 'Alimentation & Boissons', imageUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-main-2', name: 'Vêtements et chaussures', imageUrl: 'https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=2071&auto=format&fit=crop' },
+  { id: 'cat-main-3', name: 'Beauté & Soins', imageUrl: 'https://images.unsplash.com/photo-1596422846543-75c6fc101b89?q=80&w=2070&auto=format&fit=crop' },
+  { id: 'cat-main-4', name: 'Électronique & Électroménager', imageUrl: 'https://images.unsplash.com/photo-1526738549149-8e07eca6c147?q=80&w=1925&auto=format&fit=crop' },
+  { id: 'cat-main-5', name: 'Maison, Mobilier & Jardin', imageUrl: 'https://images.unsplash.com/photo-1618220179428-22790b461013?q=80&w=1925&auto=format&fit=crop' },
+  { id: 'cat-main-6', name: 'Accessoires & Bijoux', imageUrl: 'https://images.unsplash.com/photo-1611652022417-a551155e9984?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-main-7', name: 'Produits pour Enfants', imageUrl: 'https://images.unsplash.com/photo-1518498391512-42f5b89a81c1?q=80&w=2070&auto=format&fit=crop' },
+  
+  // Sub-categories
+  { id: 'cat-sub-1', parentId: 'cat-main-1', name: 'Plats préparés', imageUrl: 'https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-2', parentId: 'cat-main-1', name: 'Épicerie', imageUrl: 'https://images.unsplash.com/photo-1578680384594-3a5a87351543?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-3', parentId: 'cat-main-1', name: 'Boissons', imageUrl: 'https://images.unsplash.com/photo-1551024709-8f23befc6f81?q=80&w=2070&auto=format&fit=crop' },
+  { id: 'cat-sub-4', parentId: 'cat-main-2', name: 'Vêtements', imageUrl: 'https://images.unsplash.com/photo-1612053648936-285a2b342c8d?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-5', parentId: 'cat-main-2', name: 'Chaussures', imageUrl: 'https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=2070&auto=format&fit=crop' },
+  { id: 'cat-sub-6', parentId: 'cat-main-3', name: 'Cosmétiques', imageUrl: 'https://images.unsplash.com/photo-1512496015851-a90137ba0a43?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-10', parentId: 'cat-main-3', name: 'Parfums', imageUrl: 'https://images.unsplash.com/photo-1585399009939-f4639a4f78d1?q=80&w=2070&auto=format&fit=crop' },
+  { id: 'cat-sub-7', parentId: 'cat-main-4', name: 'Smartphones & Accessoires', imageUrl: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1780&auto=format&fit=crop' },
+  { id: 'cat-sub-8', parentId: 'cat-main-4', name: 'Électroménager', imageUrl: 'https://images.unsplash.com/photo-1626806819282-2c1dc01654e8?q=80&w=2070&auto=format&fit=crop' },
+  { id: 'cat-sub-11', parentId: 'cat-main-5', name: 'Mobilier', imageUrl: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=2070&auto=format&fit=crop' },
+  { id: 'cat-sub-12', parentId: 'cat-main-5', name: 'Décoration', imageUrl: 'https://images.unsplash.com/photo-1534349762230-e08968f43152?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-13', parentId: 'cat-main-5', name: 'Luminaire', imageUrl: 'https://images.unsplash.com/photo-1540932239986-30128078f3c5?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-9', parentId: 'cat-main-6', name: 'Sacs & Maroquinerie', imageUrl: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=1935&auto=format&fit=crop' },
+  { id: 'cat-sub-14', parentId: 'cat-main-6', name: 'Bijoux', imageUrl: 'https://images.unsplash.com/photo-1611591437281-462bf4d3ab45?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-15', parentId: 'cat-main-6', name: 'Montres', imageUrl: 'https://images.unsplash.com/photo-1533139502658-0198f920d8e8?q=80&w=1974&auto=format&fit=crop' },
+  { id: 'cat-sub-16', parentId: 'cat-main-7', name: 'Jouets', imageUrl: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=2070&auto=format&fit=crop' },
+  { id: 'cat-sub-17', parentId: 'cat-main-7', name: 'Fournitures Scolaires', imageUrl: 'https://images.unsplash.com/photo-1456735185569-8a8b122b1236?q=80&w=2068&auto=format&fit=crop' },
 ];
 
-const initialCategories: Category[] = [
-    { id: '1', name: 'Alimentation', imageUrl: 'https://images.pexels.com/photos/1640777/pexels-photo-1640777.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-    { id: '2', name: 'Vêtements', imageUrl: 'https://images.pexels.com/photos/1043474/pexels-photo-1043474.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-    { id: '3', name: 'Hygiène & Beauté', imageUrl: 'https://images.pexels.com/photos/3762451/pexels-photo-3762451.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-    { id: '4', name: 'Électronique', imageUrl: 'https://images.pexels.com/photos/1294886/pexels-photo-1294886.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-    { id: '6', name: 'Électroménager', imageUrl: 'https://images.pexels.com/photos/6625902/pexels-photo-6625902.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-    { id: '7', name: 'Accessoires', imageUrl: 'https://images.pexels.com/photos/1103829/pexels-photo-1103829.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-    { id: '8', name: 'Chaussures', imageUrl: 'https://images.pexels.com/photos/267202/pexels-photo-267202.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
-    { id: '9', name: 'Maison & Cuisine', imageUrl: 'https://images.pexels.com/photos/6284226/pexels-photo-6284226.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1' },
+const initialProducts: Product[] = [
+    { id: '1', name: 'Ndolé Royal', price: 3500, promotionPrice: 3000, imageUrls: ['https://images.unsplash.com/photo-1604329352680-e4a2896d8c22?q=80&w=1974&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Le plat national du Cameroun, un délicieux mélange de légumes, d'arachides et de viande ou de poisson.", reviews: [{author: "Jean P.", rating: 5, comment: "Incroyable !", date: "2023-10-10", status: 'approved'}], stock: 15, categoryId: 'cat-sub-1', status: 'published' },
+    { id: '2', name: 'Robe en Tissu Pagne', price: 15000, imageUrls: ['https://images.unsplash.com/photo-1617051395299-52d33b7336b1?q=80&w=1964&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Une robe élégante confectionnée à la main avec du tissu pagne de haute qualité.", reviews: [{author: "Aïcha B.", rating: 4, comment: "Très belles couleurs.", date: "2023-10-11", status: 'approved'}], stock: 8, categoryId: 'cat-sub-4', status: 'published' },
+    { id: '3', name: 'Savon Artisanal à l\'huile d\'olive', price: 1500, imageUrls: ['https://images.unsplash.com/photo-1600966492337-1d83c4bee955?q=80&w=2070&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Un savon artisanal fabriqué localement. Doux pour la peau et respectueux de l'environnement.", reviews: [], stock: 50, categoryId: 'cat-sub-6', status: 'published' },
+    { id: '4', name: 'Smartphone Pro Max', price: 75000, promotionPrice: 69900, imageUrls: ['https://images.unsplash.com/photo-1580910051074-3eb694886505?q=80&w=1965&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un smartphone performant avec un excellent rapport qualité-prix. Grand écran et bonne autonomie.", reviews: [{author: "Eric K.", rating: 5, comment: "Super téléphone pour le prix.", date: "2023-10-12", status: 'approved'}], stock: 4, categoryId: 'cat-sub-7', status: 'published', promotionStartDate: '2024-07-01', promotionEndDate: '2024-07-31' },
+    { id: '5', name: 'Miel d\'Oku', price: 5000, imageUrls: ['https://images.unsplash.com/photo-1558642754-b27b3b95a8a9?q=80&w=1974&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Un miel blanc rare et primé, récolté sur les flancs du mont Oku.", reviews: [{author: "Fatima G.", rating: 5, comment: "Le meilleur miel que j'ai jamais goûté.", date: "2023-10-13", status: 'approved'}], stock: 25, categoryId: 'cat-sub-2', status: 'published' },
+    { id: '6', name: 'Sandales en cuir', price: 8000, imageUrls: ['https://images.unsplash.com/photo-1620652755231-c2f8b16a2b8e?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Sandales en cuir véritable, faites à la main. Confortables et durables.", reviews: [], stock: 10, categoryId: 'cat-sub-5', status: 'draft' },
+    { id: '7', name: 'Poulet DG', price: 6500, imageUrls: ['https://images.unsplash.com/photo-1543339308-43e59d6b70a6?q=80&w=2070&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Un plat de fête succulent avec du poulet frit, des plantains et une sauce riche en légumes.", reviews: [], stock: 12, categoryId: 'cat-sub-1', status: 'published' },
+    { id: '8', name: 'Jus de Bissap Naturel', price: 1000, imageUrls: ['https://images.unsplash.com/photo-1623341214825-9f4f96d62c54?q=80&w=1974&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Boisson rafraîchissante et naturelle à base de fleurs d'hibiscus.", reviews: [], stock: 30, categoryId: 'cat-sub-3', status: 'published' },
+    { id: '9', name: 'Beignets Haricots Bouillie', price: 1500, imageUrls: ['https://img.cuisineaz.com/660x660/2022/01/24/i181710-beignets-souffles-camerounais.jpeg'], vendor: 'Mama Africa', description: "Le petit-déjeuner camerounais par excellence. Des beignets soufflés accompagnés d'une purée de haricots.", reviews: [], stock: 20, categoryId: 'cat-sub-1', status: 'published' },
+    { id: '10', name: 'Chemise en Toghu', price: 25000, imageUrls: ['https://i.pinimg.com/564x/a0/0c/37/a00c3755255673a5a415958253a5f82c.jpg'], vendor: 'Kmer Fashion', description: "Chemise de cérémonie pour homme, en velours noir brodé avec les motifs colorés traditionnels du Toghu.", reviews: [], stock: 5, categoryId: 'cat-sub-4', status: 'published' },
+    { id: '11', name: 'Poivre de Penja', price: 4500, imageUrls: ['https://images.unsplash.com/photo-1508616258423-f3e4e73b29b4?q=80&w=1935&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Considéré comme l'un des meilleurs poivres au monde, cultivé sur les terres volcaniques de Penja.", reviews: [], stock: 40, categoryId: 'cat-sub-2', status: 'published' },
+    { id: '12', name: 'Sac à main en pagne', price: 12000, imageUrls: ['https://images.unsplash.com/photo-1566150905458-1bf1f2961239?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Accessoirisez votre tenue avec ce magnifique sac à main fait main, alliant cuir et tissu pagne.", reviews: [], stock: 15, categoryId: 'cat-sub-9', status: 'published' },
+    { id: '13', name: 'Téléviseur LED 32"', price: 85000, imageUrls: ['https://images.unsplash.com/photo-1593359677879-a4bb92f82acb?q=80&w=2070&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un téléviseur LED de 32 pouces avec une image de haute qualité.", reviews: [], stock: 9, categoryId: 'cat-sub-7', status: 'published' },
+    { id: '14', name: 'Fer à repasser', price: 7500, imageUrls: ['https://images.unsplash.com/photo-1622629734636-95a239552382?q=80&w=1932&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Simple, efficace et durable. Ce fer à repasser est parfait pour un usage quotidien.", reviews: [], stock: 25, categoryId: 'cat-sub-8', status: 'published' },
+    { id: '15', name: 'Blender / Mixeur', price: 18000, imageUrls: ['https://images.unsplash.com/photo-1582142391035-61f20a003881?q=80&w=1974&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un mixeur puissant pour préparer vos jus, soupes et sauces. Bol en verre robuste de 1.5L.", reviews: [], stock: 18, categoryId: 'cat-sub-8', status: 'published' },
+    { id: '16', name: 'Savon noir gommant', price: 2500, imageUrls: ['https://images.unsplash.com/photo-1623461624469-8a964343169f?q=80&w=1974&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Savon noir africain pour un gommage naturel et une peau douce et purifiée.", reviews: [], stock: 40, categoryId: 'cat-sub-6', status: 'published' },
+    { id: '17', name: 'Huile de coco vierge', price: 4000, imageUrls: ['https://images.unsplash.com/photo-1590945259635-e1a532ac9695?q=80&w=1974&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Huile de coco 100% pure et pressée à froid. Idéale pour la peau, les cheveux et la cuisson.", reviews: [], stock: 30, categoryId: 'cat-sub-6', status: 'published' },
+    { id: '18', name: 'Beurre de karité', price: 3000, imageUrls: ['https://images.unsplash.com/photo-1554153041-33924bb6aa67?q=80&w=2070&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Beurre de karité brut et non raffiné, parfait pour hydrater en profondeur la peau et les cheveux secs.", reviews: [], stock: 60, categoryId: 'cat-sub-6', status: 'published' },
+    { id: '19', name: 'Baskets de Ville', price: 22000, imageUrls: ['https://images.unsplash.com/photo-1515955656352-a1fa3ffcdda9?q=80&w=2070&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Baskets confortables et stylées pour un usage quotidien.", reviews: [], stock: 20, categoryId: 'cat-sub-5', status: 'published' },
+    { id: '20', name: 'Eau de Parfum "Sawa"', price: 28000, imageUrls: ['https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=1904&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Un parfum boisé et épicé pour homme, inspiré par la côte camerounaise.", reviews: [], stock: 15, categoryId: 'cat-sub-10', status: 'published' },
+    { id: '21', name: 'Fauteuil en Rotin', price: 45000, imageUrls: ['https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=1965&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Fauteuil artisanal en rotin, parfait pour votre salon ou votre terrasse.", reviews: [], stock: 5, categoryId: 'cat-sub-11', status: 'published' },
+    { id: '22', name: 'Masque décoratif Fang', price: 18000, imageUrls: ['https://images.unsplash.com/photo-1513480749022-2f7a0b1e4a1a?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Authentique masque décoratif de l'ethnie Fang, sculpté à la main.", reviews: [], stock: 10, categoryId: 'cat-sub-12', status: 'published' },
+    { id: '23', name: 'Lampe de chevet "Wouri"', price: 13500, imageUrls: ['https://images.unsplash.com/photo-1543198126-a8ad8e47fb22?q=80&w=1974&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Lampe de chevet au design moderne avec une base en bois local.", reviews: [], stock: 22, categoryId: 'cat-sub-13', status: 'published' },
+    { id: '24', name: 'Collier de perles', price: 9500, imageUrls: ['https://images.unsplash.com/photo-1599643477877-539eb8a52f18?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Collier artisanal fait de perles traditionnelles colorées.", reviews: [], stock: 30, categoryId: 'cat-sub-14', status: 'published' },
+    { id: '25', name: 'Montre Classique Homme', price: 32000, imageUrls: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Montre élégante avec bracelet en cuir, idéale pour le bureau ou les sorties.", reviews: [], stock: 12, categoryId: 'cat-sub-15', status: 'published' },
+    { id: '26', name: 'Poupée "Penda"', price: 7000, imageUrls: ['https://images.unsplash.com/photo-1620243423599-da1c88a51e6c?q=80&w=1964&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Poupée en tissu pagne, faite à la main, pour le bonheur des plus petits.", reviews: [], stock: 25, categoryId: 'cat-sub-16', status: 'published' },
+    { id: '27', name: 'Lot de 10 Cahiers', price: 2500, imageUrls: ['https://images.unsplash.com/photo-1529142893173-665a0a1027c4?q=80&w=2070&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un lot de 10 cahiers de 100 pages pour la rentrée scolaire.", reviews: [], stock: 100, categoryId: 'cat-sub-17', status: 'published' },
+    { id: '28', name: 'Bière "33" Export (Pack de 6)', price: 4000, imageUrls: ['https://www.bebe-cash.com/wp-content/uploads/2021/07/33-export.jpg'], vendor: 'Mama Africa', description: "La bière blonde de référence au Cameroun. Pack de 6 bouteilles de 65cl.", reviews: [], stock: 50, categoryId: 'cat-sub-3', status: 'published' },
 ];
 
 const initialStores: Store[] = [
@@ -459,6 +371,7 @@ const initialSiteSettings: SiteSettings = {
   },
   isRentEnabled: true,
   rentAmount: 5000,
+  canSellersCreateCategories: true,
   maintenanceMode: {
       isEnabled: false,
       message: "Nous effectuons une mise à jour. Nous serons de retour très bientôt !",
@@ -474,7 +387,7 @@ const initialAdvertisements: Advertisement[] = [
 export default function App() {
   const [page, setPage] = useState<Page>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string | null>(null);
   const [selectedVendor, setSelectedVendor] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [viewingStoriesOfStore, setViewingStoriesOfStore] = useState<Store | null>(null);
@@ -490,302 +403,395 @@ export default function App() {
   const [siteActivityLogs, setSiteActivityLogs] = usePersistentState<SiteActivityLog[]>('siteActivityLogs', []);
   const [flashSales, setFlashSales] = usePersistentState<FlashSale[]>('flashSales', initialFlashSales);
   const [allPickupPoints, setAllPickupPoints] = usePersistentState<PickupPoint[]>('allPickupPoints', initialPickupPoints);
-  const [payouts, setPayouts] = usePersistentState<Payout[]>('allPayouts', []);
-  const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', initialAdvertisements);
+    const [payouts, setPayouts] = usePersistentState<Payout[]>('payouts', []);
+    const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', initialAdvertisements);
 
-  const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isChatEnabled, setIsChatEnabled] = usePersistentState('isChatEnabled', true);
-  const [isComparisonEnabled, setIsComparisonEnabled] = usePersistentState('isComparisonEnabled', true);
-  const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
-  
-  const { user, allUsers, setAllUsers, logout } = useAuth();
-  const { clearCart } = useCart();
-  const comparison = useComparison();
-  const { modalProduct, isModalOpen, closeModal } = useUI();
-  
-  const initialSetupDone = useRef(false);
+    const { user, logout: authLogout, allUsers, setAllUsers, updateUser: authUpdateUser } = useAuth();
+    const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
+    const { cart, clearCart } = useCart();
+    const { comparisonList, setProducts: setComparisonProducts } = useComparison();
+    const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
+    const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
+    const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+    const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
 
-  useEffect(() => {
-    if (initialSetupDone.current || allOrders.length > 0) return;
+    const [isChatEnabled, setIsChatEnabled] = useState(true);
+    const [isComparisonEnabled, setIsComparisonEnabled] = useState(true);
 
-    console.log("Setting up initial test orders...");
+    useEffect(() => {
+      setComparisonProducts(allProducts);
+    }, [allProducts, setComparisonProducts]);
+
+    useEffect(() => {
+        if (user && user.role === 'customer' && siteSettings.isPremiumProgramEnabled) {
+            const userOrders = allOrders.filter(o => o.userId === user.id && o.status === 'delivered');
+            const totalSpent = userOrders.reduce((sum, o) => sum + o.total, 0);
+            const orderCount = userOrders.length;
+
+            const shouldBePremium = orderCount >= siteSettings.premiumThresholds.orders || totalSpent >= siteSettings.premiumThresholds.spending;
+            
+            if (shouldBePremium && user.loyalty.status === 'standard' && user.loyalty.premiumStatusMethod !== 'deposit') {
+                const updatedUser = { ...user, loyalty: { ...user.loyalty, status: 'premium' as const, premiumStatusMethod: 'loyalty' as const } };
+                setAllUsers(users => users.map(u => u.id === user.id ? updatedUser : u));
+            }
+        }
+    }, [allOrders, user, siteSettings, setAllUsers]);
+
+    const logActivity = useCallback((action: string, details: string) => {
+        if (!user) return;
+        const newLog: SiteActivityLog = {
+            id: Date.now().toString(),
+            timestamp: new Date().toISOString(),
+            user: { id: user.id, name: user.name, role: user.role },
+            action,
+            details
+        };
+        setSiteActivityLogs(prev => [newLog, ...prev].slice(0, 100));
+    }, [user, setSiteActivityLogs]);
+
+    const handleUpdateUserAvailability = useCallback((userId: string, status: UserAvailabilityStatus) => {
+        setAllUsers(users => users.map(u => 
+            u.id === userId ? { ...u, availabilityStatus: status } : u
+        ));
+        const actor = user ? `${user.name} (${user.role})` : 'System';
+        logActivity('User Availability Update', `Status for user ${userId} set to ${status} by ${actor}.`);
+    }, [setAllUsers, logActivity, user]);
     
-    const sellerOrderItems: CartItem[] = [{ ...initialProducts.find(p => p.id === '1')!, quantity: 1 }];
-    const agentOrderItems: CartItem[] = [{ ...initialProducts.find(p => p.id === '2')!, quantity: 1, selectedVariant: { 'Taille': 'M', 'Couleur': 'Bleu' } }];
+    const handleAdminAddCategory = useCallback((categoryName: string, parentId?: string) => {
+        if (!categoryName.trim()) {
+            alert("Le nom de la catégorie ne peut pas être vide.");
+            return;
+        }
+        if (allCategories.some(c => c.name.toLowerCase() === categoryName.trim().toLowerCase() && c.parentId === parentId)) {
+            alert("Une catégorie avec ce nom existe déjà à ce niveau.");
+            return;
+        }
 
-    const newOrders: Order[] = [
-        {
-            id: 'CMD-TEST-SELLER',
-            userId: 'seller-2', // Mama Africa
-            items: sellerOrderItems,
-            subtotal: sellerOrderItems[0].price,
-            deliveryFee: 1000,
-            total: sellerOrderItems[0].price + 1000,
-            shippingAddress: { fullName: 'Client Test pour Vendeur', phone: '699999999', address: '123 Rue Test', city: 'Douala' },
-            deliveryMethod: 'home-delivery',
-            orderDate: new Date(Date.now() - 86400000).toISOString(),
+        const newCategory: Category = {
+            id: `cat-${Date.now()}`,
+            name: categoryName.trim(),
+            imageUrl: 'https://images.unsplash.com/photo-1588422221063-654854db2583?q=80&w=1974&auto=format&fit=crop', // A generic default image
+            parentId: parentId || undefined,
+        };
+        setAllCategories(prev => [...prev, newCategory]);
+        logActivity('Category Added', `New category "${newCategory.name}" created.`);
+    }, [allCategories, setAllCategories, logActivity]);
+
+    const handleAdminDeleteCategory = useCallback((categoryId: string) => {
+        // Check if it's a parent category
+        const isParent = allCategories.some(c => c.parentId === categoryId);
+        if (isParent) {
+            alert("Impossible de supprimer cette catégorie car elle contient des sous-catégories. Veuillez d'abord supprimer les sous-catégories.");
+            return;
+        }
+        
+        // Check if any product uses this category
+        const isUsedByProduct = allProducts.some(p => p.categoryId === categoryId);
+        if (isUsedByProduct) {
+            alert("Impossible de supprimer cette catégorie car elle est utilisée par des produits. Veuillez d'abord changer la catégorie de ces produits.");
+            return;
+        }
+        
+        const categoryToDelete = allCategories.find(c => c.id === categoryId);
+        if (categoryToDelete && window.confirm(`Êtes-vous sûr de vouloir supprimer la catégorie "${categoryToDelete.name}" ?`)) {
+            setAllCategories(prev => prev.filter(c => c.id !== categoryId));
+            logActivity('Category Deleted', `Category "${categoryToDelete.name}" (ID: ${categoryId}) deleted.`);
+        }
+    }, [allCategories, allProducts, setAllCategories, logActivity]);
+
+
+    const handleNavigate = useCallback((newPage: Page, stateReset: () => void = () => {}) => {
+        setPage(newPage);
+        stateReset();
+        window.scrollTo(0, 0);
+    }, []);
+
+    const resetSelections = () => {
+        setSelectedProduct(null);
+        setSelectedCategoryId(null);
+        setSelectedVendor(null);
+        setSelectedOrder(null);
+        setProductToEdit(null);
+    };
+
+    const handleProductClick = (product: Product) => {
+        setSelectedProduct(product);
+        handleNavigate('product');
+    };
+
+    const handleCategoryClick = (categoryId: string) => {
+        setSelectedCategoryId(categoryId);
+        handleNavigate('category');
+    };
+
+    const handleVendorClick = (vendorName: string) => {
+        setSelectedVendor(vendorName);
+        handleNavigate('vendor-page');
+    };
+
+    const handleSearch = (query: string) => {
+        setSearchQuery(query);
+        handleNavigate('search-results');
+    };
+    
+    const handleLogout = () => {
+        authLogout();
+        handleNavigate('home', resetSelections);
+    };
+
+    const handleOrderConfirm = async (orderData: NewOrderData) => {
+        const newOrder: Order = {
+            ...orderData,
+            id: Math.random().toString(36).substr(2, 9).toUpperCase(),
+            orderDate: new Date().toISOString(),
             status: 'confirmed',
             trackingNumber: `KZ${Date.now()}`,
-            trackingHistory: [{ status: 'confirmed', date: new Date().toISOString(), location: 'Plateforme', details: 'Commande confirmée.' }]
-        },
-        {
-            id: 'CMD-TEST-AGENT',
-            userId: 'assistant-id',
-            items: agentOrderItems,
-            subtotal: agentOrderItems[0].price,
-            deliveryFee: 1000,
-            total: agentOrderItems[0].price + 1000,
-            shippingAddress: { fullName: 'Client Test pour Livreur', phone: '688888888', address: '456 Av Test', city: 'Yaoundé' },
-            deliveryMethod: 'home-delivery',
-            orderDate: new Date(Date.now() - 172800000).toISOString(),
-            status: 'ready-for-pickup',
-            agentId: 'agent-1',
-            trackingNumber: `KZ${Date.now() + 1}`,
-            trackingHistory: [
-              { status: 'confirmed', date: new Date(Date.now() - 172800000).toISOString(), location: 'Plateforme', details: 'Commande confirmée.' },
-              { status: 'ready-for-pickup', date: new Date().toISOString(), location: 'Kmer Fashion', details: 'Colis prêt pour enlèvement.' }
-            ]
-        }
-    ];
-    setAllOrders(prev => [...prev, ...newOrders]);
-    initialSetupDone.current = true;
-
-  }, [allOrders.length, setAllOrders]);
-  
-  useEffect(() => {
-    // Populate logs on first load if empty to demonstrate the feature
-    if (siteActivityLogs.length === 0) {
-        const initialLogs: SiteActivityLog[] = [
-            {
-                id: `log-${Date.now() - 10000}`,
-                timestamp: new Date(Date.now() - 10000).toISOString(),
-                user: { id: 'admin-1', name: 'Super Admin', role: 'superadmin' },
-                action: 'Store Approved',
-                details: 'Admin approved store Kmer Fashion.',
-            },
-            {
-                id: `log-${Date.now() - 20000}`,
-                timestamp: new Date(Date.now() - 20000).toISOString(),
-                user: { id: 'admin-1', name: 'Super Admin', role: 'superadmin' },
-                action: 'Order Status Updated',
-                details: 'Admin updated order CMD-TEST-SELLER to status ready-for-pickup.',
-            },
-             {
-                id: `log-${Date.now() - 30000}`,
-                timestamp: new Date(Date.now() - 30000).toISOString(),
-                user: { id: 'seller-1', name: 'Kmer Fashion', role: 'seller' },
-                action: 'Product Added',
-                details: 'Seller Kmer Fashion added a new product: Robe en Tissu Pagne',
-            },
-        ];
-        setSiteActivityLogs(initialLogs);
-    }
-  }, []); // Empty dependency array ensures this runs only once on mount
-
-
-  useEffect(() => {
-    comparison.setProducts(allProducts);
-  }, [allProducts, comparison.setProducts]);
-
-  useEffect(() => {
-    const favicon = document.getElementById('favicon') as HTMLLinkElement;
-    if (favicon) {
-      if (siteSettings.logoUrl) {
-        favicon.href = siteSettings.logoUrl;
-      } else {
-        // Fallback to default SVG if logoUrl is removed
-        favicon.href = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath fill='%2384CC16' d='M3,3V9H4.96L5.95,12L4.96,15H3V21H9V20H10V18H11V17H13V18H14V20H15V21H21V15H19.05L18.06,12L19.05,9H21V3M5,5H7V7H5M17,5H19V7H17M5,17H7V19H5M17,17H19V19H17M12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9Z' /%3E%3C/svg%3E";
-      }
-    }
-  }, [siteSettings.logoUrl]);
-  
-  const addLog = useCallback((action: string, details: string) => {
-    if (!user) return;
-    const newLog: SiteActivityLog = {
-      id: `log-${Date.now()}`,
-      timestamp: new Date().toISOString(),
-      user: { id: user.id, name: user.name, role: user.role },
-      action,
-      details,
-    };
-    setSiteActivityLogs(prev => [newLog, ...prev]);
-  }, [user, setSiteActivityLogs]);
-
-  const handleCreateUserByAdmin = useCallback((userData: Omit<User, 'id' | 'loyalty'>) => {
-    const newUser: User = {
-      ...userData,
-      id: `user_${Date.now()}`,
-      loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
-    };
-    setAllUsers(prev => [...prev, newUser]);
-    if(user && user.role === 'superadmin') {
-      addLog('User Created', `Admin ${user.name} created user ${newUser.name} with role ${newUser.role}.`);
-    }
-  }, [setAllUsers, addLog, user]);
-
-  const handleReportDiscrepancy = useCallback((orderId: string, reason: string) => {
-      if (!user) return;
-      setAllOrders(prevOrders => prevOrders.map(o => {
-          if (o.id === orderId) {
-              addLog('Order Issue Reported', `Depot agent ${user.name} reported issue for order ${orderId}: ${reason}`);
-              return {
-                  ...o,
-                  status: 'depot-issue',
-                  discrepancy: {
-                      reason,
-                      reportedAt: new Date().toISOString(),
-                      reportedBy: user.id
-                  }
-              };
-          }
-          return o;
-      }));
-  }, [setAllOrders, addLog, user]);
-
-  const handleLogout = useCallback(() => {
-    logout();
-    setPage('home');
-  }, [logout]);
-
-  const handleAddStory = useCallback((storeId: string, imageUrl: string) => {
-    setAllStores(prevStores => prevStores.map(s => {
-        if (s.id === storeId) {
-            const newStory: Story = {
-                id: `story-${Date.now()}`,
-                imageUrl,
-                createdAt: new Date().toISOString()
-            };
-            return {
-                ...s,
-                stories: [...(s.stories || []), newStory]
-            };
-        }
-        return s;
-    }));
-  }, [setAllStores]);
-
-  const handleDeleteStory = useCallback((storeId: string, storyId: string) => {
-      setAllStores(prevStores => prevStores.map(s => {
-          if (s.id === storeId) {
-              return {
-                  ...s,
-                  stories: (s.stories || []).filter(story => story.id !== storyId)
-              };
-          }
-          return s;
-      }));
-  }, [setAllStores]);
-
-
-  if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
-      return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
-  }
-
-  // Access Control Logic
-  const roleProtectedPages: Partial<Record<Page, UserRole[]>> = {
-    'seller-dashboard': ['seller'],
-    'product-form': ['seller'],
-    'seller-profile': ['seller'],
-    'superadmin-dashboard': ['superadmin'],
-    'delivery-agent-dashboard': ['delivery_agent'],
-    'depot-agent-dashboard': ['depot_agent'],
-    'analytics-dashboard': ['superadmin'],
-    'review-moderation': ['superadmin'],
-    'order-history': ['customer', 'seller'],
-    'wishlist': ['customer', 'seller'],
-  };
-
-  const currentPageRoles = roleProtectedPages[page];
-  if (currentPageRoles && (!user || !currentPageRoles.includes(user.role))) {
-    return <ForbiddenPage onNavigateHome={() => setPage('home')} />;
-  }
-  
-  const renderPage = () => {
-    switch(page) {
-      case 'home': return <HomePage categories={allCategories} products={allProducts} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onCategoryClick={(c) => { setSelectedCategory(c); setPage('category'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onViewStories={setViewingStoriesOfStore} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
-      case 'product': return selectedProduct && <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => { setSelectedProduct(null); setPage(selectedCategory ? 'category' : (searchQuery ? 'search-results' : 'home')); }} onAddReview={(productId, review) => {setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: [...p.reviews, review]} : p))}} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} onProductClick={(p) => setSelectedProduct(p)} onOpenLogin={() => setIsLoginOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
-      case 'cart': return <CartView onBack={() => setPage('home')} onNavigateToCheckout={() => setPage('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
-      case 'checkout': return <Checkout onBack={() => setPage('cart')} onOrderConfirm={async (orderData) => { 
-        if (orderData.deliveryMethod === 'home-delivery') {
-            const cityCoords = orderData.shippingAddress.city === 'Douala' 
-                ? { lat: 4.05, lng: 9.70 } 
-                : { lat: 3.86, lng: 11.52 };
-            orderData.shippingAddress.latitude = cityCoords.lat + (Math.random() - 0.5) * 0.1;
-            orderData.shippingAddress.longitude = cityCoords.lng + (Math.random() - 0.5) * 0.1;
-        }
-        const newOrder: Order = { ...orderData, id: `CMD-${new Date().getTime()}`, orderDate: new Date().toISOString(), status: 'confirmed', trackingHistory: [{status: 'confirmed', date: new Date().toISOString(), location: 'Plateforme', details: 'Commande confirmée et en attente de préparation.'}], trackingNumber: `KZ${Date.now()}`}; 
-        setAllOrders(prev => [newOrder, ...prev]); 
-        clearCart(); 
-        setAppliedPromoCode(null); 
+            trackingHistory: [{
+                status: 'confirmed',
+                date: new Date().toISOString(),
+                location: orderData.items[0]?.vendor || 'Unknown',
+                details: 'Order confirmed by customer.'
+            }]
+        };
+        setAllOrders(prev => [...prev, newOrder]);
         setSelectedOrder(newOrder);
-        setPage('order-success'); 
-        }} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores}/>;
-      case 'order-success': return selectedOrder && <OrderSuccess order={selectedOrder} onNavigateHome={() => { setPage('home'); setSelectedOrder(null); }} onNavigateToOrders={() => { setPage('order-history'); setSelectedOrder(null); }} />;
-      case 'stores': return <StoresPage stores={allStores} onBack={() => setPage('home')} onVisitStore={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} />;
-      case 'become-seller': return <BecomeSeller onBack={() => setPage('home')} onBecomeSeller={(shopName, location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, logoUrl, latitude, longitude) => { const newStore: Store = { id: `store-${Date.now()}`, name: shopName, logoUrl, category: 'Divers', warnings: [], status: 'pending', premiumStatus: 'standard', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, latitude, longitude, documents: siteSettings.requiredSellerDocuments['CNI (Carte Nationale d\'Identité)'] ? [{name: "CNI (Carte Nationale d'Identité)", status: 'requested'}] : [] }; setAllStores(prev => [...prev, newStore]); }} onRegistrationSuccess={() => setPage('home')} siteSettings={siteSettings} />;
-      case 'category': return selectedCategory && <CategoryPage categoryName={selectedCategory} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedCategory(null); setPage('home'); }} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
-      case 'seller-dashboard': return user?.shopName && <SellerDashboard store={allStores.find(s=>s.name === user.shopName)} products={allProducts.filter(p => p.vendor === user.shopName)} categories={allCategories} flashSales={flashSales} sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))} promoCodes={allPromoCodes.filter(pc => pc.sellerId === user.id)} onBack={() => setPage('home')} onAddProduct={() => setPage('product-form')} onEditProduct={(p) => { setSelectedProduct(p); setPage('product-form'); }} onDeleteProduct={(id) => setAllProducts(products => products.filter(p => p.id !== id))} onToggleStatus={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, status: p.status === 'published' ? 'draft' : 'published'} : p))} onNavigateToProfile={() => setPage('seller-profile')} onSetPromotion={(p) => setSelectedProduct(p)} onRemovePromotion={(id) => setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: undefined} : p))} onProposeForFlashSale={(flashSaleId, productId, flashPrice, sellerShopName) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: [...fs.products, {productId, flashPrice, sellerShopName, status: 'pending'}]} : fs)); }} onUploadDocument={(storeId, documentName, fileUrl) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: s.documents.map(d => d.name === documentName ? {...d, status: 'uploaded', fileUrl} : d)} : s)); }} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onCreatePromoCode={(codeData) => setAllPromoCodes(prev => [...prev, {...codeData, uses: 0}])} onDeletePromoCode={(code) => setAllPromoCodes(prev => prev.filter(c => c.code !== code))} isChatEnabled={isChatEnabled} onPayRent={(storeId) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()} : s)); alert('Paiement du loyer effectué !'); }} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} />;
-      case 'vendor-page': return selectedVendor && <VendorPage vendorName={selectedVendor} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => { setSelectedVendor(null); setPage('stores'); }} onVendorClick={(v) => setSelectedVendor(v)} isComparisonEnabled={isComparisonEnabled} />;
-      case 'product-form': return <ProductForm onSave={(p) => { setAllProducts(products => { const exists = products.some(prod => prod.id === p.id); return exists ? products.map(prod => prod.id === p.id ? p : prod) : [...products, p]; }); setSelectedProduct(null); setPage('seller-dashboard'); }} onCancel={() => { setSelectedProduct(null); setPage('seller-dashboard'); }} productToEdit={selectedProduct} categories={allCategories} onAddCategory={(name) => {const newCat = {id: `cat-${Date.now()}`, name, imageUrl: ''}; setAllCategories(cats => [...cats, newCat]); return newCat;}} />;
-      case 'seller-profile': return user?.shopName && <SellerProfile store={allStores.find(s => s.name === user.shopName)!} onBack={() => setPage('seller-dashboard')} onUpdateProfile={(storeId, updatedData) => {setAllStores(stores => stores.map(s => s.id === storeId ? {...s, name: updatedData.shopName, location: updatedData.location, logoUrl: updatedData.logoUrl} : s)); setAllUsers(users => users.map(u => u.id === user.id ? {...u, shopName: updatedData.shopName} : u))}} />;
-      case 'superadmin-dashboard': return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={(orderId, status) => { setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o)); addLog('Order Status Updated', `Admin updated order ${orderId} to status ${status}.`); }} onUpdateCategoryImage={(catId, url) => { setAllCategories(cats => cats.map(c => c.id === catId ? {...c, imageUrl: url} : c)); addLog('Category Image Updated', `Admin updated image for category ${catId}.`); }} onWarnStore={(storeId, reason) => { const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason }; setAllStores(stores => stores.map(s => s.id === storeId ? {...s, warnings: [...s.warnings, newWarning]} : s)); addLog('Store Warned', `Admin sent warning to store ${storeId}: ${reason}.`); }} onToggleStoreStatus={(storeId) => { const storeName = allStores.find(s => s.id === storeId)?.name || storeId; setAllStores(stores => stores.map(s => s.id === storeId ? {...s, status: s.status === 'active' ? 'suspended' : 'active'} : s)); addLog('Store Status Toggled', `Admin toggled status for store ${storeName}.`); }} onToggleStorePremiumStatus={(storeId) => { const storeName = allStores.find(s => s.id === storeId)?.name || storeId; setAllStores(stores => stores.map(s => s.id === storeId ? {...s, premiumStatus: s.premiumStatus === 'premium' ? 'standard' : 'premium'} : s)); addLog('Store Premium Status Toggled', `Admin toggled premium status for store ${storeName}.`); }} onApproveStore={(storeId) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, status: 'active'} : s)); addLog('Store Approved', `Admin approved store ${allStores.find(s => s.id === storeId)?.name || storeId}.`); }} onRejectStore={(storeId) => { const storeName = allStores.find(s => s.id === storeId)?.name || storeId; setAllStores(stores => stores.filter(s => s.id !== storeId)); addLog('Store Rejected', `Admin rejected and deleted store ${storeName}.`); }} onSaveFlashSale={(data) => {const newFS: FlashSale = {...data, id: `fs-${Date.now()}`, products: []}; setFlashSales(fs => [...fs, newFS]); addLog('Flash Sale Created', `Admin created new flash sale: ${data.name}.`); }} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={(flashSaleId, productId, status) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: fs.products.map(p => p.productId === productId ? {...p, status} : p)} : fs)); addLog('Flash Sale Submission Updated', `Admin updated submission for product ${productId} in flash sale ${flashSaleId} to ${status}.`); }} onBatchUpdateFlashSaleStatus={(flashSaleId, productIds, status) => { setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? {...fs, products: fs.products.map(p => productIds.includes(p.productId) ? {...p, status} : p)} : fs)); addLog('Flash Sale Batch Update', `Admin batch updated ${productIds.length} products in flash sale ${flashSaleId} to ${status}.`); }} onRequestDocument={(storeId, documentName) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: [...s.documents, {name: documentName, status: 'requested'}]} : s)); addLog('Document Requested', `Admin requested document '${documentName}' from store ${storeId}.`); }} onVerifyDocumentStatus={(storeId, docName, status, reason) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, documents: s.documents.map(d => d.name === docName ? {...d, status, rejectionReason: reason} : d)} : s)); addLog('Document Status Updated', `Admin updated document '${docName}' for store ${storeId} to status ${status}.`); }} allPickupPoints={allPickupPoints} onAddPickupPoint={(data) => { setAllPickupPoints(prev => [...prev, {...data, id: `pp-${Date.now()}`}]); addLog('Pickup Point Added', `Admin added new pickup point: ${data.name}.`); }} onUpdatePickupPoint={(point) => { setAllPickupPoints(prev => prev.map(p => p.id === point.id ? point : p)); addLog('Pickup Point Updated', `Admin updated pickup point ${point.id}.`); }} onDeletePickupPoint={(id) => { setAllPickupPoints(prev => prev.filter(p => p.id !== id)); addLog('Pickup Point Deleted', `Admin deleted pickup point ${id}.`); }} onAssignAgent={(orderId, agentId) => { setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, agentId} : o)); addLog('Agent Assigned', `Admin assigned agent ${agentId} to order ${orderId}.`); }} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(e => !e)} onToggleComparisonFeature={() => setIsComparisonEnabled(e => !e)} siteSettings={siteSettings} onUpdateSiteSettings={(settings) => { setSiteSettings(settings); addLog('Site Settings Updated', `Admin updated site settings.`); }} onAdminAddCategory={(name) => {const newCat = {id: `cat-${Date.now()}`, name, imageUrl: ''}; setAllCategories(cats => [...cats, newCat]); addLog('Category Added', `Admin added new category: ${name}.`); }} onAdminDeleteCategory={(id) => { setAllCategories(cats => cats.filter(c => c.id !== id)); addLog('Category Deleted', `Admin deleted category ${id}.`); }} onUpdateUserRole={(userId, role) => { setAllUsers(users => users.map(u => u.id === userId ? {...u, role} : u)); addLog('User Role Updated', `Admin updated role for user ${userId} to ${role}.`); }} payouts={payouts} onPayoutSeller={(storeId, amount) => { setPayouts(prev => [...prev, {storeId, amount, date: new Date().toISOString()}]); alert(`Paiement de ${amount} FCFA effectué.`); addLog('Seller Payout', `Admin paid out ${amount.toLocaleString('fr-CM')} FCFA to store ${storeId}.`); }} onActivateSubscription={(storeId) => { setAllStores(stores => stores.map(s => s.id === storeId ? {...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString()} : s)); addLog('Subscription Activated', `Admin activated subscription for store ${storeId}.`); }} advertisements={advertisements} onAddAdvertisement={(ad) => { setAdvertisements(prev => [...prev, {...ad, id: `ad-${Date.now()}`}]); addLog('Advertisement Added', `Admin added a new advertisement.`); }} onUpdateAdvertisement={(ad) => { setAdvertisements(prev => prev.map(a => a.id === ad.id ? ad : a)); addLog('Advertisement Updated', `Admin updated advertisement ${ad.id}.`); }} onDeleteAdvertisement={(id) => { setAdvertisements(prev => prev.filter(a => a.id !== id)); addLog('Advertisement Deleted', `Admin deleted advertisement ${id}.`); }} onCreateUserByAdmin={handleCreateUserByAdmin} />;
-      case 'order-history': return <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user?.id)} onBack={() => setPage('home')} onSelectOrder={(o) => {setSelectedOrder(o); setPage('order-detail');}} />;
-      case 'order-detail': return selectedOrder && <OrderDetailPage order={selectedOrder} onBack={() => {setSelectedOrder(null); setPage('order-history');}} allPickupPoints={allPickupPoints} onCancelOrder={(id) => {setAllOrders(orders => orders.map(o => o.id === id ? {...o, status: 'cancelled'} : o)); setSelectedOrder(null); setPage('order-history')}} onRequestRefund={(id, reason) => {setAllOrders(orders => orders.map(o => o.id === id ? {...o, status: 'refund-requested', refundReason: reason} : o)); setSelectedOrder(o => ({...o!, status: 'refund-requested'}));}} />;
-      case 'promotions': return <PromotionsPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
-      case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
-      case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
-      case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={(p) => { setSelectedProduct(p); setPage('product'); }} onBack={() => setPage('home')} onVendorClick={(v) => { setSelectedVendor(v); setPage('vendor-page'); }} isComparisonEnabled={isComparisonEnabled}/>;
-      case 'delivery-agent-dashboard': return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={(orderId, status) => setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status} : o))} onLogout={handleLogout} />;
-      case 'depot-agent-dashboard': return <DepotAgentDashboard allOrders={allOrders} onCheckIn={(orderId, storageLocationId) => { setAllOrders(orders => orders.map(o => o.id === orderId ? {...o, status: 'at-depot', storageLocationId, checkedInAt: new Date().toISOString(), checkedInBy: user?.id} : o)); }} onReportDiscrepancy={handleReportDiscrepancy} onLogout={handleLogout} />;
-      case 'comparison': return <ComparisonPage onBack={() => setPage('home')} />;
-      case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => setPage('home')} onBecomePremiumByCaution={() => { if(user) { setAllUsers(users => users.map(u => u.id === user.id ? {...u, loyalty: {...u.loyalty, status: 'premium', premiumStatusMethod: 'deposit'}} : u)); alert('Félicitations, vous êtes maintenant membre Premium !'); setPage('home'); } }} onUpgradeToPremiumPlus={() => { if(user) { setAllUsers(users => users.map(u => u.id === user.id ? {...u, loyalty: {...u.loyalty, status: 'premium_plus', premiumStatusMethod: 'subscription'}} : u)); alert('Félicitations, vous êtes maintenant membre Premium+ !'); setPage('home'); } }} />;
-      case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => setPage('home')} />;
-      case 'analytics-dashboard': return <AnalyticsDashboard onBack={() => setPage('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} />;
-      case 'review-moderation': return <ReviewModeration onBack={() => setPage('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={(productId, reviewIdentifier, newStatus) => { setAllProducts(products => products.map(p => p.id === productId ? {...p, reviews: p.reviews.map(r => r.author === reviewIdentifier.author && r.date === reviewIdentifier.date ? {...r, status: newStatus} : r)} : p)); }} />;
-      case 'forbidden': return <ForbiddenPage onNavigateHome={() => setPage('home')} />;
-      case 'server-error': return <ServerErrorPage onNavigateHome={() => setPage('home')} />;
-      default: return <NotFoundPage onNavigateHome={() => setPage('home')} />;
-    }
-  };
-  
-  return (
-    <>
-      <Header 
-        categories={allCategories} 
-        onNavigateHome={() => setPage('home')} 
-        onNavigateCart={() => setPage('cart')} 
-        onNavigateToStores={() => setPage('stores')} 
-        onNavigateToPromotions={() => setPage('promotions')} 
-        onNavigateToCategory={(c) => {setSelectedCategory(c); setPage('category');}} 
-        onNavigateToBecomeSeller={() => setPage('become-seller')} 
-        onNavigateToSellerDashboard={() => setPage('seller-dashboard')} 
-        onNavigateToSellerProfile={() => setPage('seller-profile')}
-        onNavigateToOrderHistory={() => setPage('order-history')}
-        onNavigateToSuperAdminDashboard={() => setPage('superadmin-dashboard')}
-        onNavigateToFlashSales={() => setPage('flash-sales')}
-        onNavigateToWishlist={() => setPage('wishlist')}
-        onNavigateToDeliveryAgentDashboard={() => setPage('delivery-agent-dashboard')}
-        onNavigateToDepotAgentDashboard={() => setPage('depot-agent-dashboard')}
-        onNavigateToBecomePremium={() => setPage('become-premium')}
-        onNavigateToAnalyticsDashboard={() => setPage('analytics-dashboard')}
-        onNavigateToReviewModeration={() => setPage('review-moderation')}
-        onOpenLogin={() => setIsLoginOpen(true)}
-        onLogout={handleLogout}
-        onSearch={(q) => { setSearchQuery(q); setPage('search-results'); }}
-        isChatEnabled={isChatEnabled}
-        isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
-        logoUrl={siteSettings.logoUrl}
-      />
-      <main className="min-h-[calc(100vh-145px)]">
-          {renderPage()}
-      </main>
-      <Footer onNavigate={(title, content) => { setInfoPageContent({title, content}); setPage('info'); }} logoUrl={siteSettings.logoUrl} />
-      {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} />}
-      {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={closeModal} onNavigateToCart={() => { closeModal(); setPage('cart'); }} />}
-      {user?.role === 'seller' && selectedProduct?.vendor === user.shopName && <PromotionModal product={selectedProduct} onClose={() => setSelectedProduct(null)} onSave={(id, promoPrice, startDate, endDate) => { setAllProducts(products => products.map(p => p.id === id ? {...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate} : p)); setSelectedProduct(null); }} />}
-      {viewingStoriesOfStore && <StoryViewer store={viewingStoriesOfStore} onClose={() => setViewingStoriesOfStore(null)} />}
-      {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} />}
-      {isComparisonEnabled && <ComparisonBar onCompareClick={() => setPage('comparison')}/>}
-    </>
-  );
+        clearCart();
+        setAppliedPromoCode(null);
+        logActivity('Order Placed', `Order #${newOrder.id} for ${newOrder.total} FCFA`);
+        handleNavigate('order-success');
+    };
+
+    const handleCloseModal = () => {
+      uiCloseModal();
+    };
+
+    const handleToggleStoreStatus = useCallback((store: Store) => {
+        const newStatus = store.status === 'active' ? 'suspended' : 'active';
+        setAllStores(prev => prev.map(s => s.id === store.id ? { ...s, status: newStatus } : s));
+        logActivity('Store Status Change', `Store "${store.name}" status changed to ${newStatus}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleApproveStore = useCallback((store: Store) => {
+        setAllStores(prev => prev.map(s => s.id === store.id ? { ...s, status: 'active' } : s));
+        logActivity('Store Approved', `Store "${store.name}" has been approved.`);
+    }, [setAllStores, logActivity]);
+    
+    const handlePayoutSeller = useCallback((store: Store, amount: number) => {
+        const newPayout: Payout = {
+            storeId: store.id,
+            amount,
+            date: new Date().toISOString(),
+        };
+        setPayouts(prev => [...prev, newPayout]);
+        logActivity('Seller Payout', `Paid ${amount.toLocaleString('fr-CM')} FCFA to store "${store.name}".`);
+    }, [setPayouts, logActivity]);
+
+    const handleUpdateUserRole = useCallback((userToUpdate: User, newRole: UserRole) => {
+        setAllUsers(users => users.map(u => {
+            if (u.id === userToUpdate.id) {
+                const updatedUser = { ...u, role: newRole };
+                if (u.role === 'seller' && newRole !== 'seller') {
+                    delete updatedUser.shopName;
+                }
+                return updatedUser;
+            }
+            return u;
+        }));
+        logActivity('User Role Changed', `Role for ${userToUpdate.name} (${userToUpdate.email}) set to ${newRole}.`);
+    }, [setAllUsers, logActivity]);
+
+    const handleWarnStore = useCallback((storeToWarn: Store, reason: string) => {
+        const newWarning: Warning = {
+            id: `warn_${Date.now()}`,
+            date: new Date().toISOString(),
+            reason,
+        };
+        setAllStores(stores => stores.map(s => 
+            s.id === storeToWarn.id ? { ...s, warnings: [...(s.warnings || []), newWarning] } : s
+        ));
+        logActivity('Store Warned', `Warning issued to "${storeToWarn.name}": ${reason}`);
+    }, [setAllStores, logActivity]);
+
+    const handleToggleStorePremiumStatus = useCallback((storeToUpdate: Store) => {
+        const newStatus = storeToUpdate.premiumStatus === 'premium' ? 'standard' : 'premium';
+        setAllStores(stores => stores.map(s =>
+            s.id === storeToUpdate.id ? { ...s, premiumStatus: newStatus } : s
+        ));
+        logActivity('Store Premium Status Changed', `Premium status for "${storeToUpdate.name}" set to ${newStatus}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleRejectStore = useCallback((storeToReject: Store) => {
+        setAllStores(stores => stores.filter(s => s.id !== storeToReject.id));
+        logActivity('Store Rejected', `Pending store application for "${storeToReject.name}" was rejected and removed.`);
+    }, [setAllStores, logActivity]);
+    
+    const handleVerifyDocumentStatus = useCallback((store: Store, documentName: string, status: 'verified' | 'rejected', reason?: string) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === store.id) {
+                return {
+                    ...s,
+                    documents: s.documents.map(doc => {
+                        if (doc.name === documentName) {
+                            return { ...doc, status, rejectionReason: reason };
+                        }
+                        return doc;
+                    })
+                };
+            }
+            return s;
+        }));
+        logActivity('Document Status Updated', `Document "${documentName}" for store "${store.name}" set to ${status}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleUpdateOrderStatus = useCallback((order: Order, status: OrderStatus) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === order.id) {
+                const newHistory: TrackingEvent = {
+                    status,
+                    date: new Date().toISOString(),
+                    location: user?.role === 'superadmin' ? 'Admin Dashboard' : 'System',
+                    details: `Status updated by ${user?.name || 'Admin'}`
+                };
+                return { ...o, status, trackingHistory: [...o.trackingHistory, newHistory] };
+            }
+            return o;
+        }));
+        logActivity('Order Status Update', `Order ${order.id} status set to ${status}.`);
+    }, [setAllOrders, logActivity, user]);
+
+
+    const renderPage = () => {
+        if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
+            return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
+        }
+        
+        switch (page) {
+            case 'home': return <HomePage products={allProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
+            case 'product':
+                if (selectedProduct) return <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home')} onAddReview={(p,r) => {}} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
+                else handleNavigate('home');
+                break;
+            case 'cart': return <CartView onBack={() => handleNavigate('home')} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
+            case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handleOrderConfirm} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
+            case 'order-success':
+                if (selectedOrder) return <OrderSuccess order={selectedOrder} onNavigateHome={() => handleNavigate('home', resetSelections)} onNavigateToOrders={() => handleNavigate('order-history')} />;
+                else handleNavigate('home');
+                break;
+            case 'stores': return <StoresPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('home')} onVisitStore={handleVendorClick} />;
+            case 'become-seller': return <BecomeSeller onBack={() => handleNavigate('home')} onBecomeSeller={() => {}} onRegistrationSuccess={() => handleNavigate('seller-dashboard')} siteSettings={siteSettings} />;
+            case 'category':
+                if (selectedCategoryId) return <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={allProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+                else handleNavigate('home');
+                break;
+            case 'seller-dashboard':
+                if (user?.role === 'seller') {
+                    const sellerStore = allStores.find(s => s.name === user.shopName);
+                    const sellerProducts = allProducts.filter(p => p.vendor === user.shopName);
+                    const sellerOrders = allOrders.filter(o => o.items.some(i => i.vendor === user.shopName));
+                    const sellerPromoCodes = allPromoCodes.filter(c => c.sellerId === user.id);
+                    return <SellerDashboard
+                        store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={()=>{}} onToggleStatus={()=>{}} onNavigateToProfile={() => handleNavigate('seller-profile')} onSetPromotion={(p) => setPromotionModalProduct(p)} onRemovePromotion={()=>{}} onProposeForFlashSale={()=>{}} onUploadDocument={()=>{}} onUpdateOrderStatus={()=>{}} onCreatePromoCode={()=>{}} onDeletePromoCode={()=>{}} isChatEnabled={isChatEnabled} onPayRent={()=>{}} siteSettings={siteSettings} onAddStory={()=>{}} onDeleteStory={()=>{}}
+                    />;
+                } else handleNavigate('forbidden');
+                break;
+            case 'vendor-page':
+                if (selectedVendor) return <VendorPage vendorName={selectedVendor} allProducts={allProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+                else handleNavigate('home');
+                break;
+            case 'product-form': return <ProductForm onSave={()=>{}} onCancel={() => handleNavigate('seller-dashboard')} productToEdit={productToEdit} categories={allCategories} onAddCategory={() => ({} as Category)} siteSettings={siteSettings} />;
+            case 'seller-profile':
+                 if (user?.role === 'seller') {
+                    const sellerStore = allStores.find(s => s.name === user.shopName);
+                    if (sellerStore) return <SellerProfile store={sellerStore} onBack={() => handleNavigate('seller-dashboard')} onUpdateProfile={()=>{}} />;
+                 }
+                 handleNavigate('forbidden');
+                 break;
+            case 'superadmin-dashboard':
+                if (user?.role === 'superadmin') return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={()=>{}} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={()=>{}} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={()=>{}} onBatchUpdateFlashSaleStatus={()=>{}} onRequestDocument={()=>{}} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={()=>{}} onUpdatePickupPoint={()=>{}} onDeletePickupPoint={()=>{}} onAssignAgent={()=>{}} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(p => !p)} onToggleComparisonFeature={() => setIsComparisonEnabled(p => !p)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={()=>{}} advertisements={advertisements} onAddAdvertisement={()=>{}} onUpdateAdvertisement={()=>{}} onDeleteAdvertisement={()=>{}} onCreateUserByAdmin={()=>{}}  />;
+                else handleNavigate('forbidden');
+                break;
+            case 'order-history': 
+                if (user) return <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home')} onSelectOrder={(o) => { setSelectedOrder(o); handleNavigate('order-detail'); }} />;
+                else handleNavigate('forbidden');
+                break;
+            case 'order-detail':
+                if (selectedOrder) return <OrderDetailPage order={selectedOrder} onBack={() => handleNavigate('order-history')} allPickupPoints={allPickupPoints} onCancelOrder={()=>{}} onRequestRefund={()=>{}} />;
+                else handleNavigate('order-history');
+                break;
+            case 'promotions': return <PromotionsPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={allProducts} allStores={allStores} allCategories={allCategories} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'delivery-agent-dashboard': 
+                if (user?.role === 'delivery_agent') return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={()=>{}} onLogout={handleLogout} onUpdateUserAvailability={handleUpdateUserAvailability} />;
+                else handleNavigate('forbidden');
+                break;
+            case 'depot-agent-dashboard': 
+                if (user?.role === 'depot_agent') return <DepotAgentDashboard allOrders={allOrders} onCheckIn={()=>{}} onReportDiscrepancy={()=>{}} onLogout={handleLogout} />;
+                else handleNavigate('forbidden');
+                break;
+            case 'comparison': return <ComparisonPage allCategories={allCategories} onBack={() => handleNavigate('home')} />;
+            case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => handleNavigate('home')} onBecomePremiumByCaution={()=>{}} onUpgradeToPremiumPlus={()=>{}} />;
+            case 'analytics-dashboard': 
+                if (user?.role === 'superadmin') return <AnalyticsDashboard onBack={() => handleNavigate('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} allCategories={allCategories} />;
+                else handleNavigate('forbidden');
+                break;
+            case 'review-moderation':
+                 if (user?.role === 'superadmin') return <ReviewModeration onBack={() => handleNavigate('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={()=>{}} />;
+                else handleNavigate('forbidden');
+                break;
+            case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
+            case 'not-found': return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
+            case 'forbidden': return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
+            case 'server-error': return <ServerErrorPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
+            default: return <HomePage products={allProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled}/>;
+        }
+    };
+
+    return (
+        <div className="flex flex-col min-h-screen">
+            <Header
+                categories={allCategories}
+                onNavigateHome={() => handleNavigate('home', resetSelections)}
+                onNavigateCart={() => handleNavigate('cart')}
+                onNavigateToStores={() => handleNavigate('stores')}
+                onNavigateToPromotions={() => handleNavigate('promotions')}
+                onNavigateToCategory={handleCategoryClick}
+                onNavigateToBecomeSeller={() => handleNavigate('become-seller')}
+                onNavigateToSellerDashboard={() => handleNavigate('seller-dashboard')}
+                onNavigateToSellerProfile={() => handleNavigate('seller-profile')}
+                onNavigateToOrderHistory={() => handleNavigate('order-history')}
+                onNavigateToSuperAdminDashboard={() => handleNavigate('superadmin-dashboard')}
+                onNavigateToFlashSales={() => handleNavigate('flash-sales')}
+                onNavigateToWishlist={() => handleNavigate('wishlist')}
+                onNavigateToDeliveryAgentDashboard={() => handleNavigate('delivery-agent-dashboard')}
+                onNavigateToDepotAgentDashboard={() => handleNavigate('depot-agent-dashboard')}
+                onNavigateToBecomePremium={() => handleNavigate('become-premium')}
+                onNavigateToAnalyticsDashboard={() => handleNavigate('analytics-dashboard')}
+                onNavigateToReviewModeration={() => handleNavigate('review-moderation')}
+                onOpenLogin={() => setIsLoginModalOpen(true)}
+                onLogout={handleLogout}
+                onSearch={handleSearch}
+                isChatEnabled={isChatEnabled}
+                isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
+                logoUrl={siteSettings.logoUrl}
+            />
+            <main className="flex-grow">
+                {renderPage()}
+            </main>
+            <Footer 
+                logoUrl={siteSettings.logoUrl}
+                onNavigate={(title, content) => {
+                    setInfoPageContent({ title, content });
+                    handleNavigate('info');
+                }}
+            />
+            {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={handleCloseModal} onNavigateToCart={() => { handleCloseModal(); handleNavigate('cart'); }} />}
+            {isLoginModalOpen && <LoginModal onClose={() => setIsLoginModalOpen(false)} />}
+            {viewingStoriesOfStore && <StoryViewer store={viewingStoriesOfStore} onClose={() => setViewingStoriesOfStore(null)} />}
+            {promotionModalProduct && <PromotionModal product={promotionModalProduct} onClose={() => setPromotionModalProduct(null)} onSave={() => {}} />}
+            {isComparisonEnabled && <ComparisonBar onCompareClick={() => handleNavigate('comparison')} />}
+            {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} allCategories={allCategories} />}
+        </div>
+    );
 }

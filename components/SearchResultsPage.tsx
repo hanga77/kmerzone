@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { Product, Store, FlashSale } from '../types';
+import type { Product, Store, FlashSale, Category } from '../types';
 import ProductCard from './ProductCard';
 import { ArrowLeftIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
@@ -9,6 +9,7 @@ interface SearchResultsPageProps {
   searchQuery: string;
   allProducts: Product[];
   allStores: Store[];
+  allCategories: Category[];
   flashSales: FlashSale[];
   onProductClick: (product: Product) => void;
   onBack: () => void;
@@ -16,15 +17,20 @@ interface SearchResultsPageProps {
   isComparisonEnabled: boolean;
 }
 
-const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ searchQuery, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
+const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ searchQuery, allProducts, allStores, allCategories, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
   const findStoreLocation = (vendorName: string) => allStores.find(s => s.name === vendorName)?.location;
 
-  const initialFilteredProducts = useMemo(() => searchQuery ? allProducts.filter(p => 
-    p.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    p.vendor.toLowerCase().includes(searchQuery.toLowerCase())
-  ) : [], [searchQuery, allProducts]);
+  const initialFilteredProducts = useMemo(() => {
+    if (!searchQuery) return [];
+    const lowercasedQuery = searchQuery.toLowerCase();
+    return allProducts.filter(p => {
+        const category = allCategories.find(c => c.id === p.categoryId);
+        return p.name.toLowerCase().includes(lowercasedQuery) ||
+               p.description.toLowerCase().includes(lowercasedQuery) ||
+               (category && category.name.toLowerCase().includes(lowercasedQuery)) ||
+               p.vendor.toLowerCase().includes(lowercasedQuery)
+    });
+  }, [searchQuery, allProducts, allCategories]);
 
   const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(initialFilteredProducts);
 

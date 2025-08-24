@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
-import type { Chat, Message, Product, User, Store } from '../types';
+import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
 // L'importation statique a été supprimée pour éviter les erreurs de plantage dans les environnements de navigateur.
 
@@ -7,7 +7,7 @@ interface ChatContextType {
   chats: Chat[];
   messages: { [chatId: string]: Message[] };
   startChat: (seller: User, store: Store, product?: Product) => void;
-  sendMessage: (chatId: string, text: string, allProducts: Product[]) => void;
+  sendMessage: (chatId: string, text: string, allProducts: Product[], allCategories: Category[]) => void;
   setActiveChatId: (chatId: string | null) => void;
   activeChatId: string | null;
   isWidgetOpen: boolean;
@@ -152,7 +152,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   }, [user, chats, messages]);
 
-  const sendMessage = useCallback(async (chatId: string, text: string, allProducts: Product[]) => {
+  const sendMessage = useCallback(async (chatId: string, text: string, allProducts: Product[], allCategories: Category[]) => {
     if (!user) return;
     
     // Add user message immediately
@@ -197,12 +197,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const chatHistory = messages[chatId] || [];
         const formattedHistory = chatHistory.map(msg => `${msg.senderId === user.id ? 'Customer' : 'Assistant'}: ${msg.text}`).join('\n');
 
+        const getCategoryName = (categoryId: string) => allCategories.find(c => c.id === categoryId)?.name || 'Unknown';
+
         const simplifiedProducts = allProducts.map(p => ({
             id: p.id,
             name: p.name,
             price: p.promotionPrice ?? p.price,
             vendor: p.vendor,
-            category: p.category,
+            category: getCategoryName(p.categoryId),
             description: p.description.substring(0, 150) + '...',
         }));
 

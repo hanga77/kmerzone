@@ -3,12 +3,12 @@ import type { Category } from '../types';
 
 interface CategoryCardProps {
   category: Category;
-  onClick: (categoryName: string) => void;
+  onClick: (categoryId: string) => void;
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick }) => {
   return (
-    <button onClick={() => onClick(category.name)} className="group block text-center focus:outline-none focus:ring-2 focus:ring-kmer-green focus:ring-offset-2 rounded-lg">
+    <button onClick={() => onClick(category.id)} className="group block text-center focus:outline-none focus:ring-2 focus:ring-kmer-green focus:ring-offset-2 rounded-lg">
       <div className="relative rounded-lg overflow-hidden shadow-md group-hover:shadow-xl transition-shadow duration-300">
         <img src={category.imageUrl} alt={category.name} className="w-full h-40 object-cover transform group-hover:scale-110 transition-transform duration-500" />
         <div className="absolute inset-0 bg-black/40 flex items-center justify-center">

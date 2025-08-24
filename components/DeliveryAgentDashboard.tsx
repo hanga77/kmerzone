@@ -1,5 +1,5 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import type { Order, OrderStatus, Store, PickupPoint } from '../types';
+import type { Order, OrderStatus, Store, PickupPoint, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { TruckIcon, MapPinIcon, BuildingStorefrontIcon, CheckIcon, ShoppingBagIcon, QrCodeIcon, XIcon, ExclamationTriangleIcon, MapIcon, ListBulletIcon, CheckCircleIcon } from './Icons';
 
@@ -12,6 +12,7 @@ interface DeliveryAgentDashboardProps {
   allPickupPoints: PickupPoint[];
   onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
   onLogout: () => void;
+  onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
 }
 
 const statusTranslations: {[key in OrderStatus]: string} = {
@@ -145,7 +146,7 @@ const ScannerModal: React.FC<{
 };
 
 
-const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrderStatus, onLogout }) => {
+const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrderStatus, onLogout, onUpdateUserAvailability }) => {
   const { user } = useAuth();
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
@@ -313,6 +314,11 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
   if (!user || user.role !== 'delivery_agent') {
     return <div className="p-8 text-center text-red-500">Accès non autorisé.</div>;
   }
+
+  const handleAvailabilityToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newStatus: UserAvailabilityStatus = e.target.checked ? 'available' : 'unavailable';
+    onUpdateUserAvailability(user.id, newStatus);
+  };
   
   return (
     <>
@@ -331,7 +337,27 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
                 <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Livreur</h1>
                 <p className="text-gray-500 dark:text-gray-400">Bienvenue, {user.name}</p>
               </div>
-              <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
+              <div className="flex items-center gap-3">
+                 <div className="flex items-center gap-2">
+                    <label htmlFor="agent-availability-toggle" className="flex items-center cursor-pointer">
+                        <div className="relative">
+                            <input
+                                type="checkbox"
+                                id="agent-availability-toggle"
+                                className="sr-only peer"
+                                checked={user.availabilityStatus === 'available'}
+                                onChange={handleAvailabilityToggle}
+                            />
+                            <div className="block bg-gray-300 dark:bg-gray-600 w-14 h-8 rounded-full peer-checked:bg-kmer-green/70"></div>
+                            <div className="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform peer-checked:translate-x-full"></div>
+                        </div>
+                    </label>
+                    <span className={`font-bold text-lg ${user.availabilityStatus === 'available' ? 'text-green-500' : 'text-red-500'}`}>
+                        {user.availabilityStatus === 'available' ? 'Disponible' : 'Indisponible'}
+                    </span>
+                 </div>
+                 <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
+              </div>
             </div>
             <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
               <div className="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">

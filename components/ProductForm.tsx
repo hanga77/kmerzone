@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import type { Product, Category, Variant, VariantDetail } from '../types';
+import type { Product, Category, Variant, VariantDetail, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { PhotoIcon, XCircleIcon, TrashIcon } from './Icons';
 
@@ -9,6 +9,7 @@ interface ProductFormProps {
   productToEdit: Product | null;
   categories: Category[];
   onAddCategory: (categoryName: string) => Category;
+  siteSettings: SiteSettings;
 }
 
 // Helper function to generate combinations
@@ -37,14 +38,14 @@ const getCombinations = (variants: Variant[]): Record<string, string>[] => {
   return combinations;
 };
 
-const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEdit, categories, onAddCategory }) => {
+const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEdit, categories, onAddCategory, siteSettings }) => {
   const { user } = useAuth();
   const [product, setProduct] = useState<Partial<Product>>({
     name: '',
     price: 0,
     promotionPrice: undefined,
     stock: 0,
-    category: categories.length > 0 ? categories[0].name : '',
+    categoryId: '',
     description: '',
     imageUrls: [],
     status: 'draft',
@@ -58,8 +59,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     expirationDate: '',
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [newCategoryName, setNewCategoryName] = useState('');
+  
+  const categoryTree = useMemo(() => {
+    const mainCategories = categories.filter(c => !c.parentId);
+    return mainCategories.map(mainCat => ({
+        ...mainCat,
+        subCategories: categories.filter(c => c.parentId === mainCat.id)
+    }));
+  }, [categories]);
 
   // Variant state management
   const [variants, setVariants] = useState<Variant[]>([]);
@@ -78,8 +85,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
       setImagePreviews(productToEdit.imageUrls);
       setVariants(productToEdit.variants || []);
       setVariantDetails(productToEdit.variantDetails || []);
+    } else if (categoryTree.length > 0 && categoryTree[0].subCategories.length > 0) {
+      // Set default category
+      setProduct(prev => ({ ...prev, categoryId: categoryTree[0].subCategories[0].id }));
     }
-  }, [productToEdit]);
+  }, [productToEdit, categoryTree]);
   
   // Effect to update total stock from variants
   useEffect(() => {
@@ -91,23 +101,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    if (name === "category" && value === "add_new") {
-        setIsAddingCategory(true);
-    } else {
-       setProduct(prev => ({ ...prev, [name]: value }));
-       if (name === "category") setIsAddingCategory(false);
-    }
+    setProduct(prev => ({ ...prev, [name]: value }));
   };
   
-  const handleAddNewCategory = () => {
-    if (newCategoryName.trim()) {
-        const newCategory = onAddCategory(newCategoryName.trim());
-        setProduct(prev => ({...prev, category: newCategory.name }));
-        setNewCategoryName('');
-        setIsAddingCategory(false);
-    }
-  };
-
   const handlePriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
       const { name, value } = e.target;
       const numberValue = value === '' ? undefined : parseFloat(value);
@@ -201,8 +197,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
         alert("Erreur: nom de la boutique non trouvé.");
         return;
     }
-    if (!product.name || !product.price || product.stock === undefined || !product.imageUrls || product.imageUrls.length === 0) {
-        alert("Veuillez remplir tous les champs obligatoires (Nom, Prix, Stock, et au moins une Image).");
+    if (!product.name || !product.price || product.stock === undefined || !product.imageUrls || product.imageUrls.length === 0 || !product.categoryId) {
+        alert("Veuillez remplir tous les champs obligatoires (Nom, Prix, Stock, Catégorie et au moins une Image).");
         return;
     }
     
@@ -214,7 +210,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
         name: product.name!,
         price: product.price!,
         stock: product.stock!,
-        category: product.category!,
+        categoryId: product.categoryId!,
         description: product.description!,
         imageUrls: product.imageUrls!,
         status: status,
@@ -225,8 +221,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
   };
 
     const renderCategorySpecificFields = () => {
-        const category = product.category || '';
-        if (['Vêtements', 'Chaussures', 'Accessoires'].includes(category)) {
+        const categoryId = product.categoryId || '';
+        const category = categories.find(c => c.id === categoryId);
+        const categoryName = category?.name || '';
+
+        if (['Vêtements', 'Chaussures', 'Sacs & Accessoires'].includes(categoryName)) {
             return (
                 <>
                     <div>
@@ -248,7 +247,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                 </>
             );
         }
-        if (category === 'Alimentation alimentaire') {
+        if (['Plats préparés', 'Épicerie', 'Boissons'].includes(categoryName)) {
             return (
                 <>
                     <div>
@@ -266,7 +265,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                 </>
             );
         }
-        if (['Électronique', 'Appareils électroménagers'].includes(category)) {
+        if (['Électronique', 'Électroménager'].includes(categoryName)) {
             return (
                  <>
                     <div>
@@ -288,29 +287,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                  </>
             );
         }
-        if (category === 'Livres') {
-            return (
-                 <>
-                    <div>
-                       <label htmlFor="author" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Auteur</label>
-                       <input type="text" name="author" id="author" value={product.author || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                       <label htmlFor="publisher" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Éditeur</label>
-                       <input type="text" name="publisher" id="publisher" value={product.publisher || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                       <label htmlFor="publicationYear" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Année de publication</label>
-                       <input type="number" name="publicationYear" id="publicationYear" value={product.publicationYear || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                     <div>
-                       <label htmlFor="isbn" className="block text-sm font-medium text-gray-700 dark:text-gray-300">ISBN</label>
-                       <input type="text" name="isbn" id="isbn" value={product.isbn || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                 </>
-            );
-        }
-        return null; // No specific fields for other categories
+        return null;
     }
 
   return (
@@ -341,24 +318,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                     {hasVariants && <p className="text-xs text-gray-500 mt-1">Calculé à partir des variantes.</p>}
                   </div>
                   <div>
-                    <label htmlFor="category" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Catégorie</label>
-                    <select name="category" id="category" value={isAddingCategory ? 'add_new' : product.category} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                      <option value="" disabled>-- Sélectionner --</option>
-                      {categories.map(cat => <option key={cat.id} value={cat.name}>{cat.name}</option>)}
-                      <option value="add_new">-- Créer une nouvelle catégorie --</option>
+                    <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Catégorie</label>
+                    <select name="categoryId" id="categoryId" value={product.categoryId} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
+                      <option value="" disabled>-- Sélectionner une sous-catégorie --</option>
+                      {categoryTree.map(mainCat => (
+                        <optgroup label={mainCat.name} key={mainCat.id}>
+                          {mainCat.subCategories.map(subCat => (
+                            <option key={subCat.id} value={subCat.id}>{subCat.name}</option>
+                          ))}
+                        </optgroup>
+                      ))}
                     </select>
-                     {isAddingCategory && (
-                        <div className="mt-2 flex gap-2">
-                            <input 
-                                type="text"
-                                value={newCategoryName}
-                                onChange={(e) => setNewCategoryName(e.target.value)}
-                                placeholder="Nom de la catégorie"
-                                className="block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600"
-                            />
-                            <button type="button" onClick={handleAddNewCategory} className="bg-kmer-green text-white px-3 rounded-md">Ajouter</button>
-                        </div>
-                    )}
                   </div>
                </div>
                 <div>

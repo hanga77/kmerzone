@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon } from './Icons';
+import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
 import QRCode from 'qrcode';
 
@@ -15,20 +15,20 @@ interface SuperAdminDashboardProps {
     allCategories: Category[];
     allStores: Store[];
     siteActivityLogs: SiteActivityLog[];
-    onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+    onUpdateOrderStatus: (order: Order, status: OrderStatus) => void;
     onUpdateCategoryImage: (categoryId: string, imageUrl: string) => void;
-    onWarnStore: (storeId: string, reason: string) => void;
-    onToggleStoreStatus: (storeId: string) => void;
-    onToggleStorePremiumStatus: (storeId: string) => void;
-    onApproveStore: (storeId: string) => void;
-    onRejectStore: (storeId: string) => void;
+    onWarnStore: (store: Store, reason: string) => void;
+    onToggleStoreStatus: (store: Store) => void;
+    onToggleStorePremiumStatus: (store: Store) => void;
+    onApproveStore: (store: Store) => void;
+    onRejectStore: (store: Store) => void;
     onSaveFlashSale: (flashSaleData: Omit<FlashSale, 'id' | 'products'>) => void;
     flashSales: FlashSale[];
     allProducts: Product[];
     onUpdateFlashSaleSubmissionStatus: (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => void;
     onBatchUpdateFlashSaleStatus: (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => void;
     onRequestDocument: (storeId: string, documentName: string) => void;
-    onVerifyDocumentStatus: (storeId: string, documentName: string, status: 'verified' | 'rejected', reason?: string) => void;
+    onVerifyDocumentStatus: (store: Store, documentName: string, status: 'verified' | 'rejected', reason?: string) => void;
     allPickupPoints: PickupPoint[];
     onAddPickupPoint: (pointData: Omit<PickupPoint, 'id'>) => void;
     onUpdatePickupPoint: (updatedPoint: PickupPoint) => void;
@@ -40,12 +40,12 @@ interface SuperAdminDashboardProps {
     onToggleComparisonFeature: () => void;
     siteSettings: SiteSettings;
     onUpdateSiteSettings: (newSettings: SiteSettings) => void;
-    onAdminAddCategory: (categoryName: string) => void;
+    onAdminAddCategory: (categoryName: string, parentId?: string) => void;
     onAdminDeleteCategory: (categoryId: string) => void;
-    onUpdateUserRole: (userId: string, newRole: UserRole) => void;
+    onUpdateUserRole: (user: User, newRole: UserRole) => void;
     payouts: Payout[];
-    onPayoutSeller: (storeId: string, amount: number) => void;
-    onActivateSubscription: (storeId: string) => void;
+    onPayoutSeller: (store: Store, amount: number) => void;
+    onActivateSubscription: (store: Store) => void;
     advertisements: Advertisement[];
     onAddAdvertisement: (ad: Omit<Advertisement, 'id'>) => void;
     onUpdateAdvertisement: (ad: Advertisement) => void;
@@ -72,9 +72,10 @@ const AssignAgentModal: React.FC<{
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
                 <h3 className="text-lg font-bold dark:text-white">Assigner un livreur pour la commande {orderId}</h3>
                 <select value={selectedAgent} onChange={e => setSelectedAgent(e.target.value)} className="w-full mt-4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                    <option value="">-- Choisir un livreur --</option>
+                    <option value="">-- Choisir un livreur disponible --</option>
                     {deliveryAgents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
                 </select>
+                {deliveryAgents.length === 0 && <p className="text-xs text-yellow-600 mt-2">Aucun livreur n'est actuellement disponible.</p>}
                 <div className="flex justify-end gap-2 mt-4">
                     <button onClick={onClose} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md">Annuler</button>
                     <button onClick={handleAssign} className="px-4 py-2 bg-blue-500 text-white rounded-md" disabled={!selectedAgent}>Valider l'assignation</button>
@@ -142,10 +143,10 @@ const getStatusClass = (status: OrderStatus) => {
 
 const getLogIconDetails = (action: string) => {
     const lowerAction = action.toLowerCase();
-    if (lowerAction.includes('user') || lowerAction.includes('utilisateur')) {
+    if (lowerAction.includes('user') || lowerAction.includes('utilisateur') || lowerAction.includes('role')) {
         return { icon: <UserGroupIcon className="w-5 h-5"/>, color: 'text-blue-500' };
     }
-    if (lowerAction.includes('store') || lowerAction.includes('boutique')) {
+    if (lowerAction.includes('store') || lowerAction.includes('boutique') || lowerAction.includes('seller') || lowerAction.includes('payout')) {
         return { icon: <BuildingStorefrontIcon className="w-5 h-5"/>, color: 'text-purple-500' };
     }
     if (lowerAction.includes('order') || lowerAction.includes('commande')) {
@@ -164,25 +165,31 @@ const LogsPanel: React.FC<{ siteActivityLogs: SiteActivityLog[] }> = ({ siteActi
     return (
         <div className="p-4 sm:p-6">
             <h2 className="text-xl font-bold mb-4 dark:text-white">Logs d'Activité</h2>
-            <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
-                {siteActivityLogs.map(log => {
-                    const { icon, color } = getLogIconDetails(log.action);
-                    return (
-                        <div key={log.id} className="flex gap-3 items-start p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md text-sm">
-                            <span className={`mt-1 ${color}`}>{icon}</span>
-                            <div className="flex-1">
-                                <p className="font-semibold dark:text-white">
-                                    {log.user.name} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({log.user.role})</span>
-                                </p>
-                                <p className="text-gray-700 dark:text-gray-300">
-                                    <span className="font-bold text-kmer-green">{log.action}</span>: {log.details}
-                                </p>
-                                <p className="font-mono text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(log.timestamp).toLocaleString()}</p>
+            {siteActivityLogs.length === 0 ? (
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <p>Aucune activité enregistrée pour le moment.</p>
+                </div>
+            ) : (
+                <div className="space-y-2 max-h-[60vh] overflow-y-auto pr-2">
+                    {siteActivityLogs.map(log => {
+                        const { icon, color } = getLogIconDetails(log.action);
+                        return (
+                            <div key={log.id} className="flex gap-3 items-start p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md text-sm">
+                                <span className={`mt-1 ${color}`}>{icon}</span>
+                                <div className="flex-1">
+                                    <p className="font-semibold dark:text-white">
+                                        {log.user.name} <span className="text-xs font-normal text-gray-500 dark:text-gray-400">({log.user.role})</span>
+                                    </p>
+                                    <p className="text-gray-700 dark:text-gray-300">
+                                        <span className="font-bold text-kmer-green">{log.action}</span>: {log.details}
+                                    </p>
+                                    <p className="font-mono text-xs text-gray-400 dark:text-gray-500 mt-1">{new Date(log.timestamp).toLocaleString()}</p>
+                                </div>
                             </div>
-                        </div>
-                    );
-                })}
-            </div>
+                        );
+                    })}
+                </div>
+            )}
         </div>
     );
 };
@@ -276,7 +283,7 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
                                     <label className="text-xs font-medium dark:text-gray-300">Changer le statut :</label>
                                     <select 
                                         value={order.status}
-                                        onChange={e => onUpdateOrderStatus(order.id, e.target.value as OrderStatus)}
+                                        onChange={e => onUpdateOrderStatus(order, e.target.value as OrderStatus)}
                                         className="text-xs mt-1 w-full sm:w-auto border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 focus:ring-kmer-green"
                                     >
                                         {Object.keys(statusTranslations).map(s => <option key={s} value={s}>{statusTranslations[s as OrderStatus]}</option>)}
@@ -347,7 +354,7 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
 
     const handleWarn = () => {
         if (warningStore && warningReason) {
-            onWarnStore(warningStore.id, warningReason);
+            onWarnStore(warningStore, warningReason);
             setWarningStore(null);
             setWarningReason('');
         }
@@ -420,14 +427,14 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                     <h4 className="font-semibold mb-2 dark:text-white text-sm">Actions Rapides</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {store.status === 'pending' && <>
-                                            <button onClick={() => onApproveStore(store.id)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Approuver</button>
-                                            <button onClick={() => onRejectStore(store.id)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Rejeter</button>
+                                            <button onClick={() => onApproveStore(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Approuver</button>
+                                            <button onClick={() => onRejectStore(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Rejeter</button>
                                         </>}
-                                        {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
-                                        {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store.id)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
+                                        {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
+                                        {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
                                         {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors">Avertir</button>}
                                         {store.status === 'active' && (
-                                            <button onClick={() => onToggleStorePremiumStatus(store.id)} className={`text-sm text-white px-3 py-1.5 rounded-md transition-colors ${store.premiumStatus === 'premium' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-kmer-yellow hover:bg-yellow-500'}`}>
+                                            <button onClick={() => onToggleStorePremiumStatus(store)} className={`text-sm text-white px-3 py-1.5 rounded-md transition-colors ${store.premiumStatus === 'premium' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-kmer-yellow hover:bg-yellow-500'}`}>
                                                 {store.premiumStatus === 'premium' ? 'Retirer Premium' : 'Promouvoir en Premium'}
                                             </button>
                                         )}
@@ -444,7 +451,7 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                             </p>
                                             {store.status === 'active' && store.subscriptionStatus !== 'active' && (
                                                 <button
-                                                    onClick={() => onActivateSubscription(store.id)}
+                                                    onClick={() => onActivateSubscription(store)}
                                                     className="text-sm bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600"
                                                 >
                                                     Activer l'abonnement
@@ -470,7 +477,7 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                                             onClick={() => {
                                                                 const reason = window.prompt('Motif du rejet (optionnel) :');
                                                                 if (reason !== null) {
-                                                                    onVerifyDocumentStatus(store.id, doc.name, 'rejected', reason || 'Non spécifié');
+                                                                    onVerifyDocumentStatus(store, doc.name, 'rejected', reason || 'Non spécifié');
                                                                 }
                                                             }} 
                                                             className="text-xs bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
@@ -478,7 +485,7 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                                             Rejeter
                                                         </button>
                                                         <button 
-                                                            onClick={() => onVerifyDocumentStatus(store.id, doc.name, 'verified')} 
+                                                            onClick={() => onVerifyDocumentStatus(store, doc.name, 'verified')} 
                                                             className="text-xs bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600"
                                                         >
                                                             Approuver
@@ -507,34 +514,62 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
 const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUserRole' | 'onCreateUserByAdmin'>> = ({ allUsers, onUpdateUserRole, onCreateUserByAdmin }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreatingUser, setIsCreatingUser] = useState(false);
-    const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'customer' as UserRole });
+    const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'seller' as UserRole });
+    const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 10;
 
     const handleCreateUser = (e: React.FormEvent) => {
         e.preventDefault();
         if (newUserData.name && newUserData.email) {
             onCreateUserByAdmin(newUserData);
             setIsCreatingUser(false);
-            setNewUserData({ name: '', email: '', role: 'customer' });
+            setNewUserData({ name: '', email: '', role: 'seller' });
         }
     };
 
     const filteredUsers = useMemo(() => {
-        return allUsers.filter(user => user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase()));
-    }, [allUsers, searchTerm]);
+        return allUsers.filter(user => {
+            const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+            const matchesSearch = searchTerm === '' || user.name.toLowerCase().includes(searchTerm.toLowerCase()) || user.email.toLowerCase().includes(searchTerm.toLowerCase());
+            return matchesRole && matchesSearch;
+        });
+    }, [allUsers, searchTerm, roleFilter]);
+
+    const paginatedUsers = useMemo(() => {
+        const startIndex = (currentPage - 1) * usersPerPage;
+        return filteredUsers.slice(startIndex, startIndex + usersPerPage);
+    }, [filteredUsers, currentPage]);
+
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
     
     return (
         <div className="p-4 sm:p-6">
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h2 className="text-xl font-bold dark:text-white">Gestion des Utilisateurs</h2>
-                <div className="relative w-full sm:w-64">
-                    <input
-                        type="text"
-                        placeholder="Rechercher par nom ou email..."
-                        value={searchTerm}
-                        onChange={e => setSearchTerm(e.target.value)}
-                        className="w-full pl-4 pr-10 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-kmer-green"
-                    />
-                    <SearchIcon className="absolute top-1/2 right-3 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
+                    <select
+                        value={roleFilter}
+                        onChange={e => { setRoleFilter(e.target.value as any); setCurrentPage(1); }}
+                        className="w-full sm:w-auto p-2 border rounded-full dark:bg-gray-700 dark:border-gray-600 text-sm"
+                    >
+                        <option value="all">Tous les rôles</option>
+                        <option value="customer">Client</option>
+                        <option value="seller">Vendeur</option>
+                        <option value="delivery_agent">Livreur</option>
+                        <option value="depot_agent">Agent de dépôt</option>
+                        <option value="superadmin">Super Admin</option>
+                    </select>
+                    <div className="relative w-full sm:w-64">
+                        <input
+                            type="text"
+                            placeholder="Rechercher par nom ou email..."
+                            value={searchTerm}
+                            onChange={e => { setSearchTerm(e.target.value); setCurrentPage(1); }}
+                            className="w-full pl-4 pr-10 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-kmer-green"
+                        />
+                        <SearchIcon className="absolute top-1/2 right-3 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                    </div>
                 </div>
             </div>
             
@@ -556,11 +591,9 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
                      <div>
                       <label className="text-sm font-medium dark:text-gray-300">Rôle</label>
                       <select value={newUserData.role} onChange={e => setNewUserData(d => ({ ...d, role: e.target.value as UserRole }))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                        <option value="customer">Client</option>
                         <option value="seller">Vendeur</option>
                         <option value="delivery_agent">Livreur</option>
                         <option value="depot_agent">Agent de dépôt</option>
-                        <option value="superadmin">Super Admin</option>
                       </select>
                     </div>
                     <div className="flex justify-end">
@@ -570,8 +603,8 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
             )}
 
             <div className="space-y-2">
-                {filteredUsers.map(user => (
-                    <div key={user.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
+                {paginatedUsers.map(user => (
+                    <div key={user.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex flex-col sm:flex-row justify-between sm:items-center gap-2">
                         <div>
                             <p className="font-semibold dark:text-white">{user.name}
                                 {user.loyalty.status === 'premium' && <StarIcon filled className="inline-block w-4 h-4 ml-1 text-kmer-yellow" />}
@@ -579,10 +612,10 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
                             </p>
                             <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                         </div>
-                        <div>
-                            <select
+                        <div className="flex items-center gap-4">
+                             <select
                                 value={user.role}
-                                onChange={(e) => onUpdateUserRole(user.id, e.target.value as UserRole)}
+                                onChange={(e) => onUpdateUserRole(user, e.target.value as UserRole)}
                                 className="text-sm border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500"
                             >
                                 <option value="customer">Client</option>
@@ -595,6 +628,13 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
                     </div>
                 ))}
             </div>
+            {totalPages > 1 && (
+                <div className="mt-4 flex justify-between items-center text-sm">
+                    <button onClick={() => setCurrentPage(p => Math.max(1, p-1))} disabled={currentPage === 1} className="p-2 disabled:opacity-50"><ChevronLeftIcon className="w-5 h-5"/></button>
+                    <span>Page {currentPage} sur {totalPages}</span>
+                    <button onClick={() => setCurrentPage(p => Math.min(totalPages, p+1))} disabled={currentPage === totalPages} className="p-2 disabled:opacity-50"><ChevronRightIcon className="w-5 h-5"/></button>
+                </div>
+            )}
         </div>
     );
 };
@@ -602,6 +642,9 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
 const CategoryManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allCategories' | 'onUpdateCategoryImage' | 'onAdminAddCategory' | 'onAdminDeleteCategory'>> = ({ allCategories, onUpdateCategoryImage, onAdminAddCategory, onAdminDeleteCategory }) => {
     const [isAdding, setIsAdding] = useState(false);
     const [newCatName, setNewCatName] = useState('');
+    const [newCatParent, setNewCatParent] = useState<string>(''); // Empty string for main category
+
+    const mainCategories = useMemo(() => allCategories.filter(c => !c.parentId), [allCategories]);
 
     const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, catId: string) => {
         if (e.target.files && e.target.files[0]) {
@@ -612,42 +655,60 @@ const CategoryManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allCateg
             reader.readAsDataURL(e.target.files[0]);
         }
     };
-    
+
     const handleAddCategory = () => {
         if (newCatName.trim()) {
-            onAdminAddCategory(newCatName);
+            onAdminAddCategory(newCatName, newCatParent || undefined);
             setNewCatName('');
+            setNewCatParent('');
             setIsAdding(false);
         }
     };
 
+    const CategoryItem: React.FC<{ category: Category }> = ({ category }) => (
+        <div className="p-3 bg-white dark:bg-gray-800 rounded-lg flex items-center justify-between">
+            <div className="flex items-center gap-4">
+                <img src={category.imageUrl || PLACEHOLDER_IMAGE_URL} alt={category.name} className="w-16 h-16 object-cover rounded-md" />
+                <span className="font-semibold dark:text-white">{category.name}</span>
+            </div>
+            <div className="flex items-center gap-2">
+                <label className="text-sm font-semibold text-blue-500 cursor-pointer hover:underline">
+                    Changer l'image
+                    <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, category.id)} accept="image/*"/>
+                </label>
+                <button onClick={() => onAdminDeleteCategory(category.id)} className="text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-full"><TrashIcon className="w-5 h-5"/></button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion des Catégories</h2>
-             <div className="mb-4">
-                <button onClick={() => setIsAdding(!isAdding)} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2">
-                   <PlusIcon className="w-5 h-5"/> {isAdding ? 'Annuler' : 'Ajouter une catégorie'}
-                </button>
-                {isAdding && (
-                    <div className="mt-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border dark:border-gray-700 flex gap-2">
-                        <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Nom de la nouvelle catégorie" className="flex-grow p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                        <button onClick={handleAddCategory} className="bg-blue-500 text-white font-semibold px-4 rounded-md">Ajouter</button>
-                    </div>
-                )}
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-bold dark:text-white">Gestion des Catégories</h2>
+              <button onClick={() => setIsAdding(!isAdding)} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2">
+                 <PlusIcon className="w-5 h-5"/> {isAdding ? 'Annuler' : 'Ajouter une catégorie'}
+              </button>
             </div>
-            <div className="space-y-3">
-                {allCategories.map(cat => (
-                    <div key={cat.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-lg flex items-center justify-between">
-                        <div className="flex items-center gap-4">
-                            <img src={cat.imageUrl || PLACEHOLDER_IMAGE_URL} alt={cat.name} className="w-16 h-16 object-cover rounded-md" />
-                            <span className="font-semibold dark:text-white">{cat.name}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <label className="text-sm font-semibold text-kmer-green cursor-pointer hover:underline">
-                                Changer l'image
-                                <input type="file" className="hidden" onChange={(e) => handleImageUpload(e, cat.id)} accept="image/*"/>
-                            </label>
-                            <button onClick={() => onAdminDeleteCategory(cat.id)} className="text-red-500 p-2 hover:bg-red-50 dark:hover:bg-red-900/50 rounded-full"><TrashIcon className="w-5 h-5"/></button>
+            
+            {isAdding && (
+                <div className="mb-6 p-4 bg-gray-100 dark:bg-gray-900/50 rounded-lg border dark:border-gray-700 flex flex-col sm:flex-row gap-4">
+                    <input type="text" value={newCatName} onChange={e => setNewCatName(e.target.value)} placeholder="Nom de la catégorie" className="flex-grow p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                    <select value={newCatParent} onChange={e => setNewCatParent(e.target.value)} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                        <option value="">-- Catégorie Principale (aucun parent) --</option>
+                        {mainCategories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                    </select>
+                    <button onClick={handleAddCategory} className="bg-blue-500 text-white font-semibold px-4 rounded-md">Ajouter</button>
+                </div>
+            )}
+            
+            <div className="space-y-4">
+                {mainCategories.map(mainCat => (
+                    <div key={mainCat.id} className="p-4 bg-gray-50 dark:bg-gray-900 rounded-lg">
+                        <CategoryItem category={mainCat} />
+                        <div className="pl-6 mt-3 space-y-2 border-l-2 border-gray-200 dark:border-gray-600 ml-8">
+                            {allCategories.filter(c => c.parentId === mainCat.id).map(subCat => (
+                                <CategoryItem key={subCat.id} category={subCat} />
+                            ))}
                         </div>
                     </div>
                 ))}
@@ -735,7 +796,7 @@ const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPi
 
     useEffect(() => {
         if (mapRef.current) {
-            mapRef.current.eachLayer((layer: any) => { if (layer instanceof L.Marker) mapRef.current.removeLayer(layer); });
+            mapRef.current.eachLayer((layer: any) => { if (layer instanceof L.Marker && layer !== markerRef.current) mapRef.current.removeLayer(layer); });
             allPickupPoints.forEach(point => {
                 if (point.latitude && point.longitude) {
                     L.marker([point.latitude, point.longitude]).addTo(mapRef.current).bindPopup(point.name);
@@ -744,23 +805,36 @@ const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPi
         }
     }, [allPickupPoints]);
     
-    useEffect(() => {
-        if (mapRef.current && formData.latitude && formData.longitude) {
-            if (markerRef.current) {
-                markerRef.current.setLatLng([formData.latitude, formData.longitude]);
+     useEffect(() => {
+        if (mapRef.current) {
+            if (formData.latitude && formData.longitude) {
+                const latLng: [number, number] = [formData.latitude, formData.longitude];
+                if (markerRef.current) {
+                    markerRef.current.setLatLng(latLng);
+                } else {
+                    markerRef.current = L.marker(latLng, { draggable: true }).addTo(mapRef.current);
+                    markerRef.current.on('dragend', (e: any) => {
+                        const { lat, lng } = e.target.getLatLng();
+                        setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
+                    });
+                }
+                mapRef.current.panTo(latLng);
             } else {
-                markerRef.current = L.marker([formData.latitude, formData.longitude], { draggable: true }).addTo(mapRef.current);
-                markerRef.current.on('dragend', (e: any) => {
-                    const { lat, lng } = e.target.getLatLng();
-                    setFormData(prev => ({ ...prev, latitude: lat, longitude: lng }));
-                });
+                if (markerRef.current) {
+                    markerRef.current.remove();
+                    markerRef.current = null;
+                }
             }
         }
     }, [formData.latitude, formData.longitude]);
 
-
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
-        setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+        const { name, value } = e.target;
+        if (name === 'latitude' || name === 'longitude') {
+            setFormData(prev => ({ ...prev, [name]: value === '' ? undefined : parseFloat(value) }));
+        } else {
+            setFormData(prev => ({ ...prev, [name]: value }));
+        }
     };
 
     const handleSubmit = (e: React.FormEvent) => {
@@ -796,6 +870,7 @@ const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPi
                         </select>
                         <input name="neighborhood" value={formData.neighborhood} onChange={handleChange} placeholder="Quartier" className="w-full p-2 border rounded" required />
                         <input name="street" value={formData.street} onChange={handleChange} placeholder="Rue / Repère" className="w-full p-2 border rounded" required />
+                        <p className="text-center text-sm text-gray-500 dark:text-gray-400">Cliquez sur la carte ou entrez les coordonnées :</p>
                         <div className="flex gap-2">
                             <input name="latitude" value={formData.latitude || ''} onChange={handleChange} placeholder="Latitude" className="w-full p-2 border rounded" type="number" step="any" />
                             <input name="longitude" value={formData.longitude || ''} onChange={handleChange} placeholder="Longitude" className="w-full p-2 border rounded" type="number" step="any" />
@@ -822,7 +897,6 @@ const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPi
                 </div>
             </div>
             <div>
-                <p className="text-sm text-gray-500 mb-2">Cliquez sur la carte pour définir les coordonnées.</p>
                 <div ref={mapContainerRef} className="h-96 w-full rounded-lg" />
             </div>
         </div>
@@ -843,9 +917,9 @@ const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStor
         });
     }, [allStores, allOrders, payouts]);
 
-    const handlePayout = (storeId: string, amount: number) => {
-        if (amount > 0 && window.confirm(`Confirmez-vous le paiement de ${amount.toLocaleString('fr-CM')} FCFA à cette boutique ?`)) {
-            onPayoutSeller(storeId, amount);
+    const handlePayout = (store: Store, amount: number) => {
+        if (amount > 0 && window.confirm(`Confirmez-vous le paiement de ${amount.toLocaleString('fr-CM')} FCFA à la boutique "${store.name}" ?`)) {
+            onPayoutSeller(store, amount);
         }
     };
     
@@ -871,10 +945,41 @@ const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStor
                                 <td className="p-2">{totalPaidOut.toLocaleString('fr-CM')} FCFA</td>
                                 <td className="p-2 font-bold">{balance.toLocaleString('fr-CM')} FCFA</td>
                                 <td className="p-2">
-                                    {balance > 0 && <button onClick={() => handlePayout(store.id, balance)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 disabled:bg-gray-400" disabled={balance <=0}>Payer le solde</button>}
+                                    {balance > 0 && <button onClick={() => handlePayout(store, balance)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 disabled:bg-gray-400" disabled={balance <=0}>Payer le solde</button>}
                                 </td>
                             </tr>
                         ))}
+                    </tbody>
+                </table>
+            </div>
+
+             <h3 className="text-lg font-bold mt-8 mb-4">Historique Détaillé des Paiements</h3>
+            <div className="overflow-x-auto max-h-80">
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                        <tr>
+                            <th className="p-2">Date</th>
+                            <th className="p-2">Boutique</th>
+                            <th className="p-2">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {payouts.length > 0 ? (
+                            payouts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => {
+                                 const store = allStores.find(s => s.id === payout.storeId);
+                                 return (
+                                    <tr key={index} className="border-b dark:border-gray-700">
+                                        <td className="p-2">{new Date(payout.date).toLocaleDateString('fr-FR')}</td>
+                                        <td className="p-2 font-semibold">{store?.name || 'Boutique Inconnue'}</td>
+                                        <td className="p-2">{payout.amount.toLocaleString('fr-CM')} FCFA</td>
+                                    </tr>
+                                );
+                            })
+                        ) : (
+                            <tr>
+                                <td colSpan={3} className="p-4 text-center text-gray-500">Aucun paiement enregistré.</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -976,7 +1081,7 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
                 setLogoPreview(result);
                 setLocalSettings(s => ({...s, logoUrl: result}));
             };
-            reader.readAsDataURL(file);
+            reader.readAsDataURL(e.target.files[0]);
         }
     };
 
@@ -1021,6 +1126,19 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
                     <label className="flex items-center gap-3"><input type="checkbox" checked={isChatEnabled} onChange={onToggleChatFeature} className="h-4 w-4 rounded"/><span>Activer le Chat Vendeur-Client</span></label>
                     <label className="flex items-center gap-3"><input type="checkbox" checked={isComparisonEnabled} onChange={onToggleComparisonFeature} className="h-4 w-4 rounded"/><span>Activer la Comparaison de Produits</span></label>
                     <label className="flex items-center gap-3"><input type="checkbox" name="isStoriesEnabled" checked={localSettings.isStoriesEnabled} onChange={handleChange} className="h-4 w-4 rounded"/><span>Activer les Stories des boutiques</span></label>
+                     <div className="pt-2">
+                        <label className="flex items-center gap-3">
+                            <input 
+                                type="checkbox" 
+                                name="canSellersCreateCategories" 
+                                checked={localSettings.canSellersCreateCategories} 
+                                onChange={handleChange} 
+                                className="h-4 w-4 rounded"
+                            />
+                            <span>Autoriser les vendeurs à créer de nouvelles catégories</span>
+                        </label>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 pl-7">Si désactivé, les vendeurs devront choisir parmi les catégories existantes lors de l'ajout d'un produit.</p>
+                    </div>
                  </div>
             </div>
 
@@ -1087,11 +1205,41 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
     );
 };
 
+const AvailabilityPanel: React.FC<{
+    deliveryAgents: User[];
+}> = ({ deliveryAgents }) => {
+    return (
+        <div className="p-4 sm:p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Disponibilité des Livreurs</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Consultez ici le statut des livreurs. Seuls les livreurs peuvent changer leur propre statut depuis leur tableau de bord.</p>
+            <div className="space-y-3">
+                {deliveryAgents.map(agent => (
+                    <div key={agent.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg flex justify-between items-center">
+                        <div>
+                            <p className="font-semibold dark:text-white">{agent.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{agent.email}</p>
+                        </div>
+                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
+                            agent.availabilityStatus === 'available'
+                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
+                                : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
+                        }`}>
+                            <div className={`w-3 h-3 rounded-full ${agent.availabilityStatus === 'available' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                            {agent.availabilityStatus === 'available' ? 'Disponible' : 'Indisponible'}
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [assignModal, setAssignModal] = useState<{ isOpen: boolean; orderId: string | null }>({ isOpen: false, orderId: null });
 
     const deliveryAgents = useMemo(() => props.allUsers.filter(u => u.role === 'delivery_agent'), [props.allUsers]);
+    const availableDeliveryAgents = useMemo(() => deliveryAgents.filter(agent => agent.availabilityStatus === 'available'), [deliveryAgents]);
 
     const handleOpenAssignModal = (orderId: string) => {
         setAssignModal({ isOpen: true, orderId });
@@ -1112,6 +1260,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
             case 'orders': return <OrderManagementPanel {...props} onOpenAssignModal={handleOpenAssignModal} />;
             case 'stores': return <StoreManagementPanel {...props} />;
             case 'users': return <UserManagementPanel {...props} />;
+            case 'availability': return <AvailabilityPanel deliveryAgents={deliveryAgents} />;
             case 'categories': return <CategoryManagementPanel {...props} />;
             case 'flash-sales': return <FlashSaleManagementPanel {...props} />;
             case 'pickup-points': return <PickupPointManagementPanel {...props} />;
@@ -1128,7 +1277,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
         {assignModal.isOpen && assignModal.orderId && (
             <AssignAgentModal
                 orderId={assignModal.orderId}
-                deliveryAgents={deliveryAgents}
+                deliveryAgents={availableDeliveryAgents}
                 onClose={handleCloseAssignModal}
                 onAssign={handleAssignAgent}
             />
@@ -1148,6 +1297,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
                             <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
                             <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
                             <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
+                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Disponibilité Livreurs" isActive={activeTab === 'availability'} onClick={() => setActiveTab('availability')} />
                             <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
                             <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
                             <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup-points'} onClick={() => setActiveTab('pickup-points')} />
