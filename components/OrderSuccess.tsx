@@ -21,6 +21,11 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ order, onNavigateHome, onNa
   }, [order.trackingNumber]);
   
   const handlePrint = () => {
+    const handleAfterPrint = () => {
+      // Nothing to reset here, but keeps printing logic consistent
+      window.removeEventListener('afterprint', handleAfterPrint);
+    };
+    window.addEventListener('afterprint', handleAfterPrint);
     window.print();
   }
 

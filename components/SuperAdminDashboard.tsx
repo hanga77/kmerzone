@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
 import QRCode from 'qrcode';
 
@@ -42,7 +42,7 @@ interface SuperAdminDashboardProps {
     onUpdateSiteSettings: (newSettings: SiteSettings) => void;
     onAdminAddCategory: (categoryName: string, parentId?: string) => void;
     onAdminDeleteCategory: (categoryId: string) => void;
-    onUpdateUserRole: (user: User, newRole: UserRole) => void;
+    onUpdateUser: (userId: string, updates: Partial<User>) => void;
     payouts: Payout[];
     onPayoutSeller: (store: Store, amount: number) => void;
     onActivateSubscription: (store: Store) => void;
@@ -52,6 +52,9 @@ interface SuperAdminDashboardProps {
     onDeleteAdvertisement: (adId: string) => void;
     onCreateUserByAdmin: (userData: Omit<User, 'id' | 'loyalty'>) => void;
     onSanctionAgent: (agentId: string, reason: string) => void;
+    onResolveRefund: (orderId: string, resolution: 'approved' | 'rejected') => void;
+    onAdminStoreMessage: (orderId: string, message: string) => void;
+    onAdminCustomerMessage: (orderId: string, message: string) => void;
 }
 
 const getFinalPriceForPayout = (item: CartItem): number => {
@@ -243,7 +246,7 @@ const DashboardOverviewPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders
     );
 };
 
-const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onUpdateOrderStatus' | 'onAssignAgent'> & { onOpenAssignModal: (orderId: string) => void }> = ({ allOrders, allUsers, onUpdateOrderStatus, onAssignAgent, onOpenAssignModal }) => {
+const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onUpdateOrderStatus' | 'onAssignAgent' | 'onResolveRefund' | 'onAdminStoreMessage' | 'onAdminCustomerMessage'> & { onOpenAssignModal: (orderId: string) => void }> = ({ allOrders, allUsers, onUpdateOrderStatus, onAssignAgent, onOpenAssignModal, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage }) => {
     const deliveryAgents = useMemo(() => allUsers.filter(u => u.role === 'delivery_agent'), [allUsers]);
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
     const printableRef = useRef<HTMLDivElement>(null);
@@ -252,9 +255,22 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
     useEffect(() => {
         if (printingOrder && qrCodeRef.current && printableRef.current) {
             QRCode.toCanvas(qrCodeRef.current, printingOrder.trackingNumber || '', { width: 80, margin: 1 }, (error) => {
-                if (error) console.error(error);
-                // Delay print to ensure QR code has rendered
-                setTimeout(() => window.print(), 100);
+                if (error) {
+                    console.error('QR Code Generation Error:', error);
+                    setPrintingOrder(null);
+                    return;
+                }
+                
+                const handleAfterPrint = () => {
+                    setPrintingOrder(null);
+                    window.removeEventListener('afterprint', handleAfterPrint);
+                };
+                window.addEventListener('afterprint', handleAfterPrint);
+                
+                // Use a short timeout to ensure the QR code is rendered before printing
+                setTimeout(() => {
+                    window.print();
+                }, 100);
             });
         }
     }, [printingOrder]);
@@ -312,10 +328,21 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
                                     <div>
                                         <h4 className="font-bold mb-1">Détails Commande</h4>
                                         <p><strong>Boutique(s):</strong> {storesInOrder}</p>
-                                        <p><strong>Dernier Suivi:</strong> {new Date(lastTracking.date).toLocaleString('fr-FR')} - {lastTracking.details}</p>
+                                        <p><strong>Dernier Suivi:</strong> {lastTracking ? `${new Date(lastTracking.date).toLocaleString('fr-FR')} - ${lastTracking.details}`: 'N/A'}</p>
                                     </div>
                                 </div>
 
+                                <div>
+                                    <h4 className="font-bold mb-1 text-sm">Historique des statuts</h4>
+                                    <ul className="text-xs space-y-1 text-gray-600 dark:text-gray-400 max-h-24 overflow-y-auto">
+                                        {order.statusChangeLog?.map((log, i) => (
+                                            <li key={i}>
+                                                <span className="font-semibold">{new Date(log.date).toLocaleString('fr-FR')}:</span> {statusTranslations[log.status]} (par {log.changedBy})
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                                
                                 {order.status === 'refund-requested' && (
                                     <div className="p-2 bg-purple-50 dark:bg-purple-900/50 rounded-md">
                                         <p className="font-semibold text-sm text-purple-800 dark:text-purple-200">Demande de remboursement :</p>
@@ -569,7 +596,7 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
     );
 };
 
-const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUserRole' | 'onCreateUserByAdmin'>> = ({ allUsers, onUpdateUserRole, onCreateUserByAdmin }) => {
+const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUser' | 'onCreateUserByAdmin' | 'allPickupPoints'>> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, allPickupPoints }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreatingUser, setIsCreatingUser] = useState(false);
     const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'seller' as UserRole });
@@ -671,9 +698,19 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
                             <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                         </div>
                         <div className="flex items-center gap-4">
+                            {user.role === 'depot_agent' && (
+                                <select
+                                    value={user.depotId || ''}
+                                    onChange={(e) => onUpdateUser(user.id, { depotId: e.target.value })}
+                                    className="text-sm border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500"
+                                >
+                                    <option value="">-- Assigner un dépôt --</option>
+                                    {allPickupPoints.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                                </select>
+                            )}
                              <select
                                 value={user.role}
-                                onChange={(e) => onUpdateUserRole(user, e.target.value as UserRole)}
+                                onChange={(e) => onUpdateUser(user.id, { role: e.target.value as UserRole })}
                                 className="text-sm border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500"
                             >
                                 <option value="customer">Client</option>
@@ -1141,7 +1178,7 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
                 setLogoPreview(result);
                 setLocalSettings(s => ({...s, logoUrl: result}));
             };
-            reader.readAsDataURL(e.target.files[0]);
+            reader.readAsDataURL(file);
         }
     };
 
@@ -1316,7 +1353,7 @@ const DeliveryTrackingPanel: React.FC<{
                 }
                 return null;
             })
-            .filter((item) => item !== null);
+            .filter((item): item is { order: Order; agent: User | undefined; deliveryDays: number; } => item !== null);
     }, [allOrders, allUsers]);
 
     const handleSanction = (agent: User | undefined) => {
@@ -1362,6 +1399,86 @@ const DeliveryTrackingPanel: React.FC<{
     );
 };
 
+const DisputesPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onResolveRefund' | 'onAdminStoreMessage' | 'onAdminCustomerMessage'>> = ({ allOrders, allUsers, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage }) => {
+    const disputedOrders = useMemo(() => allOrders.filter(o => o.status === 'refund-requested' || (o.disputeLog && o.disputeLog.length > 0)), [allOrders]);
+    
+    return (
+        <div className="p-4 sm:p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Litiges & Remboursements</h2>
+            <div className="space-y-4">
+                {disputedOrders.map(order => {
+                    const client = allUsers.find(u => u.id === order.userId);
+                    return (
+                        <details key={order.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group" open>
+                            <summary className="font-semibold cursor-pointer dark:text-white flex justify-between items-center">
+                                Commande {order.id} - Client: {client?.name || 'Inconnu'}
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
+                                    {statusTranslations[order.status]}
+                                </span>
+                            </summary>
+                            <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-4">
+                                {order.status === 'refund-requested' && (
+                                     <div className="p-3 bg-purple-50 dark:bg-purple-900/50 rounded-md border border-purple-200 dark:border-purple-700">
+                                        <h4 className="font-bold text-purple-800 dark:text-purple-200">Demande Initiale du Client</h4>
+                                        <p className="text-sm italic text-purple-700 dark:text-purple-300 my-2">"{order.refundReason}"</p>
+                                        {order.refundEvidenceUrls && order.refundEvidenceUrls.length > 0 && (
+                                            <div className="flex gap-2 flex-wrap">
+                                                {order.refundEvidenceUrls.map((url, i) => (
+                                                    <a href={url} target="_blank" rel="noopener noreferrer" key={i}><img src={url} alt={`Evidence ${i + 1}`} className="h-20 w-20 object-cover rounded-md border-2 border-purple-300"/></a>
+                                                ))}
+                                            </div>
+                                        )}
+                                        <div className="mt-3 flex gap-2">
+                                            <button onClick={() => onResolveRefund(order.id, 'approved')} className="text-sm bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600">Approuver le remboursement</button>
+                                            <button onClick={() => onResolveRefund(order.id, 'rejected')} className="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">Rejeter la demande</button>
+                                        </div>
+                                    </div>
+                                )}
+                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Communication avec le client */}
+                                    <div>
+                                        <h4 className="font-semibold mb-2">Communication avec le Client</h4>
+                                        <div className="p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700 max-h-40 overflow-y-auto space-y-2 mb-2 text-sm">
+                                            {order.disputeLog?.filter(m => m.author !== 'seller').map((msg, i) => (
+                                                <div key={i}>
+                                                    <span className={`font-bold ${msg.author === 'admin' ? 'text-purple-600' : 'text-blue-600'}`}>{msg.author === 'admin' ? 'Vous' : 'Client'}:</span> {msg.message}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <form onSubmit={e => { e.preventDefault(); const input = (e.target as any).message; onAdminCustomerMessage(order.id, input.value); input.value=''; }}>
+                                            <div className="flex gap-2">
+                                                <input name="message" placeholder="Répondre au client..." className="flex-grow text-sm p-1 border rounded-md dark:bg-gray-600"/>
+                                                <button type="submit" className="text-sm p-1.5 bg-blue-500 text-white rounded-md"><PaperAirplaneIcon className="w-4 h-4"/></button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                    {/* Communication avec la boutique */}
+                                    <div>
+                                        <h4 className="font-semibold mb-2">Communication avec la Boutique</h4>
+                                         <div className="p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700 max-h-40 overflow-y-auto space-y-2 mb-2 text-sm">
+                                            {order.disputeLog?.filter(m => m.author !== 'customer').map((msg, i) => (
+                                                <div key={i}>
+                                                    <span className={`font-bold ${msg.author === 'admin' ? 'text-purple-600' : 'text-green-600'}`}>{msg.author === 'admin' ? 'Vous' : 'Vendeur'}:</span> {msg.message}
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <form onSubmit={e => { e.preventDefault(); const input = (e.target as any).message; onAdminStoreMessage(order.id, input.value); input.value=''; }}>
+                                             <div className="flex gap-2">
+                                                <input name="message" placeholder="Donner des instructions..." className="flex-grow text-sm p-1 border rounded-md dark:bg-gray-600"/>
+                                                <button type="submit" className="text-sm p-1.5 bg-green-500 text-white rounded-md"><PaperAirplaneIcon className="w-4 h-4"/></button>
+                                            </div>
+                                        </form>
+                                    </div>
+                               </div>
+                            </div>
+                        </details>
+                    );
+                })}
+            </div>
+        </div>
+    );
+};
+
 
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState('overview');
@@ -1396,6 +1513,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
             case 'pickup-points': return <PickupPointManagementPanel {...props} />;
             case 'payouts': return <PayoutsPanel {...props} />;
             case 'advertisements': return <AdManagementPanel {...props} />;
+            case 'disputes': return <DisputesPanel {...props} />;
             case 'settings': return <SiteSettingsPanel {...props} />;
             case 'logs': return <LogsPanel siteActivityLogs={props.siteActivityLogs} />;
             default: return <DashboardOverviewPanel {...props} />;
@@ -1425,6 +1543,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
                         <div className="flex space-x-1 sm:space-x-2 overflow-x-auto">
                             <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                             <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
+                            <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} />
                             <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
                             <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
                             <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Suivi Livraisons" isActive={activeTab === 'delivery-tracking'} onClick={() => setActiveTab('delivery-tracking')} />

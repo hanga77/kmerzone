@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
 import { XIcon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
+import type { User } from '../types';
 
 interface LoginModalProps {
   onClose: () => void;
+  onLoginSuccess: (user: User) => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
   const [view, setView] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const { login, register } = useAuth();
+  const { login, register, allUsers } = useAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -21,7 +23,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
     }
     const success = login(email, password);
     if (success) {
-      onClose();
+      const loggedInUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+      if(loggedInUser) {
+        onLoginSuccess(loggedInUser);
+      } else {
+        // This case handles auto-registration for new customers in the login flow
+        const newUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+        if(newUser) onLoginSuccess(newUser);
+      }
     }
   };
 
@@ -33,7 +42,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose }) => {
     }
     const success = register(name, email);
     if (success) {
-      onClose();
+       const registeredUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
+       if(registeredUser) onLoginSuccess(registeredUser);
     }
   };
 

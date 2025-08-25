@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import type { Order, OrderStatus, PickupPoint, TrackingEvent } from '../types';
-import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon } from './Icons';
+import type { Order, OrderStatus, PickupPoint, TrackingEvent, DisputeMessage } from '../types';
+import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
 
 interface OrderDetailPageProps {
   order: Order;
@@ -9,6 +9,7 @@ interface OrderDetailPageProps {
   allPickupPoints: PickupPoint[];
   onCancelOrder: (orderId: string) => void;
   onRequestRefund: (orderId: string, reason: string, evidenceUrls: string[]) => void;
+  onCustomerDisputeMessage: (orderId: string, message: string) => void;
 }
 
 const RefundRequestModal: React.FC<{
@@ -124,7 +125,7 @@ const statusTranslations: Record<OrderStatus, { title: string, description: stri
 };
 
 
-const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, onCancelOrder, onRequestRefund }) => {
+const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
   const currentStatusIndex = statusSteps.indexOf(order.status);
@@ -231,38 +232,56 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
             )}
           </div>
 
-           <div className="grid md:grid-cols-2 gap-8 border-t dark:border-gray-700 pt-6 mt-8">
+          <div className="grid md:grid-cols-2 gap-8 border-t dark:border-gray-700 pt-6 mt-8">
             <div>
-                <h3 className="font-semibold mb-4 dark:text-white flex items-center gap-2"><QrCodeIcon className="w-5 h-5"/> Suivi par QR Code</h3>
-                <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                    <canvas ref={qrCodeRef} className="rounded-lg shadow-sm"></canvas>
-                    <div>
-                      <p className="text-sm font-semibold dark:text-gray-200">Numéro de suivi :</p>
-                      <p className="font-mono text-lg bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-md inline-block">{order.trackingNumber}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Utilisez ce code pour le suivi auprès de nos agents.</p>
-                    </div>
+                <h3 className="font-semibold mb-4 dark:text-white">Historique des statuts</h3>
+                <div className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 max-h-48 overflow-y-auto">
+                    <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                        {order.statusChangeLog?.map((log, index) => (
+                            <li key={index}>
+                                <span className="font-semibold">{new Date(log.date).toLocaleString('fr-FR')}:</span> {statusTranslations[log.status].title} <span className="text-xs text-gray-400">(par {log.changedBy})</span>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             </div>
             <div>
-              <h3 className="font-semibold mb-4 dark:text-white">Historique détaillé</h3>
-              <div className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 max-h-48 overflow-y-auto">
-                  <ul className="space-y-4">
-                      {order.trackingHistory.slice().sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((event, index) => (
-                          <li key={index} className="flex gap-3">
-                              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-white flex-shrink-0 mt-0.5 ${index === 0 ? 'bg-kmer-green' : 'bg-gray-400 dark:bg-gray-500'}`}>
-                                  <ClockIcon className="w-3 h-3" />
-                              </div>
-                              <div>
-                                  <p className="font-semibold text-sm text-gray-800 dark:text-gray-200">{statusTranslations[event.status].title}</p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">{new Date(event.date).toLocaleString('fr-FR')} - <span className="font-medium">{event.location}</span></p>
-                              </div>
-                          </li>
-                      ))}
-                  </ul>
+              <h3 className="font-semibold mb-4 dark:text-white flex items-center gap-2"><QrCodeIcon className="w-5 h-5"/> Suivi par QR Code</h3>
+              <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                  <canvas ref={qrCodeRef} className="rounded-lg shadow-sm"></canvas>
+                  <div>
+                    <p className="text-sm font-semibold dark:text-gray-200">Numéro de suivi :</p>
+                    <p className="font-mono text-lg bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-md inline-block">{order.trackingNumber}</p>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">Utilisez ce code pour le suivi auprès de nos agents.</p>
+                  </div>
               </div>
             </div>
           </div>
           
+          {order.disputeLog && order.disputeLog.length > 0 && (
+            <div className="border-t dark:border-gray-700 pt-6 mt-8">
+                <h3 className="font-semibold mb-4 dark:text-white">Discussion sur le litige</h3>
+                <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg space-y-4">
+                    <div className="max-h-48 overflow-y-auto space-y-3 pr-2">
+                        {order.disputeLog.filter(m => m.author !== 'seller').map((msg, i) => (
+                            <div key={i} className={`flex ${msg.author === 'customer' ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-md p-3 rounded-xl text-sm ${msg.author === 'customer' ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                    <p className="font-bold mb-1">{msg.author === 'customer' ? 'Vous' : 'Admin'}</p>
+                                    <p>{msg.message}</p>
+                                    <p className="text-xs opacity-70 mt-1 text-right">{new Date(msg.date).toLocaleTimeString('fr-FR')}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <form onSubmit={e => { e.preventDefault(); const input = (e.target as any).message; onCustomerDisputeMessage(order.id, input.value); input.value=''; }}>
+                        <div className="flex gap-2">
+                            <input name="message" placeholder="Répondre à l'administrateur..." className="flex-grow text-sm p-2 border rounded-md dark:bg-gray-700"/>
+                            <button type="submit" className="p-2 bg-blue-500 text-white rounded-md"><PaperAirplaneIcon className="w-5 h-5"/></button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+          )}
 
           <div className="grid md:grid-cols-2 gap-8 border-t dark:border-gray-700 pt-6 mt-8">
             <div>

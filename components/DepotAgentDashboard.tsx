@@ -1,11 +1,12 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import type { Order, OrderStatus } from '../types';
+import type { Order, OrderStatus, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon, ChevronDownIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
 interface DepotAgentDashboardProps {
+  user: User;
   allOrders: Order[];
   onCheckIn: (orderId: string, storageLocationId: string) => void;
   onReportDiscrepancy: (orderId: string, reason: string) => void;
@@ -194,15 +195,22 @@ const ActionChoiceModal: React.FC<{
     );
 };
 
-const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, onCheckIn, onReportDiscrepancy, onLogout }) => {
-  const { user } = useAuth();
+export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allOrders, onCheckIn, onReportDiscrepancy, onLogout }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'arrivals' | 'inventory'>('overview');
   const [modalState, setModalState] = useState<'closed' | 'scanner' | 'choice' | 'storage' | 'discrepancy'>('closed');
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
   const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
   
-  const ordersForDepot = useMemo(() => allOrders.filter(o => o.status === 'picked-up'), [allOrders]);
-  const inventory = useMemo(() => allOrders.filter(o => o.status === 'at-depot'), [allOrders]);
+  const ordersForDepot = useMemo(() => {
+    if (!user?.depotId) return [];
+    return allOrders.filter(o => o.status === 'picked-up' && o.deliveryMethod === 'pickup' && o.pickupPointId === user.depotId);
+  }, [allOrders, user]);
+
+  const inventory = useMemo(() => {
+    if (!user?.depotId) return [];
+    return allOrders.filter(o => o.status === 'at-depot' && o.pickupPointId === user.depotId);
+  }, [allOrders, user]);
+
   const occupiedSlots = useMemo(() => inventory.map(o => o.storageLocationId!).filter(Boolean), [inventory]);
 
   const handleScanSuccess = (decodedText: string) => {
@@ -255,6 +263,64 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
     </button>
   );
 
+  const StatCard: React.FC<{icon: React.ReactNode, label: string, value: string | number}> = ({icon, label, value}) => (
+    <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg flex items-center gap-4">
+        <div className="text-kmer-green">{icon}</div>
+        <div>
+            <p className="text-2xl font-bold text-gray-800 dark:text-white">{value}</p>
+            <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
+        </div>
+    </div>
+);
+
+  const renderContent = () => {
+      switch(activeTab) {
+          case 'arrivals':
+              return (
+                  <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Colis en attente de réception</h2>
+                      <div className="space-y-3">
+                          {ordersForDepot.map(o => (
+                              <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
+                                  <p className="font-semibold">{o.id}</p>
+                                  <p className="text-sm text-gray-500">En provenance de: {o.items.map(i => i.vendor).join(', ')}</p>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              );
+          case 'inventory':
+              return (
+                  <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Inventaire Actuel</h2>
+                      <div className="space-y-3">
+                          {inventory.map(o => (
+                              <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
+                                  <div>
+                                      <p className="font-semibold">{o.id}</p>
+                                      <p className="text-sm text-gray-500">Client: {o.shippingAddress.fullName}</p>
+                                  </div>
+                                  <span className="font-mono text-lg font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-md">{o.storageLocationId}</span>
+                              </div>
+                          ))}
+                      </div>
+                  </div>
+              );
+          case 'overview':
+          default:
+              return (
+                   <div className="p-6">
+                      <h2 className="text-xl font-bold mb-4">Aperçu du Dépôt</h2>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                          <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Colis à recevoir" value={analytics.itemsToReceive} />
+                          <StatCard icon={<ArchiveBoxIcon className="w-7 h-7"/>} label="Colis en stock" value={analytics.itemsInStock} />
+                          <StatCard icon={<ChartPieIcon className="w-7 h-7"/>} label="Capacité utilisée" value={analytics.capacity} />
+                      </div>
+                  </div>
+              );
+      }
+  }
+
   return (
     <>
       {modalState === 'scanner' && <ScannerModal onClose={closeModal} onScanSuccess={handleScanSuccess} scanResult={scanResult} />}
@@ -263,89 +329,36 @@ const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ allOrders, on
       {modalState === 'discrepancy' && scannedOrder && <DiscrepancyModal order={scannedOrder} onClose={closeModal} onSubmit={handleDiscrepancySubmit} />}
       
       <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-          <header className="bg-white dark:bg-gray-800 shadow-sm">
-              <div className="container mx-auto px-4 sm:px-6 py-4">
-                  <div className="flex justify-between items-center">
-                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Dépôt</h1>
-                    <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
-                  </div>
-                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
-                      <div className="flex space-x-2">
-                          <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                          <TabButton icon={<QrCodeIcon className="w-5 h-5"/>} label="Arrivages" isActive={activeTab === 'arrivals'} onClick={() => setActiveTab('arrivals')} count={analytics.itemsToReceive} />
-                          <TabButton icon={<ArchiveBoxIcon className="w-5 h-5"/>} label="Inventaire" isActive={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} count={analytics.itemsInStock} />
-                      </div>
-                  </div>
+        <header className="bg-white dark:bg-gray-800 shadow-sm">
+          <div className="container mx-auto px-4 sm:px-6 py-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Agent de Dépôt</h1>
+                <p className="text-gray-500 dark:text-gray-400">Dépôt: {user.depotId}</p>
               </div>
-          </header>
-          <main className="container mx-auto px-4 sm:px-6 py-6">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                  {activeTab === 'overview' && (
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold dark:text-white">{analytics.itemsToReceive}</p><p className="text-sm text-gray-500 dark:text-gray-400">Colis en attente de réception</p></div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold dark:text-white">{analytics.itemsInStock}</p><p className="text-sm text-gray-500 dark:text-gray-400">Colis en stock</p></div>
-                          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg"><p className="text-2xl font-bold dark:text-white">{analytics.capacity}</p><p className="text-sm text-gray-500 dark:text-gray-400">Capacité de stockage utilisée</p></div>
-                      </div>
-                  )}
-                  {activeTab === 'arrivals' && (
-                       <div>
-                           <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold">Arrivages Attendus</h2>
-                                <button onClick={() => setModalState('scanner')} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2">
-                                    <QrCodeIcon className="w-5 h-5"/> Scanner une nouvelle arrivée
-                                </button>
-                           </div>
-                           <div className="space-y-2">
-                            {ordersForDepot.length > 0 ? ordersForDepot.map(order => (
-                                <details key={order.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md group">
-                                    <summary className="font-semibold cursor-pointer flex justify-between items-center">
-                                      <span>{order.id} - Client: {order.shippingAddress.fullName}</span>
-                                      <ChevronDownIcon className="w-5 h-5 group-open:rotate-180 transition-transform"/>
-                                    </summary>
-                                    <div className="mt-2 pt-2 border-t dark:border-gray-700 text-sm">
-                                      <p className="font-bold">Contenu du colis :</p>
-                                      <ul className="list-disc pl-5 text-gray-600 dark:text-gray-400">
-                                        {order.items.map(item => (
-                                          <li key={item.id}>{item.name} (x{item.quantity})</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                </details>
-                            )) : <p className="text-sm text-gray-500">Aucun colis en transit vers le dépôt.</p>}
-                           </div>
-                       </div>
-                  )}
-                  {activeTab === 'inventory' && (
-                       <div>
-                           <h2 className="text-xl font-bold mb-4">Inventaire Actuel</h2>
-                           <div className="space-y-2">
-                            {inventory.length > 0 ? inventory.map(order => (
-                                <details key={order.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md group">
-                                    <summary className="font-semibold cursor-pointer flex justify-between items-center">
-                                      <div className="flex items-center gap-4">
-                                        <span>{order.id} - Client: {order.shippingAddress.fullName}</span>
-                                        <span className="font-mono text-base font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-md">{order.storageLocationId}</span>
-                                      </div>
-                                      <ChevronDownIcon className="w-5 h-5 group-open:rotate-180 transition-transform"/>
-                                    </summary>
-                                    <div className="mt-2 pt-2 border-t dark:border-gray-700 text-sm">
-                                      <p className="font-bold">Contenu du colis :</p>
-                                      <ul className="list-disc pl-5 text-gray-600 dark:text-gray-400">
-                                        {order.items.map(item => (
-                                          <li key={item.id}>{item.name} (x{item.quantity})</li>
-                                        ))}
-                                      </ul>
-                                    </div>
-                                </details>
-                            )) : <p className="text-sm text-gray-500">Aucun article en stock.</p>}
-                           </div>
-                       </div>
-                  )}
-              </div>
-          </main>
+              <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
+            </div>
+            <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
+                    <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                    <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Arrivages" isActive={activeTab === 'arrivals'} onClick={() => setActiveTab('arrivals')} count={ordersForDepot.length} />
+                    <TabButton icon={<ArchiveBoxIcon className="w-5 h-5"/>} label="Inventaire" isActive={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} count={inventory.length} />
+                </div>
+                <button 
+                  onClick={() => setModalState('scanner')}
+                  className="w-full sm:w-auto bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
+                >
+                  <QrCodeIcon className="w-5 h-5"/> Enregistrer un Colis
+                </button>
+            </div>
+          </div>
+        </header>
+        <main className="container mx-auto px-4 sm:px-6 py-6">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                {renderContent()}
+            </div>
+        </main>
       </div>
     </>
   );
 };
-
-export default DepotAgentDashboard;

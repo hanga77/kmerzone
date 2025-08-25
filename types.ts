@@ -148,6 +148,7 @@ export interface User {
     loyalty: UserLoyalty;
     availabilityStatus?: UserAvailabilityStatus;
     warnings?: Warning[];
+    depotId?: string;
 }
 
 export interface Address {
@@ -178,6 +179,7 @@ export interface NewOrderData {
     items: CartItem[];
     subtotal: number;
     deliveryFee: number;
+
     total: number;
     shippingAddress: Address;
     deliveryMethod: 'pickup' | 'home-delivery';
@@ -199,6 +201,18 @@ export interface Discrepancy {
     reportedBy: string; // User ID
 }
 
+export interface DisputeMessage {
+    author: 'admin' | 'seller' | 'customer';
+    message: string;
+    date: string; // ISO string
+}
+
+export interface StatusChangeLogEntry {
+    status: OrderStatus;
+    date: string; // ISO string
+    changedBy: string; // e.g., 'System', 'Admin: Super Admin', 'Customer'
+}
+
 export interface Order extends NewOrderData {
     id: string;
     status: OrderStatus;
@@ -213,6 +227,8 @@ export interface Order extends NewOrderData {
     checkedInAt?: string; // ISO string
     checkedInBy?: string; // user id of depot agent
     discrepancy?: Discrepancy;
+    disputeLog?: DisputeMessage[];
+    statusChangeLog?: StatusChangeLogEntry[];
 }
 
 export interface Payout {

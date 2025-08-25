@@ -523,14 +523,21 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
     useEffect(() => {
         if (printingOrder && qrCodeRef.current && printableRef.current) {
             QRCode.toCanvas(qrCodeRef.current, printingOrder.trackingNumber || '', { width: 80, margin: 1 }, (error) => {
-                if (error) { 
+                if (error) {
                     console.error('QR Code Generation Error:', error);
                     setPrintingOrder(null);
                     return;
                 }
+                
+                const handleAfterPrint = () => {
+                    setPrintingOrder(null);
+                    window.removeEventListener('afterprint', handleAfterPrint);
+                };
+                window.addEventListener('afterprint', handleAfterPrint);
+                
+                // Use a short timeout to ensure the QR code is rendered before printing
                 setTimeout(() => {
                     window.print();
-                    setPrintingOrder(null); 
                 }, 100);
             });
         }

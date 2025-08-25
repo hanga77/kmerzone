@@ -163,14 +163,14 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
 
   const tasks = useMemo(() => {
     if (!user) return [];
-    const taskList: { type: 'pickup' | 'dropoff' | 'delivery', order: Order, location: any, name: string }[] = [];
+    const taskList: { type: 'pickup' | 'dropoff', order: Order, location: any, name: string, taskTypeLabel: 'COLLECTE' | 'DESTINATION' }[] = [];
     
     assignedOrders.forEach(order => {
         // Pickup from store
         if (order.status === 'ready-for-pickup') {
             const store = allStores.find(s => s.name === order.items[0].vendor);
             if (store) {
-                taskList.push({ type: 'pickup', order, location: { lat: store.latitude, lng: store.longitude, address: store.physicalAddress }, name: `Retrait chez ${store.name}` });
+                taskList.push({ type: 'pickup', order, location: { lat: store.latitude, lng: store.longitude, address: store.physicalAddress }, name: `Chez ${store.name}`, taskTypeLabel: 'COLLECTE' });
             }
         }
         // Dropoff at depot/pickup point or deliver to customer
@@ -178,10 +178,10 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
             if (order.deliveryMethod === 'pickup') {
                 const point = allPickupPoints.find(p => p.id === order.pickupPointId);
                 if (point) {
-                    taskList.push({ type: 'dropoff', order, location: { lat: point.latitude, lng: point.longitude, address: `${point.name}, ${point.neighborhood}` }, name: `Dépôt à ${point.name}` });
+                    taskList.push({ type: 'dropoff', order, location: { lat: point.latitude, lng: point.longitude, address: `${point.name}, ${point.neighborhood}` }, name: `Point Dépôt: ${point.name}`, taskTypeLabel: 'DESTINATION' });
                 }
             } else {
-                 taskList.push({ type: 'delivery', order, location: { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude, address: order.shippingAddress.address }, name: `Livraison chez ${order.shippingAddress.fullName}` });
+                 taskList.push({ type: 'dropoff', order, location: { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude, address: order.shippingAddress.address }, name: `Client: ${order.shippingAddress.fullName}`, taskTypeLabel: 'DESTINATION' });
             }
         }
     });
@@ -387,10 +387,13 @@ const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrde
                 const action = getActionForOrder(task.order);
                 return (
                   <div key={`${task.order.id}-${index}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col sm:flex-row justify-between items-start gap-4">
-                    <div className="flex items-start gap-4">
-                      <div className={`p-3 rounded-full ${task.type === 'pickup' ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600'}`}>
-                        {task.type === 'pickup' ? <BuildingStorefrontIcon className="w-6 h-6"/> : <MapPinIcon className="w-6 h-6"/>}
-                      </div>
+                    <div className="flex items-start gap-4 flex-grow">
+                        <div className="flex flex-col items-center flex-shrink-0">
+                            <div className={`p-3 rounded-full ${task.type === 'pickup' ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600'}`}>
+                                {task.type === 'pickup' ? <BuildingStorefrontIcon className="w-6 h-6"/> : <MapPinIcon className="w-6 h-6"/>}
+                            </div>
+                            <span className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full ${task.taskTypeLabel === 'COLLECTE' ? 'bg-green-200 text-green-800' : 'bg-blue-200 text-blue-800'}`}>{task.taskTypeLabel}</span>
+                        </div>
                       <div>
                         <p className="font-bold text-lg dark:text-white">{task.name}</p>
                         <p className="text-sm text-gray-500 dark:text-gray-400">{task.order.id}</p>
