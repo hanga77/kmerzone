@@ -1,5 +1,5 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
@@ -52,6 +52,26 @@ interface SuperAdminDashboardProps {
     onDeleteAdvertisement: (adId: string) => void;
     onCreateUserByAdmin: (userData: Omit<User, 'id' | 'loyalty'>) => void;
 }
+
+const getFinalPriceForPayout = (item: CartItem): number => {
+    if (item.selectedVariant) {
+        const variantDetail = item.variantDetails?.find(vd => {
+            if (!item.selectedVariant) return false;
+            const vdKeys = Object.keys(vd.options);
+            const selectedKeys = Object.keys(item.selectedVariant);
+            if (vdKeys.length !== selectedKeys.length) return false;
+            return vdKeys.every(key => vd.options[key] === item.selectedVariant![key]);
+        });
+        if (variantDetail?.price) {
+            return variantDetail.price;
+        }
+    }
+    // Note: This cannot reliably recalculate historical flash sales or date-bound promotions.
+    // It uses the promotion price if it exists on the product data within the order item.
+    // A better data model would store the exact price paid per item in the order.
+    return item.promotionPrice ?? item.price;
+};
+
 
 const AssignAgentModal: React.FC<{
     orderId: string;
@@ -908,7 +928,9 @@ const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStor
         return allStores.map(store => {
             const deliveredOrders = allOrders.filter(o => o.status === 'delivered' && o.items.some(i => i.vendor === store.name));
             const totalRevenue = deliveredOrders.reduce((sum, order) => {
-                const storeItemsTotal = order.items.filter(i => i.vendor === store.name).reduce((itemSum, item) => itemSum + (item.promotionPrice ?? item.price) * item.quantity, 0);
+                const storeItemsTotal = order.items
+                    .filter(i => i.vendor === store.name)
+                    .reduce((itemSum, item) => itemSum + getFinalPriceForPayout(item) * item.quantity, 0);
                 return sum + storeItemsTotal;
             }, 0);
             const totalPaidOut = payouts.filter(p => p.storeId === store.id).reduce((sum, p) => sum + p.amount, 0);

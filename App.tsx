@@ -297,6 +297,29 @@ const initialProducts: Product[] = [
     { id: '28', name: 'Bière "33" Export (Pack de 6)', price: 4000, imageUrls: ['https://www.bebe-cash.com/wp-content/uploads/2021/07/33-export.jpg'], vendor: 'Mama Africa', description: "La bière blonde de référence au Cameroun. Pack de 6 bouteilles de 65cl.", reviews: [], stock: 50, categoryId: 'cat-sub-3', status: 'published' },
 ];
 
+const sampleDeliveredOrder: Order = {
+    id: 'ORDER-SAMPLE-1',
+    userId: 'customer-1', // A generic customer ID
+    items: [
+        // Using a non-null assertion because we know these products exist in initialProducts
+        { ...initialProducts.find(p => p.id === '1')!, quantity: 1 }, // Ndolé Royal
+        { ...initialProducts.find(p => p.id === '5')!, quantity: 2 }  // Miel d'Oku
+    ],
+    subtotal: 13000, // 3000 (promo) + 2 * 5000 = 13000
+    deliveryFee: 1000,
+    total: 14000,
+    shippingAddress: { fullName: 'Client de Test', phone: '655555555', address: '123 Rue du Test', city: 'Yaoundé' },
+    deliveryMethod: 'home-delivery',
+    orderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
+    status: 'delivered',
+    trackingNumber: 'KZSAMPLE1',
+    trackingHistory: [
+        { status: 'confirmed', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), location: 'Mama Africa', details: 'Commande confirmée' },
+        { status: 'picked-up', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), location: 'Livreur', details: 'Colis pris en charge' },
+        { status: 'delivered', date: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(), location: 'Yaoundé', details: 'Livré avec succès' }
+    ]
+};
+
 const initialStores: Store[] = [
     { 
         id: 'store-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
@@ -398,7 +421,7 @@ export default function App() {
   const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
   const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
   const [allStores, setAllStores] = usePersistentState<Store[]>('allStores', initialStores);
-  const [allOrders, setAllOrders] = usePersistentState<Order[]>('allOrders', []);
+  const [allOrders, setAllOrders] = usePersistentState<Order[]>('allOrders', [sampleDeliveredOrder]);
   const [allPromoCodes, setAllPromoCodes] = usePersistentState<PromoCode[]>('allPromoCodes', []);
   const [siteActivityLogs, setSiteActivityLogs] = usePersistentState<SiteActivityLog[]>('siteActivityLogs', []);
   const [flashSales, setFlashSales] = usePersistentState<FlashSale[]>('flashSales', initialFlashSales);
