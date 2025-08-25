@@ -445,6 +445,20 @@ export default function App() {
       setComparisonProducts(allProducts);
     }, [allProducts, setComparisonProducts]);
 
+     useEffect(() => {
+        // Log application start if no logs exist yet.
+        if (siteActivityLogs.length === 0) {
+            const newLog: SiteActivityLog = {
+                id: Date.now().toString(),
+                timestamp: new Date().toISOString(),
+                user: { id: 'system', name: 'Système', role: 'superadmin' },
+                action: 'Application Started',
+                details: 'The KMER ZONE application has been successfully initialized.'
+            };
+            setSiteActivityLogs([newLog]);
+        }
+    }, []); // Run only once on mount
+
     useEffect(() => {
         if (user && user.role === 'customer' && siteSettings.isPremiumProgramEnabled) {
             const userOrders = allOrders.filter(o => o.userId === user.id && o.status === 'delivered');
