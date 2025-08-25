@@ -51,6 +51,7 @@ interface SuperAdminDashboardProps {
     onUpdateAdvertisement: (ad: Advertisement) => void;
     onDeleteAdvertisement: (adId: string) => void;
     onCreateUserByAdmin: (userData: Omit<User, 'id' | 'loyalty'>) => void;
+    onSanctionAgent: (agentId: string, reason: string) => void;
 }
 
 const getFinalPriceForPayout = (item: CartItem): number => {
@@ -298,6 +299,24 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
                                     </span>
                                 </div>
                             </div>
+                            {order.status === 'refund-requested' && (
+                                <div className="mt-3 pt-3 border-t dark:border-gray-700 p-2 bg-purple-50 dark:bg-purple-900/50 rounded-md">
+                                    <p className="font-semibold text-sm text-purple-800 dark:text-purple-200">Demande de remboursement :</p>
+                                    <p className="text-sm italic text-purple-700 dark:text-purple-300">"{order.refundReason}"</p>
+                                    {order.refundEvidenceUrls && order.refundEvidenceUrls.length > 0 && (
+                                        <div className="mt-2">
+                                            <p className="font-semibold text-xs text-purple-800 dark:text-purple-200">Preuves fournies :</p>
+                                            <div className="flex gap-2 flex-wrap mt-1">
+                                                {order.refundEvidenceUrls.map((url, i) => (
+                                                    <a href={url} target="_blank" rel="noopener noreferrer" key={i} className="block border-2 border-purple-200 rounded-md overflow-hidden">
+                                                        <img src={url} alt={`Evidence ${i + 1}`} className="h-16 w-16 object-cover" />
+                                                    </a>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                             <div className="mt-4 pt-3 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
                                 <div className="flex-1">
                                     <label className="text-xs font-medium dark:text-gray-300">Changer le statut :</label>
@@ -1256,6 +1275,75 @@ const AvailabilityPanel: React.FC<{
     );
 };
 
+const DeliveryTrackingPanel: React.FC<{
+    allOrders: Order[];
+    allUsers: User[];
+    onSanctionAgent: (agentId: string, reason: string) => void;
+}> = ({ allOrders, allUsers, onSanctionAgent }) => {
+    const lateDeliveries = useMemo(() => {
+        return allOrders
+            .map(o => {
+                if (o.status !== 'delivered' || !o.agentId) return null;
+                const confirmedEvent = o.trackingHistory.find(e => e.status === 'confirmed');
+                const deliveredEvent = o.trackingHistory.find(e => e.status === 'delivered');
+                if (!confirmedEvent || !deliveredEvent) return null;
+                
+                const deliveryTime = new Date(deliveredEvent.date).getTime() - new Date(confirmedEvent.date).getTime();
+                const deliveryDays = deliveryTime / (1000 * 60 * 60 * 24);
+                
+                if (deliveryDays > 5) {
+                    const agent = allUsers.find(u => u.id === o.agentId);
+                    return { order: o, agent, deliveryDays: Math.round(deliveryDays) };
+                }
+                return null;
+            })
+            .filter((item): item is { order: Order; agent?: User; deliveryDays: number } => item !== null);
+    }, [allOrders, allUsers]);
+
+    const handleSanction = (agent: User | undefined) => {
+        if (!agent) {
+            alert("Impossible de trouver les informations du livreur.");
+            return;
+        }
+        const reason = window.prompt(`Motif de la sanction pour ${agent.name} (retard de livraison) :`);
+        if (reason) {
+            onSanctionAgent(agent.id, `Retard de livraison : ${reason}`);
+        }
+    };
+
+    return (
+        <div className="p-4 sm:p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Suivi des Retards de Livraison</h2>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Cette section affiche les commandes livrées avec plus de 5 jours de retard.</p>
+            {lateDeliveries.length > 0 ? (
+                <div className="space-y-3">
+                    {lateDeliveries.map(({ order, agent, deliveryDays }) => (
+                        <div key={order.id} className="p-4 bg-red-50 dark:bg-red-900/50 rounded-lg flex flex-col sm:flex-row justify-between items-center">
+                            <div>
+                                <p className="font-bold text-red-800 dark:text-red-200">Commande {order.id}</p>
+                                <p className="text-sm text-red-700 dark:text-red-300">
+                                    Livrée en <strong>{deliveryDays} jours</strong>
+                                </p>
+                                <p className="text-sm mt-1">Livreur: {agent ? agent.name : 'Inconnu'}</p>
+                            </div>
+                            <button
+                                onClick={() => handleSanction(agent)}
+                                disabled={!agent}
+                                className="mt-2 sm:mt-0 w-full sm:w-auto bg-yellow-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-yellow-600 disabled:bg-gray-400"
+                            >
+                                Sanctionner le livreur
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            ) : (
+                <p className="text-gray-500 dark:text-gray-400">Aucun retard de livraison majeur détecté.</p>
+            )}
+        </div>
+    );
+};
+
+
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [assignModal, setAssignModal] = useState<{ isOpen: boolean; orderId: string | null }>({ isOpen: false, orderId: null });
@@ -1283,6 +1371,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
             case 'stores': return <StoreManagementPanel {...props} />;
             case 'users': return <UserManagementPanel {...props} />;
             case 'availability': return <AvailabilityPanel deliveryAgents={deliveryAgents} />;
+            case 'delivery-tracking': return <DeliveryTrackingPanel allOrders={props.allOrders} allUsers={props.allUsers} onSanctionAgent={props.onSanctionAgent} />;
             case 'categories': return <CategoryManagementPanel {...props} />;
             case 'flash-sales': return <FlashSaleManagementPanel {...props} />;
             case 'pickup-points': return <PickupPointManagementPanel {...props} />;
@@ -1319,7 +1408,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
                             <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
                             <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
                             <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Disponibilité Livreurs" isActive={activeTab === 'availability'} onClick={() => setActiveTab('availability')} />
+                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Suivi Livraisons" isActive={activeTab === 'delivery-tracking'} onClick={() => setActiveTab('delivery-tracking')} />
                             <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
                             <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
                             <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup-points'} onClick={() => setActiveTab('pickup-points')} />

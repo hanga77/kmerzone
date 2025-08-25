@@ -1,33 +1,55 @@
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import type { Order, OrderStatus, PickupPoint, TrackingEvent } from '../types';
-import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon, PrinterIcon } from './Icons';
+import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon } from './Icons';
 
 interface OrderDetailPageProps {
   order: Order;
   onBack: () => void;
   allPickupPoints: PickupPoint[];
   onCancelOrder: (orderId: string) => void;
-  onRequestRefund: (orderId: string, reason: string) => void;
+  onRequestRefund: (orderId: string, reason: string, evidenceUrls: string[]) => void;
 }
 
 const RefundRequestModal: React.FC<{
     onClose: () => void;
-    onSubmit: (reason: string) => void;
+    onSubmit: (reason: string, evidenceUrls: string[]) => void;
 }> = ({ onClose, onSubmit }) => {
     const [reason, setReason] = useState('');
+    const [evidence, setEvidence] = useState<string[]>([]); // To store data URLs
     
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            if (evidence.length + files.length > 5) {
+                alert("Vous pouvez télécharger jusqu'à 5 fichiers.");
+                return;
+            }
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setEvidence(prev => [...prev, reader.result as string]);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    };
+    
+    const removeEvidence = (index: number) => {
+        setEvidence(prev => prev.filter((_, i) => i !== index));
+    };
+
     const handleSubmit = () => {
         if (!reason.trim()) {
             alert("Veuillez fournir un motif pour votre demande de remboursement.");
             return;
         }
-        onSubmit(reason);
+        onSubmit(reason, evidence);
     }
     
     return (
         <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md w-full relative">
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-lg w-full relative">
                 <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
                     <XIcon className="h-6 w-6" />
                 </button>
@@ -35,13 +57,43 @@ const RefundRequestModal: React.FC<{
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
                     Veuillez décrire pourquoi le produit reçu ne correspond pas à vos attentes. Votre demande sera examinée par un administrateur.
                 </p>
-                <textarea
-                    value={reason}
-                    onChange={(e) => setReason(e.target.value)}
-                    rows={4}
-                    className="w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
-                    placeholder="Ex: Le produit est arrivé endommagé, la couleur ne correspond pas à la photo..."
-                />
+                
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Motif de la demande</label>
+                        <textarea
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value)}
+                            rows={4}
+                            className="mt-1 w-full p-2 border border-gray-300 rounded-md dark:bg-gray-700 dark:border-gray-600"
+                            placeholder="Ex: Le produit est arrivé endommagé, la couleur ne correspond pas à la photo..."
+                            required
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Ajouter des preuves (photos, vidéos...)</label>
+                        <div className="mt-1 flex items-center gap-4">
+                            <label htmlFor="evidence-upload" className="cursor-pointer bg-white dark:bg-gray-700 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2">
+                                <PhotoIcon className="w-5 h-5"/>
+                                Choisir des fichiers
+                            </label>
+                            <input id="evidence-upload" name="evidence-upload" type="file" multiple className="sr-only" onChange={handleFileChange} accept="image/*,video/*" />
+                        </div>
+                        {evidence.length > 0 && (
+                            <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                {evidence.map((url, i) => (
+                                    <div key={i} className="relative group">
+                                        <img src={url} alt={`Preview ${i}`} className="h-20 w-full object-cover rounded-md"/>
+                                        <button onClick={() => removeEvidence(i)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <TrashIcon className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+
                 <div className="flex justify-end gap-2 mt-6">
                     <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-md">Annuler</button>
                     <button onClick={handleSubmit} className="bg-kmer-red text-white px-4 py-2 rounded-md">Envoyer la demande</button>
@@ -50,6 +102,7 @@ const RefundRequestModal: React.FC<{
         </div>
     );
 }
+
 
 const statusSteps: OrderStatus[] = ['confirmed', 'ready-for-pickup', 'picked-up', 'at-depot', 'out-for-delivery', 'delivered'];
 
@@ -88,8 +141,8 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
     }
   }, [order.trackingNumber]);
 
-  const handleRefundSubmit = (reason: string) => {
-    onRequestRefund(order.id, reason);
+  const handleRefundSubmit = (reason: string, evidenceUrls: string[]) => {
+    onRequestRefund(order.id, reason, evidenceUrls);
     setIsRefundModalOpen(false);
   };
   

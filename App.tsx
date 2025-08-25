@@ -441,6 +441,11 @@ export default function App() {
     const [isChatEnabled, setIsChatEnabled] = useState(true);
     const [isComparisonEnabled, setIsComparisonEnabled] = useState(true);
 
+    const visibleProducts = useMemo(() => {
+        const activeStoreNames = new Set(allStores.filter(s => s.status === 'active').map(s => s.name));
+        return allProducts.filter(p => activeStoreNames.has(p.vendor));
+    }, [allProducts, allStores]);
+
     useEffect(() => {
       setComparisonProducts(allProducts);
     }, [allProducts, setComparisonProducts]);
@@ -648,6 +653,22 @@ export default function App() {
         ));
         logActivity('Store Warned', `Warning issued to "${storeToWarn.name}": ${reason}`);
     }, [setAllStores, logActivity]);
+    
+    const handleSanctionAgent = useCallback((agentId: string, reason: string) => {
+        const agent = allUsers.find(u => u.id === agentId);
+        if (!agent) return;
+
+        const newWarning: Warning = {
+            id: `warn_agent_${Date.now()}`,
+            date: new Date().toISOString(),
+            reason,
+        };
+        setAllUsers(users => users.map(u =>
+            u.id === agentId ? { ...u, warnings: [...(u.warnings || []), newWarning] } : u
+        ));
+        logActivity('Delivery Agent Sanctioned', `Agent ${agent.name} (ID: ${agentId}) sanctioned for: ${reason}`);
+    }, [allUsers, setAllUsers, logActivity]);
+
 
     const handleToggleStorePremiumStatus = useCallback((storeToUpdate: Store) => {
         const newStatus = storeToUpdate.premiumStatus === 'premium' ? 'standard' : 'premium';
@@ -696,6 +717,29 @@ export default function App() {
         logActivity('Order Status Update', `Order ${order.id} status set to ${status}.`);
     }, [setAllOrders, logActivity, user]);
 
+    const handleSavePromotion = useCallback((productId: string, promoPrice: number, startDate?: string, endDate?: string) => {
+        setAllProducts(prevProducts =>
+            prevProducts.map(p =>
+                p.id === productId
+                    ? { ...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate }
+                    : p
+            )
+        );
+        logActivity('Promotion Set', `Promotion set for product ID ${productId} at ${promoPrice} FCFA.`);
+        setPromotionModalProduct(null); // Close the modal
+    }, [setAllProducts, logActivity]);
+    
+    const handleRequestRefund = useCallback((orderId: string, reason: string, evidenceUrls: string[]) => {
+        setAllOrders(prevOrders =>
+            prevOrders.map(o =>
+                o.id === orderId
+                    ? { ...o, status: 'refund-requested' as const, refundReason: reason, refundEvidenceUrls: evidenceUrls }
+                    : o
+            )
+        );
+        logActivity('Refund Requested', `Refund requested for order ${orderId}. Reason: ${reason}. Evidence provided: ${evidenceUrls.length} files.`);
+    }, [setAllOrders, logActivity]);
+
 
     const renderPage = () => {
         if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
@@ -703,10 +747,18 @@ export default function App() {
         }
         
         switch (page) {
-            case 'home': return <HomePage products={allProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
+            case 'home': return <HomePage products={visibleProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
             case 'product':
-                if (selectedProduct) return <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home')} onAddReview={(p,r) => {}} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
-                else handleNavigate('home');
+                if (selectedProduct) {
+                    const isVisible = visibleProducts.some(p => p.id === selectedProduct.id);
+                    if (!isVisible) {
+                        handleNavigate('home', resetSelections);
+                        return null; // or a placeholder while navigating
+                    }
+                    return <ProductDetail product={selectedProduct} allProducts={visibleProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home')} onAddReview={(p,r) => {}} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
+                } else {
+                    handleNavigate('home');
+                }
                 break;
             case 'cart': return <CartView onBack={() => handleNavigate('home')} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
             case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handleOrderConfirm} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
@@ -717,7 +769,7 @@ export default function App() {
             case 'stores': return <StoresPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('home')} onVisitStore={handleVendorClick} />;
             case 'become-seller': return <BecomeSeller onBack={() => handleNavigate('home')} onBecomeSeller={() => {}} onRegistrationSuccess={() => handleNavigate('seller-dashboard')} siteSettings={siteSettings} />;
             case 'category':
-                if (selectedCategoryId) return <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={allProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+                if (selectedCategoryId) return <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
                 else handleNavigate('home');
                 break;
             case 'seller-dashboard':
@@ -732,7 +784,7 @@ export default function App() {
                 } else handleNavigate('forbidden');
                 break;
             case 'vendor-page':
-                if (selectedVendor) return <VendorPage vendorName={selectedVendor} allProducts={allProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+                if (selectedVendor) return <VendorPage vendorName={selectedVendor} allProducts={visibleProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
                 else handleNavigate('home');
                 break;
             case 'product-form': return <ProductForm onSave={()=>{}} onCancel={() => handleNavigate('seller-dashboard')} productToEdit={productToEdit} categories={allCategories} onAddCategory={() => ({} as Category)} siteSettings={siteSettings} />;
@@ -744,7 +796,7 @@ export default function App() {
                  handleNavigate('forbidden');
                  break;
             case 'superadmin-dashboard':
-                if (user?.role === 'superadmin') return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={()=>{}} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={()=>{}} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={()=>{}} onBatchUpdateFlashSaleStatus={()=>{}} onRequestDocument={()=>{}} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={()=>{}} onUpdatePickupPoint={()=>{}} onDeletePickupPoint={()=>{}} onAssignAgent={()=>{}} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(p => !p)} onToggleComparisonFeature={() => setIsComparisonEnabled(p => !p)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={()=>{}} advertisements={advertisements} onAddAdvertisement={()=>{}} onUpdateAdvertisement={()=>{}} onDeleteAdvertisement={()=>{}} onCreateUserByAdmin={()=>{}}  />;
+                if (user?.role === 'superadmin') return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={()=>{}} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={()=>{}} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={()=>{}} onBatchUpdateFlashSaleStatus={()=>{}} onRequestDocument={()=>{}} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={()=>{}} onUpdatePickupPoint={()=>{}} onDeletePickupPoint={()=>{}} onAssignAgent={()=>{}} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(p => !p)} onToggleComparisonFeature={() => setIsComparisonEnabled(p => !p)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUserRole={handleUpdateUserRole} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={()=>{}} advertisements={advertisements} onAddAdvertisement={()=>{}} onUpdateAdvertisement={()=>{}} onDeleteAdvertisement={()=>{}} onCreateUserByAdmin={()=>{}} onSanctionAgent={handleSanctionAgent} />;
                 else handleNavigate('forbidden');
                 break;
             case 'order-history': 
@@ -752,13 +804,13 @@ export default function App() {
                 else handleNavigate('forbidden');
                 break;
             case 'order-detail':
-                if (selectedOrder) return <OrderDetailPage order={selectedOrder} onBack={() => handleNavigate('order-history')} allPickupPoints={allPickupPoints} onCancelOrder={()=>{}} onRequestRefund={()=>{}} />;
+                if (selectedOrder) return <OrderDetailPage order={selectedOrder} onBack={() => handleNavigate('order-history')} allPickupPoints={allPickupPoints} onCancelOrder={()=>{}} onRequestRefund={handleRequestRefund} />;
                 else handleNavigate('order-history');
                 break;
-            case 'promotions': return <PromotionsPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-            case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-            case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={allProducts} allStores={allStores} allCategories={allCategories} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-            case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'promotions': return <PromotionsPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'flash-sales': return <FlashSalesPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={visibleProducts} allStores={allStores} allCategories={allCategories} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+            case 'wishlist': return <WishlistPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
             case 'delivery-agent-dashboard': 
                 if (user?.role === 'delivery_agent') return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={()=>{}} onLogout={handleLogout} onUpdateUserAvailability={handleUpdateUserAvailability} />;
                 else handleNavigate('forbidden');
@@ -781,7 +833,7 @@ export default function App() {
             case 'not-found': return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
             case 'forbidden': return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
             case 'server-error': return <ServerErrorPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
-            default: return <HomePage products={allProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled}/>;
+            default: return <HomePage products={visibleProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled}/>;
         }
     };
 
@@ -826,7 +878,7 @@ export default function App() {
             {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={handleCloseModal} onNavigateToCart={() => { handleCloseModal(); handleNavigate('cart'); }} />}
             {isLoginModalOpen && <LoginModal onClose={() => setIsLoginModalOpen(false)} />}
             {viewingStoriesOfStore && <StoryViewer store={viewingStoriesOfStore} onClose={() => setViewingStoriesOfStore(null)} />}
-            {promotionModalProduct && <PromotionModal product={promotionModalProduct} onClose={() => setPromotionModalProduct(null)} onSave={() => {}} />}
+            {promotionModalProduct && <PromotionModal product={promotionModalProduct} onClose={() => setPromotionModalProduct(null)} onSave={handleSavePromotion} />}
             {isComparisonEnabled && <ComparisonBar onCompareClick={() => handleNavigate('comparison')} />}
             {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} allCategories={allCategories} />}
         </div>

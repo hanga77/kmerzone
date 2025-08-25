@@ -147,6 +147,7 @@ export interface User {
     location?: string;
     loyalty: UserLoyalty;
     availabilityStatus?: UserAvailabilityStatus;
+    warnings?: Warning[];
 }
 
 export interface Address {
@@ -205,6 +206,7 @@ export interface Order extends NewOrderData {
     trackingNumber?: string;
     cancellationFee?: number;
     refundReason?: string;
+    refundEvidenceUrls?: string[];
     trackingHistory: TrackingEvent[];
     agentId?: string;
     storageLocationId?: string;
