@@ -311,181 +311,143 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
             <div className="mb-4 relative">
               <img src={mainImage} alt={product.name} className="w-full h-auto max-h-[500px] object-cover rounded-lg shadow-lg" />
                {flashPrice && (
-                  <div className="absolute top-4 left-4 bg-blue-600 text-white text-lg font-bold px-4 py-2 rounded-lg shadow-lg flex items-center gap-2"><BoltIcon className="w-5 h-5"/> VENTE FLASH</div>
-              )}
+                    <div className="absolute top-3 left-3 bg-blue-600 text-white text-sm font-bold px-3 py-1.5 rounded-md shadow-lg flex items-center gap-1"><BoltIcon className="w-4 h-4"/> VENTE FLASH</div>
+                )}
+                {!flashPrice && promotionIsUpcoming && (
+                    <div className="absolute top-3 left-3 bg-blue-500 text-white text-xs font-bold px-3 py-1.5 rounded-md shadow-lg">PROMO À VENIR</div>
+                )}
+                {!flashPrice && promotionIsActive && (
+                    <div className="absolute top-3 left-3 bg-kmer-red text-white text-sm font-bold px-3 py-1.5 rounded-md shadow-lg">-{percentageOff}%</div>
+                )}
             </div>
-            <div className="flex gap-2 overflow-x-auto">
+            <div className="flex space-x-2">
               {product.imageUrls.map((url, index) => (
-                <button key={index} onClick={() => setMainImage(url)} className={`w-20 h-20 flex-shrink-0 rounded-md overflow-hidden border-2 ${url === mainImage ? 'border-kmer-green' : 'border-transparent'}`}>
-                  <img src={url} alt={`Aperçu ${index + 1}`} className="w-full h-full object-cover" />
-                </button>
+                <img key={index} src={url} alt={`${product.name} thumbnail ${index + 1}`} onClick={() => setMainImage(url)} className={`w-20 h-20 object-cover rounded-md cursor-pointer border-2 ${mainImage === url ? 'border-kmer-green' : 'border-transparent'}`} />
               ))}
             </div>
           </div>
 
           {/* Product Info */}
-          <div className="flex flex-col">
-            <div className="flex justify-between items-center">
-              <button onClick={() => onVendorClick(product.vendor)} className="text-gray-500 dark:text-gray-400 font-semibold hover:text-kmer-green hover:underline text-left">{product.vendor}</button>
-              {vendorStore?.location && (
-                <span className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-1">
-                  <MapPinIcon className="w-4 h-4" />
-                  {vendorStore.location}
-                </span>
-              )}
-            </div>
-            <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-white my-2">{product.name}</h1>
+          <div>
+            <button onClick={() => onVendorClick(product.vendor)} className="text-gray-500 dark:text-gray-400 hover:text-kmer-green hover:underline">{product.vendor}</button>
+            <h1 className="text-4xl font-bold mt-2 text-gray-800 dark:text-white">{product.name}</h1>
             
-            <div className="my-2 flex items-center justify-between">
-              {approvedReviews.length > 0 ? (
-                  <div className="flex items-center gap-2">
-                      <Rating rating={approvedReviews.reduce((acc, r) => acc + r.rating, 0) / approvedReviews.length} />
-                      <span className="text-gray-600 dark:text-gray-400">({approvedReviews.length} avis)</span>
-                  </div>
-              ) : (
-                  <p className="text-gray-500 dark:text-gray-400">Aucun avis pour le moment</p>
-              )}
-              <div className="flex items-center gap-2">
-                <button onClick={handleShare} className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800" title="Partager le produit">
-                  <ShareIcon className="w-7 h-7" />
-                </button>
-                {isComparisonEnabled && (
-                  <button onClick={() => toggleComparison(product.id)} className={`p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 ${inComparison ? 'text-kmer-green' : ''}`} title="Ajouter à la comparaison">
-                      <ScaleIcon className="w-7 h-7" />
-                  </button>
-                )}
-                <button onClick={() => toggleWishlist(product.id)} className="p-2 rounded-full hover:bg-red-50 dark:hover:bg-gray-800" title="Ajouter aux favoris">
-                    <HeartIcon className="w-7 h-7" filled={isWishlisted(product.id)} />
-                </button>
-              </div>
-            </div>
-            
-            <div className="my-4">
-                {flashPrice || promotionIsActive ? (
-                    <>
-                      <div className="flex items-baseline gap-3">
-                          {priceToDisplay}
-                          <p className="text-xl text-gray-500 line-through">
-                              {product.price.toLocaleString('fr-CM')} FCFA
-                          </p>
-                          <span className={`text-white text-sm font-semibold px-3 py-1 rounded-full ${flashPrice ? 'bg-blue-600' : 'bg-kmer-red'}`}>
-                            -{percentageOff}%
-                          </span>
-                      </div>
-                      {promotionIsActive && !flashPrice && product.promotionEndDate && (
-                        <div className="flex items-center gap-2 text-sm text-yellow-600 dark:text-yellow-400 mt-2 bg-yellow-50 dark:bg-yellow-900/50 px-3 py-1 rounded-full">
-                          <CalendarDaysIcon className="w-5 h-5" />
-                          <span>Promotion valable jusqu'au {new Date(product.promotionEndDate).toLocaleDateString('fr-FR')}</span>
-                        </div>
-                      )}
-                    </>
-                ) : (
-                  <>
-                    {priceToDisplay}
-                    {promotionIsUpcoming && product.promotionStartDate && (
-                       <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mt-2 bg-blue-50 dark:bg-blue-900/50 px-3 py-1 rounded-full">
-                          <CalendarDaysIcon className="w-5 h-5" />
-                          <span>Promotion à partir du {new Date(product.promotionStartDate).toLocaleDateString('fr-FR')} à {product.promotionPrice?.toLocaleString('fr-CM')} FCFA !</span>
-                        </div>
-                    )}
-                  </>
-                )}
+             <div className="flex items-center mt-4">
+              <Rating rating={approvedReviews.reduce((acc, r) => acc + r.rating, 0) / approvedReviews.length} />
+              <span className="ml-2 text-gray-600 dark:text-gray-300 text-sm">({approvedReviews.length} avis)</span>
             </div>
 
-            <p className="text-gray-700 dark:text-gray-300 leading-relaxed mb-6">{product.description}</p>
+            <div className="my-6">
+                {priceToDisplay}
+                {(flashPrice || promotionIsActive) && <p className="text-gray-500 dark:text-gray-400 line-through">Prix original : {product.price.toLocaleString('fr-CM')} FCFA</p>}
+                 {promotionIsActive && product.promotionEndDate && !flashPrice && (
+                  <div className="flex items-center gap-1 text-sm text-yellow-600 dark:text-yellow-400 mt-2">
+                    <CalendarDaysIcon className="w-4 h-4" />
+                    <span>L'offre se termine le {new Date(product.promotionEndDate).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                )}
+                {promotionIsUpcoming && product.promotionStartDate && !flashPrice && (
+                  <div className="flex items-center gap-1 text-sm text-blue-500 dark:text-blue-400 mt-2">
+                    <CalendarDaysIcon className="w-4 h-4" />
+                    <span>Promotion disponible le {new Date(product.promotionStartDate).toLocaleDateString('fr-FR')}</span>
+                  </div>
+                )}
+            </div>
+            
+            <p className="text-gray-600 dark:text-gray-300">{product.description}</p>
             
             <ProductCharacteristics product={product} />
 
-            {otherOffers.length > 0 && isComparisonEnabled && (
-              <AutoComparison 
-                currentProduct={product}
-                otherOffers={otherOffers}
-                stores={stores}
-                onProductClick={onProductClick}
-              />
+            {vendorStore && (
+                <div className="mt-6 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
+                    <MapPinIcon className="w-5 h-5 text-kmer-green flex-shrink-0" />
+                    Vendu et expédié depuis <strong>{vendorStore.location}, {vendorStore.neighborhood}</strong>
+                </div>
             )}
-
+            
+            {/* Variants */}
             {product.variants && product.variants.map(variant => (
-                <div key={variant.name} className="my-2">
-                    <h3 className="font-semibold mb-2">{variant.name}: <span className="font-normal text-gray-600 dark:text-gray-400">{selectedVariants[variant.name]}</span></h3>
-                    <div className="flex flex-wrap gap-2">
+                <div key={variant.name} className="mt-6">
+                    <h3 className="font-semibold text-gray-700 dark:text-gray-300">{variant.name}</h3>
+                    <div className="flex flex-wrap gap-2 mt-2">
                         {variant.options.map(option => (
-                            <button 
-                              key={option}
-                              onClick={() => handleVariantSelect(variant.name, option)}
-                              className={`px-4 py-1 border rounded-full ${selectedVariants[variant.name] === option ? 'bg-kmer-green text-white border-kmer-green' : 'border-gray-300 dark:border-gray-600'}`}>
-                              {option}
+                            <button key={option} onClick={() => handleVariantSelect(variant.name, option)} className={`px-4 py-2 border rounded-md text-sm font-medium ${selectedVariants[variant.name] === option ? 'border-kmer-green bg-kmer-green/10 text-kmer-green' : 'border-gray-300 dark:border-gray-600'}`}>
+                                {option}
                             </button>
                         ))}
                     </div>
                 </div>
             ))}
             
-            <div className="mt-auto pt-6">
-                <div className="flex items-center gap-4 my-4">
-                  <label htmlFor="quantity" className="font-semibold">Quantité:</label>
-                  <div className="flex items-center border border-gray-300 dark:border-gray-600 rounded-md">
-                    <button onClick={() => setQuantity(q => Math.max(1, q - 1))} className="px-3 py-1 text-lg font-bold">-</button>
-                    <input 
-                      type="number"
-                      id="quantity"
-                      value={quantity}
-                      onChange={(e) => setQuantity(Math.max(1, parseInt(e.target.value) || 1))}
-                      className="w-12 text-center border-l border-r border-gray-300 dark:border-gray-600 py-1 bg-transparent"
-                      />
-                    <button onClick={() => setQuantity(q => q + 1)} className="px-3 py-1 text-lg font-bold">+</button>
-                  </div>
-                  <p className={`text-sm font-bold ${product.stock > 5 ? 'text-green-600' : 'text-orange-500'}`}>
-                    {product.stock > 0 ? `${product.stock} en stock` : "Rupture de stock"}
-                  </p>
-                </div>
-    
-                <div className="flex flex-col sm:flex-row gap-3">
-                     <button 
-                      onClick={handleAddToCart}
-                      disabled={product.stock === 0 || isOwner}
-                      className={`w-full flex justify-center items-center gap-3 py-3 px-6 text-white font-bold rounded-lg text-lg transition-colors bg-kmer-red hover:bg-red-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed`}
-                      >
-                      {isOwner ? "C'est votre produit" : (product.stock === 0 ? "Épuisé" : <><ShoppingCartIcon className="w-6 h-6" /> Ajouter au panier</>)}
-                    </button>
-                    {isChatEnabled && (
-                      <button 
-                          onClick={handleContactSeller}
-                          disabled={isOwner}
-                          className="w-full flex justify-center items-center gap-2 py-3 px-6 text-kmer-green font-bold rounded-lg bg-kmer-green/10 hover:bg-kmer-green/20 transition-colors disabled:bg-gray-200 dark:disabled:bg-gray-700 disabled:text-gray-400 dark:disabled:text-gray-500 disabled:cursor-not-allowed"
-                      >
-                          <ChatBubbleBottomCenterTextIcon className="w-6 h-6"/> Contacter le vendeur
-                      </button>
-                    )}
-                </div>
+
+            <div className="mt-8 flex flex-col sm:flex-row gap-4">
+              <button
+                onClick={handleAddToCart}
+                disabled={product.stock === 0 || isOwner}
+                className="w-full flex-grow bg-kmer-green text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-3 hover:bg-green-700 transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
+                title={isOwner ? "Vous ne pouvez pas acheter votre propre produit" : ""}
+              >
+                <ShoppingCartIcon className="w-6 h-6" />
+                {product.stock === 0 ? 'Rupture de stock' : 'Ajouter au panier'}
+              </button>
+               <button onClick={() => toggleWishlist(product.id)} className="p-3 border-2 rounded-lg hover:border-kmer-red transition-colors" aria-label="Ajouter à la liste de souhaits">
+                   <HeartIcon className="w-6 h-6" filled={isWishlisted(product.id)} />
+               </button>
+                {isComparisonEnabled && (
+                  <button onClick={() => toggleComparison(product.id)} className={`p-3 border-2 rounded-lg hover:border-kmer-green transition-colors ${inComparison ? 'border-kmer-green text-kmer-green' : ''}`} aria-label="Ajouter à la comparaison">
+                    <ScaleIcon className="w-6 h-6"/>
+                  </button>
+                )}
+                <button onClick={handleShare} className="p-3 border-2 rounded-lg hover:border-blue-500 transition-colors" aria-label="Partager">
+                    <ShareIcon className="w-6 h-6"/>
+                </button>
             </div>
+            {isChatEnabled && !isOwner && (
+                 <button onClick={handleContactSeller} className="mt-4 w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-3 hover:bg-blue-600 transition-colors">
+                    <ChatBubbleBottomCenterTextIcon className="w-6 h-6" />
+                    Contacter le vendeur
+                 </button>
+            )}
+
           </div>
         </div>
-          {/* Reviews Section */}
-          <div className="mt-16 pt-8 border-t dark:border-gray-700">
-              <h2 className="text-2xl font-bold mb-6">Avis des clients</h2>
-              {approvedReviews.length > 0 ? (
-                  <div className="space-y-6">
-                      {approvedReviews.map((review, index) => (
-                          <div key={index} className="border-b dark:border-gray-700 pb-4 last:border-b-0">
-                              <div className="flex items-start mb-2">
-                                  <div className="flex-grow">
-                                      <Rating rating={review.rating} />
-                                      <p className="font-bold mt-1">{review.author}</p>
-                                  </div>
-                                  <p className="text-sm text-gray-500 dark:text-gray-400">{review.date}</p>
-                              </div>
-                              <p className="text-gray-600 dark:text-gray-300">{review.comment}</p>
-                          </div>
-                      ))}
+
+        {otherOffers.length > 0 && (
+            <AutoComparison currentProduct={product} otherOffers={otherOffers} stores={stores} onProductClick={onProductClick} />
+        )}
+
+        {/* Reviews Section */}
+        <div className="mt-16">
+          <h2 className="text-2xl font-bold mb-6 border-b pb-4 dark:border-gray-700">Avis des clients ({approvedReviews.length})</h2>
+          {approvedReviews.length > 0 ? (
+            <div className="space-y-6">
+              {approvedReviews.map((review, index) => (
+                <div key={index} className="border-b pb-6 last:border-b-0 dark:border-gray-700">
+                  <div className="flex items-center mb-2">
+                    <Rating rating={review.rating} />
+                    <span className="ml-4 font-bold text-gray-800 dark:text-white">{review.author}</span>
                   </div>
-              ) : (
-                  <p>Soyez le premier à laisser un avis pour ce produit !</p>
-              )}
-              <ReviewForm productId={product.id} onAddReview={onAddReview} onOpenLogin={onOpenLogin}/>
-          </div>
+                  <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{new Date(review.date).toLocaleDateString('fr-FR')}</p>
+                  <p className="text-gray-600 dark:text-gray-300 italic">"{review.comment}"</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">Aucun avis pour ce produit pour le moment.</p>
+          )}
+
+          <ReviewForm productId={product.id} onAddReview={onAddReview} onOpenLogin={onOpenLogin} />
+        </div>
       </div>
-      <RecommendedProducts currentProduct={product} allProducts={allProducts} stores={stores} onProductClick={onProductClick} onVendorClick={onVendorClick} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />
+      <RecommendedProducts 
+        currentProduct={product} 
+        allProducts={allProducts} 
+        stores={stores}
+        flashSales={flashSales}
+        onProductClick={onProductClick}
+        onVendorClick={onVendorClick}
+        isComparisonEnabled={isComparisonEnabled}
+      />
     </>
   );
 };

@@ -285,71 +285,90 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
             <div className="space-y-3">
                 {allOrders.map(order => {
                     const assignedAgent = deliveryAgents.find(agent => agent.id === order.agentId);
+                    const client = allUsers.find(u => u.id === order.userId);
+                    const storesInOrder = [...new Set(order.items.map(item => item.vendor))].join(', ');
+                    const lastTracking = order.trackingHistory[order.trackingHistory.length - 1];
+
                     return (
-                        <div key={order.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            <div className="flex flex-col sm:flex-row justify-between sm:items-center">
+                        <details key={order.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group">
+                            <summary className="font-semibold cursor-pointer dark:text-white flex justify-between items-center">
                                 <div>
-                                    <p className="font-bold text-kmer-green">{order.id}</p>
-                                    <p className="text-sm text-gray-500 dark:text-gray-400">{new Date(order.orderDate).toLocaleString('fr-FR')}</p>
+                                    <span className="font-bold text-kmer-green">{order.id}</span>
+                                    <span className="text-gray-600 dark:text-gray-400"> - {client?.name || 'Client Inconnu'}</span>
                                 </div>
-                                <div className="mt-2 sm:mt-0 text-left sm:text-right">
-                                    <p className="font-semibold text-gray-800 dark:text-white">{order.total.toLocaleString('fr-CM')} FCFA</p>
-                                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
-                                        {statusTranslations[order.status]}
-                                    </span>
-                                </div>
-                            </div>
-                            {order.status === 'refund-requested' && (
-                                <div className="mt-3 pt-3 border-t dark:border-gray-700 p-2 bg-purple-50 dark:bg-purple-900/50 rounded-md">
-                                    <p className="font-semibold text-sm text-purple-800 dark:text-purple-200">Demande de remboursement :</p>
-                                    <p className="text-sm italic text-purple-700 dark:text-purple-300">"{order.refundReason}"</p>
-                                    {order.refundEvidenceUrls && order.refundEvidenceUrls.length > 0 && (
-                                        <div className="mt-2">
-                                            <p className="font-semibold text-xs text-purple-800 dark:text-purple-200">Preuves fournies :</p>
-                                            <div className="flex gap-2 flex-wrap mt-1">
-                                                {order.refundEvidenceUrls.map((url, i) => (
-                                                    <a href={url} target="_blank" rel="noopener noreferrer" key={i} className="block border-2 border-purple-200 rounded-md overflow-hidden">
-                                                        <img src={url} alt={`Evidence ${i + 1}`} className="h-16 w-16 object-cover" />
-                                                    </a>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            <div className="mt-4 pt-3 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
-                                <div className="flex-1">
-                                    <label className="text-xs font-medium dark:text-gray-300">Changer le statut :</label>
-                                    <select 
-                                        value={order.status}
-                                        onChange={e => onUpdateOrderStatus(order, e.target.value as OrderStatus)}
-                                        className="text-xs mt-1 w-full sm:w-auto border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 focus:ring-kmer-green"
-                                    >
-                                        {Object.keys(statusTranslations).map(s => <option key={s} value={s}>{statusTranslations[s as OrderStatus]}</option>)}
-                                    </select>
-                                </div>
-                                <div className="flex-1">
-                                    <label className="text-xs font-medium dark:text-gray-300">Livreur assigné :</label>
-                                    <div className="mt-1">
-                                        {assignedAgent ? (
-                                            <div className="flex items-center gap-2">
-                                                <span className="font-semibold dark:text-white bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-md">{assignedAgent.name}</span>
-                                                <button onClick={() => onOpenAssignModal(order.id)} className="text-xs text-blue-500 hover:underline">(Changer)</button>
-                                            </div>
-                                        ) : (
-                                            <button onClick={() => onOpenAssignModal(order.id)} className="text-sm bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded-md hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-800/50">
-                                                Assigner
-                                            </button>
-                                        )}
+                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
+                                    {statusTranslations[order.status]}
+                                </span>
+                            </summary>
+
+                            <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-4">
+                                <div className="grid md:grid-cols-2 gap-4 text-sm">
+                                    <div>
+                                        <h4 className="font-bold mb-1">Détails Client</h4>
+                                        <p><strong>Nom:</strong> {order.shippingAddress.fullName}</p>
+                                        <p><strong>Tél:</strong> {order.shippingAddress.phone}</p>
+                                        <p><strong>Adresse:</strong> {order.shippingAddress.address}, {order.shippingAddress.city}</p>
+                                    </div>
+                                    <div>
+                                        <h4 className="font-bold mb-1">Détails Commande</h4>
+                                        <p><strong>Boutique(s):</strong> {storesInOrder}</p>
+                                        <p><strong>Dernier Suivi:</strong> {new Date(lastTracking.date).toLocaleString('fr-FR')} - {lastTracking.details}</p>
                                     </div>
                                 </div>
-                                <div className="flex-shrink-0">
-                                   <button onClick={() => setPrintingOrder(order)} className="flex items-center gap-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-3 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 w-full sm:w-auto justify-center">
-                                      <PrinterIcon className="w-4 h-4"/> Imprimer l'étiquette
-                                  </button>
+
+                                {order.status === 'refund-requested' && (
+                                    <div className="p-2 bg-purple-50 dark:bg-purple-900/50 rounded-md">
+                                        <p className="font-semibold text-sm text-purple-800 dark:text-purple-200">Demande de remboursement :</p>
+                                        <p className="text-sm italic text-purple-700 dark:text-purple-300">"{order.refundReason}"</p>
+                                        {order.refundEvidenceUrls && order.refundEvidenceUrls.length > 0 && (
+                                            <div className="mt-2">
+                                                <p className="font-semibold text-xs text-purple-800 dark:text-purple-200">Preuves fournies :</p>
+                                                <div className="flex gap-2 flex-wrap mt-1">
+                                                    {order.refundEvidenceUrls.map((url, i) => (
+                                                        <a href={url} target="_blank" rel="noopener noreferrer" key={i} className="block border-2 border-purple-200 rounded-md overflow-hidden">
+                                                            <img src={url} alt={`Evidence ${i + 1}`} className="h-16 w-16 object-cover" />
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+
+                                <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+                                    <div className="flex-1">
+                                        <label className="text-xs font-medium dark:text-gray-300">Changer le statut :</label>
+                                        <select
+                                            value={order.status}
+                                            onChange={e => onUpdateOrderStatus(order, e.target.value as OrderStatus)}
+                                            className="text-xs mt-1 w-full sm:w-auto border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500 focus:ring-kmer-green"
+                                        >
+                                            {Object.keys(statusTranslations).map(s => <option key={s} value={s}>{statusTranslations[s as OrderStatus]}</option>)}
+                                        </select>
+                                    </div>
+                                    <div className="flex-1">
+                                        <label className="text-xs font-medium dark:text-gray-300">Livreur assigné :</label>
+                                        <div className="mt-1">
+                                            {assignedAgent ? (
+                                                <div className="flex items-center gap-2">
+                                                    <span className="font-semibold dark:text-white bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-md">{assignedAgent.name}</span>
+                                                    <button onClick={() => onOpenAssignModal(order.id)} className="text-xs text-blue-500 hover:underline">(Changer)</button>
+                                                </div>
+                                            ) : (
+                                                <button onClick={() => onOpenAssignModal(order.id)} className="text-sm bg-blue-100 text-blue-700 font-semibold px-3 py-1 rounded-md hover:bg-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:hover:bg-blue-800/50">
+                                                    Assigner
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                    <div className="flex-shrink-0">
+                                        <button onClick={() => setPrintingOrder(order)} className="flex items-center gap-2 text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-3 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 w-full sm:w-auto justify-center">
+                                            <PrinterIcon className="w-4 h-4" /> Imprimer l'étiquette
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+                        </details>
                     )
                 })}
             </div>
@@ -942,7 +961,7 @@ const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPi
     );
 };
 
-const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStores' | 'allOrders' | 'onPayoutSeller'>> = ({ payouts, allStores, allOrders, onPayoutSeller }) => {
+const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStores' | 'allOrders' | 'onPayoutSeller' | 'flashSales'>> = ({ payouts, allStores, allOrders, onPayoutSeller, flashSales }) => {
     const storeBalances = useMemo(() => {
         return allStores.map(store => {
             const deliveredOrders = allOrders.filter(o => o.status === 'delivered' && o.items.some(i => i.vendor === store.name));
@@ -1297,7 +1316,7 @@ const DeliveryTrackingPanel: React.FC<{
                 }
                 return null;
             })
-            .filter((item): item is { order: Order; agent?: User; deliveryDays: number } => item !== null);
+            .filter((item) => item !== null);
     }, [allOrders, allUsers]);
 
     const handleSanction = (agent: User | undefined) => {
