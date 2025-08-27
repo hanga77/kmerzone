@@ -173,9 +173,12 @@ export interface User {
     availabilityStatus?: UserAvailabilityStatus;
     warnings?: Warning[];
     depotId?: string;
+    addresses?: Address[];
 }
 
 export interface Address {
+    id?: string;
+    isDefault?: boolean;
     fullName: string;
     phone: string;
     address: string;
@@ -203,7 +206,6 @@ export interface NewOrderData {
     items: CartItem[];
     subtotal: number;
     deliveryFee: number;
-
     total: number;
     shippingAddress: Address;
     deliveryMethod: 'pickup' | 'home-delivery';

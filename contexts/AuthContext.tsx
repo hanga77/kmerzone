@@ -1,5 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
-import type { User, UserRole } from '../types';
+import type { User, UserRole, Address } from '../types';
 import { usePersistentState } from '../hooks/usePersistentState';
 
 interface AuthContextType {
@@ -10,25 +10,46 @@ interface AuthContextType {
   register: (name: string, email: string, password?: string) => boolean;
   updateUser: (updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => void;
   resetPassword: (email: string, newPassword: string) => void;
+  updateUserInfo: (userId: string, updates: { name: string }) => void;
+  changePassword: (userId: string, oldPassword: string, newPassword: string) => boolean;
+  addAddress: (userId: string, address: Omit<Address, 'id' | 'isDefault'>) => void;
+  updateAddress: (userId: string, address: Address) => void;
+  deleteAddress: (userId: string, addressId: string) => void;
+  setDefaultAddress: (userId: string, addressId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const initialUsers: User[] = [
-    { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', password: 'password', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', password: 'password', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', password: 'password', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', password: 'password', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', password: 'password', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', password: 'password', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
-    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available' },
-    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available' },
-    { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', password: 'password', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null } },
+    { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', password: 'password', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
+    { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', password: 'password', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
+    { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', password: 'password', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
+    { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', password: 'password', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
+    { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', password: 'password', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
+    { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', password: 'password', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
+    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [] },
+    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [] },
+    { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', password: 'password', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
 ];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = usePersistentState<User | null>('currentUser', null);
   const [allUsers, setAllUsers] = usePersistentState<User[]>('allUsers', initialUsers);
+
+  useEffect(() => {
+    // Ensure all users have an addresses array
+    setAllUsers(prevUsers => {
+        let needsUpdate = false;
+        const updatedUsers = prevUsers.map(u => {
+            if (!u.addresses) {
+                needsUpdate = true;
+                return { ...u, addresses: [] };
+            }
+            return u;
+        });
+        return needsUpdate ? updatedUsers : prevUsers;
+    });
+  }, []);
 
   useEffect(() => {
     setUser(currentUser => {
@@ -42,14 +63,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return null;
       }
 
-      const isDifferent =
-        currentUser.name !== updatedUserInList.name ||
-        currentUser.email !== updatedUserInList.email ||
-        currentUser.role !== updatedUserInList.role ||
-        currentUser.shopName !== updatedUserInList.shopName ||
-        JSON.stringify(currentUser.loyalty) !== JSON.stringify(updatedUserInList.loyalty);
-
-      if (isDifferent) {
+      if (JSON.stringify(currentUser) !== JSON.stringify(updatedUserInList)) {
         return updatedUserInList;
       }
       
@@ -89,6 +103,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       role: 'customer',
       loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
       password: password,
+      addresses: [],
     };
     setAllUsers(prev => [...prev, newUser]);
     setUser(newUser);
@@ -113,6 +128,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           role: 'customer',
           loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
           password: password,
+          addresses: [],
       };
 
       setAllUsers(prev => [...prev, newUser]);
@@ -148,6 +164,73 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     );
     console.log(`Password for ${email} reset successfully.`);
   }, [setAllUsers]);
+
+  const updateUserInfo = useCallback((userId: string, updates: { name: string }) => {
+    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
+  }, [setAllUsers]);
+
+  const changePassword = useCallback((userId: string, oldPassword: string, newPassword: string): boolean => {
+    const userToUpdate = allUsers.find(u => u.id === userId);
+    if (!userToUpdate || userToUpdate.password !== oldPassword) {
+      return false;
+    }
+    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, password: newPassword } : u));
+    return true;
+  }, [allUsers, setAllUsers]);
+
+  const addAddress = useCallback((userId: string, address: Omit<Address, 'id'| 'isDefault'>) => {
+    setAllUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const addresses = u.addresses || [];
+        const newAddress: Address = {
+          ...address,
+          id: `addr_${Date.now()}`,
+          isDefault: addresses.length === 0, // Make first address default
+        };
+        return { ...u, addresses: [...addresses, newAddress] };
+      }
+      return u;
+    }));
+  }, [setAllUsers]);
+  
+  const updateAddress = useCallback((userId: string, updatedAddress: Address) => {
+    setAllUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const addresses = (u.addresses || []).map(addr =>
+          addr.id === updatedAddress.id ? updatedAddress : addr
+        );
+        return { ...u, addresses };
+      }
+      return u;
+    }));
+  }, [setAllUsers]);
+
+  const deleteAddress = useCallback((userId: string, addressId: string) => {
+    setAllUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const addresses = (u.addresses || []).filter(addr => addr.id !== addressId);
+        // If the deleted address was the default, make the first one default
+        if (addresses.length > 0 && !addresses.some(a => a.isDefault)) {
+            addresses[0].isDefault = true;
+        }
+        return { ...u, addresses };
+      }
+      return u;
+    }));
+  }, [setAllUsers]);
+
+  const setDefaultAddress = useCallback((userId: string, addressId: string) => {
+    setAllUsers(prev => prev.map(u => {
+      if (u.id === userId) {
+        const addresses = (u.addresses || []).map(addr => ({
+          ...addr,
+          isDefault: addr.id === addressId,
+        }));
+        return { ...u, addresses };
+      }
+      return u;
+    }));
+  }, [setAllUsers]);
   
   const contextValue = useMemo(() => ({
     user,
@@ -157,8 +240,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     register,
     updateUser,
     resetPassword,
+    updateUserInfo,
+    changePassword,
+    addAddress,
+    updateAddress,
+    deleteAddress,
+    setDefaultAddress,
     setAllUsers
-  }), [user, allUsers, login, logout, register, updateUser, resetPassword, setAllUsers]);
+  }), [user, allUsers, login, logout, register, updateUser, resetPassword, updateUserInfo, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress, setAllUsers]);
 
   return (
     <AuthContext.Provider value={contextValue as any}>

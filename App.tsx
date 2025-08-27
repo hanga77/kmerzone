@@ -1,7 +1,3 @@
-
-
-
-
 // @FIX: Correct the import statement for React and its hooks.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
@@ -39,6 +35,7 @@ import MaintenancePage from './components/MaintenancePage';
 import NotFoundPage from './components/NotFoundPage';
 import ForbiddenPage from './components/ForbiddenPage';
 import ServerErrorPage from './components/ServerErrorPage';
+import AccountPage from './components/AccountPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 // @FIX: Import RequestedDocument type.
@@ -53,7 +50,7 @@ import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, Shopp
 import { usePersistentState } from './hooks/usePersistentState';
 
 // @FIX: Add 'reset-password' to the Page type to handle the password reset view.
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password';
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account';
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -1227,6 +1224,7 @@ export default function App() {
       case 'review-moderation': return user?.role === 'superadmin' ? <ReviewModeration onBack={() => handleNavigate('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={handleReviewModeration} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
       case 'reset-password': return <ResetPasswordPage onPasswordReset={handlePasswordReset} onNavigateLogin={handleNavigateLoginFromReset} />;
+      case 'account': return user ? <AccountPage onBack={() => handleNavigate('home')} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       default: return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
     }
   }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, user, allProducts, allCategories, allStores, allOrders, cart, searchQuery, allPromoCodes, appliedPromoCode, productToEdit, promotionModalProduct, infoPageContent, isLoginModalOpen, isModalOpen, modalProduct, isForgotPasswordModalOpen, emailForPasswordReset, comparisonList, viewingStoriesOfStore, isChatEnabled, isComparisonEnabled, siteSettings, siteActivityLogs, flashSales, allPickupPoints, payouts, advertisements, visibleProducts]);
@@ -1252,6 +1250,7 @@ export default function App() {
         onNavigateToBecomePremium={() => handleNavigate('become-premium')}
         onNavigateToAnalyticsDashboard={() => handleNavigate('analytics-dashboard')}
         onNavigateToReviewModeration={() => handleNavigate('review-moderation')}
+        onNavigateToAccount={() => handleNavigate('account')}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
         onSearch={handleSearch}
