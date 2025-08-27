@@ -31,6 +31,10 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
         return [...new Set(allProducts.map(p => p.vendor))].sort();
     }, [allProducts]);
     
+    const availableBrands = useMemo(() => {
+        return [...new Set(allProducts.map(p => p.brand).filter(Boolean))].sort() as string[];
+    }, [allProducts]);
+
     const priceRange = useMemo(() => {
         if (allProducts.length === 0) return { min: 0, max: 100000 };
         const prices = allProducts.map(getPrice);
@@ -39,6 +43,16 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
             max: Math.ceil(Math.max(...prices) / 1000) * 1000
         };
     }, [allProducts]);
+    
+    const activeFilterCount = useMemo(() => {
+        const { priceMin, priceMax, vendors, brands, minRating } = filters;
+        let count = 0;
+        if (priceMin !== undefined || priceMax !== undefined) count++;
+        if (vendors.length > 0) count++;
+        if (brands.length > 0) count++;
+        if (minRating > 0) count++;
+        return count;
+    }, [filters]);
 
     const handleApplyFilters = () => {
         setFilters(localFilters);
@@ -56,6 +70,15 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
             vendors: prev.vendors.includes(vendor)
                 ? prev.vendors.filter(v => v !== vendor)
                 : [...prev.vendors, vendor]
+        }));
+    };
+    
+    const handleBrandChange = (brand: string) => {
+        setLocalFilters(prev => ({
+            ...prev,
+            brands: prev.brands.includes(brand)
+                ? prev.brands.filter(b => b !== brand)
+                : [...prev.brands, brand]
         }));
     };
 
@@ -97,6 +120,24 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
                     ))}
                 </div>
             </div>
+             {availableBrands.length > 0 && (
+                <div>
+                    <h3 className="font-semibold mb-2 dark:text-gray-200">Marques</h3>
+                    <div className="space-y-1 max-h-48 overflow-y-auto">
+                        {availableBrands.map(brand => (
+                            <label key={brand} className="flex items-center gap-2 text-sm">
+                                <input
+                                    type="checkbox"
+                                    checked={localFilters.brands.includes(brand)}
+                                    onChange={() => handleBrandChange(brand)}
+                                    className="h-4 w-4 rounded border-gray-300 text-kmer-green focus:ring-kmer-green"
+                                />
+                                <span className="dark:text-gray-300">{brand}</span>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            )}
              <div>
                 <h3 className="font-semibold mb-2 dark:text-gray-200">Note minimale</h3>
                 <div className="flex justify-around">
@@ -123,8 +164,13 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
         <>
             {/* Mobile Button & Sort Dropdown */}
             <div className="lg:hidden mb-4 flex items-center justify-between">
-                <button onClick={() => setIsFilterOpen(true)} className="flex items-center gap-2 text-kmer-green font-bold p-2 rounded-md bg-kmer-green/10">
+                <button onClick={() => setIsFilterOpen(true)} className={`relative flex items-center gap-2 font-bold p-2 rounded-md ${activeFilterCount > 0 ? 'bg-kmer-green/20 text-kmer-green' : 'bg-kmer-green/10 text-kmer-green'}`}>
                     <FilterIcon className="w-5 h-5"/> Filtres
+                    {activeFilterCount > 0 && (
+                        <span className="absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full bg-kmer-red text-white text-xs">
+                            {activeFilterCount}
+                        </span>
+                    )}
                 </button>
                 <select 
                     value={filters.sort}

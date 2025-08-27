@@ -1,6 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
+import type { GenerateContentResponse } from '@google/genai';
 // L'importation statique a été supprimée pour éviter les erreurs de plantage dans les environnements de navigateur.
 
 interface ChatContextType {
@@ -51,6 +52,27 @@ const censorText = (text: string, storeInfo?: Chat['sellerStoreInfo']): string =
 
     return censoredText;
 };
+
+// Helper to add a timeout to a promise
+const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
+  return new Promise((resolve, reject) => {
+    const timeoutId = setTimeout(() => {
+      reject(new Error(`Promise timed out after ${ms} ms`));
+    }, ms);
+
+    promise.then(
+      (res) => {
+        clearTimeout(timeoutId);
+        resolve(res);
+      },
+      (err) => {
+        clearTimeout(timeoutId);
+        reject(err);
+      }
+    );
+  });
+};
+
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
@@ -231,10 +253,10 @@ The customer just said: "${text}"
 Please provide a helpful response as the KMER ZONE assistant.
         `;
 
-        const response = await ai.models.generateContent({
+        const response: GenerateContentResponse = await withTimeout(ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt,
-        });
+        }), 20000); // 20 second timeout
 
         const aiResponseText = response.text;
         
@@ -254,12 +276,12 @@ Please provide a helpful response as the KMER ZONE assistant.
          setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: assistantMessage.timestamp } : c));
 
     } catch (error) {
-        console.error("Gemini API call failed:", error);
+        console.error("Gemini API call failed or timed out:", error);
         const errorMessage: Message = {
              id: `msg_error_${Date.now()}`,
              chatId,
              senderId: 'assistant-id',
-             text: "Désolé, je rencontre un problème technique. Veuillez réessayer plus tard.",
+             text: "Désolé, je n'arrive pas à répondre pour le moment. Veuillez réessayer plus tard.",
              timestamp: new Date().toISOString(),
              isRead: false,
         };

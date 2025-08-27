@@ -34,6 +34,23 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ message, reopenDate }
 
   const hasTimeLeft = Object.keys(timeLeft).length > 0;
 
+  const handleExitMaintenance = () => {
+    try {
+      const settingsJSON = localStorage.getItem('siteSettings');
+      if (settingsJSON) {
+        const settings = JSON.parse(settingsJSON);
+        if (settings.maintenanceMode) {
+          settings.maintenanceMode.isEnabled = false;
+          localStorage.setItem('siteSettings', JSON.stringify(settings));
+        }
+      }
+      window.location.reload();
+    } catch (e) {
+      console.error("Could not exit maintenance mode:", e);
+      alert("Impossible de quitter le mode maintenance automatiquement. Veuillez essayer de vider le cache de votre navigateur.");
+    }
+  };
+
   return (
     <div className="bg-gray-100 dark:bg-gray-900 min-h-screen flex items-center justify-center p-4">
       <div className="text-center bg-white dark:bg-gray-800 p-12 rounded-lg shadow-xl max-w-2xl w-full">
@@ -54,6 +71,9 @@ const MaintenancePage: React.FC<MaintenancePageProps> = ({ message, reopenDate }
             </div>
           </div>
         )}
+        <button onClick={handleExitMaintenance} className="mt-8 text-sm text-gray-500 dark:text-gray-400 hover:underline">
+            Cliquer ici pour tenter de forcer la sortie du mode maintenance.
+        </button>
       </div>
       <style>{`
         @keyframes spin-slow {

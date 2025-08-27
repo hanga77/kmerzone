@@ -7,9 +7,10 @@ interface StoresPageProps {
   stores: Store[];
   onBack: () => void;
   onVisitStore: (storeName: string) => void;
+  onNavigateToStoresMap: () => void;
 }
 
-const StoresPage: React.FC<StoresPageProps> = ({ stores, onBack, onVisitStore }) => {
+const StoresPage: React.FC<StoresPageProps> = ({ stores, onBack, onVisitStore, onNavigateToStoresMap }) => {
   return (
     <div className="container mx-auto px-6 py-12">
       <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
@@ -18,6 +19,10 @@ const StoresPage: React.FC<StoresPageProps> = ({ stores, onBack, onVisitStore })
       </button>
       <div className="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
         <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Nos boutiques partenaires</h1>
+        <button onClick={onNavigateToStoresMap} className="flex items-center gap-2 bg-blue-500 text-white font-semibold py-2 px-4 rounded-lg hover:bg-blue-600 transition-colors">
+            <MapPinIcon className="w-5 h-5"/>
+            Voir sur la carte
+        </button>
       </div>
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
         {stores.map(store => <StoreCard key={store.id} store={store} onVisitStore={onVisitStore} />)}

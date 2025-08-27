@@ -33,27 +33,50 @@ export interface Product {
   variantDetails?: VariantDetail[];
   status: 'published' | 'draft';
   shippingCost?: number;
-  // Generic fields
+  
+  // Generic / Shared fields
   brand?: string;
   weight?: string; // e.g. "500g", "1kg"
   dimensions?: string; // e.g. "10x5x3 cm"
   material?: string;
-  gender?: 'Homme' | 'Femme' | 'Unisexe';
+  gender?: 'Homme' | 'Femme' | 'Enfant' | 'Unisexe';
+  color?: string;
+  
+  // Promotion fields
   promotionStartDate?: string; // ISO Date string
   promotionEndDate?: string; // ISO Date string
+  
+  // Traceability
   serialNumber?: string;
   productionDate?: string; // ISO Date string
   expirationDate?: string; // ISO Date string
+  
   // Category-specific fields
-  // Books
+  // --> Electronique
+  modelNumber?: string;
+  warranty?: string; // e.g., "1 an"
+  operatingSystem?: string;
+  accessories?: string;
+
+  // --> Alimentation
+  ingredients?: string;
+  allergens?: string;
+  storageInstructions?: string;
+  origin?: string;
+
+  // --> Maison & Meubles
+  assemblyInstructions?: string;
+
+  // --> Beauté & Cosmétiques
+  productType?: string;
+  volume?: string; // e.g., "50ml", "100g"
+  skinType?: string;
+
+  // --> Books
   author?: string;
   publisher?: string;
   publicationYear?: number;
   isbn?: string;
-  // Electronics
-  color?: string;
-  modelNumber?: string;
-  warranty?: string; // e.g., "1 an"
 }
 
 export interface FlashSaleProduct {
@@ -142,6 +165,7 @@ export interface User {
     id: string;
     name: string;
     email: string;
+    password?: string;
     role: UserRole;
     shopName?: string;
     location?: string;
@@ -229,6 +253,12 @@ export interface Order extends NewOrderData {
     discrepancy?: Discrepancy;
     disputeLog?: DisputeMessage[];
     statusChangeLog?: StatusChangeLogEntry[];
+    // For depot departure traceability
+    departureProcessedByAgentId?: string; // ID of the depot agent
+    processedForDepartureAt?: string; // ISO string
+    // For customer pickup verification
+    pickupRecipientName?: string;
+    pickupRecipientId?: string;
 }
 
 export interface Payout {
@@ -293,6 +323,7 @@ export interface ProductFiltersState {
   priceMin?: number;
   priceMax?: number;
   vendors: string[];
+  brands: string[];
   minRating: number;
   key?: number; // Used to force-reset the filters component
 }

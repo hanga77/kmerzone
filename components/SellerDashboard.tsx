@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
 import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon } from './Icons';
@@ -351,15 +351,120 @@ const PromoCodeForm: React.FC<{
   );
 };
 
+const FlashSaleProposalModal: React.FC<{
+  flashSale: FlashSale;
+  sellerProducts: Product[];
+  onClose: () => void;
+  onSubmit: (productId: string, flashPrice: number) => void;
+}> = ({ flashSale, sellerProducts, onClose, onSubmit }) => {
+    const [selectedProductId, setSelectedProductId] = useState('');
+    const [flashPrice, setFlashPrice] = useState('');
+    const [error, setError] = useState('');
+
+    const availableProducts = useMemo(() => {
+        const proposedProductIds = new Set(flashSale.products.map(p => p.productId));
+        return sellerProducts.filter(p => !proposedProductIds.has(p.id) && p.status === 'published');
+    }, [flashSale, sellerProducts]);
+
+    const selectedProduct = useMemo(() => {
+        return availableProducts.find(p => p.id === selectedProductId);
+    }, [selectedProductId, availableProducts]);
+
+    const handleSubmit = () => {
+        setError('');
+        if (!selectedProductId || !flashPrice) {
+            setError("Veuillez sélectionner un produit et définir un prix.");
+            return;
+        }
+        const price = parseFloat(flashPrice);
+        if (isNaN(price) || price <= 0) {
+            setError("Le prix est invalide.");
+            return;
+        }
+        if (selectedProduct && price >= selectedProduct.price) {
+            setError("Le prix promotionnel doit être inférieur au prix original.");
+            return;
+        }
+        onSubmit(selectedProductId, price);
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold dark:text-white">Proposer un produit</h3>
+                    <button onClick={onClose}><XIconSmall className="w-6 h-6"/></button>
+                </div>
+                <p className="text-sm mb-4">Pour l'événement: <span className="font-semibold">{flashSale.name}</span></p>
+
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium">Produit</label>
+                        <select value={selectedProductId} onChange={e => setSelectedProductId(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                            <option value="">-- Choisir un produit --</option>
+                            {availableProducts.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Prix Promotionnel (FCFA)</label>
+                        <input type="number" value={flashPrice} onChange={e => setFlashPrice(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        {selectedProduct && <p className="text-xs text-gray-500 mt-1">Prix original : {selectedProduct.price.toLocaleString('fr-CM')} FCFA</p>}
+                    </div>
+                    {error && <p className="text-sm text-red-500">{error}</p>}
+                </div>
+
+                <div className="flex justify-end gap-2 mt-6">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md">Annuler</button>
+                    <button onClick={handleSubmit} className="px-4 py-2 bg-kmer-green text-white rounded-md">Soumettre la proposition</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+
 const PromotionsPanel: React.FC<{
   promoCodes: PromoCode[];
   sellerId: string;
   onCreatePromoCode: (codeData: Omit<PromoCode, 'uses'>) => void;
   onDeletePromoCode: (code: string) => void;
-}> = ({ promoCodes, sellerId, onCreatePromoCode, onDeletePromoCode }) => {
+  flashSales: FlashSale[];
+  products: Product[];
+  onProposeForFlashSale: (flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => void;
+  storeName: string;
+}> = ({ promoCodes, sellerId, onCreatePromoCode, onDeletePromoCode, flashSales, products, onProposeForFlashSale, storeName }) => {
   const [showForm, setShowForm] = useState(false);
+  const [proposalModalOpen, setProposalModalOpen] = useState<FlashSale | null>(null);
+  const now = new Date();
+  const activeFlashSales = flashSales.filter(fs => new Date(fs.endDate) > now);
+
+  const handleProposalSubmit = (productId: string, flashPrice: number) => {
+      if (proposalModalOpen) {
+          onProposeForFlashSale(proposalModalOpen.id, productId, flashPrice, storeName);
+          setProposalModalOpen(null);
+      }
+  };
+
+  const getStatusChip = (status: FlashSaleProduct['status']) => {
+    switch (status) {
+        case 'approved': return <span className="text-xs font-semibold text-green-600">Approuvé</span>;
+        case 'rejected': return <span className="text-xs font-semibold text-red-600">Rejeté</span>;
+        case 'pending':
+        default:
+            return <span className="text-xs font-semibold text-yellow-600">En attente</span>;
+    }
+  };
+
   return (
     <div className="p-6">
+      {proposalModalOpen && (
+        <FlashSaleProposalModal
+          flashSale={proposalModalOpen}
+          sellerProducts={products}
+          onClose={() => setProposalModalOpen(null)}
+          onSubmit={handleProposalSubmit}
+        />
+      )}
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-bold dark:text-white">Mes Codes Promo</h2>
         <button onClick={() => setShowForm(!showForm)} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center gap-2">
@@ -379,6 +484,48 @@ const PromotionsPanel: React.FC<{
               </div>
           ))}
           {promoCodes.length === 0 && !showForm && <p className="text-sm text-gray-500 dark:text-gray-400">Vous n'avez aucun code promo actif.</p>}
+      </div>
+
+      <div className="mt-8">
+        <h3 className="text-xl font-bold border-t dark:border-gray-700 pt-6 dark:text-white">Ventes Flash Actives</h3>
+        {activeFlashSales.length > 0 ? (
+          <div className="space-y-3 mt-4">
+            {activeFlashSales.map(fs => {
+              const myProposals = fs.products.filter(p => p.sellerShopName === storeName);
+              return (
+                <div key={fs.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                  <div className="flex justify-between items-center">
+                    <div>
+                        <h4 className="font-semibold text-lg">{fs.name}</h4>
+                        <p className="text-sm text-gray-500">Se termine le {new Date(fs.endDate).toLocaleDateString('fr-FR')}</p>
+                    </div>
+                    <button onClick={() => setProposalModalOpen(fs)} className="text-sm bg-blue-500 text-white font-semibold px-3 py-2 rounded-md hover:bg-blue-600">
+                        Proposer un produit
+                    </button>
+                  </div>
+                  {myProposals.length > 0 && (
+                     <div className="mt-3 pt-3 border-t dark:border-gray-700">
+                         <h5 className="text-sm font-semibold mb-2">Mes produits proposés :</h5>
+                         <ul className="space-y-1 text-sm">
+                            {myProposals.map(p => {
+                                const product = products.find(prod => prod.id === p.productId);
+                                return (
+                                    <li key={p.productId} className="flex justify-between items-center">
+                                        <span>{product?.name || 'Produit inconnu'} - <span className="font-bold">{p.flashPrice.toLocaleString('fr-CM')} FCFA</span></span>
+                                        {getStatusChip(p.status)}
+                                    </li>
+                                );
+                            })}
+                         </ul>
+                     </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500 mt-2">Aucun événement de vente flash actif pour le moment.</p>
+        )}
       </div>
     </div>
   );
@@ -510,37 +657,55 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   siteSettings,
   onAddStory,
   onDeleteStory,
+  flashSales,
+  onProposeForFlashSale,
 }) => {
     const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
-    const printableRef = useRef<HTMLDivElement>(null);
     const qrCodeRef = useRef<HTMLCanvasElement>(null);
     const [scanningOrder, setScanningOrder] = useState<Order | null>(null);
     const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
 
     useEffect(() => {
-        if (printingOrder && qrCodeRef.current && printableRef.current) {
-            QRCode.toCanvas(qrCodeRef.current, printingOrder.trackingNumber || '', { width: 80, margin: 1 }, (error) => {
-                if (error) {
-                    console.error('QR Code Generation Error:', error);
-                    setPrintingOrder(null);
-                    return;
-                }
-                
-                const handleAfterPrint = () => {
-                    setPrintingOrder(null);
-                    window.removeEventListener('afterprint', handleAfterPrint);
-                };
-                window.addEventListener('afterprint', handleAfterPrint);
-                
-                // Use a short timeout to ensure the QR code is rendered before printing
-                setTimeout(() => {
-                    window.print();
-                }, 100);
-            });
+        if (!printingOrder) return;
+
+        const qrCanvas = qrCodeRef.current;
+        if (!qrCanvas) {
+            console.error("Canvas ref for printing not ready.");
+            setPrintingOrder(null);
+            return;
         }
+
+        let printJobActive = true;
+
+        const cleanup = () => {
+            if (printJobActive) {
+                printJobActive = false;
+                window.removeEventListener('afterprint', cleanup);
+                setPrintingOrder(null);
+            }
+        };
+
+        window.addEventListener('afterprint', cleanup);
+
+        QRCode.toCanvas(qrCanvas, printingOrder.trackingNumber || 'NO_ID', { width: 80, margin: 1 }, (error) => {
+            if (!printJobActive) return;
+            if (error) {
+                console.error('QR Code Generation Error:', error);
+                cleanup();
+                return;
+            }
+            
+            setTimeout(() => {
+                if (printJobActive) {
+                    window.print();
+                }
+            }, 300);
+        });
+
+        return cleanup;
     }, [printingOrder]);
 
     const handleScanSuccess = (decodedText: string) => {
@@ -613,7 +778,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
             case 'orders-cancelled':
                 return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
             case 'promotions':
-                 return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode}/>;
+                 return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode} flashSales={flashSales} products={products} onProposeForFlashSale={onProposeForFlashSale} storeName={store.name} />;
             case 'documents':
                  return <DocumentsPanel store={store} onUploadDocument={onUploadDocument} />;
             case 'overview':
@@ -631,9 +796,9 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                 scanResult={scanResult}
             />
         )}
-         {printingOrder && (
+        {printingOrder && (
             <div className="printable fixed -left-[9999px] top-0">
-                <div ref={printableRef} className="w-[105mm] h-[148mm] p-2 border-2 border-black flex flex-col justify-between font-sans text-xs">
+                <div className="w-[105mm] h-[148mm] p-2 border-2 border-black flex flex-col justify-between font-sans text-xs bg-white text-black">
                     <div>
                         <h3 className="font-bold text-base">KMER ZONE - Commande #{printingOrder.id}</h3>
                         <p><b>Date:</b> {new Date(printingOrder.orderDate).toLocaleDateString()}</p>

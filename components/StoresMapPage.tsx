@@ -13,12 +13,15 @@ interface StoresMapPageProps {
 const StoresMapPage: React.FC<StoresMapPageProps> = ({ stores, onBack, onVisitStore }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<any>(null);
-  const [selectedCity, setSelectedCity] = useState<'all' | 'Douala' | 'Yaoundé'>('all');
+  const [selectedCity, setSelectedCity] = useState<'all' | 'Douala' | 'Yaoundé' | 'Bafoussam' | 'Limbe' | 'Kribi'>('all');
 
   const cityCoordinates = {
     'Douala': { lat: 4.0511, lng: 9.7679, zoom: 12 },
     'Yaoundé': { lat: 3.8480, lng: 11.5021, zoom: 12 },
-    'all': { lat: 3.95, lng: 10.6, zoom: 7 }
+    'Bafoussam': { lat: 5.4744, lng: 10.4193, zoom: 13 },
+    'Limbe': { lat: 4.0165, lng: 9.2131, zoom: 13 },
+    'Kribi': { lat: 2.9431, lng: 9.9077, zoom: 13 },
+    'all': { lat: 4.6, lng: 11.5, zoom: 7 }
   };
 
   useEffect(() => {
@@ -28,6 +31,10 @@ const StoresMapPage: React.FC<StoresMapPageProps> = ({ stores, onBack, onVisitSt
         attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
       }).addTo(mapRef.current);
     }
+     // Invalidate size on show
+    setTimeout(() => {
+      mapRef.current?.invalidateSize();
+    }, 100);
   }, []);
 
   useEffect(() => {
@@ -61,7 +68,7 @@ const StoresMapPage: React.FC<StoresMapPageProps> = ({ stores, onBack, onVisitSt
         }
       });
       
-      // Add event listener for popup buttons
+      mapRef.current.off('popupopen'); // Remove previous listeners
       mapRef.current.on('popupopen', (e: any) => {
         const button = e.popup._container.querySelector('.map-popup-button');
         if (button) {
@@ -93,8 +100,9 @@ const StoresMapPage: React.FC<StoresMapPageProps> = ({ stores, onBack, onVisitSt
               className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 text-sm font-semibold focus:ring-kmer-green focus:border-kmer-green"
             >
               <option value="all">Toutes</option>
-              <option value="Douala">Douala</option>
-              <option value="Yaoundé">Yaoundé</option>
+               {[...new Set(stores.map(s => s.location))].map(city => (
+                 <option key={city} value={city}>{city}</option>
+               ))}
             </select>
           </div>
         </div>

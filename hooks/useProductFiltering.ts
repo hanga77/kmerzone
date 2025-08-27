@@ -29,6 +29,7 @@ export const useProductFiltering = (initialProducts: Product[]) => {
   const [filters, setFilters] = useState<ProductFiltersState>({
     sort: 'relevance',
     vendors: [],
+    brands: [],
     minRating: 0,
     priceMin: undefined,
     priceMax: undefined,
@@ -49,6 +50,11 @@ export const useProductFiltering = (initialProducts: Product[]) => {
     // Filter by vendors
     if (filters.vendors.length > 0) {
       items = items.filter(p => filters.vendors.includes(p.vendor));
+    }
+    
+    // Filter by brands
+    if (filters.brands.length > 0) {
+      items = items.filter(p => p.brand && filters.brands.includes(p.brand));
     }
 
     // Filter by rating
@@ -83,6 +89,7 @@ export const useProductFiltering = (initialProducts: Product[]) => {
     setFilters(prev => ({
         sort: 'relevance',
         vendors: [],
+        brands: [],
         minRating: 0,
         priceMin: undefined,
         priceMax: undefined,

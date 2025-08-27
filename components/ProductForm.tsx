@@ -12,31 +12,173 @@ interface ProductFormProps {
   siteSettings: SiteSettings;
 }
 
-// Helper function to generate combinations
 const getCombinations = (variants: Variant[]): Record<string, string>[] => {
-  if (variants.length === 0 || variants.some(v => v.options.length === 0)) {
-    return [];
-  }
-
+  if (variants.length === 0 || variants.some(v => v.options.length === 0)) return [];
   const combinations: Record<string, string>[] = [];
-  const variantNames = variants.map(v => v.name);
-
   const recurse = (index: number, currentCombination: Record<string, string>) => {
     if (index === variants.length) {
       combinations.push(currentCombination);
       return;
     }
-
     const variant = variants[index];
     for (const option of variant.options) {
-      const newCombination = { ...currentCombination, [variant.name]: option };
-      recurse(index + 1, newCombination);
+      recurse(index + 1, { ...currentCombination, [variant.name]: option });
     }
   };
-
   recurse(0, {});
   return combinations;
 };
+
+const FieldWrapper: React.FC<{ label: string; children: React.ReactNode }> = ({ label, children }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">{label}</label>
+    {children}
+  </div>
+);
+
+const CategorySpecificFields: React.FC<{
+  product: Partial<Product>;
+  categories: Category[];
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => void;
+}> = ({ product, categories, handleChange }) => {
+    const selectedCategory = useMemo(() => categories.find(c => c.id === product.categoryId), [product.categoryId, categories]);
+    const parentCategory = useMemo(() => {
+        if (!selectedCategory) return null;
+        return selectedCategory.parentId ? categories.find(c => c.id === selectedCategory.parentId) : selectedCategory;
+    }, [selectedCategory, categories]);
+
+    const parentId = parentCategory?.id;
+
+    if (!parentId) return null;
+
+    let fields = null;
+    switch (parentId) {
+        case 'cat-vetements':
+            fields = (
+                <>
+                    <FieldWrapper label="Matière (coton, polyester...)">
+                        <input type="text" name="material" value={product.material || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                    <FieldWrapper label="Genre">
+                        <select name="gender" value={product.gender || 'Unisexe'} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
+                            <option value="Unisexe">Unisexe</option>
+                            <option value="Homme">Homme</option>
+                            <option value="Femme">Femme</option>
+                            <option value="Enfant">Enfant</option>
+                        </select>
+                    </FieldWrapper>
+                </>
+            );
+            break;
+        case 'cat-electronique':
+        case 'cat-electronique-grand-public':
+             fields = (
+                <>
+                    <FieldWrapper label="Marque">
+                        <input type="text" name="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Modèle / Référence">
+                        <input type="text" name="modelNumber" value={product.modelNumber || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Système d’exploitation">
+                        <input type="text" name="operatingSystem" value={product.operatingSystem || ''} placeholder="Android, iOS, Windows..." className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Garantie (durée, conditions)">
+                        <input type="text" name="warranty" value={product.warranty || ''} placeholder="Ex: 1 an" className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                    <FieldWrapper label="Accessoires inclus">
+                        <input type="text" name="accessories" value={product.accessories || ''} placeholder="Chargeur, écouteurs..." className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                </>
+            );
+            break;
+        case 'cat-textile':
+            // Dirty hack because the food items are in this category
+            if (product.categoryId === 'sub-autres-textiles') { 
+                fields = (
+                    <>
+                        <FieldWrapper label="Poids / Volume (ex: 1kg, 500ml)">
+                             <input type="text" name="weight" value={product.weight || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                        </FieldWrapper>
+                        <FieldWrapper label="Date de péremption">
+                             <input type="date" name="expirationDate" value={product.expirationDate || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                        </FieldWrapper>
+                        <FieldWrapper label="Ingrédients (séparés par des virgules)">
+                            <input type="text" name="ingredients" value={product.ingredients || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                        </FieldWrapper>
+                        <FieldWrapper label="Allergènes (séparés par des virgules)">
+                            <input type="text" name="allergens" value={product.allergens || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                        </FieldWrapper>
+                        <FieldWrapper label="Mode de conservation">
+                             <input type="text" name="storageInstructions" placeholder="Frais, congelé, ambiant" value={product.storageInstructions || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                        </FieldWrapper>
+                        <FieldWrapper label="Origine (pays/région)">
+                            <input type="text" name="origin" value={product.origin || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                        </FieldWrapper>
+                    </>
+                );
+            }
+            break;
+        case 'cat-mobilier':
+        case 'cat-jardin':
+            fields = (
+                 <>
+                    <FieldWrapper label="Dimensions (LxlxH cm)">
+                         <input type="text" name="dimensions" value={product.dimensions || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Poids (ex: 15kg)">
+                         <input type="text" name="weight" value={product.weight || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Matière (bois, métal...)">
+                        <input type="text" name="material" value={product.material || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Couleur principale">
+                        <input type="text" name="color" value={product.color || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                    <FieldWrapper label="Instructions de montage">
+                        <input type="text" name="assemblyInstructions" placeholder="Oui, manuel PDF inclus" value={product.assemblyInstructions || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                </>
+            );
+            break;
+        case 'cat-beaute':
+            fields = (
+                 <>
+                    <FieldWrapper label="Marque">
+                        <input type="text" name="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                    <FieldWrapper label="Type de produit">
+                        <input type="text" name="productType" placeholder="Maquillage, soin, parfum..." value={product.productType || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                    <FieldWrapper label="Contenance (ml, g...)">
+                        <input type="text" name="volume" value={product.volume || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Ingrédients (séparés par des virgules)">
+                        <input type="text" name="ingredients" value={product.ingredients || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                    <FieldWrapper label="Convient pour (type de peau)">
+                        <input type="text" name="skinType" placeholder="Peau grasse, sèche, mixte..." value={product.skinType || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                     <FieldWrapper label="Date d'expiration">
+                         <input type="date" name="expirationDate" value={product.expirationDate || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                    </FieldWrapper>
+                </>
+            );
+            break;
+    }
+
+    if (!fields) return null;
+
+    return (
+        <div className="pt-6 border-t dark:border-gray-700 col-span-1 md:col-span-2">
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">Caractéristiques Spécifiques à la Catégorie</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {fields}
+            </div>
+        </div>
+    );
+};
+
 
 const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEdit, categories, onAddCategory, siteSettings }) => {
   const { user } = useAuth();
@@ -49,14 +191,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     description: '',
     imageUrls: [],
     status: 'draft',
-    brand: '',
-    weight: '',
-    dimensions: '',
-    material: '',
-    gender: 'Unisexe',
-    serialNumber: '',
-    productionDate: '',
-    expirationDate: '',
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   
@@ -68,10 +202,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     }));
   }, [categories]);
 
-  // Variant state management
   const [variants, setVariants] = useState<Variant[]>([]);
   const [variantDetails, setVariantDetails] = useState<VariantDetail[]>([]);
-
   const variantCombinations = useMemo(() => getCombinations(variants), [variants]);
   const hasVariants = variants.length > 0 && variants.every(v => v.name && v.options.length > 0);
 
@@ -86,12 +218,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
       setVariants(productToEdit.variants || []);
       setVariantDetails(productToEdit.variantDetails || []);
     } else if (categoryTree.length > 0 && categoryTree[0].subCategories.length > 0) {
-      // Set default category
       setProduct(prev => ({ ...prev, categoryId: categoryTree[0].subCategories[0].id }));
     }
   }, [productToEdit, categoryTree]);
   
-  // Effect to update total stock from variants
   useEffect(() => {
       if (hasVariants) {
           const totalStock = variantDetails.reduce((sum, detail) => sum + detail.stock, 0);
@@ -113,8 +243,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
   const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const files = Array.from(e.target.files);
-      const currentImageCount = imagePreviews.length;
-      if (files.length + currentImageCount > 5) {
+      if (files.length + imagePreviews.length > 5) {
         alert("Vous ne pouvez télécharger que 5 images au maximum.");
         return;
       }
@@ -149,13 +278,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
   const handleVariantChange = (index: number, field: 'name' | 'options', value: string) => {
     setVariants(prev => prev.map((variant, i) => {
         if (i === index) {
-            if (field === 'name') {
-                return { ...variant, name: value };
-            }
-            if (field === 'options') {
-                const optionsArray = value.split(',').map(opt => opt.trim()).filter(Boolean);
-                return { ...variant, options: optionsArray };
-            }
+            if (field === 'name') return { ...variant, name: value };
+            if (field === 'options') return { ...variant, options: value.split(',').map(opt => opt.trim()).filter(Boolean) };
         }
         return variant;
     }));
@@ -164,23 +288,13 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
   const handleVariantDetailChange = (combination: Record<string, string>, field: 'stock' | 'price', value: string) => {
       const numValue = parseFloat(value);
       setVariantDetails(prev => {
-          const existingDetailIndex = prev.findIndex(d => 
-              JSON.stringify(d.options) === JSON.stringify(combination)
-          );
-          
+          const existingDetailIndex = prev.findIndex(d => JSON.stringify(d.options) === JSON.stringify(combination));
           if (existingDetailIndex > -1) {
               const newDetails = [...prev];
-              newDetails[existingDetailIndex] = {
-                  ...newDetails[existingDetailIndex],
-                  [field]: isNaN(numValue) ? (field === 'price' ? undefined : 0) : numValue
-              };
+              newDetails[existingDetailIndex] = { ...newDetails[existingDetailIndex], [field]: isNaN(numValue) ? (field === 'price' ? undefined : 0) : numValue };
               return newDetails;
           } else {
-               const newDetail: VariantDetail = {
-                   options: combination,
-                   stock: field === 'stock' ? (isNaN(numValue) ? 0 : numValue) : 0,
-                   price: field === 'price' ? (isNaN(numValue) ? undefined : numValue) : undefined
-               };
+               const newDetail: VariantDetail = { options: combination, stock: field === 'stock' ? (isNaN(numValue) ? 0 : numValue) : 0, price: field === 'price' ? (isNaN(numValue) ? undefined : numValue) : undefined };
                return [...prev, newDetail];
           }
       });
@@ -191,13 +305,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
       return detail?.[field] ?? '';
   };
 
-
   const handleSubmit = (status: 'published' | 'draft') => {
-    if (!user?.shopName) {
-        alert("Erreur: nom de la boutique non trouvé.");
-        return;
-    }
-    if (!product.name || !product.price || product.stock === undefined || !product.imageUrls || product.imageUrls.length === 0 || !product.categoryId) {
+    if (!user?.shopName || !product.name || !product.price || product.stock === undefined || !product.imageUrls || product.imageUrls.length === 0 || !product.categoryId) {
         alert("Veuillez remplir tous les champs obligatoires (Nom, Prix, Stock, Catégorie et au moins une Image).");
         return;
     }
@@ -207,236 +316,102 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
         vendor: user.shopName,
         reviews: productToEdit ? productToEdit.reviews : [],
         ...product,
-        name: product.name!,
-        price: product.price!,
-        stock: product.stock!,
-        categoryId: product.categoryId!,
-        description: product.description!,
-        imageUrls: product.imageUrls!,
-        status: status,
+        name: product.name!, price: product.price!, stock: product.stock!, categoryId: product.categoryId!, description: product.description!, imageUrls: product.imageUrls!, status: status,
         variants: hasVariants ? variants : undefined,
         variantDetails: hasVariants ? variantDetails : undefined,
     };
     onSave(finalProduct);
   };
 
-    const renderCategorySpecificFields = () => {
-        const categoryId = product.categoryId || '';
-        const category = categories.find(c => c.id === categoryId);
-        const categoryName = category?.name || '';
-
-        if (['Vêtements', 'Chaussures', 'Sacs & Accessoires'].includes(categoryName)) {
-            return (
-                <>
-                    <div>
-                        <label htmlFor="brand" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Marque</label>
-                        <input type="text" name="brand" id="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                        <label htmlFor="material" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Matériau</label>
-                        <input type="text" name="material" id="material" value={product.material || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                        <label htmlFor="gender" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Genre</label>
-                        <select name="gender" id="gender" value={product.gender} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                            <option value="Unisexe">Unisexe</option>
-                            <option value="Homme">Homme</option>
-                            <option value="Femme">Femme</option>
-                        </select>
-                    </div>
-                </>
-            );
-        }
-        if (['Plats préparés', 'Épicerie', 'Boissons'].includes(categoryName)) {
-            return (
-                <>
-                    <div>
-                        <label htmlFor="brand" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Marque</label>
-                        <input type="text" name="brand" id="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                        <label htmlFor="weight" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Poids (ex: 500g)</label>
-                        <input type="text" name="weight" id="weight" value={product.weight || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                        <label htmlFor="expirationDate" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Date d'expiration</label>
-                        <input type="date" name="expirationDate" id="expirationDate" value={product.expirationDate || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                </>
-            );
-        }
-        if (['Électronique', 'Électroménager'].includes(categoryName)) {
-            return (
-                 <>
-                    <div>
-                       <label htmlFor="brand" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Marque</label>
-                       <input type="text" name="brand" id="brand" value={product.brand || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                       <label htmlFor="modelNumber" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Numéro de modèle</label>
-                       <input type="text" name="modelNumber" id="modelNumber" value={product.modelNumber || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                     <div>
-                       <label htmlFor="color" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Couleur</label>
-                       <input type="text" name="color" id="color" value={product.color || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div>
-                       <label htmlFor="warranty" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Garantie</label>
-                       <input type="text" name="warranty" id="warranty" placeholder="Ex: 1 an" value={product.warranty || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                 </>
-            );
-        }
-        return null;
-    }
-
   return (
     <div className="container mx-auto px-4 sm:px-6 py-12">
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-lg shadow-lg">
         <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-6">{productToEdit ? 'Modifier le produit' : 'Ajouter un nouveau produit'}</h1>
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-6">
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom du produit</label>
-                <input type="text" name="name" id="name" value={product.name} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="price" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prix de base (FCFA)</label>
-                  <input type="number" name="price" id="price" value={product.price || ''} onChange={handlePriceChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required />
+            <h2 className="text-xl font-semibold -mb-2 dark:text-white">Informations Générales</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t dark:border-gray-700">
+                <div className="space-y-6">
+                    <FieldWrapper label="Nom du produit">
+                        <input type="text" name="name" id="name" value={product.name} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required />
+                    </FieldWrapper>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FieldWrapper label="Prix de base (FCFA)">
+                          <input type="number" name="price" id="price" value={product.price || ''} onChange={handlePriceChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required />
+                        </FieldWrapper>
+                         <FieldWrapper label="Prix promo (optionnel)">
+                          <input type="number" name="promotionPrice" id="promotionPrice" value={product.promotionPrice || ''} onChange={handlePriceChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
+                        </FieldWrapper>
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                        <FieldWrapper label="Stock total">
+                            <input type="number" name="stock" id="stock" value={product.stock ?? ''} onChange={handleChange} className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 ${hasVariants ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''}`} required readOnly={hasVariants} />
+                            {hasVariants && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Calculé à partir des variantes.</p>}
+                        </FieldWrapper>
+                        <FieldWrapper label="Catégorie">
+                            <select name="categoryId" id="categoryId" value={product.categoryId} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
+                                <option value="" disabled>-- Sélectionner une sous-catégorie --</option>
+                                {categoryTree.map(mainCat => (
+                                    <optgroup label={mainCat.name} key={mainCat.id}>
+                                    {mainCat.subCategories.map(subCat => (
+                                        <option key={subCat.id} value={subCat.id}>{subCat.name}</option>
+                                    ))}
+                                    </optgroup>
+                                ))}
+                            </select>
+                        </FieldWrapper>
+                    </div>
+                    <FieldWrapper label="Description">
+                        <textarea name="description" id="description" rows={4} value={product.description} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required placeholder="Inclure les caractéristiques principales ici (RAM, stockage, etc. pour l'électronique)."></textarea>
+                    </FieldWrapper>
                 </div>
-                 <div>
-                  <label htmlFor="promotionPrice" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Prix promo (optionnel)</label>
-                  <input type="number" name="promotionPrice" id="promotionPrice" value={product.promotionPrice || ''} onChange={handlePriceChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
-                </div>
-              </div>
-               <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="stock" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Stock total</label>
-                    <input type="number" name="stock" id="stock" value={product.stock ?? ''} onChange={handleChange} className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 ${hasVariants ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''}`} required readOnly={hasVariants} />
-                    {hasVariants && <p className="text-xs text-gray-500 mt-1">Calculé à partir des variantes.</p>}
-                  </div>
-                  <div>
-                    <label htmlFor="categoryId" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Catégorie</label>
-                    <select name="categoryId" id="categoryId" value={product.categoryId} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                      <option value="" disabled>-- Sélectionner une sous-catégorie --</option>
-                      {categoryTree.map(mainCat => (
-                        <optgroup label={mainCat.name} key={mainCat.id}>
-                          {mainCat.subCategories.map(subCat => (
-                            <option key={subCat.id} value={subCat.id}>{subCat.name}</option>
-                          ))}
-                        </optgroup>
-                      ))}
-                    </select>
-                  </div>
-               </div>
-                <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Description</label>
-                    <textarea name="description" id="description" rows={4} value={product.description} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required></textarea>
-                </div>
-            </div>
-            
-            <div>
-                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Images du produit (max 5)</label>
-                 <div className="mt-1 grid grid-cols-3 gap-2">
-                    {imagePreviews.map((src, index) => (
-                        <div key={index} className="relative group">
-                            <img src={src} alt={`Aperçu ${index + 1}`} className="h-24 w-full object-cover rounded-md" />
-                            <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <XCircleIcon className="w-4 h-4" />
-                            </button>
-                        </div>
-                    ))}
-                    {imagePreviews.length < 5 && (
-                        <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
-                            <PhotoIcon className="w-8 h-8 text-gray-400"/>
-                            <span className="text-xs text-gray-500">Ajouter</span>
-                            <input id="image-upload" name="image-upload" type="file" multiple className="sr-only" onChange={handleImageChange} accept="image/*" />
-                        </label>
-                    )}
-                </div>
-            </div>
-          </div>
+                <FieldWrapper label="Images du produit (max 5)">
+                    <div className="mt-1 grid grid-cols-3 gap-2">
+                        {imagePreviews.map((src, index) => (
+                            <div key={index} className="relative group">
+                                <img src={src} alt={`Aperçu ${index + 1}`} className="h-24 w-full object-cover rounded-md" />
+                                <button type="button" onClick={() => removeImage(index)} className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <XCircleIcon className="w-4 h-4" />
+                                </button>
+                            </div>
+                        ))}
+                        {imagePreviews.length < 5 && (
+                            <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
+                                <PhotoIcon className="w-8 h-8 text-gray-400"/>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Ajouter</span>
+                                <input id="image-upload" name="image-upload" type="file" multiple className="sr-only" onChange={handleImageChange} accept="image/*" />
+                            </label>
+                        )}
+                    </div>
+                </FieldWrapper>
 
-          {/* Variants Section */}
+                <CategorySpecificFields product={product} categories={categories} handleChange={handleChange} />
+            </div>
+
           <div className="pt-6 border-t dark:border-gray-700">
-            <h2 className="text-xl font-semibold mb-4">Variantes (Taille, Couleur, etc.)</h2>
+            <h2 className="text-xl font-semibold mb-4 dark:text-white">Variantes (Taille, Couleur, etc.)</h2>
             <div className="space-y-4">
               {variants.map((variant, index) => (
                 <div key={index} className="flex items-end gap-2 p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
-                  <div className="flex-grow">
-                    <label className="block text-sm font-medium">Type de variante (ex: Taille)</label>
-                    <input
-                      type="text"
-                      value={variant.name}
-                      onChange={e => handleVariantChange(index, 'name', e.target.value)}
-                      className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                    />
-                  </div>
-                  <div className="flex-grow">
-                    <label className="block text-sm font-medium">Options (séparées par des virgules)</label>
-                    <input
-                      type="text"
-                      value={variant.options.join(', ')}
-                      onChange={e => handleVariantChange(index, 'options', e.target.value)}
-                      placeholder="S, M, L, XL"
-                      className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => handleRemoveVariantType(index)}
-                    className="p-2 text-red-500 hover:bg-red-100 rounded-full"
-                  >
-                    <TrashIcon className="w-5 h-5" />
-                  </button>
+                  <div className="flex-grow"><FieldWrapper label="Type de variante (ex: Taille)"><input type="text" value={variant.name} onChange={e => handleVariantChange(index, 'name', e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/></FieldWrapper></div>
+                  <div className="flex-grow"><FieldWrapper label="Options (séparées par des virgules)"><input type="text" value={variant.options.join(', ')} onChange={e => handleVariantChange(index, 'options', e.target.value)} placeholder="S, M, L, XL" className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/></FieldWrapper></div>
+                  <button type="button" onClick={() => handleRemoveVariantType(index)} className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"><TrashIcon className="w-5 h-5" /></button>
                 </div>
               ))}
             </div>
-            <button
-              type="button"
-              onClick={handleAddVariantType}
-              disabled={variants.length >= 3}
-              className="mt-4 text-sm font-semibold text-kmer-green hover:underline disabled:text-gray-400 dark:disabled:text-gray-500"
-            >
-              + Ajouter un type de variante
-            </button>
+            <button type="button" onClick={handleAddVariantType} disabled={variants.length >= 3} className="mt-4 text-sm font-semibold text-kmer-green hover:underline disabled:text-gray-400 dark:disabled:text-gray-500">+ Ajouter un type de variante</button>
           </div>
 
           {hasVariants && (
             <div className="pt-6 border-t dark:border-gray-700">
-              <h2 className="text-xl font-semibold mb-4">Détails des variantes</h2>
+              <h2 className="text-xl font-semibold mb-4 dark:text-white">Détails des variantes</h2>
               <div className="max-h-96 overflow-y-auto">
-                <table className="w-full text-sm">
-                  <thead className="bg-gray-100 dark:bg-gray-700">
-                    <tr>
-                      <th className="p-2 text-left font-semibold">Variante</th>
-                      <th className="p-2 text-left font-semibold w-28">Stock</th>
-                      <th className="p-2 text-left font-semibold w-40">Prix (optionnel)</th>
-                    </tr>
-                  </thead>
+                <table className="w-full text-sm"><thead className="bg-gray-100 dark:bg-gray-700"><tr><th className="p-2 text-left font-semibold dark:text-gray-200">Variante</th><th className="p-2 text-left font-semibold w-28 dark:text-gray-200">Stock</th><th className="p-2 text-left font-semibold w-40 dark:text-gray-200">Prix (optionnel)</th></tr></thead>
                   <tbody>
                     {variantCombinations.map((combo, index) => (
                       <tr key={index} className="border-b dark:border-gray-700">
-                        <td className="p-2 font-medium">{Object.values(combo).join(' / ')}</td>
-                        <td className="p-2">
-                          <input
-                            type="number"
-                            value={getVariantDetailValue(combo, 'stock')}
-                            onChange={e => handleVariantDetailChange(combo, 'stock', e.target.value)}
-                            className="w-full p-1 border rounded-md dark:bg-gray-600 dark:border-gray-500"
-                          />
-                        </td>
-                        <td className="p-2">
-                          <input
-                            type="number"
-                            placeholder={product.price?.toString()}
-                            value={getVariantDetailValue(combo, 'price')}
-                            onChange={e => handleVariantDetailChange(combo, 'price', e.target.value)}
-                            className="w-full p-1 border rounded-md dark:bg-gray-600 dark:border-gray-500"
-                          />
-                        </td>
+                        <td className="p-2 font-medium dark:text-gray-300">{Object.values(combo).join(' / ')}</td>
+                        <td className="p-2"><input type="number" value={getVariantDetailValue(combo, 'stock')} onChange={e => handleVariantDetailChange(combo, 'stock', e.target.value)} className="w-full p-1 border rounded-md dark:bg-gray-600 dark:border-gray-500"/></td>
+                        <td className="p-2"><input type="number" placeholder={product.price?.toString()} value={getVariantDetailValue(combo, 'price')} onChange={e => handleVariantDetailChange(combo, 'price', e.target.value)} className="w-full p-1 border rounded-md dark:bg-gray-600 dark:border-gray-500"/></td>
                       </tr>
                     ))}
                   </tbody>
@@ -445,25 +420,10 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
             </div>
           )}
           
-          {/* Category-specific fields */}
-          <div className="pt-6 border-t dark:border-gray-700">
-              <h2 className="text-xl font-semibold mb-4">Champs Spécifiques</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {renderCategorySpecificFields()}
-              </div>
-          </div>
-          
-          {/* Action Buttons */}
           <div className="flex justify-end gap-4 pt-6 border-t dark:border-gray-700">
-            <button type="button" onClick={onCancel} className="bg-gray-200 dark:bg-gray-600 font-bold py-2 px-6 rounded-lg hover:bg-gray-300">
-              Annuler
-            </button>
-            <button type="button" onClick={() => handleSubmit('draft')} className="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600">
-              Enregistrer en brouillon
-            </button>
-            <button type="button" onClick={() => handleSubmit('published')} className="bg-kmer-green text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">
-              Enregistrer et Publier
-            </button>
+            <button type="button" onClick={onCancel} className="bg-gray-200 dark:bg-gray-600 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">Annuler</button>
+            <button type="button" onClick={() => handleSubmit('draft')} className="bg-blue-500 text-white font-bold py-2 px-6 rounded-lg hover:bg-blue-600">Enregistrer en brouillon</button>
+            <button type="button" onClick={() => handleSubmit('published')} className="bg-kmer-green text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Enregistrer et Publier</button>
           </div>
         </form>
       </div>

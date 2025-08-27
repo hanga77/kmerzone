@@ -1,3 +1,8 @@
+
+
+
+
+// @FIX: Correct the import statement for React and its hooks.
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -7,7 +12,10 @@ import CartView from './components/Cart';
 import Checkout from './components/Checkout';
 import OrderSuccess from './components/OrderSuccess';
 import LoginModal from './components/LoginModal';
+import ForgotPasswordModal from './components/ForgotPasswordModal';
+import ResetPasswordPage from './components/ResetPasswordPage';
 import StoresPage from './components/StoresPage';
+import StoresMapPage from './components/StoresMapPage';
 import BecomeSeller from './components/BecomeSeller';
 import CategoryPage from './components/CategoryPage';
 import SellerDashboard from './components/SellerDashboard';
@@ -16,7 +24,7 @@ import ProductForm from './components/ProductForm';
 import SellerProfile from './components/SellerProfile';
 import { SuperAdminDashboard } from './components/SuperAdminDashboard';
 import OrderHistoryPage from './components/OrderHistoryPage';
-import OrderDetailPage from './components/OrderDetailPage';
+import { OrderDetailPage } from './components/OrderDetailPage';
 import PromotionsPage from './components/PromotionsPage';
 import FlashSalesPage from './components/FlashSalesPage';
 import SearchResultsPage from './components/SearchResultsPage';
@@ -33,7 +41,8 @@ import ForbiddenPage from './components/ForbiddenPage';
 import ServerErrorPage from './components/ServerErrorPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry } from './types';
+// @FIX: Import RequestedDocument type.
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
@@ -43,7 +52,8 @@ import ChatWidget from './components/ChatWidget';
 import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon } from './components/Icons';
 import { usePersistentState } from './hooks/usePersistentState';
 
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error';
+// @FIX: Add 'reset-password' to the Page type to handle the password reset view.
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password';
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -277,38 +287,38 @@ const initialCategories: Category[] = [
 
 const initialProducts: Product[] = [
     { id: '1', name: 'Ndolé Royal', price: 3500, promotionPrice: 3000, imageUrls: ['https://images.unsplash.com/photo-1604329352680-e4a2896d8c22?q=80&w=1974&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Le plat national du Cameroun, un délicieux mélange de légumes, d'arachides et de viande ou de poisson.", reviews: [{author: "Jean P.", rating: 5, comment: "Incroyable !", date: "2023-10-10", status: 'approved'}], stock: 15, categoryId: 'sub-autres-textiles', status: 'published' },
-    { id: '2', name: 'Robe en Tissu Pagne', price: 15000, imageUrls: ['https://images.unsplash.com/photo-1617051395299-52d33b7336b1?q=80&w=1964&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Une robe élégante confectionnée à la main avec du tissu pagne de haute qualité.", reviews: [{author: "Aïcha B.", rating: 4, comment: "Très belles couleurs.", date: "2023-10-11", status: 'approved'}], stock: 8, categoryId: 'sub-vetements', status: 'published' },
-    { id: '3', name: 'Savon Artisanal à l\'huile d\'olive', price: 1500, imageUrls: ['https://images.unsplash.com/photo-1600966492337-1d83c4bee955?q=80&w=2070&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Un savon artisanal fabriqué localement. Doux pour la peau et respectueux de l'environnement.", reviews: [], stock: 50, categoryId: 'sub-cosmetiques', status: 'published' },
-    { id: '4', name: 'Smartphone Pro Max', price: 75000, promotionPrice: 69900, imageUrls: ['https://images.unsplash.com/photo-1580910051074-3eb694886505?q=80&w=1965&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un smartphone performant avec un excellent rapport qualité-prix. Grand écran et bonne autonomie.", reviews: [{author: "Eric K.", rating: 5, comment: "Super téléphone pour le prix.", date: "2023-10-12", status: 'approved'}], stock: 4, categoryId: 'sub-telephones-casques', status: 'published', promotionStartDate: '2024-07-01', promotionEndDate: '2024-07-31' },
+    { id: '2', name: 'Robe en Tissu Pagne', price: 15000, imageUrls: ['https://images.unsplash.com/photo-1617051395299-52d33b7336b1?q=80&w=1964&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Une robe élégante confectionnée à la main avec du tissu pagne de haute qualité.", reviews: [{author: "Aïcha B.", rating: 4, comment: "Très belles couleurs.", date: "2023-10-11", status: 'approved'}], stock: 8, categoryId: 'sub-vetements', status: 'published', brand: 'Kmer Fashion' },
+    { id: '3', name: 'Savon Artisanal à l\'huile d\'olive', price: 1500, imageUrls: ['https://images.unsplash.com/photo-1600966492337-1d83c4bee955?q=80&w=2070&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Un savon artisanal fabriqué localement. Doux pour la peau et respectueux de l'environnement.", reviews: [], stock: 50, categoryId: 'sub-cosmetiques', status: 'published', brand: 'Douala Soaps' },
+    { id: '4', name: 'Smartphone Pro Max', price: 75000, promotionPrice: 69900, imageUrls: ['https://images.unsplash.com/photo-1580910051074-3eb694886505?q=80&w=1965&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un smartphone performant avec un excellent rapport qualité-prix. Grand écran et bonne autonomie.", reviews: [{author: "Eric K.", rating: 5, comment: "Super téléphone pour le prix.", date: "2023-10-12", status: 'approved'}], stock: 4, categoryId: 'sub-telephones-casques', status: 'published', promotionStartDate: '2024-07-01', promotionEndDate: '2024-07-31', brand: 'TechPro' },
     { id: '5', name: 'Miel d\'Oku', price: 5000, imageUrls: ['https://images.unsplash.com/photo-1558642754-b27b3b95a8a9?q=80&w=1974&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Un miel blanc rare et primé, récolté sur les flancs du mont Oku.", reviews: [{author: "Fatima G.", rating: 5, comment: "Le meilleur miel que j'ai jamais goûté.", date: "2023-10-13", status: 'approved'}], stock: 25, categoryId: 'sub-autres-textiles', status: 'published' },
-    { id: '6', name: 'Sandales en cuir', price: 8000, imageUrls: ['https://images.unsplash.com/photo-1620652755231-c2f8b16a2b8e?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Sandales en cuir véritable, faites à la main. Confortables et durables.", reviews: [], stock: 10, categoryId: 'sub-chaussures', status: 'draft' },
+    { id: '6', name: 'Sandales en cuir', price: 8000, imageUrls: ['https://images.unsplash.com/photo-1620652755231-c2f8b16a2b8e?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Sandales en cuir véritable, faites à la main. Confortables et durables.", reviews: [], stock: 10, categoryId: 'sub-chaussures', status: 'draft', brand: 'Kmer Fashion' },
     { id: '7', name: 'Poulet DG', price: 6500, imageUrls: ['https://images.unsplash.com/photo-1543339308-43e59d6b70a6?q=80&w=2070&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Un plat de fête succulent avec du poulet frit, des plantains et une sauce riche en légumes.", reviews: [], stock: 12, categoryId: 'sub-autres-textiles', status: 'published' },
     { id: '8', name: 'Jus de Bissap Naturel', price: 1000, imageUrls: ['https://images.unsplash.com/photo-1623341214825-9f4f96d62c54?q=80&w=1974&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Boisson rafraîchissante et naturelle à base de fleurs d'hibiscus.", reviews: [], stock: 30, categoryId: 'sub-autres-textiles', status: 'published' },
     { id: '9', name: 'Beignets Haricots Bouillie', price: 1500, imageUrls: ['https://img.cuisineaz.com/660x660/2022/01/24/i181710-beignets-souffles-camerounais.jpeg'], vendor: 'Mama Africa', description: "Le petit-déjeuner camerounais par excellence. Des beignets soufflés accompagnés d'une purée de haricots.", reviews: [], stock: 20, categoryId: 'sub-autres-textiles', status: 'published' },
-    { id: '10', name: 'Chemise en Toghu', price: 25000, imageUrls: ['https://i.pinimg.com/564x/a0/0c/37/a00c3755255673a5a415958253a5f82c.jpg'], vendor: 'Kmer Fashion', description: "Chemise de cérémonie pour homme, en velours noir brodé avec les motifs colorés traditionnels du Toghu.", reviews: [], stock: 5, categoryId: 'sub-vetements', status: 'published' },
+    { id: '10', name: 'Chemise en Toghu', price: 25000, imageUrls: ['https://i.pinimg.com/564x/a0/0c/37/a00c3755255673a5a415958253a5f82c.jpg'], vendor: 'Kmer Fashion', description: "Chemise de cérémonie pour homme, en velours noir brodé avec les motifs colorés traditionnels du Toghu.", reviews: [], stock: 5, categoryId: 'sub-vetements', status: 'published', brand: 'Kmer Fashion' },
     { id: '11', name: 'Poivre de Penja', price: 4500, imageUrls: ['https://images.unsplash.com/photo-1508616258423-f3e4e73b29b4?q=80&w=1935&auto=format&fit=crop'], vendor: 'Mama Africa', description: "Considéré comme l'un des meilleurs poivres au monde, cultivé sur les terres volcaniques de Penja.", reviews: [], stock: 40, categoryId: 'sub-autres-textiles', status: 'published' },
-    { id: '12', name: 'Sac à main en pagne', price: 12000, imageUrls: ['https://images.unsplash.com/photo-1566150905458-1bf1f2961239?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Accessoirisez votre tenue avec ce magnifique sac à main fait main, alliant cuir et tissu pagne.", reviews: [], stock: 15, categoryId: 'sub-sacs', status: 'published' },
-    { id: '13', name: 'Téléviseur LED 32"', price: 85000, imageUrls: ['https://images.unsplash.com/photo-1593359677879-a4bb92f82acb?q=80&w=2070&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un téléviseur LED de 32 pouces avec une image de haute qualité.", reviews: [], stock: 9, categoryId: 'sub-telephones-casques', status: 'published' },
-    { id: '14', name: 'Fer à repasser', price: 7500, imageUrls: ['https://images.unsplash.com/photo-1622629734636-95a239552382?q=80&w=1932&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Simple, efficace et durable. Ce fer à repasser est parfait pour un usage quotidien.", reviews: [], stock: 25, categoryId: 'sub-telephones-casques', status: 'published' },
-    { id: '15', name: 'Blender / Mixeur', price: 18000, imageUrls: ['https://images.unsplash.com/photo-1582142391035-61f20a003881?q=80&w=1974&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un mixeur puissant pour préparer vos jus, soupes et sauces. Bol en verre robuste de 1.5L.", reviews: [], stock: 18, categoryId: 'sub-telephones-casques', status: 'published' },
-    { id: '16', name: 'Savon noir gommant', price: 2500, imageUrls: ['https://images.unsplash.com/photo-1623461624469-8a964343169f?q=80&w=1974&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Savon noir africain pour un gommage naturel et une peau douce et purifiée.", reviews: [], stock: 40, categoryId: 'sub-cosmetiques', status: 'published' },
-    { id: '17', name: 'Huile de coco vierge', price: 4000, imageUrls: ['https://images.unsplash.com/photo-1590945259635-e1a532ac9695?q=80&w=1974&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Huile de coco 100% pure et pressée à froid. Idéale pour la peau, les cheveux et la cuisson.", reviews: [], stock: 30, categoryId: 'sub-cosmetiques', status: 'published' },
-    { id: '18', name: 'Beurre de karité', price: 3000, imageUrls: ['https://images.unsplash.com/photo-1554153041-33924bb6aa67?q=80&w=2070&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Beurre de karité brut et non raffiné, parfait pour hydrater en profondeur la peau et les cheveux secs.", reviews: [], stock: 60, categoryId: 'sub-cosmetiques', status: 'published' },
-    { id: '19', name: 'Baskets de Ville', price: 22000, imageUrls: ['https://images.unsplash.com/photo-1515955656352-a1fa3ffcdda9?q=80&w=2070&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Baskets confortables et stylées pour un usage quotidien.", reviews: [], stock: 20, categoryId: 'sub-chaussures', status: 'published' },
-    { id: '20', name: 'Eau de Parfum "Sawa"', price: 28000, imageUrls: ['https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=1904&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Un parfum boisé et épicé pour homme, inspiré par la côte camerounaise.", reviews: [], stock: 15, categoryId: 'sub-parfums', status: 'published' },
-    { id: '21', name: 'Fauteuil en Rotin', price: 45000, imageUrls: ['https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=1965&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Fauteuil artisanal en rotin, parfait pour votre salon ou votre terrasse.", reviews: [], stock: 5, categoryId: 'sub-chaises', status: 'published' },
-    { id: '22', name: 'Masque décoratif Fang', price: 18000, imageUrls: ['https://images.unsplash.com/photo-1513480749022-2f7a0b1e4a1a?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Authentique masque décoratif de l'ethnie Fang, sculpté à la main.", reviews: [], stock: 10, categoryId: 'sub-decoration', status: 'published' },
-    { id: '23', name: 'Lampe de chevet "Wouri"', price: 13500, imageUrls: ['https://images.unsplash.com/photo-1543198126-a8ad8e47fb22?q=80&w=1974&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Lampe de chevet au design moderne avec une base en bois local.", reviews: [], stock: 22, categoryId: 'sub-decoration', status: 'published' },
-    { id: '24', name: 'Collier de perles', price: 9500, imageUrls: ['https://images.unsplash.com/photo-1599643477877-539eb8a52f18?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Collier artisanal fait de perles traditionnelles colorées.", reviews: [], stock: 30, categoryId: 'sub-bijoux', status: 'published' },
-    { id: '25', name: 'Montre Classique Homme', price: 32000, imageUrls: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Montre élégante avec bracelet en cuir, idéale pour le bureau ou les sorties.", reviews: [], stock: 12, categoryId: 'sub-montres', status: 'published' },
-    { id: '26', name: 'Poupée "Penda"', price: 7000, imageUrls: ['https://images.unsplash.com/photo-1620243423599-da1c88a51e6c?q=80&w=1964&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Poupée en tissu pagne, faite à la main, pour le bonheur des plus petits.", reviews: [], stock: 25, categoryId: 'sub-jouets-fournitures', status: 'published' },
-    { id: '27', name: 'Lot de 10 Cahiers', price: 2500, imageUrls: ['https://images.unsplash.com/photo-1529142893173-665a0a1027c4?q=80&w=2070&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un lot de 10 cahiers de 100 pages pour la rentrée scolaire.", reviews: [], stock: 100, categoryId: 'sub-papeterie', status: 'published' },
+    { id: '12', name: 'Sac à main en pagne', price: 12000, imageUrls: ['https://images.unsplash.com/photo-1566150905458-1bf1f2961239?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Accessoirisez votre tenue avec ce magnifique sac à main fait main, alliant cuir et tissu pagne.", reviews: [], stock: 15, categoryId: 'sub-sacs', status: 'published', brand: 'Kmer Fashion' },
+    { id: '13', name: 'Téléviseur LED 32"', price: 85000, imageUrls: ['https://images.unsplash.com/photo-1593359677879-a4bb92f82acb?q=80&w=2070&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un téléviseur LED de 32 pouces avec une image de haute qualité.", reviews: [], stock: 9, categoryId: 'sub-telephones-casques', status: 'published', brand: 'ViewSonic' },
+    { id: '14', name: 'Fer à repasser', price: 7500, imageUrls: ['https://images.unsplash.com/photo-1622629734636-95a239552382?q=80&w=1932&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Simple, efficace et durable. Ce fer à repasser est parfait pour un usage quotidien.", reviews: [], stock: 25, categoryId: 'sub-telephones-casques', status: 'published', brand: 'Generic' },
+    { id: '15', name: 'Blender / Mixeur', price: 18000, imageUrls: ['https://images.unsplash.com/photo-1582142391035-61f20a003881?q=80&w=1974&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un mixeur puissant pour préparer vos jus, soupes et sauces. Bol en verre robuste de 1.5L.", reviews: [], stock: 18, categoryId: 'sub-telephones-casques', status: 'published', brand: 'MixWell' },
+    { id: '16', name: 'Savon noir gommant', price: 2500, imageUrls: ['https://images.unsplash.com/photo-1623461624469-8a964343169f?q=80&w=1974&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Savon noir africain pour un gommage naturel et une peau douce et purifiée.", reviews: [], stock: 40, categoryId: 'sub-cosmetiques', status: 'published', brand: 'Douala Soaps' },
+    { id: '17', name: 'Huile de coco vierge', price: 4000, imageUrls: ['https://images.unsplash.com/photo-1590945259635-e1a532ac9695?q=80&w=1974&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Huile de coco 100% pure et pressée à froid. Idéale pour la peau, les cheveux et la cuisson.", reviews: [], stock: 30, categoryId: 'sub-cosmetiques', status: 'published', brand: 'Douala Soaps' },
+    { id: '18', name: 'Beurre de karité', price: 3000, imageUrls: ['https://images.unsplash.com/photo-1554153041-33924bb6aa67?q=80&w=2070&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Beurre de karité brut et non raffiné, parfait pour hydrater en profondeur la peau et les cheveux secs.", reviews: [], stock: 60, categoryId: 'sub-cosmetiques', status: 'published', brand: 'Douala Soaps' },
+    { id: '19', name: 'Baskets de Ville', price: 22000, imageUrls: ['https://images.unsplash.com/photo-1515955656352-a1fa3ffcdda9?q=80&w=2070&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Baskets confortables et stylées pour un usage quotidien.", reviews: [], stock: 20, categoryId: 'sub-chaussures', status: 'published', brand: 'CityWalkers' },
+    { id: '20', name: 'Eau de Parfum "Sawa"', price: 28000, imageUrls: ['https://images.unsplash.com/photo-1541643600914-78b084683601?q=80&w=1904&auto=format&fit=crop'], vendor: 'Douala Soaps', description: "Un parfum boisé et épicé pour homme, inspiré par la côte camerounaise.", reviews: [], stock: 15, categoryId: 'sub-parfums', status: 'published', brand: 'Douala Soaps' },
+    { id: '21', name: 'Fauteuil en Rotin', price: 45000, imageUrls: ['https://images.unsplash.com/photo-1598300042247-d088f8ab3a91?q=80&w=1965&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Fauteuil artisanal en rotin, parfait pour votre salon ou votre terrasse.", reviews: [], stock: 5, categoryId: 'sub-chaises', status: 'published', brand: 'HomeDecor' },
+    { id: '22', name: 'Masque décoratif Fang', price: 18000, imageUrls: ['https://images.unsplash.com/photo-1513480749022-2f7a0b1e4a1a?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Authentique masque décoratif de l'ethnie Fang, sculpté à la main.", reviews: [], stock: 10, categoryId: 'sub-decoration', status: 'published', brand: 'Artisanat Local' },
+    { id: '23', name: 'Lampe de chevet "Wouri"', price: 13500, imageUrls: ['https://images.unsplash.com/photo-1543198126-a8ad8e47fb22?q=80&w=1974&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Lampe de chevet au design moderne avec une base en bois local.", reviews: [], stock: 22, categoryId: 'sub-decoration', status: 'published', brand: 'HomeDecor' },
+    { id: '24', name: 'Collier de perles', price: 9500, imageUrls: ['https://images.unsplash.com/photo-1599643477877-539eb8a52f18?q=80&w=1974&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Collier artisanal fait de perles traditionnelles colorées.", reviews: [], stock: 30, categoryId: 'sub-bijoux', status: 'published', brand: 'Artisanat Local' },
+    { id: '25', name: 'Montre Classique Homme', price: 32000, imageUrls: ['https://images.unsplash.com/photo-1523275335684-37898b6baf30?q=80&w=1999&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Montre élégante avec bracelet en cuir, idéale pour le bureau ou les sorties.", reviews: [], stock: 12, categoryId: 'sub-montres', status: 'published', brand: 'TimeMaster' },
+    { id: '26', name: 'Poupée "Penda"', price: 7000, imageUrls: ['https://images.unsplash.com/photo-1620243423599-da1c88a51e6c?q=80&w=1964&auto=format&fit=crop'], vendor: 'Kmer Fashion', description: "Poupée en tissu pagne, faite à la main, pour le bonheur des plus petits.", reviews: [], stock: 25, categoryId: 'sub-jouets-fournitures', status: 'published', brand: 'Artisanat Local' },
+    { id: '27', name: 'Lot de 10 Cahiers', price: 2500, imageUrls: ['https://images.unsplash.com/photo-1529142893173-665a0a1027c4?q=80&w=2070&auto=format&fit=crop'], vendor: 'Electro Plus', description: "Un lot de 10 cahiers de 100 pages pour la rentrée scolaire.", reviews: [], stock: 100, categoryId: 'sub-papeterie', status: 'published', brand: 'School Essentials' },
     { id: '28', name: 'Bière "33" Export (Pack de 6)', price: 4000, imageUrls: ['https://www.bebe-cash.com/wp-content/uploads/2021/07/33-export.jpg'], vendor: 'Mama Africa', description: "La bière blonde de référence au Cameroun. Pack de 6 bouteilles de 65cl.", reviews: [], stock: 50, categoryId: 'sub-autres-textiles', status: 'published' },
-    { id: '29', name: 'Café Arabica en Grains', price: 6000, imageUrls: ['https://images.unsplash.com/photo-1559449272-4d24b2f27b72?q=80&w=1974&auto=format&fit=crop'], vendor: 'Bafoussam Brews', description: "Café Arabica de l'Ouest Cameroun, torréfaction artisanale. Sachet de 500g.", reviews: [], stock: 30, categoryId: 'sub-autres-textiles', status: 'published' },
-    { id: '30', name: 'Statuette en bois d\'ébène', price: 22000, imageUrls: ['https://i.pinimg.com/564x/7d/50/e0/7d50e0529d1ccf1b36952d76d4a52efc.jpg'], vendor: 'Limbe Arts & Crafts', description: "Statuette finement sculptée à la main par des artisans de la région du Sud-Ouest.", reviews: [], stock: 8, categoryId: 'sub-decoration', status: 'published' },
-    { id: '31', name: 'Tableau d\'art contemporain', price: 48000, imageUrls: ['https://i.pinimg.com/564x/e7/7d/1f/e77d1f6d396a84c25f573453347f31b2.jpg'], vendor: 'Limbe Arts & Crafts', description: "Peinture sur toile vibrante, représentant une scène de marché local.", reviews: [], stock: 3, categoryId: 'sub-decoration', status: 'published' },
+    { id: '29', name: 'Café Arabica en Grains', price: 6000, imageUrls: ['https://images.unsplash.com/photo-1559449272-4d24b2f27b72?q=80&w=1974&auto=format&fit=crop'], vendor: 'Bafoussam Brews', description: "Café Arabica de l'Ouest Cameroun, torréfaction artisanale. Sachet de 500g.", reviews: [], stock: 30, categoryId: 'sub-autres-textiles', status: 'published', brand: 'Bafoussam Brews' },
+    { id: '30', name: 'Statuette en bois d\'ébène', price: 22000, imageUrls: ['https://i.pinimg.com/564x/7d/50/e0/7d50e0529d1ccf1b36952d76d4a52efc.jpg'], vendor: 'Limbe Arts & Crafts', description: "Statuette finement sculptée à la main par des artisans de la région du Sud-Ouest.", reviews: [], stock: 8, categoryId: 'sub-decoration', status: 'published', brand: 'Limbe Arts & Crafts' },
+    { id: '31', name: 'Tableau d\'art contemporain', price: 48000, imageUrls: ['https://i.pinimg.com/564x/e7/7d/1f/e77d1f6d396a84c25f573453347f31b2.jpg'], vendor: 'Limbe Arts & Crafts', description: "Peinture sur toile vibrante, représentant une scène de marché local.", reviews: [], stock: 3, categoryId: 'sub-decoration', status: 'published', brand: 'Limbe Arts & Crafts' },
     { id: '32', name: 'Écouteurs sans fil', price: 12500, imageUrls: ['https://images.unsplash.com/photo-1606220588913-b35474623dc5?q=80&w=1964&auto=format&fit=crop'], vendor: 'Kribi Digital', description: "Écouteurs Bluetooth avec une bonne autonomie et un son clair. Idéal pour la musique et les appels.", reviews: [], stock: 25, categoryId: 'sub-chargeurs-cables-batteries', status: 'draft' }, // In draft, store is pending
-    { id: '33', name: 'Café Robusta Moulu', price: 4500, imageUrls: ['https://images.unsplash.com/photo-1611162458022-20c24b071a2a?q=80&w=2070&auto=format&fit=crop'], vendor: 'Bafoussam Brews', description: "Café Robusta puissant et aromatique, parfait pour un expresso corsé. Sachet de 500g.", reviews: [], stock: 40, categoryId: 'sub-autres-textiles', status: 'published' },
+    { id: '33', name: 'Café Robusta Moulu', price: 4500, imageUrls: ['https://images.unsplash.com/photo-1611162458022-20c24b071a2a?q=80&w=2070&auto=format&fit=crop'], vendor: 'Bafoussam Brews', description: "Café Robusta puissant et aromatique, parfait pour un expresso corsé. Sachet de 500g.", reviews: [], stock: 40, categoryId: 'sub-autres-textiles', status: 'published', brand: 'Bafoussam Brews' },
 ];
 
 const sampleDeliveredOrder: Order = {
@@ -327,6 +337,7 @@ const sampleDeliveredOrder: Order = {
     orderDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(),
     status: 'delivered',
     trackingNumber: 'KZSAMPLE1',
+    agentId: 'agent-1',
     trackingHistory: [
         { status: 'confirmed', date: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString(), location: 'Mama Africa', details: 'Commande confirmée' },
         { status: 'picked-up', date: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(), location: 'Livreur', details: 'Colis pris en charge' },
@@ -376,7 +387,7 @@ const initialStores: Store[] = [
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }]
     },
     { 
-        id: 'store-7', name: 'Limbe Arts & Crafts', logoUrl: 'https://i.pinimg.com/736x/8a/9e/12/8a9e-1261a8779728283575647585355e.jpg', category: 'Artisanat & Décoration', warnings: [], status: 'active', premiumStatus: 'premium',
+        id: 'store-7', name: 'Limbe Arts & Crafts', logoUrl: 'https://i.pinimg.com/736x/8a/9e-12/8a9e-1261a8779728283575647585355e.jpg', category: 'Artisanat & Décoration', warnings: [], status: 'active', premiumStatus: 'premium',
         location: 'Limbe', neighborhood: 'Down Beach', sellerFirstName: 'Sarah', sellerLastName: 'Eko', sellerPhone: '678901234',
         physicalAddress: 'Bord de mer, Limbe', latitude: 4.0165, longitude: 9.2131, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-25T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }, { name: "Registre de Commerce", status: 'verified', fileUrl: '...' }],
@@ -462,7 +473,7 @@ export default function App() {
     const [payouts, setPayouts] = usePersistentState<Payout[]>('payouts', []);
     const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', initialAdvertisements);
 
-    const { user, logout: authLogout, allUsers, setAllUsers, updateUser: authUpdateUser } = useAuth();
+    const { user, logout: authLogout, allUsers, setAllUsers, updateUser: authUpdateUser, resetPassword } = useAuth();
     const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
     const { cart, clearCart } = useCart();
     const { comparisonList, setProducts: setComparisonProducts } = useComparison();
@@ -470,6 +481,9 @@ export default function App() {
     const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
     const [productToEdit, setProductToEdit] = useState<Product | null>(null);
     const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
+    // @FIX: Add state for the forgot password modal and user email to reset.
+    const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+    const [emailForPasswordReset, setEmailForPasswordReset] = useState<string | null>(null);
 
     const [isChatEnabled, setIsChatEnabled] = useState(true);
     const [isComparisonEnabled, setIsComparisonEnabled] = useState(true);
@@ -497,20 +511,32 @@ export default function App() {
         }
     }, []); // Run only once on mount
 
+    // @FIX: Stabilize dependencies to prevent infinite loops.
+    const userId = user?.id;
+    const userRole = user?.role;
+    const userLoyaltyStatus = user?.loyalty?.status;
+    const userLoyaltyMethod = user?.loyalty?.premiumStatusMethod;
+
     useEffect(() => {
-        if (user && user.role === 'customer' && siteSettings.isPremiumProgramEnabled) {
-            const userOrders = allOrders.filter(o => o.userId === user.id && o.status === 'delivered');
+        if (userId && userRole === 'customer' && siteSettings.isPremiumProgramEnabled) {
+            const userOrders = allOrders.filter(o => o.userId === userId && o.status === 'delivered');
             const totalSpent = userOrders.reduce((sum, o) => sum + o.total, 0);
             const orderCount = userOrders.length;
 
             const shouldBePremium = orderCount >= siteSettings.premiumThresholds.orders || totalSpent >= siteSettings.premiumThresholds.spending;
             
-            if (shouldBePremium && user.loyalty.status === 'standard' && user.loyalty.premiumStatusMethod !== 'deposit') {
-                const updatedUser = { ...user, loyalty: { ...user.loyalty, status: 'premium' as const, premiumStatusMethod: 'loyalty' as const } };
-                setAllUsers(users => users.map(u => u.id === user.id ? updatedUser : u));
+            if (shouldBePremium && userLoyaltyStatus === 'standard' && userLoyaltyMethod !== 'deposit') {
+                setAllUsers(users => {
+                    const currentUserInList = users.find(u => u.id === userId);
+                    if (currentUserInList && currentUserInList.loyalty.status === 'standard' && currentUserInList.loyalty.premiumStatusMethod !== 'deposit') {
+                        const updatedUser = { ...currentUserInList, loyalty: { ...currentUserInList.loyalty, status: 'premium' as const, premiumStatusMethod: 'loyalty' as const } };
+                        return users.map(u => u.id === userId ? updatedUser : u);
+                    }
+                    return users;
+                });
             }
         }
-    }, [allOrders, user, siteSettings, setAllUsers]);
+    }, [allOrders, userId, userRole, userLoyaltyStatus, userLoyaltyMethod, siteSettings]);
 
     const logActivity = useCallback((action: string, details: string) => {
         if (!user) return;
@@ -652,344 +678,636 @@ export default function App() {
         }
     }, [handleNavigate]);
 
-    const handleOrderConfirm = async (orderData: NewOrderData) => {
+    // @FIX: Add handlers for the forgot/reset password flow.
+    const handleOpenForgotPassword = () => {
+        setIsLoginModalOpen(false);
+        setIsForgotPasswordModalOpen(true);
+    };
+
+    const handleForgotPasswordSubmit = (email: string) => {
+        // In a real app, this would trigger sending a reset email.
+        // For this simulation, we'll check if the user exists and prepare for reset.
+        const userExists = allUsers.some(u => u.email.toLowerCase() === email.toLowerCase());
+        if (userExists) {
+            setEmailForPasswordReset(email);
+        }
+        // The modal will show a confirmation. For simulation, let's also navigate.
+        setIsForgotPasswordModalOpen(false);
+        if (userExists) {
+            // This is a temporary solution for the demo to show the next step.
+            // In a real app, the user would click a link in their email.
+            alert("Un e-mail de réinitialisation a été envoyé (simulation). Vous allez être redirigé vers la page de réinitialisation.");
+            handleNavigate('reset-password');
+        } else {
+             // We show the same message whether the user exists or not for security reasons.
+             alert("Si un compte correspondant à cet email existe, un lien de réinitialisation a été envoyé.");
+        }
+    };
+    
+    const handlePasswordReset = (newPassword: string) => {
+        if (emailForPasswordReset) {
+            resetPassword(emailForPasswordReset, newPassword);
+            setEmailForPasswordReset(null);
+            // The success is handled inside the ResetPasswordPage component
+        } else {
+            // This case should ideally not happen if the flow is correct
+            alert("Erreur: Aucune adresse e-mail n'a été spécifiée pour la réinitialisation.");
+            handleNavigate('home');
+        }
+    };
+    
+    const handleNavigateLoginFromReset = () => {
+        handleNavigate('home');
+        setIsLoginModalOpen(true);
+    };
+
+
+    const handlePlaceOrder = useCallback(async (orderData: NewOrderData): Promise<void> => {
+        logActivity('Order Placed', `New order created with total ${orderData.total.toLocaleString('fr-CM')} FCFA.`);
+        
         const newOrder: Order = {
             ...orderData,
-            id: `ORD-${Date.now().toString().slice(-6)}`,
+            id: `ORDER-${Date.now()}`,
             orderDate: new Date().toISOString(),
             status: 'confirmed',
             trackingNumber: `KZ${Date.now()}`,
-            trackingHistory: [],
-            statusChangeLog: []
+            trackingHistory: [{
+                status: 'confirmed',
+                date: new Date().toISOString(),
+                location: 'System',
+                details: 'Commande confirmée et en attente de préparation par le vendeur.'
+            }],
+            statusChangeLog: [{
+                status: 'confirmed',
+                date: new Date().toISOString(),
+                changedBy: 'Customer',
+            }],
         };
-        const finalOrder = addStatusLog(newOrder, 'confirmed', user?.name || 'Customer');
-        setAllOrders(prev => [...prev, finalOrder]);
-        setSelectedOrder(finalOrder);
+
+        // Simulate stock deduction
+        setAllProducts(prevProducts => {
+            const updatedProducts = [...prevProducts];
+            newOrder.items.forEach(item => {
+                const productIndex = updatedProducts.findIndex(p => p.id === item.id);
+                if (productIndex !== -1) {
+                    const newStock = updatedProducts[productIndex].stock - item.quantity;
+                    updatedProducts[productIndex] = { ...updatedProducts[productIndex], stock: Math.max(0, newStock) };
+                }
+            });
+            return updatedProducts;
+        });
+
+        setAllOrders(prevOrders => [...prevOrders, newOrder]);
+        setSelectedOrder(newOrder);
         clearCart();
         setAppliedPromoCode(null);
-        logActivity('Order Placed', `Order #${newOrder.id} for ${newOrder.total} FCFA`);
         handleNavigate('order-success');
+    }, [logActivity, setAllProducts, setAllOrders, clearCart, handleNavigate]);
+    
+    const handleAddProduct = (product: Product) => {
+        setAllProducts(prev => {
+            const existingIndex = prev.findIndex(p => p.id === product.id);
+            if (existingIndex > -1) {
+                 logActivity('Product Updated', `Product "${product.name}" updated by its seller.`);
+                return prev.map((p, i) => i === existingIndex ? product : p);
+            }
+            logActivity('Product Added', `New product "${product.name}" added by a seller.`);
+            return [...prev, product];
+        });
+        setProductToEdit(null);
+        handleNavigate('seller-dashboard');
     };
 
-    const handleCloseModal = () => {
-      uiCloseModal();
+    const handleDeleteProduct = (productId: string) => {
+        if (window.confirm("Êtes-vous sûr de vouloir supprimer ce produit ?")) {
+            const productName = allProducts.find(p => p.id === productId)?.name || 'Unknown Product';
+            setAllProducts(prev => prev.filter(p => p.id !== productId));
+            logActivity('Product Deleted', `Product "${productName}" (ID: ${productId}) deleted by its seller.`);
+        }
+    };
+    
+    const handleToggleStatus = (productId: string) => {
+        setAllProducts(prev => prev.map(p => p.id === productId ? {...p, status: p.status === 'published' ? 'draft' : 'published'} : p));
     };
 
-    const handleToggleStoreStatus = useCallback((store: Store) => {
-        const newStatus = store.status === 'active' ? 'suspended' : 'active';
-        setAllStores(prev => prev.map(s => s.id === store.id ? { ...s, status: newStatus } : s));
-        logActivity('Store Status Change', `Store "${store.name}" status changed to ${newStatus}.`);
-    }, [setAllStores, logActivity]);
+    const handleSetPromotion = (productId: string, promoPrice: number, startDate?: string, endDate?: string) => {
+        setAllProducts(prev => prev.map(p => {
+            if (p.id === productId) {
+                const productName = p.name;
+                logActivity('Promotion Set', `Promotion set for product "${productName}" at ${promoPrice.toLocaleString('fr-CM')} FCFA.`);
+                return {...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate };
+            }
+            return p;
+        }));
+        setPromotionModalProduct(null);
+    };
 
-    const handleApproveStore = useCallback((store: Store) => {
-        setAllStores(prev => prev.map(s => s.id === store.id ? { ...s, status: 'active' } : s));
-        logActivity('Store Approved', `Store "${store.name}" has been approved.`);
-    }, [setAllStores, logActivity]);
+    const handleRemovePromotion = (productId: string) => {
+         if (window.confirm("Êtes-vous sûr de vouloir retirer la promotion de ce produit ?")) {
+            setAllProducts(prev => prev.map(p => {
+                 if (p.id === productId) {
+                     const { promotionPrice, promotionStartDate, promotionEndDate, ...rest } = p;
+                     logActivity('Promotion Removed', `Promotion removed for product "${p.name}".`);
+                     return rest;
+                 }
+                 return p;
+             }));
+         }
+    };
     
-    const handlePayoutSeller = useCallback((store: Store, amount: number) => {
-        const newPayout: Payout = {
-            storeId: store.id,
-            amount,
-            date: new Date().toISOString(),
-        };
-        setPayouts(prev => [...prev, newPayout]);
-        logActivity('Seller Payout', `Paid ${amount.toLocaleString('fr-CM')} FCFA to store "${store.name}".`);
-    }, [setPayouts, logActivity]);
-
-    const handleUpdateUser = useCallback((userId: string, updates: Partial<User>) => {
-        setAllUsers(users => users.map(u => 
-            u.id === userId ? { ...u, ...updates } : u
-        ));
-        logActivity('User Updated', `User profile for ID ${userId} was updated.`);
-    }, [setAllUsers, logActivity]);
-
-    const handleWarnStore = useCallback((storeToWarn: Store, reason: string) => {
-        const newWarning: Warning = {
-            id: `warn_${Date.now()}`,
-            date: new Date().toISOString(),
-            reason,
-        };
-        setAllStores(stores => stores.map(s => 
-            s.id === storeToWarn.id ? { ...s, warnings: [...(s.warnings || []), newWarning] } : s
-        ));
-        logActivity('Store Warned', `Warning issued to "${storeToWarn.name}": ${reason}`);
-    }, [setAllStores, logActivity]);
+    const handleProposeForFlashSale = (flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => {
+        setFlashSales(prev => prev.map(fs => {
+            if (fs.id === flashSaleId) {
+                // Avoid duplicates
+                if (fs.products.some(p => p.productId === productId)) return fs;
+                
+                const newProposal: FlashSaleProduct = {
+                    productId,
+                    sellerShopName,
+                    flashPrice,
+                    status: 'pending'
+                };
+                logActivity('Flash Sale Proposal', `Seller "${sellerShopName}" proposed product ID ${productId} for flash sale "${fs.name}".`);
+                return { ...fs, products: [...fs.products, newProposal] };
+            }
+            return fs;
+        }));
+    };
     
-    const handleSanctionAgent = useCallback((agentId: string, reason: string) => {
-        const agent = allUsers.find(u => u.id === agentId);
-        if (!agent) return;
-
-        const newWarning: Warning = {
-            id: `warn_agent_${Date.now()}`,
-            date: new Date().toISOString(),
-            reason,
-        };
-        setAllUsers(users => users.map(u =>
-            u.id === agentId ? { ...u, warnings: [...(u.warnings || []), newWarning] } : u
-        ));
-        logActivity('Delivery Agent Sanctioned', `Agent ${agent.name} (ID: ${agentId}) sanctioned for: ${reason}`);
-    }, [allUsers, setAllUsers, logActivity]);
-
-    const handleAssignAgent = useCallback((orderId: string, agentId: string) => {
-        const agentName = allUsers.find(u => u.id === agentId)?.name || 'ID inconnu';
-        setAllOrders(prevOrders => prevOrders.map(o =>
-            o.id === orderId ? addStatusLog({ ...o, agentId }, o.status, `Admin: Assigner à ${agentName}`) : o
-        ));
-        logActivity('Agent Assigned', `Agent ${agentName} assigned to order ${orderId}.`);
-    }, [setAllOrders, allUsers, logActivity]);
-
-
-    const handleToggleStorePremiumStatus = useCallback((storeToUpdate: Store) => {
-        const newStatus = storeToUpdate.premiumStatus === 'premium' ? 'standard' : 'premium';
-        setAllStores(stores => stores.map(s =>
-            s.id === storeToUpdate.id ? { ...s, premiumStatus: newStatus } : s
-        ));
-        logActivity('Store Premium Status Changed', `Premium status for "${storeToUpdate.name}" set to ${newStatus}.`);
-    }, [setAllStores, logActivity]);
-
-    const handleRejectStore = useCallback((storeToReject: Store) => {
-        setAllStores(stores => stores.filter(s => s.id !== storeToReject.id));
-        logActivity('Store Rejected', `Pending store application for "${storeToReject.name}" was rejected and removed.`);
-    }, [setAllStores, logActivity]);
+     const handleUpdateFlashSaleSubmissionStatus = (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => {
+        setFlashSales(prev => prev.map(fs => {
+            if (fs.id === flashSaleId) {
+                const productName = allProducts.find(p => p.id === productId)?.name || `ID ${productId}`;
+                logActivity('Flash Sale Submission Reviewed', `Submission for "${productName}" in sale "${fs.name}" was ${status}.`);
+                return {
+                    ...fs,
+                    products: fs.products.map(p => p.productId === productId ? { ...p, status } : p)
+                };
+            }
+            return fs;
+        }));
+    };
     
-    const handleVerifyDocumentStatus = useCallback((store: Store, documentName: string, status: 'verified' | 'rejected', reason?: string) => {
+     const handleBatchUpdateFlashSaleStatus = (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => {
+        setFlashSales(prev => prev.map(fs => {
+            if (fs.id === flashSaleId) {
+                 logActivity('Flash Sale Batch Update', `Batch ${status} for ${productIds.length} products in sale "${fs.name}".`);
+                return {
+                    ...fs,
+                    products: fs.products.map(p => productIds.includes(p.productId) ? { ...p, status } : p)
+                };
+            }
+            return fs;
+        }));
+    };
+
+    const handleUploadDocument = (storeId: string, documentName: string, fileUrl: string) => {
         setAllStores(prev => prev.map(s => {
-            if (s.id === store.id) {
+            if (s.id === storeId) {
+                logActivity('Document Uploaded', `Document "${documentName}" was uploaded for store "${s.name}".`);
                 return {
                     ...s,
-                    documents: s.documents.map(doc => {
-                        if (doc.name === documentName) {
-                            return { ...doc, status, rejectionReason: reason };
-                        }
-                        return doc;
-                    })
+                    documents: s.documents.map(d => d.name === documentName ? { ...d, status: 'uploaded', fileUrl } : d)
                 };
             }
             return s;
         }));
-        logActivity('Document Status Updated', `Document "${documentName}" for store "${store.name}" set to ${status}.`);
-    }, [setAllStores, logActivity]);
-
-    const handleUpdateOrderStatus = useCallback((order: Order, status: OrderStatus) => {
-        setAllOrders(prev => prev.map(o =>
-            o.id === order.id ? addStatusLog(o, status, user?.name || 'Admin') : o
-        ));
-        logActivity('Order Status Update', `Order ${order.id} status set to ${status}.`);
-    }, [setAllOrders, logActivity, user]);
-
-    const handleSavePromotion = useCallback((productId: string, promoPrice: number, startDate?: string, endDate?: string) => {
-        setAllProducts(prevProducts =>
-            prevProducts.map(p =>
-                p.id === productId
-                    ? { ...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate }
-                    : p
-            )
-        );
-        logActivity('Promotion Set', `Promotion set for product ID ${productId} at ${promoPrice} FCFA.`);
-        setPromotionModalProduct(null); // Close the modal
-    }, [setAllProducts, logActivity]);
+    };
     
-    const handleRequestRefund = useCallback((orderId: string, reason: string, evidenceUrls: string[]) => {
-        setAllOrders(prevOrders =>
-            prevOrders.map(o =>
-                o.id === orderId
-                    ? addStatusLog({ ...o, refundReason: reason, refundEvidenceUrls: evidenceUrls }, 'refund-requested', user?.name || 'Customer')
-                    : o
-            )
-        );
-        logActivity('Refund Requested', `Refund requested for order ${orderId}. Reason: ${reason}. Evidence provided: ${evidenceUrls.length} files.`);
-    }, [setAllOrders, logActivity, user]);
-
-    const handleResolveRefund = useCallback((orderId: string, resolution: 'approved' | 'rejected') => {
-        setAllOrders(prev => prev.map(o => {
-            if (o.id === orderId) {
-                const newStatus = resolution === 'approved' ? 'refunded' : o.status;
-                const finalOrder = addStatusLog(o, newStatus, user?.name || 'Admin');
-                logActivity(`Refund ${resolution}`, `Refund for order ${orderId} was ${resolution}.`);
-                return finalOrder;
+    const handleRequestDocument = (storeId: string, documentName: string) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId && !s.documents.some(d => d.name === documentName)) {
+                 logActivity('Document Requested', `Document "${documentName}" was requested for store "${s.name}".`);
+                const newDoc: RequestedDocument = { name: documentName, status: 'requested' };
+                return { ...s, documents: [...s.documents, newDoc] };
             }
-            return o;
+            return s;
         }));
-    }, [setAllOrders, logActivity, user]);
-
-    const handleAdminStoreMessage = useCallback((orderId: string, message: string) => {
-        setAllOrders(prev => prev.map(o => {
-            if (o.id === orderId) {
-                const newMessage: DisputeMessage = { author: 'admin', message, date: new Date().toISOString() };
-                const newLog = [...(o.disputeLog || []), newMessage];
-                logActivity('Dispute Message Sent', `Message sent to seller for order ${orderId}.`);
-                return { ...o, disputeLog: newLog };
+    };
+    
+    const handleVerifyDocumentStatus = (store: Store, documentName: string, status: 'verified' | 'rejected', reason: string = '') => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === store.id) {
+                 logActivity('Document Reviewed', `Document "${documentName}" for store "${s.name}" was ${status}.`);
+                return {
+                    ...s,
+                    documents: s.documents.map(d => d.name === documentName ? { ...d, status, rejectionReason: reason || undefined } : d)
+                };
             }
-            return o;
+            return s;
         }));
-    }, [setAllOrders, logActivity]);
-
-    const handleAdminCustomerMessage = useCallback((orderId: string, message: string) => {
-        setAllOrders(prev => prev.map(o => {
-            if (o.id === orderId) {
-                const newMessage: DisputeMessage = { author: 'admin', message, date: new Date().toISOString() };
-                const newLog = [...(o.disputeLog || []), newMessage];
-                logActivity('Dispute Message Sent', `Message sent to customer for order ${orderId}.`);
-                return { ...o, disputeLog: newLog };
-            }
-            return o;
-        }));
-    }, [setAllOrders, logActivity]);
-
-    const handleCustomerDisputeMessage = useCallback((orderId: string, message: string) => {
-        if (!user) return;
-        setAllOrders(prev => prev.map(o => {
-            if (o.id === orderId) {
-                const newMessage: DisputeMessage = { author: 'customer', message, date: new Date().toISOString() };
-                const newLog = [...(o.disputeLog || []), newMessage];
-                logActivity('Dispute Reply Received', `Customer replied on order ${orderId}.`);
-                return { ...o, disputeLog: newLog };
-            }
-            return o;
-        }));
-    }, [setAllOrders, logActivity, user]);
-
-    const renderPage = () => {
-        if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
-            return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
-        }
-        
-        switch (page) {
-            case 'home': return <HomePage products={visibleProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
-            case 'product':
-                if (selectedProduct) {
-                    const isVisible = visibleProducts.some(p => p.id === selectedProduct.id);
-                    if (!isVisible) {
-                        handleNavigate('home', resetSelections);
-                        return null; // or a placeholder while navigating
-                    }
-                    return <ProductDetail product={selectedProduct} allProducts={visibleProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home')} onAddReview={(p,r) => {}} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} />;
-                } else {
-                    handleNavigate('home');
-                }
-                break;
-            case 'cart': return <CartView onBack={() => handleNavigate('home')} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={setAppliedPromoCode} />;
-            case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handleOrderConfirm} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
-            case 'order-success':
-                if (selectedOrder) return <OrderSuccess order={selectedOrder} onNavigateHome={() => handleNavigate('home', resetSelections)} onNavigateToOrders={() => handleNavigate('order-history')} />;
-                else handleNavigate('home');
-                break;
-            case 'stores': return <StoresPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('home')} onVisitStore={handleVendorClick} />;
-            case 'become-seller': return <BecomeSeller onBack={() => handleNavigate('home')} onBecomeSeller={() => {}} onRegistrationSuccess={() => handleNavigate('seller-dashboard')} siteSettings={siteSettings} />;
-            case 'category':
-                if (selectedCategoryId) return <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-                else handleNavigate('home');
-                break;
-            case 'seller-dashboard':
-                if (user?.role === 'seller') {
-                    const sellerStore = allStores.find(s => s.name === user.shopName);
-                    const sellerProducts = allProducts.filter(p => p.vendor === user.shopName);
-                    const sellerOrders = allOrders.filter(o => o.items.some(i => i.vendor === user.shopName));
-                    const sellerPromoCodes = allPromoCodes.filter(c => c.sellerId === user.id);
-                    return <SellerDashboard
-                        store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={()=>{}} onToggleStatus={()=>{}} onNavigateToProfile={() => handleNavigate('seller-profile')} onSetPromotion={(p) => setPromotionModalProduct(p)} onRemovePromotion={()=>{}} onProposeForFlashSale={()=>{}} onUploadDocument={()=>{}} onUpdateOrderStatus={()=>{}} onCreatePromoCode={()=>{}} onDeletePromoCode={()=>{}} isChatEnabled={isChatEnabled} onPayRent={()=>{}} siteSettings={siteSettings} onAddStory={()=>{}} onDeleteStory={()=>{}}
-                    />;
-                } else handleNavigate('forbidden');
-                break;
-            case 'vendor-page':
-                if (selectedVendor) return <VendorPage vendorName={selectedVendor} allProducts={visibleProducts.filter(p => p.status === 'published')} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-                else handleNavigate('home');
-                break;
-            case 'product-form': return <ProductForm onSave={()=>{}} onCancel={() => handleNavigate('seller-dashboard')} productToEdit={productToEdit} categories={allCategories} onAddCategory={() => ({} as Category)} siteSettings={siteSettings} />;
-            case 'seller-profile':
-                 if (user?.role === 'seller') {
-                    const sellerStore = allStores.find(s => s.name === user.shopName);
-                    if (sellerStore) return <SellerProfile store={sellerStore} onBack={() => handleNavigate('seller-dashboard')} onUpdateProfile={()=>{}} />;
-                 }
-                 handleNavigate('forbidden');
-                 break;
-            case 'superadmin-dashboard':
-                if (user?.role === 'superadmin') return <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderStatus} onUpdateCategoryImage={()=>{}} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={()=>{}} flashSales={flashSales} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={()=>{}} onBatchUpdateFlashSaleStatus={()=>{}} onRequestDocument={()=>{}} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={()=>{}} onUpdatePickupPoint={()=>{}} onDeletePickupPoint={()=>{}} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(p => !p)} onToggleComparisonFeature={() => setIsComparisonEnabled(p => !p)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUser={handleUpdateUser} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={()=>{}} advertisements={advertisements} onAddAdvertisement={()=>{}} onUpdateAdvertisement={()=>{}} onDeleteAdvertisement={()=>{}} onCreateUserByAdmin={()=>{}} onSanctionAgent={handleSanctionAgent} onResolveRefund={handleResolveRefund} onAdminStoreMessage={handleAdminStoreMessage} onAdminCustomerMessage={handleAdminCustomerMessage} />;
-                else handleNavigate('forbidden');
-                break;
-            case 'order-history': 
-                if (user) return <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home')} onSelectOrder={(o) => { setSelectedOrder(o); handleNavigate('order-detail'); }} />;
-                else handleNavigate('forbidden');
-                break;
-            case 'order-detail':
-                if (selectedOrder) return <OrderDetailPage order={selectedOrder} onBack={() => handleNavigate('order-history')} allPickupPoints={allPickupPoints} onCancelOrder={()=>{}} onRequestRefund={handleRequestRefund} onCustomerDisputeMessage={handleCustomerDisputeMessage} />;
-                else handleNavigate('order-history');
-                break;
-            case 'promotions': return <PromotionsPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-            case 'flash-sales': return <FlashSalesPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-            case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={visibleProducts} allStores={allStores} allCategories={allCategories} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-            case 'wishlist': return <WishlistPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-            case 'delivery-agent-dashboard': 
-                if (user?.role === 'delivery_agent') return <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={()=>{}} onLogout={handleLogout} onUpdateUserAvailability={handleUpdateUserAvailability} />;
-                else handleNavigate('forbidden');
-                break;
-            case 'depot-agent-dashboard': 
-                if (user?.role === 'depot_agent') return <DepotAgentDashboard user={user} allOrders={allOrders} onCheckIn={()=>{}} onReportDiscrepancy={()=>{}} onLogout={handleLogout} />;
-                else handleNavigate('forbidden');
-                break;
-            case 'comparison': return <ComparisonPage allCategories={allCategories} onBack={() => handleNavigate('home')} />;
-            case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => handleNavigate('home')} onBecomePremiumByCaution={()=>{}} onUpgradeToPremiumPlus={()=>{}} />;
-            case 'analytics-dashboard': 
-                if (user?.role === 'superadmin') return <AnalyticsDashboard onBack={() => handleNavigate('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} allCategories={allCategories} />;
-                else handleNavigate('forbidden');
-                break;
-            case 'review-moderation':
-                 if (user?.role === 'superadmin') return <ReviewModeration onBack={() => handleNavigate('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={()=>{}} />;
-                else handleNavigate('forbidden');
-                break;
-            case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
-            case 'not-found': return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
-            case 'forbidden': return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
-            case 'server-error': return <ServerErrorPage onNavigateHome={() => handleNavigate('home', resetSelections)} />;
-            default: return <HomePage products={visibleProducts.filter(p=> p.status === 'published')} categories={allCategories} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled}/>;
-        }
     };
 
-    return (
-        <div className="flex flex-col min-h-screen">
-            <Header
-                categories={allCategories}
-                onNavigateHome={() => handleNavigate('home', resetSelections)}
-                onNavigateCart={() => handleNavigate('cart')}
-                onNavigateToStores={() => handleNavigate('stores')}
-                onNavigateToPromotions={() => handleNavigate('promotions')}
-                onNavigateToCategory={handleCategoryClick}
-                onNavigateToBecomeSeller={() => handleNavigate('become-seller')}
-                onNavigateToSellerDashboard={() => handleNavigate('seller-dashboard')}
-                onNavigateToSellerProfile={() => handleNavigate('seller-profile')}
-                onNavigateToOrderHistory={() => handleNavigate('order-history')}
-                onNavigateToSuperAdminDashboard={() => handleNavigate('superadmin-dashboard')}
-                onNavigateToFlashSales={() => handleNavigate('flash-sales')}
-                onNavigateToWishlist={() => handleNavigate('wishlist')}
-                onNavigateToDeliveryAgentDashboard={() => handleNavigate('delivery-agent-dashboard')}
-                onNavigateToDepotAgentDashboard={() => handleNavigate('depot-agent-dashboard')}
-                onNavigateToBecomePremium={() => handleNavigate('become-premium')}
-                onNavigateToAnalyticsDashboard={() => handleNavigate('analytics-dashboard')}
-                onNavigateToReviewModeration={() => handleNavigate('review-moderation')}
-                onOpenLogin={() => setIsLoginModalOpen(true)}
-                onLogout={handleLogout}
-                onSearch={handleSearch}
-                isChatEnabled={isChatEnabled}
-                isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
-                logoUrl={siteSettings.logoUrl}
-                onLoginSuccess={handleLoginSuccess}
-            />
-            <main className="flex-grow">
-                {renderPage()}
-            </main>
-            <Footer 
-                logoUrl={siteSettings.logoUrl}
-                onNavigate={(title, content) => {
-                    setInfoPageContent({ title, content });
-                    handleNavigate('info');
-                }}
-            />
-            {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={handleCloseModal} onNavigateToCart={() => { handleCloseModal(); handleNavigate('cart'); }} />}
-            {isLoginModalOpen && <LoginModal onClose={() => setIsLoginModalOpen(false)} onLoginSuccess={handleLoginSuccess} />}
-            {viewingStoriesOfStore && <StoryViewer store={viewingStoriesOfStore} onClose={() => setViewingStoriesOfStore(null)} />}
-            {promotionModalProduct && <PromotionModal product={promotionModalProduct} onClose={() => setPromotionModalProduct(null)} onSave={handleSavePromotion} />}
-            {isComparisonEnabled && <ComparisonBar onCompareClick={() => handleNavigate('comparison')} />}
-            {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} allCategories={allCategories} />}
-        </div>
-    );
+    const handleCreatePromoCode = (codeData: Omit<PromoCode, 'uses'>) => {
+        // Prevent duplicate codes
+        if (allPromoCodes.some(pc => pc.code.toLowerCase() === codeData.code.toLowerCase())) {
+            alert(`Le code promo "${codeData.code}" existe déjà.`);
+            return;
+        }
+        const newCode: PromoCode = { ...codeData, uses: 0 };
+        setAllPromoCodes(prev => [...prev, newCode]);
+        logActivity('Promo Code Created', `Promo code "${newCode.code}" was created.`);
+    };
+    
+    const handleDeletePromoCode = (code: string) => {
+        if (window.confirm(`Êtes-vous sûr de vouloir supprimer le code promo "${code}" ?`)) {
+            setAllPromoCodes(prev => prev.filter(pc => pc.code !== code));
+            logActivity('Promo Code Deleted', `Promo code "${code}" was deleted.`);
+        }
+    };
+    
+    const handleApplyPromoCode = (code: PromoCode | null) => {
+        setAppliedPromoCode(code);
+    };
+
+    // @FIX: Create a dedicated function for adding a new review to fix prop type mismatch.
+    const handleAddReview = useCallback((productId: string, review: Review) => {
+        setAllProducts(prev => prev.map(p => {
+            if (p.id === productId) {
+                // Add the new review, which will have a 'pending' status by default from the form
+                return { ...p, reviews: [...p.reviews, review] };
+            }
+            return p;
+        }));
+         logActivity('Review Added', `New review for product ID ${productId} was submitted by ${review.author}.`);
+    }, [setAllProducts, logActivity]);
+
+    const handleReviewModeration = (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => {
+        setAllProducts(prev => prev.map(p => {
+            if (p.id === productId) {
+                return {
+                    ...p,
+                    reviews: p.reviews.map(r => 
+                        r.author === reviewIdentifier.author && r.date === reviewIdentifier.date 
+                        ? { ...r, status: newStatus }
+                        : r
+                    )
+                };
+            }
+            return p;
+        }));
+    };
+    
+     const handleBecomeSeller = (shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string, latitude?: number, longitude?: number) => {
+        if (!user) return;
+        
+        const newStore: Store = {
+            id: `store-${Date.now()}`,
+            name: shopName,
+            logoUrl: logoUrl,
+            category: 'Divers', // Default category
+            warnings: [],
+            status: 'pending',
+            premiumStatus: 'standard',
+            location,
+            neighborhood,
+            sellerFirstName,
+            sellerLastName,
+            sellerPhone,
+            physicalAddress,
+            latitude,
+            longitude,
+            documents: Object.entries(siteSettings.requiredSellerDocuments)
+              .filter(([, isRequired]) => isRequired)
+              .map(([name]): RequestedDocument => ({ name, status: 'requested' }))
+        };
+
+        setAllStores(prev => [...prev, newStore]);
+        authUpdateUser({ shopName });
+        logActivity('Seller Application', `User "${user.name}" applied to become a seller with shop "${shopName}".`);
+    };
+
+    const handleUpdateOrderWithAdmin = (order: Order, newStatus: OrderStatus) => {
+        const actor = user ? `${user.name} (superadmin)` : 'System';
+        const updatedOrder = addStatusLog(order, newStatus, actor);
+        setAllOrders(prev => prev.map(o => o.id === order.id ? updatedOrder : o));
+        logActivity('Order Status Updated (Admin)', `Admin updated order ${order.id} to ${newStatus}.`);
+    };
+    
+    const handleUpdateOrderWithSeller = (orderId: string, newStatus: OrderStatus) => {
+        const order = allOrders.find(o => o.id === orderId);
+        if (!order || !user) return;
+        const actor = `${user.name} (seller)`;
+        const updatedOrder = addStatusLog(order, newStatus, actor);
+        setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+        logActivity('Order Status Updated (Seller)', `Seller updated order ${orderId} to ${newStatus}.`);
+    };
+    
+    const handleAssignAgent = (orderId: string, agentId: string) => {
+        const order = allOrders.find(o => o.id === orderId);
+        const agent = allUsers.find(u => u.id === agentId);
+        if (order && agent) {
+            const updatedOrder = addStatusLog(order, 'picked-up', `Admin (Assigned to ${agent.name})`);
+            updatedOrder.agentId = agentId;
+            setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+            logActivity('Agent Assigned', `Agent ${agent.name} assigned to order ${orderId}.`);
+        }
+    };
+    
+    const handleAddStory = (storeId: string, imageUrl: string) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                const newStory: Story = { id: `story-${Date.now()}`, imageUrl, createdAt: new Date().toISOString() };
+                const updatedStories = [...(s.stories || []), newStory];
+                return { ...s, stories: updatedStories };
+            }
+            return s;
+        }));
+    };
+
+    const handleDeleteStory = (storeId: string, storyId: string) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                const updatedStories = s.stories?.filter(story => story.id !== storyId);
+                return { ...s, stories: updatedStories };
+            }
+            return s;
+        }));
+    };
+    
+    const handleBecomePremiumByCaution = () => {
+        if (!user) return;
+        if (window.confirm(`Confirmez-vous le paiement de la caution de ${siteSettings.premiumCautionAmount.toLocaleString('fr-CM')} FCFA pour devenir Premium ?`)) {
+            setAllUsers(users => users.map(u => u.id === user.id ? { ...u, loyalty: { ...u.loyalty, status: 'premium', premiumStatusMethod: 'deposit' } } : u));
+            logActivity('Premium by Deposit', `User ${user.name} became Premium by paying a deposit.`);
+            alert("Félicitations ! Vous êtes maintenant un membre Premium.");
+        }
+    };
+    
+    const handleUpgradeToPremiumPlus = () => {
+        if (!user) return;
+         if (window.confirm(`Confirmez-vous le paiement de ${siteSettings.premiumPlusAnnualFee.toLocaleString('fr-CM')} FCFA pour l'abonnement annuel Premium+ ?`)) {
+            setAllUsers(users => users.map(u => u.id === user.id ? { ...u, loyalty: { ...u.loyalty, status: 'premium_plus', premiumStatusMethod: 'subscription' } } : u));
+            logActivity('Premium+ Subscription', `User ${user.name} upgraded to Premium+.`);
+            alert("Félicitations ! Vous êtes maintenant un membre Premium+.");
+        }
+    };
+    
+    const handleCancelOrder = (orderId: string) => {
+      const order = allOrders.find(o => o.id === orderId);
+      if(order && window.confirm("Êtes-vous sûr de vouloir annuler cette commande ?")) {
+          const updatedOrder = addStatusLog(order, 'cancelled', user?.name || 'Customer');
+          setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+          logActivity('Order Cancelled', `Order ${orderId} was cancelled by the customer.`);
+      }
+    };
+
+    const handleRequestRefund = (orderId: string, reason: string, evidenceUrls: string[]) => {
+      const order = allOrders.find(o => o.id === orderId);
+      if(order) {
+        const updatedOrder: Order = {
+            ...addStatusLog(order, 'refund-requested', user?.name || 'Customer'),
+            refundReason: reason,
+            refundEvidenceUrls: evidenceUrls,
+            disputeLog: [{ author: 'customer', message: `Demande de remboursement: ${reason}`, date: new Date().toISOString() }]
+        };
+        setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+        logActivity('Refund Requested', `Refund requested for order ${orderId}. Reason: ${reason}`);
+      }
+    };
+
+    const handleResolveRefund = (orderId: string, resolution: 'approved' | 'rejected') => {
+        const order = allOrders.find(o => o.id === orderId);
+        if (order) {
+            const newStatus = resolution === 'approved' ? 'refunded' : order.status; // Revert to previous status or keep as is? Let's just update log.
+            const message = resolution === 'approved' ? 'Demande de remboursement approuvée. Le remboursement sera traité.' : 'Demande de remboursement rejetée.';
+            const updatedOrder = addStatusLog(order, newStatus, user?.name || 'Admin');
+            updatedOrder.disputeLog = [...(updatedOrder.disputeLog || []), { author: 'admin', message, date: new Date().toISOString()}];
+
+            setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+            logActivity('Refund Resolved', `Refund request for order ${orderId} was ${resolution}.`);
+        }
+    };
+    
+    const handleAdminDisputeMessage = (orderId: string, message: string, author: 'admin' | 'seller' | 'customer') => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId) {
+                const newMsg: DisputeMessage = { author, message, date: new Date().toISOString() };
+                return { ...o, disputeLog: [...(o.disputeLog || []), newMsg] };
+            }
+            return o;
+        }));
+    };
+
+    if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
+        return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
+    }
+
+  const currentPage = useMemo(() => {
+    switch(page) {
+      case 'home': return <HomePage categories={allCategories} products={visibleProducts} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
+      // @FIX: Pass handleAddReview instead of handleReviewModeration to onAddReview prop.
+      case 'product': return selectedProduct ? <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home', resetSelections)} onAddReview={handleAddReview} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'cart': return <CartView onBack={() => handleNavigate('home', resetSelections)} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={handleApplyPromoCode} />;
+      case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handlePlaceOrder} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
+      case 'order-success': return selectedOrder ? <OrderSuccess order={selectedOrder} onNavigateHome={() => handleNavigate('home', resetSelections)} onNavigateToOrders={() => handleNavigate('order-history', resetSelections)} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'stores': return <StoresPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('home')} onVisitStore={handleVendorClick} onNavigateToStoresMap={() => handleNavigate('stores-map')}/>;
+      case 'stores-map': return <StoresMapPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('stores')} onVisitStore={handleVendorClick} />;
+      case 'become-seller': return <BecomeSeller onBack={() => handleNavigate('home')} onBecomeSeller={handleBecomeSeller} onRegistrationSuccess={() => handleNavigate('seller-dashboard')} siteSettings={siteSettings} />;
+      case 'category': return selectedCategoryId ? <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'seller-dashboard':
+        if (user?.role === 'seller') {
+            const sellerStore = allStores.find(s => s.name === user.shopName);
+            if (sellerStore) {
+                 return <SellerDashboard
+                    store={sellerStore}
+                    products={allProducts.filter(p => p.vendor === user.shopName)}
+                    sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))}
+                    promoCodes={allPromoCodes.filter(pc => pc.sellerId === user.id)}
+                    categories={allCategories}
+                    flashSales={flashSales}
+                    onBack={() => handleNavigate('home')}
+                    onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }}
+                    onEditProduct={(product) => { setProductToEdit(product); handleNavigate('product-form'); }}
+                    onDeleteProduct={handleDeleteProduct}
+                    onToggleStatus={handleToggleStatus}
+                    onNavigateToProfile={() => handleNavigate('seller-profile')}
+                    onSetPromotion={(product) => setPromotionModalProduct(product)}
+                    onRemovePromotion={handleRemovePromotion}
+                    onProposeForFlashSale={handleProposeForFlashSale}
+                    onUploadDocument={handleUploadDocument}
+                    onUpdateOrderStatus={handleUpdateOrderWithSeller}
+                    onCreatePromoCode={handleCreatePromoCode}
+                    onDeletePromoCode={handleDeletePromoCode}
+                    isChatEnabled={isChatEnabled}
+                    onPayRent={(storeId) => {
+                        setAllStores(prev => prev.map(s => s.id === storeId ? { ...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() } : s))
+                        alert('Paiement du loyer effectué !');
+                    }}
+                    siteSettings={siteSettings}
+                    onAddStory={handleAddStory}
+                    onDeleteStory={handleDeleteStory}
+                />;
+            }
+        }
+        return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'vendor-page': return selectedVendor ? <VendorPage vendorName={selectedVendor} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'product-form': return user?.role === 'seller' ? <ProductForm onSave={handleAddProduct} onCancel={() => handleNavigate('seller-dashboard', resetSelections)} productToEdit={productToEdit} categories={allCategories} onAddCategory={(name) => {const newCat:Category = {id: `cat-new-${Date.now()}`, name, imageUrl:''}; setAllCategories(c => [...c, newCat]); return newCat;}} siteSettings={siteSettings} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'seller-profile':
+        if (user?.role === 'seller') {
+            const sellerStore = allStores.find(s => s.name === user.shopName);
+            return sellerStore ? <SellerProfile store={sellerStore} onBack={() => handleNavigate('seller-dashboard')} onUpdateProfile={(storeId, updates) => {
+                setAllStores(prev => prev.map(s => s.id === storeId ? {...s, name: updates.shopName, location: updates.location, logoUrl: updates.logoUrl } : s));
+            }}/> : <NotFoundPage onNavigateHome={() => handleNavigate('home')}/>;
+        }
+        return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'superadmin-dashboard': return user?.role === 'superadmin' ? <SuperAdminDashboard 
+            allOrders={allOrders}
+            allCategories={allCategories}
+            allStores={allStores}
+            siteActivityLogs={siteActivityLogs}
+            onUpdateOrderStatus={handleUpdateOrderWithAdmin}
+            onUpdateCategoryImage={(id, url) => setAllCategories(cats => cats.map(c => c.id === id ? {...c, imageUrl: url} : c))}
+            onWarnStore={(store, reason) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, warnings: [...s.warnings, { id: Date.now().toString(), date: new Date().toISOString(), reason}]} : s))}
+            onToggleStoreStatus={(store) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, status: s.status === 'active' ? 'suspended' : 'active'} : s))}
+            onToggleStorePremiumStatus={(store) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, premiumStatus: s.premiumStatus === 'premium' ? 'standard' : 'premium' } : s))}
+            onApproveStore={(store) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, status: 'active'} : s))}
+            onRejectStore={(store) => setAllStores(stores => stores.filter(s => s.id !== store.id))}
+            onSaveFlashSale={(data) => setFlashSales(fs => [...fs, { id: `fs-${Date.now()}`, ...data, products: []}])}
+            flashSales={flashSales}
+            allProducts={allProducts}
+            onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus}
+            onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus}
+            onRequestDocument={handleRequestDocument}
+            onVerifyDocumentStatus={handleVerifyDocumentStatus}
+            allPickupPoints={allPickupPoints}
+            onAddPickupPoint={(data) => setAllPickupPoints(pts => [...pts, {id: `pp-${Date.now()}`, ...data}])}
+            onUpdatePickupPoint={(data) => setAllPickupPoints(pts => pts.map(p => p.id === data.id ? data : p))}
+            onDeletePickupPoint={(id) => setAllPickupPoints(pts => pts.filter(p => p.id !== id))}
+            allUsers={allUsers}
+            onAssignAgent={handleAssignAgent}
+            isChatEnabled={isChatEnabled}
+            isComparisonEnabled={isComparisonEnabled}
+            onToggleChatFeature={() => setIsChatEnabled(e => !e)}
+            onToggleComparisonFeature={() => setIsComparisonEnabled(e => !e)}
+            siteSettings={siteSettings}
+            onUpdateSiteSettings={setSiteSettings}
+            onAdminAddCategory={handleAdminAddCategory}
+            onAdminDeleteCategory={handleAdminDeleteCategory}
+            onUpdateUser={(userId, updates) => setAllUsers(users => users.map(u => u.id === userId ? {...u, ...updates} : u))}
+            payouts={payouts}
+            onPayoutSeller={(store, amount) => {
+                const newPayout: Payout = { storeId: store.id, amount, date: new Date().toISOString() };
+                setPayouts(p => [...p, newPayout]);
+                logActivity('Payout Processed', `Paid ${amount.toLocaleString('fr-CM')} FCFA to "${store.name}".`);
+            }}
+            onActivateSubscription={(store) => {
+                 setAllStores(prev => prev.map(s => s.id === store.id ? { ...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() } : s));
+                 logActivity('Subscription Activated', `Subscription for "${store.name}" has been manually activated.`);
+            }}
+            advertisements={advertisements}
+            onAddAdvertisement={(ad) => setAdvertisements(ads => [...ads, {id: `ad-${Date.now()}`, ...ad}])}
+            onUpdateAdvertisement={(ad) => setAdvertisements(ads => ads.map(a => a.id === ad.id ? ad : a))}
+            onDeleteAdvertisement={(id) => setAdvertisements(ads => ads.filter(a => a.id !== id))}
+            onCreateUserByAdmin={(userData) => setAllUsers(users => [...users, {id: `user-${Date.now()}`, loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, ...userData}])}
+            onSanctionAgent={(agentId, reason) => {
+                const agent = allUsers.find(u => u.id === agentId);
+                if (agent) {
+                    const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason };
+                    setAllUsers(users => users.map(u => u.id === agentId ? { ...u, warnings: [...(u.warnings || []), newWarning]} : u));
+                    logActivity('Agent Sanctioned', `Agent ${agent.name} sanctioned. Reason: ${reason}`);
+                    alert(`Agent ${agent.name} a été sanctionné.`);
+                }
+            }}
+            onResolveRefund={handleResolveRefund}
+            onAdminStoreMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')}
+            onAdminCustomerMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')}
+        /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'order-history': return user ? <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home', resetSelections)} onSelectOrder={(order) => { setSelectedOrder(order); handleNavigate('order-detail'); }} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'order-detail': return selectedOrder ? <OrderDetailPage order={selectedOrder} allPickupPoints={allPickupPoints} allUsers={allUsers} onBack={() => handleNavigate('order-history', resetSelections)} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} onCustomerDisputeMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'customer')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'promotions': return <PromotionsPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+      case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+      case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={visibleProducts} allStores={allStores} allCategories={allCategories} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+      case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+      case 'delivery-agent-dashboard': return user?.role === 'delivery_agent' ? <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={(orderId, status) => { const order=allOrders.find(o=>o.id===orderId); if(order) { const updatedOrder=addStatusLog(order,status,user.name); setAllOrders(os=>os.map(o=>o.id===orderId ? updatedOrder:o)); } }} onLogout={handleLogout} onUpdateUserAvailability={handleUpdateUserAvailability} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'depot-agent-dashboard': return user?.role === 'depot_agent' ? <DepotAgentDashboard user={user} allUsers={allUsers} allOrders={allOrders} onCheckIn={(orderId, storageId) => { const o=allOrders.find(o=>o.id===orderId); if(o){ const uo = addStatusLog({...o, storageLocationId:storageId, checkedInAt: new Date().toISOString(), checkedInBy: user.id}, 'at-depot', user.name); setAllOrders(os => os.map(ord => ord.id === orderId ? uo : ord)); } }} onReportDiscrepancy={(orderId, reason) => {const o=allOrders.find(o=>o.id===orderId); if(o){ const uo = addStatusLog({...o, discrepancy: {reason, reportedAt: new Date().toISOString(), reportedBy: user.id}}, 'depot-issue', user.name); setAllOrders(os => os.map(ord => ord.id === orderId ? uo : ord));} }} onLogout={handleLogout} onProcessDeparture={(orderId, recipient) => { const o=allOrders.find(o=>o.id===orderId); if(o) {const newStatus=o.deliveryMethod === 'pickup' ? 'delivered' : 'out-for-delivery'; const uo=addStatusLog({...o, departureProcessedByAgentId: user.id, processedForDepartureAt: new Date().toISOString(), pickupRecipientName: recipient?.name, pickupRecipientId: recipient?.idNumber}, newStatus, user.name); setAllOrders(os=>os.map(ord=>ord.id===orderId ? uo : ord))}}} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'comparison': return <ComparisonPage onBack={() => window.history.back()} allCategories={allCategories}/>;
+      case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => handleNavigate('home')} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} />;
+      case 'analytics-dashboard': return user?.role === 'superadmin' ? <AnalyticsDashboard onBack={() => handleNavigate('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} allCategories={allCategories} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'review-moderation': return user?.role === 'superadmin' ? <ReviewModeration onBack={() => handleNavigate('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={handleReviewModeration} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
+      case 'reset-password': return <ResetPasswordPage onPasswordReset={handlePasswordReset} onNavigateLogin={handleNavigateLoginFromReset} />;
+      default: return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+    }
+  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, user, allProducts, allCategories, allStores, allOrders, cart, searchQuery, allPromoCodes, appliedPromoCode, productToEdit, promotionModalProduct, infoPageContent, isLoginModalOpen, isModalOpen, modalProduct, isForgotPasswordModalOpen, emailForPasswordReset, comparisonList, viewingStoriesOfStore, isChatEnabled, isComparisonEnabled, siteSettings, siteActivityLogs, flashSales, allPickupPoints, payouts, advertisements, visibleProducts]);
+
+  return (
+    <>
+      <Header 
+        categories={allCategories} 
+        onNavigateHome={() => handleNavigate('home', resetSelections)}
+        onNavigateCart={() => handleNavigate('cart')}
+        onNavigateToStores={() => handleNavigate('stores')}
+        onNavigateToPromotions={() => handleNavigate('promotions')}
+        onNavigateToCategory={handleCategoryClick}
+        onNavigateToBecomeSeller={() => handleNavigate('become-seller')}
+        onNavigateToSellerDashboard={() => handleNavigate('seller-dashboard')}
+        onNavigateToSellerProfile={() => handleNavigate('seller-profile')}
+        onNavigateToOrderHistory={() => handleNavigate('order-history')}
+        onNavigateToSuperAdminDashboard={() => handleNavigate('superadmin-dashboard')}
+        onNavigateToFlashSales={() => handleNavigate('flash-sales')}
+        onNavigateToWishlist={() => handleNavigate('wishlist')}
+        onNavigateToDeliveryAgentDashboard={() => handleNavigate('delivery-agent-dashboard')}
+        onNavigateToDepotAgentDashboard={() => handleNavigate('depot-agent-dashboard')}
+        onNavigateToBecomePremium={() => handleNavigate('become-premium')}
+        onNavigateToAnalyticsDashboard={() => handleNavigate('analytics-dashboard')}
+        onNavigateToReviewModeration={() => handleNavigate('review-moderation')}
+        onOpenLogin={() => setIsLoginModalOpen(true)}
+        onLogout={handleLogout}
+        onSearch={handleSearch}
+        isChatEnabled={isChatEnabled}
+        isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
+        logoUrl={siteSettings.logoUrl}
+        onLoginSuccess={handleLoginSuccess}
+      />
+      <main className="min-h-[calc(100vh-136px)]">
+        {currentPage}
+      </main>
+      <Footer onNavigate={(title, content) => { setInfoPageContent({title, content}); handleNavigate('info'); }} logoUrl={siteSettings.logoUrl}/>
+      
+      {isModalOpen && modalProduct && (
+        <AddToCartModal 
+            product={modalProduct}
+            onClose={uiCloseModal}
+            onNavigateToCart={() => { uiCloseModal(); handleNavigate('cart'); }}
+        />
+      )}
+      
+      {isLoginModalOpen && (
+        <LoginModal 
+            onClose={() => setIsLoginModalOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
+            onForgotPassword={handleOpenForgotPassword}
+        />
+      )}
+
+      {isForgotPasswordModalOpen && (
+          <ForgotPasswordModal
+              onClose={() => setIsForgotPasswordModalOpen(false)}
+              onEmailSubmit={handleForgotPasswordSubmit}
+          />
+      )}
+
+      {promotionModalProduct && (
+        <PromotionModal 
+          product={promotionModalProduct}
+          onClose={() => setPromotionModalProduct(null)}
+          onSave={handleSetPromotion}
+        />
+      )}
+      
+      {viewingStoriesOfStore && (
+        <StoryViewer 
+            store={viewingStoriesOfStore}
+            onClose={() => setViewingStoriesOfStore(null)}
+        />
+      )}
+      
+      {comparisonList.length > 0 && isComparisonEnabled && (
+        <ComparisonBar onCompareClick={() => handleNavigate('comparison')}/>
+      )}
+      
+      {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} allCategories={allCategories}/>}
+    </>
+  );
 }

@@ -1,16 +1,18 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import type { Order, OrderStatus, User } from '../types';
+import type { Order, OrderStatus, User, PickupPoint } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon, ChevronDownIcon } from './Icons';
+import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon, ChevronDownIcon, TruckIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
 interface DepotAgentDashboardProps {
   user: User;
+  allUsers: User[];
   allOrders: Order[];
   onCheckIn: (orderId: string, storageLocationId: string) => void;
   onReportDiscrepancy: (orderId: string, reason: string) => void;
   onLogout: () => void;
+  onProcessDeparture: (orderId: string, recipientInfo?: { name: string; idNumber: string }) => void;
 }
 
 const statusTranslations: {[key in OrderStatus]: string} = {
@@ -26,6 +28,48 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   returned: 'Retourné',
   'depot-issue': 'Problème au dépôt'
 };
+
+const CustomerPickupModal: React.FC<{
+    order: Order;
+    onClose: () => void;
+    onSubmit: (recipientInfo: { name: string; idNumber: string }) => void;
+}> = ({ order, onClose, onSubmit }) => {
+    const [recipientName, setRecipientName] = useState(order.shippingAddress.fullName);
+    const [recipientId, setRecipientId] = useState('');
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!recipientName.trim() || !recipientId.trim()) {
+            alert("Veuillez remplir le nom et le numéro de la pièce d'identité.");
+            return;
+        }
+        onSubmit({ name: recipientName, idNumber: recipientId });
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black bg-opacity-75 z-[70] flex items-center justify-center p-4">
+            <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold mb-2 dark:text-white">Confirmation de Retrait Client</h3>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Commande : {order.id}</p>
+                <div className="space-y-4">
+                    <div>
+                        <label className="block text-sm font-medium">Nom de la personne qui récupère</label>
+                        <input type="text" value={recipientName} onChange={e => setRecipientName(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-medium">Numéro de CNI / Passeport</label>
+                        <input type="text" value={recipientId} onChange={e => setRecipientId(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                    <button type="button" onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-md">Annuler</button>
+                    <button type="submit" className="bg-kmer-green text-white px-4 py-2 rounded-md">Confirmer la remise</button>
+                </div>
+            </form>
+        </div>
+    );
+};
+
 
 const ScannerModal: React.FC<{
     onClose: () => void;
@@ -78,7 +122,7 @@ const ScannerModal: React.FC<{
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-lg w-full text-white">
-                <h3 className="text-xl font-bold mb-4 text-center">Scanner le Colis à Enregistrer</h3>
+                <h3 className="text-xl font-bold mb-4 text-center">Scanner le Colis</h3>
                 <div className="w-full h-64 bg-gray-800 rounded-md flex items-center justify-center">
                     <div id="reader" className="w-full" hidden={!!scanResult || !!scannerError}></div>
                     {scannerError && <p className="text-red-400">{scannerError}</p>}
@@ -195,11 +239,12 @@ const ActionChoiceModal: React.FC<{
     );
 };
 
-export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allOrders, onCheckIn, onReportDiscrepancy, onLogout }) => {
+export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, onCheckIn, onReportDiscrepancy, onLogout, onProcessDeparture }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'arrivals' | 'inventory'>('overview');
-  const [modalState, setModalState] = useState<'closed' | 'scanner' | 'choice' | 'storage' | 'discrepancy'>('closed');
+  const [modalState, setModalState] = useState<'closed' | 'scanner-checkin' | 'scanner-checkout' | 'choice' | 'storage' | 'discrepancy' | 'pickup-confirm'>('closed');
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
   const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
+  const [orderToProcess, setOrderToProcess] = useState<Order | null>(null);
   
   const ordersForDepot = useMemo(() => {
     if (!user?.depotId) return [];
@@ -215,25 +260,39 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
 
   const handleScanSuccess = (decodedText: string) => {
     if (scanResult) return;
-    const order = allOrders.find(o => o.id === decodedText || o.trackingNumber === decodedText);
 
-    if (!order) {
-        setScanResult({ success: false, message: "Code-barres inconnu." });
-        return;
+    if (modalState === 'scanner-checkin') {
+        const order = allOrders.find(o => o.id === decodedText || o.trackingNumber === decodedText);
+        if (!order) {
+            setScanResult({ success: false, message: "Code-barres inconnu." });
+            return;
+        }
+        if (order.status !== 'picked-up') {
+            setScanResult({ success: false, message: `Colis déjà traité (Statut: ${statusTranslations[order.status]})` });
+            return;
+        }
+        setScanResult({ success: true, message: `Colis ${order.id} validé.` });
+        setScannedOrder(order);
+        setModalState('choice');
+    } else if (modalState === 'scanner-checkout') {
+        if (orderToProcess && (decodedText === orderToProcess.id || decodedText === orderToProcess.trackingNumber)) {
+            if(orderToProcess.deliveryMethod === 'pickup') {
+                setModalState('pickup-confirm');
+            } else {
+                onProcessDeparture(orderToProcess.id);
+                setScanResult({ success: true, message: `Départ du colis ${orderToProcess.id} enregistré.` });
+            }
+        } else {
+            setScanResult({ success: false, message: `Le code-barres ne correspond pas au colis attendu (${orderToProcess?.id}).` });
+        }
     }
-    if (order.status !== 'picked-up') {
-        setScanResult({ success: false, message: `Colis déjà traité (Statut: ${statusTranslations[order.status]})` });
-        return;
-    }
-    setScanResult({ success: true, message: `Colis ${order.id} validé.` });
-    setScannedOrder(order);
-    setModalState('choice');
   };
   
   const closeModal = () => {
     setModalState('closed');
     setScanResult(null);
     setScannedOrder(null);
+    setOrderToProcess(null);
   };
 
   const handleAssignLocation = (orderId: string, locationId: string) => {
@@ -244,6 +303,13 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
   const handleDiscrepancySubmit = (orderId: string, reason: string) => {
     onReportDiscrepancy(orderId, reason);
     closeModal();
+  };
+
+  const handlePickupConfirmSubmit = (recipientInfo: { name: string, idNumber: string }) => {
+      if(orderToProcess) {
+          onProcessDeparture(orderToProcess.id, recipientInfo);
+      }
+      closeModal();
   };
 
   const analytics = useMemo(() => ({
@@ -278,12 +344,12 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
           case 'arrivals':
               return (
                   <div className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Colis en attente de réception</h2>
+                      <h2 className="text-xl font-bold mb-4 dark:text-white">Colis en attente de réception</h2>
                       <div className="space-y-3">
                           {ordersForDepot.map(o => (
                               <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
                                   <p className="font-semibold">{o.id}</p>
-                                  <p className="text-sm text-gray-500">En provenance de: {o.items.map(i => i.vendor).join(', ')}</p>
+                                  <p className="text-sm text-gray-500 dark:text-gray-400">En provenance de: {o.items.map(i => i.vendor).join(', ')}</p>
                               </div>
                           ))}
                       </div>
@@ -292,17 +358,33 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
           case 'inventory':
               return (
                   <div className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Inventaire Actuel</h2>
+                      <h2 className="text-xl font-bold mb-4 dark:text-white">Inventaire Actuel</h2>
                       <div className="space-y-3">
-                          {inventory.map(o => (
-                              <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
-                                  <div>
-                                      <p className="font-semibold">{o.id}</p>
-                                      <p className="text-sm text-gray-500">Client: {o.shippingAddress.fullName}</p>
+                          {inventory.map(o => {
+                              const checkedInByAgent = allUsers.find(u => u.id === o.checkedInBy);
+                              return (
+                                  <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
+                                      <div>
+                                          <p className="font-semibold">{o.id}</p>
+                                          <p className="text-sm text-gray-500">Client: {o.shippingAddress.fullName}</p>
+                                          <p className="text-xs text-gray-400">Enregistré par {checkedInByAgent?.name || 'Inconnu'} le {o.checkedInAt ? new Date(o.checkedInAt).toLocaleDateString() : 'N/A'}</p>
+                                      </div>
+                                      <div className="flex items-center gap-4">
+                                        <span className="font-mono text-lg font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-md">{o.storageLocationId}</span>
+                                        <button
+                                            onClick={() => {
+                                                setOrderToProcess(o);
+                                                setModalState('scanner-checkout');
+                                            }}
+                                            className="text-sm bg-blue-500 text-white font-semibold px-3 py-2 rounded-md hover:bg-blue-600 flex items-center justify-center gap-2"
+                                        >
+                                            <TruckIcon className="w-4 h-4"/>
+                                            Traiter le départ
+                                        </button>
+                                      </div>
                                   </div>
-                                  <span className="font-mono text-lg font-bold bg-gray-200 dark:bg-gray-700 px-3 py-1 rounded-md">{o.storageLocationId}</span>
-                              </div>
-                          ))}
+                              );
+                          })}
                       </div>
                   </div>
               );
@@ -310,7 +392,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
           default:
               return (
                    <div className="p-6">
-                      <h2 className="text-xl font-bold mb-4">Aperçu du Dépôt</h2>
+                      <h2 className="text-xl font-bold mb-4 dark:text-white">Aperçu du Dépôt</h2>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                           <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Colis à recevoir" value={analytics.itemsToReceive} />
                           <StatCard icon={<ArchiveBoxIcon className="w-7 h-7"/>} label="Colis en stock" value={analytics.itemsInStock} />
@@ -323,10 +405,11 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
 
   return (
     <>
-      {modalState === 'scanner' && <ScannerModal onClose={closeModal} onScanSuccess={handleScanSuccess} scanResult={scanResult} />}
+      {modalState.startsWith('scanner') && <ScannerModal onClose={closeModal} onScanSuccess={handleScanSuccess} scanResult={scanResult} />}
       {modalState === 'choice' && scannedOrder && <ActionChoiceModal order={scannedOrder} onClose={closeModal} onAssign={() => setModalState('storage')} onReport={() => setModalState('discrepancy')} />}
       {modalState === 'storage' && scannedOrder && <StorageModal orderId={scannedOrder.id} occupiedSlots={occupiedSlots} onAssign={handleAssignLocation} onClose={closeModal} />}
       {modalState === 'discrepancy' && scannedOrder && <DiscrepancyModal order={scannedOrder} onClose={closeModal} onSubmit={handleDiscrepancySubmit} />}
+      {modalState === 'pickup-confirm' && orderToProcess && <CustomerPickupModal order={orderToProcess} onClose={closeModal} onSubmit={handlePickupConfirmSubmit} />}
       
       <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
         <header className="bg-white dark:bg-gray-800 shadow-sm">
@@ -345,7 +428,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                     <TabButton icon={<ArchiveBoxIcon className="w-5 h-5"/>} label="Inventaire" isActive={activeTab === 'inventory'} onClick={() => setActiveTab('inventory')} count={inventory.length} />
                 </div>
                 <button 
-                  onClick={() => setModalState('scanner')}
+                  onClick={() => setModalState('scanner-checkin')}
                   className="w-full sm:w-auto bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
                 >
                   <QrCodeIcon className="w-5 h-5"/> Enregistrer un Colis

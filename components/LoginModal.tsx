@@ -6,9 +6,10 @@ import type { User } from '../types';
 interface LoginModalProps {
   onClose: () => void;
   onLoginSuccess: (user: User) => void;
+  onForgotPassword: () => void;
 }
 
-const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
+const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForgotPassword }) => {
   const [view, setView] = useState<'login' | 'register'>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -17,8 +18,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email) {
-      alert("Veuillez entrer une adresse e-mail.");
+    if (!email || !password) {
+      alert("Veuillez entrer une adresse e-mail et un mot de passe.");
       return;
     }
     const success = login(email, password);
@@ -27,7 +28,6 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
       if(loggedInUser) {
         onLoginSuccess(loggedInUser);
       } else {
-        // This case handles auto-registration for new customers in the login flow
         const newUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
         if(newUser) onLoginSuccess(newUser);
       }
@@ -40,7 +40,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
       alert("Veuillez remplir tous les champs.");
       return;
     }
-    const success = register(name, email);
+    const success = register(name, email, password);
     if (success) {
        const registeredUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
        if(registeredUser) onLoginSuccess(registeredUser);
@@ -72,10 +72,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
                   required
                 />
               </div>
-              <div className="mb-6">
-                <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="login-password">
-                  Mot de passe
-                </label>
+              <div className="mb-4">
+                <div className="flex justify-between items-baseline">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="login-password">
+                    Mot de passe
+                  </label>
+                  <button type="button" onClick={onForgotPassword} className="inline-block align-baseline font-bold text-sm text-kmer-green hover:text-green-700">
+                    Mot de passe oublié ?
+                  </button>
+                </div>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green"
                   id="login-password"
@@ -83,6 +88,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
                   placeholder="******************"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  required
                 />
               </div>
               <div className="flex flex-col items-center justify-between">
@@ -96,7 +102,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess }) => {
                     Nouveau sur KMER ZONE? <button type="button" onClick={() => setView('register')} className="font-bold text-kmer-green hover:underline">Créer un compte</button>
                 </p>
                  <div className="text-center text-gray-500 dark:text-gray-400 text-xs mt-4 space-y-1 bg-gray-100 dark:bg-gray-700 p-3 rounded-md w-full">
-                    <p className="font-bold">Comptes de test (tout mot de passe fonctionne)</p>
+                    <p className="font-bold">Comptes de test (mot de passe : "password")</p>
                     <p className="text-left"><strong className="text-purple-500">Admin:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">superadmin@example.com</code></p>
                     <p className="text-left"><strong className="text-green-500">Vendeurs:</strong></p>
                     <ul className="list-none text-left pl-2">

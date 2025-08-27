@@ -1,12 +1,14 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
-import type { Order, OrderStatus, PickupPoint, TrackingEvent, DisputeMessage } from '../types';
+import type { Order, OrderStatus, PickupPoint, TrackingEvent, DisputeMessage, User } from '../types';
 import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
 
 interface OrderDetailPageProps {
   order: Order;
   onBack: () => void;
   allPickupPoints: PickupPoint[];
+  allUsers: User[];
   onCancelOrder: (orderId: string) => void;
   onRequestRefund: (orderId: string, reason: string, evidenceUrls: string[]) => void;
   onCustomerDisputeMessage: (orderId: string, message: string) => void;
@@ -125,11 +127,13 @@ const statusTranslations: Record<OrderStatus, { title: string, description: stri
 };
 
 
-const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
+export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
   const currentStatusIndex = statusSteps.indexOf(order.status);
+  
   const pickupPoint = order.deliveryMethod === 'pickup' ? allPickupPoints.find(p => p.id === order.pickupPointId) : null;
+  const deliveryAgent = order.deliveryMethod === 'home-delivery' && order.agentId ? allUsers.find(u => u.id === order.agentId) : null;
 
   const canCancel = ['confirmed', 'ready-for-pickup'].includes(order.status);
   const canRequestRefund = order.status === 'delivered';
@@ -285,78 +289,69 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
 
           <div className="grid md:grid-cols-2 gap-8 border-t dark:border-gray-700 pt-6 mt-8">
             <div>
-              <h3 className="font-semibold mb-4 dark:text-white">Articles commandés</h3>
-              <div className="space-y-3">
+              <h3 className="font-semibold mb-2 dark:text-white">Adresse de Livraison</h3>
+              <address className="not-italic text-gray-600 dark:text-gray-300">
+                {order.shippingAddress.fullName}<br/>
+                {order.shippingAddress.address}<br/>
+                {order.shippingAddress.city}<br/>
+                {order.shippingAddress.phone}
+              </address>
+              {order.deliveryMethod === 'pickup' && pickupPoint && (
+                <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
+                  <p className="font-bold text-sm text-blue-800 dark:text-blue-200">Point de retrait:</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-300">{pickupPoint.name}, {pickupPoint.neighborhood}</p>
+                </div>
+              )}
+               {deliveryAgent && (
+                <div className="mt-4 p-3 bg-green-50 dark:bg-green-900/50 rounded-lg">
+                  <p className="font-bold text-sm text-green-800 dark:text-green-200">Votre livreur:</p>
+                  <p className="text-sm text-green-700 dark:text-green-300">{deliveryAgent.name}</p>
+                </div>
+              )}
+            </div>
+            <div>
+              <h3 className="font-semibold mb-2 dark:text-white">Articles</h3>
+              <ul className="space-y-2">
                 {order.items.map(item => (
-                  <div key={item.id} className="flex items-center gap-4">
-                    <img src={item.imageUrls[0]} alt={item.name} className="w-16 h-16 object-cover rounded-md" />
-                    <div>
-                      <p className="font-semibold dark:text-gray-200">{item.name}</p>
-                      {item.selectedVariant && (
-                          <p className="text-xs text-gray-500 dark:text-gray-400 font-medium">
-                              {Object.entries(item.selectedVariant).map(([key, value]) => `${key}: ${value}`).join(' / ')}
-                          </p>
-                      )}
-                      <p className="text-sm text-gray-500 dark:text-gray-400">{item.quantity} x {(item.promotionPrice ?? item.price).toLocaleString('fr-CM')} FCFA</p>
-                    </div>
-                  </div>
+                  <li key={item.id} className="flex justify-between items-center text-sm">
+                    <span className="dark:text-gray-300">{item.name} x {item.quantity}</span>
+                    <span className="font-semibold dark:text-white">{(item.promotionPrice ?? item.price).toLocaleString('fr-CM')} FCFA</span>
+                  </li>
                 ))}
+              </ul>
+              <div className="border-t dark:border-gray-700 mt-4 pt-4">
+                 <div className="flex justify-between text-sm">
+                    <span>Sous-total</span>
+                    <span>{order.subtotal.toLocaleString('fr-CM')} FCFA</span>
+                 </div>
+                 <div className="flex justify-between text-sm">
+                    <span>Livraison</span>
+                    <span>{order.deliveryFee.toLocaleString('fr-CM')} FCFA</span>
+                 </div>
+                 <div className="flex justify-between font-bold mt-2">
+                    <span>Total</span>
+                    <span>{order.total.toLocaleString('fr-CM')} FCFA</span>
+                 </div>
               </div>
             </div>
+          </div>
+          
+           <div className="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-4">
+              {canRequestRefund && (
+                 <button onClick={() => setIsRefundModalOpen(true)} className="flex-1 w-full bg-yellow-500 text-white font-bold py-3 rounded-lg hover:bg-yellow-600 flex items-center justify-center gap-2">
+                     <ExclamationTriangleIcon className="w-5 h-5"/> Demander un remboursement
+                 </button>
+              )}
+              {canCancel && (
+                 <button onClick={() => onCancelOrder(order.id)} className="flex-1 w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 flex items-center justify-center gap-2">
+                     <XIcon className="w-5 h-5"/> Annuler la commande
+                 </button>
+              )}
+          </div>
 
-            <div className="space-y-6">
-                {order.deliveryMethod === 'home-delivery' ? (
-                  <div>
-                    <h3 className="font-semibold mb-4 dark:text-white flex items-center gap-2"><TruckIcon className="w-5 h-5"/> Livraison à Domicile</h3>
-                    <div className="text-gray-600 dark:text-gray-300 space-y-1">
-                      <p className="font-bold">{order.shippingAddress.fullName}</p>
-                      <p>{order.shippingAddress.address}, {order.shippingAddress.city}</p>
-                      <p>{order.shippingAddress.phone}</p>
-                      {order.deliveryTimeSlot && <p className="font-medium text-kmer-green">Créneau: {order.deliveryTimeSlot}</p>}
-                    </div>
-                  </div>
-                ) : (
-                  <div>
-                    <h3 className="font-semibold mb-4 dark:text-white flex items-center gap-2"><BuildingStorefrontIcon className="w-5 h-5"/> Retrait en Point de Dépôt</h3>
-                    {pickupPoint ? (
-                      <div className="text-gray-600 dark:text-gray-300 space-y-1">
-                        <p className="font-bold">{pickupPoint.name}</p>
-                        <p>{[pickupPoint.streetNumber, pickupPoint.street].filter(Boolean).join(' ')}, {pickupPoint.neighborhood}</p>
-                        <p>{pickupPoint.city}</p>
-                        {pickupPoint.additionalInfo && <p className="text-sm italic">({pickupPoint.additionalInfo})</p>}
-                      </div>
-                    ) : (
-                      <p className="text-red-500">Information sur le point de dépôt non disponible.</p>
-                    )}
-                  </div>
-                )}
-            </div>
-          </div>
-          <div className="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row justify-end gap-4">
-            {canCancel && (
-                <button
-                    onClick={() => onCancelOrder(order.id)}
-                    className="bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 font-bold py-2 px-6 rounded-lg hover:bg-red-200 transition-colors flex items-center justify-center gap-2"
-                >
-                    <ExclamationTriangleIcon className="w-5 h-5"/>
-                    Annuler la commande
-                </button>
-            )}
-            {canRequestRefund && (
-                <button
-                    onClick={() => setIsRefundModalOpen(true)}
-                    className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 font-bold py-2 px-6 rounded-lg hover:bg-yellow-200 transition-colors flex items-center justify-center gap-2"
-                >
-                    <ExclamationTriangleIcon className="w-5 h-5"/>
-                    Demander un remboursement
-                </button>
-            )}
-          </div>
         </div>
       </div>
     </div>
     </>
   );
 };
-
-export default OrderDetailPage;
