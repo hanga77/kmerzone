@@ -5,9 +5,9 @@ import { usePersistentState } from '../hooks/usePersistentState';
 interface AuthContextType {
   user: User | null;
   allUsers: User[];
-  login: (email: string, password?: string) => boolean;
+  login: (email: string, password?: string) => User | null;
   logout: () => void;
-  register: (name: string, email: string, password?: string) => boolean;
+  register: (name: string, email: string, password?: string) => User | null;
   updateUser: (updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => void;
   resetPassword: (email: string, newPassword: string) => void;
   updateUserInfo: (userId: string, updates: { name: string }) => void;
@@ -71,29 +71,29 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     });
   }, [allUsers, setUser]);
 
-  const login = useCallback((email: string, password?: string): boolean => {
+  const login = useCallback((email: string, password?: string): User | null => {
     const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (foundUser) {
         if (!password) { 
           alert('Mot de passe requis.');
-          return false;
+          return null;
         }
         if (foundUser.password !== password) {
             alert('Mot de passe incorrect.');
-            return false;
+            return null;
         }
         setUser(foundUser);
-        return true;
+        return foundUser;
     }
     
     if (!email.includes('@')) {
         alert("Email invalide");
-        return false;
+        return null;
     }
     if (!password) {
         alert("Veuillez fournir un mot de passe pour créer un compte.");
-        return false;
+        return null;
     }
     const name = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
     const newUser: User = { 
@@ -107,18 +107,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
     setAllUsers(prev => [...prev, newUser]);
     setUser(newUser);
-    return true;
+    return newUser;
   }, [allUsers, setAllUsers, setUser]);
 
-  const register = useCallback((name: string, email: string, password?: string): boolean => {
+  const register = useCallback((name: string, email: string, password?: string): User | null => {
       const existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser) {
           alert("Un utilisateur avec cet email existe déjà.");
-          return false;
+          return null;
       }
       if (!password || password.length < 6) {
           alert("Le mot de passe est requis et doit contenir au moins 6 caractères.");
-          return false;
+          return null;
       }
 
       const newUser: User = {
@@ -133,7 +133,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
       setAllUsers(prev => [...prev, newUser]);
       setUser(newUser);
-      return true;
+      return newUser;
   }, [allUsers, setAllUsers, setUser]);
 
   const updateUser = useCallback((updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => {

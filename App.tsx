@@ -50,7 +50,7 @@ import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, Shopp
 import { usePersistentState } from './hooks/usePersistentState';
 
 // @FIX: Add 'reset-password' to the Page type to handle the password reset view.
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account';
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard';
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -70,6 +70,86 @@ const AnalyticsSection: React.FC<{ title: string, children: React.ReactNode }> =
         {children}
     </div>
 );
+
+const SellerAnalyticsDashboard: React.FC<{
+    onBack: () => void;
+    sellerOrders: Order[];
+    sellerProducts: Product[];
+}> = ({ onBack, sellerOrders, sellerProducts }) => {
+    const analytics = useMemo(() => {
+        const deliveredOrders = sellerOrders.filter(o => o.status === 'delivered');
+        const totalRevenue = deliveredOrders.reduce((sum, order) => {
+             const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + (item.promotionPrice ?? item.price) * item.quantity, 0);
+             return sum + sellerItemsTotal;
+        }, 0);
+        
+        const totalDeliveredOrders = deliveredOrders.length;
+        const averageOrderValue = totalDeliveredOrders > 0 ? totalRevenue / totalDeliveredOrders : 0;
+
+        const getFinalPrice = (item: CartItem) => {
+            return item.promotionPrice ?? item.price;
+        };
+
+        const topProducts = deliveredOrders
+            .flatMap(o => o.items)
+            .reduce((acc, item) => {
+                const existing = acc.find(p => p.id === item.id);
+                const revenue = getFinalPrice(item) * item.quantity;
+                if (existing) {
+                    existing.revenue += revenue;
+                    existing.quantitySold += item.quantity;
+                } else {
+                    acc.push({ id: item.id, name: item.name, revenue, quantitySold: item.quantity });
+                }
+                return acc;
+            }, [] as { id: string; name: string; revenue: number; quantitySold: number }[]);
+        
+        const sortedTopProducts = topProducts.sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+        return {
+            totalRevenue,
+            totalOrders: totalDeliveredOrders,
+            averageOrderValue,
+            topProducts: sortedTopProducts,
+        };
+    }, [sellerOrders]);
+
+    return (
+        <div className="container mx-auto p-4 sm:p-8 animate-in bg-gray-50 dark:bg-gray-900">
+            <button onClick={onBack} className="text-kmer-green font-semibold mb-6 inline-flex items-center gap-2">
+                <ArrowLeftIcon className="w-5 h-5"/>
+                Retour au tableau de bord
+            </button>
+            <div className="flex items-center gap-3 mb-8">
+                <BarChartIcon className="w-8 h-8"/>
+                <h1 className="text-3xl font-bold">Analyse des Ventes</h1>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
+                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Commandes Livrées" value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
+                <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Panier Moyen" value={`${analytics.averageOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
+            </div>
+
+            <div className="grid grid-cols-1 gap-6">
+                <AnalyticsSection title="Top 5 Produits (par revenu)">
+                    <ul className="space-y-3">
+                        {analytics.topProducts.map((product) => (
+                            <li key={product.id} className="flex justify-between items-center text-sm">
+                                <div>
+                                    <span className="font-medium dark:text-gray-200">{product.name}</span>
+                                    <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({product.quantitySold} vendus)</span>
+                                </div>
+                                <span className="font-bold text-kmer-green">{product.revenue.toLocaleString('fr-CM')} FCFA</span>
+                            </li>
+                        ))}
+                         {analytics.topProducts.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Aucune donnée de vente pour le moment.</p>}
+                    </ul>
+                </AnalyticsSection>
+            </div>
+        </div>
+    );
+};
 
 const AnalyticsDashboard: React.FC<{ onBack: () => void; allOrders: Order[]; allProducts: Product[]; allStores: Store[]; allUsers: User[]; allCategories: Category[] }> = ({ onBack, allOrders, allProducts, allStores, allUsers, allCategories }) => {
     const analytics = useMemo(() => {
@@ -1119,6 +1199,7 @@ export default function App() {
                     onDeleteProduct={handleDeleteProduct}
                     onToggleStatus={handleToggleStatus}
                     onNavigateToProfile={() => handleNavigate('seller-profile')}
+                    onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')}
                     onSetPromotion={(product) => setPromotionModalProduct(product)}
                     onRemovePromotion={handleRemovePromotion}
                     onProposeForFlashSale={handleProposeForFlashSale}
@@ -1221,13 +1302,27 @@ export default function App() {
       case 'comparison': return <ComparisonPage onBack={() => window.history.back()} allCategories={allCategories}/>;
       case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => handleNavigate('home')} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} />;
       case 'analytics-dashboard': return user?.role === 'superadmin' ? <AnalyticsDashboard onBack={() => handleNavigate('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} allCategories={allCategories} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'seller-analytics-dashboard':
+        if (user?.role === 'seller') {
+            const sellerStore = allStores.find(s => s.name === user.shopName);
+            if (sellerStore) {
+                 const sellerProducts = allProducts.filter(p => p.vendor === user.shopName);
+                 const sellerOrders = allOrders.filter(o => o.items.some(i => i.vendor === user.shopName));
+                 return <SellerAnalyticsDashboard
+                    onBack={() => handleNavigate('seller-dashboard')}
+                    sellerOrders={sellerOrders}
+                    sellerProducts={sellerProducts}
+                />;
+            }
+        }
+        return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       case 'review-moderation': return user?.role === 'superadmin' ? <ReviewModeration onBack={() => handleNavigate('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={handleReviewModeration} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
       case 'reset-password': return <ResetPasswordPage onPasswordReset={handlePasswordReset} onNavigateLogin={handleNavigateLoginFromReset} />;
       case 'account': return user ? <AccountPage onBack={() => handleNavigate('home')} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       default: return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
     }
-  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, user, allProducts, allCategories, allStores, allOrders, cart, searchQuery, allPromoCodes, appliedPromoCode, productToEdit, promotionModalProduct, infoPageContent, isLoginModalOpen, isModalOpen, modalProduct, isForgotPasswordModalOpen, emailForPasswordReset, comparisonList, viewingStoriesOfStore, isChatEnabled, isComparisonEnabled, siteSettings, siteActivityLogs, flashSales, allPickupPoints, payouts, advertisements, visibleProducts]);
+  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, user, allProducts, allCategories, allStores, allOrders, cart, searchQuery, allPromoCodes, appliedPromoCode, productToEdit, promotionModalProduct, infoPageContent, isLoginModalOpen, isModalOpen, modalProduct, isForgotPasswordModalOpen, emailForPasswordReset, comparisonList, viewingStoriesOfStore, isChatEnabled, isComparisonEnabled, siteSettings, siteActivityLogs, flashSales, allPickupPoints, payouts, advertisements, visibleProducts, handleNavigate]);
 
   return (
     <>

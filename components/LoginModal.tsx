@@ -14,7 +14,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const { login, register, allUsers } = useAuth();
+  const { login, register } = useAuth();
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -22,15 +22,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
       alert("Veuillez entrer une adresse e-mail et un mot de passe.");
       return;
     }
-    const success = login(email, password);
-    if (success) {
-      const loggedInUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if(loggedInUser) {
-        onLoginSuccess(loggedInUser);
-      } else {
-        const newUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-        if(newUser) onLoginSuccess(newUser);
-      }
+    const loggedInUser = login(email, password);
+    if (loggedInUser) {
+      onLoginSuccess(loggedInUser);
     }
   };
 
@@ -40,10 +34,9 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
       alert("Veuillez remplir tous les champs.");
       return;
     }
-    const success = register(name, email, password);
-    if (success) {
-       const registeredUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-       if(registeredUser) onLoginSuccess(registeredUser);
+    const registeredUser = register(name, email, password);
+    if (registeredUser) {
+       onLoginSuccess(registeredUser);
     }
   };
 

@@ -361,7 +361,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
             {vendorStore && (
                 <div className="mt-6 p-3 bg-gray-100 dark:bg-gray-800 rounded-lg flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300">
                     <MapPinIcon className="w-5 h-5 text-kmer-green flex-shrink-0" />
-                    Vendu et expédié depuis <strong>{vendorStore.location}, {vendorStore.neighborhood}</strong>
+                    Vendu et expédié depuis <strong>{vendorStore.location}</strong>
                 </div>
             )}
             
@@ -428,28 +428,4 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
                     <span className="ml-4 font-bold text-gray-800 dark:text-white">{review.author}</span>
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{new Date(review.date).toLocaleDateString('fr-FR')}</p>
-                  <p className="text-gray-600 dark:text-gray-300 italic">"{review.comment}"</p>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-gray-500 dark:text-gray-400">Aucun avis pour ce produit pour le moment.</p>
-          )}
-
-          <ReviewForm productId={product.id} onAddReview={onAddReview} onOpenLogin={onOpenLogin} />
-        </div>
-      </div>
-      <RecommendedProducts 
-        currentProduct={product} 
-        allProducts={allProducts} 
-        stores={stores}
-        flashSales={flashSales}
-        onProductClick={onProductClick}
-        onVendorClick={onVendorClick}
-        isComparisonEnabled={isComparisonEnabled}
-      />
-    </>
-  );
-};
-
-export default ProductDetail;
+                  <p className="text-gray-600 dark:text-gray-300

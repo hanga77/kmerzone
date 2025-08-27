@@ -3,7 +3,7 @@ import QRCode from 'qrcode';
 import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
@@ -20,6 +20,7 @@ interface SellerDashboardProps {
   onDeleteProduct: (productId: string) => void;
   onToggleStatus: (productId: string) => void;
   onNavigateToProfile: () => void;
+  onNavigateToAnalytics: () => void;
   onSetPromotion: (product: Product) => void;
   onRemovePromotion: (productId: string) => void;
   onProposeForFlashSale: (flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => void;
@@ -227,46 +228,125 @@ const OrderCard: React.FC<{order: Order, onUpdateOrderStatus: (orderId: string, 
     );
 };
 
-const OverviewPanel: React.FC<{ analytics: any }> = ({ analytics }) => (
+const OverviewPanel: React.FC<{ analytics: any; onNavigate: () => void; lowStockProductsCount: number }> = ({ analytics, onNavigate, lowStockProductsCount }) => (
     <div className="p-6">
-        <h2 className="text-xl font-bold mb-4 dark:text-white">Aperçu</h2>
+        <div className="flex justify-between items-center mb-4">
+            <h2 className="text-xl font-bold dark:text-white">Aperçu</h2>
+            <button onClick={onNavigate} className="text-sm bg-blue-500 text-white font-semibold px-4 py-2 rounded-md hover:bg-blue-600 flex items-center gap-2">
+                <BarChartIcon className="w-4 h-4"/> Voir les analyses détaillées
+            </button>
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} />
             <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Produits" value={analytics.totalProducts} />
             <StatCard icon={<TruckIcon className="w-7 h-7"/>} label="Commandes en attente" value={analytics.openOrders} />
-            <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Note Moyenne" value={analytics.avgRating} />
+            {lowStockProductsCount > 0 ? (
+                 <div className="p-4 bg-orange-100 dark:bg-orange-900/50 rounded-lg border-l-4 border-orange-500">
+                    <div className="flex items-center gap-4">
+                        <div className="text-orange-500"><ExclamationTriangleIcon className="w-7 h-7"/></div>
+                        <div>
+                            <p className="text-2xl font-bold text-orange-800 dark:text-orange-200">{lowStockProductsCount}</p>
+                            <p className="text-sm text-orange-700 dark:text-orange-300">Produits en stock faible</p>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Note Moyenne" value={analytics.avgRating} />
+            )}
         </div>
     </div>
 );
 
 const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProduct' | 'onEditProduct' | 'onDeleteProduct' | 'onToggleStatus' | 'onSetPromotion' | 'onRemovePromotion'>> = ({ products, onAddProduct, onEditProduct, onDeleteProduct, onToggleStatus, onSetPromotion, onRemovePromotion }) => {
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleImportClick = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleImportProducts = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            alert(`Fichier "${e.target.files[0].name}" sélectionné. L'importation de produits est en cours de développement. Dans une version future, les produits de ce fichier seront ajoutés en tant que brouillons.`);
+        }
+    };
+
+    const escapeCsvCell = (cell: any): string => {
+        if (cell === null || cell === undefined) {
+            return '';
+        }
+        const str = String(cell);
+        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
+            const escapedStr = str.replace(/"/g, '""');
+            return `"${escapedStr}"`;
+        }
+        return str;
+    };
+
+    const handleExportProducts = () => {
+        const headers: (keyof Product)[] = [ 'id', 'name', 'price', 'promotionPrice', 'stock', 'categoryId', 'status', 'description', 'imageUrls', 'brand', 'weight', 'dimensions', 'material', 'gender', 'color', 'modelNumber', 'warranty', 'operatingSystem', 'accessories', 'shippingCost', 'promotionStartDate', 'promotionEndDate', 'serialNumber', 'productionDate', 'expirationDate', 'ingredients', 'allergens', 'storageInstructions', 'origin', 'assemblyInstructions', 'productType', 'volume', 'skinType', 'author', 'publisher', 'publicationYear', 'isbn' ];
+        const csvRows = [headers.join(',')];
+        
+        products.forEach(product => {
+            const row = headers.map(header => {
+                let value = product[header];
+                if (header === 'imageUrls' && Array.isArray(value)) {
+                    value = value.join(';');
+                }
+                return escapeCsvCell(value);
+            });
+            csvRows.push(row.join(','));
+        });
+        
+        const csvString = csvRows.join('\n');
+        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        link.setAttribute('href', url);
+        link.setAttribute('download', 'mes_produits_kmer_zone.csv');
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+    
     return (
       <div className="p-6">
-        <div className="flex justify-between items-center mb-4">
+        <input type="file" ref={fileInputRef} onChange={handleImportProducts} style={{ display: 'none' }} accept=".csv" />
+        <div className="flex flex-wrap gap-2 justify-between items-center mb-4">
           <h2 className="text-xl font-bold dark:text-white">Mes Produits</h2>
-          <button onClick={onAddProduct} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Ajouter un produit</button>
+          <div className="flex gap-2 flex-wrap">
+            <button onClick={handleImportClick} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600">Importer</button>
+            <button onClick={handleExportProducts} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Exporter</button>
+            <button onClick={onAddProduct} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Ajouter un produit</button>
+          </div>
         </div>
         <div className="space-y-2">
-          {products.map((p: Product) => (
-            <div key={p.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
-              <div className="flex items-center gap-3">
-                <img src={p.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={p.name} className="w-12 h-12 object-cover rounded-md" />
-                <div>
-                  <p className="font-semibold dark:text-gray-200">{p.name}</p>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">{p.price.toLocaleString('fr-CM')} FCFA - {p.stock} en stock</p>
-                  <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{p.status === 'published' ? 'Publié' : 'Brouillon'}</span>
+          {products.map((p: Product) => {
+             const isLowStock = p.stock < 5;
+             return (
+                <div key={p.id} className={`p-3 rounded-md flex justify-between items-center ${isLowStock ? 'bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-400' : 'bg-gray-50 dark:bg-gray-900/50'}`}>
+                <div className="flex items-center gap-3">
+                    <img src={p.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={p.name} className="w-12 h-12 object-cover rounded-md" />
+                    <div>
+                    <p className="font-semibold dark:text-gray-200">{p.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {p.price.toLocaleString('fr-CM')} FCFA - {p.stock} en stock
+                        {isLowStock && <span className="ml-2 text-xs font-bold text-orange-600 dark:text-orange-400">(Stock Faible)</span>}
+                    </p>
+                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{p.status === 'published' ? 'Publié' : 'Brouillon'}</span>
+                    </div>
                 </div>
-              </div>
-              <div className="flex gap-2">
-                <button onClick={() => onToggleStatus(p.id)} className="p-2 text-gray-500 hover:text-green-500" title={p.status === 'published' ? 'Mettre en brouillon' : 'Publier'}>
-                    <CheckCircleIcon className="w-5 h-5"/>
-                </button>
-                <button onClick={() => onSetPromotion(p)} className="p-2 text-gray-500 hover:text-kmer-red" title="Mettre en promotion"><TagIcon className="w-5 h-5"/></button>
-                <button onClick={() => onEditProduct(p)} className="p-2 text-gray-500 hover:text-blue-500" title="Modifier"><PencilSquareIcon className="w-5 h-5"/></button>
-                <button onClick={() => onDeleteProduct(p.id)} className="p-2 text-gray-500 hover:text-red-600" title="Supprimer"><TrashIcon className="w-5 h-5"/></button>
-              </div>
-            </div>
-          ))}
+                <div className="flex gap-2">
+                    <button onClick={() => onToggleStatus(p.id)} className="p-2 text-gray-500 hover:text-green-500" title={p.status === 'published' ? 'Mettre en brouillon' : 'Publier'}>
+                        <CheckCircleIcon className="w-5 h-5"/>
+                    </button>
+                    <button onClick={() => onSetPromotion(p)} className="p-2 text-gray-500 hover:text-kmer-red" title="Mettre en promotion"><TagIcon className="w-5 h-5"/></button>
+                    <button onClick={() => onEditProduct(p)} className="p-2 text-gray-500 hover:text-blue-500" title="Modifier"><PencilSquareIcon className="w-5 h-5"/></button>
+                    <button onClick={() => onDeleteProduct(p.id)} className="p-2 text-gray-500 hover:text-red-600" title="Supprimer"><TrashIcon className="w-5 h-5"/></button>
+                </div>
+                </div>
+            );
+          })}
         </div>
       </div>
     );
@@ -646,6 +726,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onDeleteProduct,
   onToggleStatus,
   onNavigateToProfile,
+  onNavigateToAnalytics,
   onSetPromotion,
   onRemovePromotion,
   onUploadDocument,
@@ -732,9 +813,13 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
     const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
     const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
     const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
+    const lowStockProductsCount = useMemo(() => products.filter(p => p.stock < 5).length, [products]);
 
     const analytics = useMemo(() => {
-        const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.subtotal, 0);
+        const totalRevenue = deliveredOrders.reduce((sum, order) => {
+            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + (item.promotionPrice ?? item.price) * item.quantity, 0);
+            return sum + sellerItemsTotal;
+        }, 0);
 
         const allReviews = products.flatMap(p => p.reviews);
         const avgRating = allReviews.length > 0
@@ -783,7 +868,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                  return <DocumentsPanel store={store} onUploadDocument={onUploadDocument} />;
             case 'overview':
             default:
-                return <OverviewPanel analytics={analytics} />;
+                return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} />;
         }
     };
     

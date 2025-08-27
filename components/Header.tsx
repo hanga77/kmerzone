@@ -230,15 +230,16 @@ const Header: React.FC<HeaderProps> = (props) => {
            </nav>
         ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
           <nav className="hidden lg:flex items-center justify-center space-x-6 border-t border-gray-200 dark:border-gray-700 mt-3 pt-2">
-            <div className="relative group" onMouseEnter={() => setIsCategoryMenuOpen(true)} onMouseLeave={() => setIsCategoryMenuOpen(false)}>
+            <div className="relative" ref={categoryMenuRef}>
               <button
-                className="flex items-center text-gray-700 dark:text-gray-200 group-hover:text-kmer-green font-semibold"
+                onClick={() => setIsCategoryMenuOpen(o => !o)}
+                className="flex items-center text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold"
               >
                 {translations.categories[language]}
-                <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform group-hover:rotate-180`} />
+                <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform ${isCategoryMenuOpen ? 'rotate-180' : ''}`} />
               </button>
               {isCategoryMenuOpen && (
-                <div ref={categoryMenuRef} className="absolute left-0 mt-2 w-max bg-white dark:bg-gray-800 rounded-md shadow-xl z-50 flex gap-4 p-4">
+                <div className="absolute left-0 mt-2 w-max bg-white dark:bg-gray-800 rounded-md shadow-xl z-50 flex gap-4 p-4">
                   {categoryTree.map((mainCat) => (
                     <div key={mainCat.id} className="min-w-[180px]">
                       <button 
