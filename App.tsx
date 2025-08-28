@@ -39,7 +39,7 @@ import AccountPage from './components/AccountPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 // @FIX: Import RequestedDocument type.
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
@@ -523,6 +523,44 @@ const initialSiteSettings: SiteSettings = {
   }
 };
 
+const initialSiteContent: SiteContent[] = [
+  {
+    slug: 'about',
+    title: "À propos de KMER ZONE",
+    content: "KMER ZONE est la première plateforme e-commerce camerounaise dédiée à la mise en relation directe des commerçants locaux et des consommateurs. Notre mission est de démocratiser l'accès au commerce en ligne, de valoriser les produits locaux et de simplifier l'expérience d'achat pour tous les Camerounais."
+  },
+  {
+    slug: 'contact',
+    title: "Contactez-nous",
+    content: "Pour toute question, partenariat ou assistance, veuillez nous contacter à l'adresse suivante : support@kmerzone.com. Notre équipe est disponible 24/7 pour vous aider."
+  },
+  {
+    slug: 'faq',
+    title: "Foire Aux Questions (FAQ)",
+    content: "Q: Quels sont les délais de livraison ?\nR: Les délais varient entre 24h et 72h en fonction de votre localisation et de celle du vendeur.\n\nQ: Les paiements sont-ils sécurisés ?\nR: Oui, nous utilisons les plateformes de paiement mobile les plus fiables du pays pour garantir la sécurité de vos transactions."
+  },
+  {
+    slug: 'careers',
+    title: "Carrières",
+    content: "Rejoignez une équipe dynamique et passionnée qui révolutionne le e-commerce au Cameroun ! Consultez nos offres d'emploi sur notre page LinkedIn ou envoyez votre candidature spontanée à careers@kmerzone.com."
+  },
+  {
+    slug: 'sell',
+    title: "Vendre sur KMER ZONE",
+    content: "Augmentez votre visibilité et vos ventes en rejoignant notre marketplace. L'inscription est simple et rapide. Cliquez sur 'Devenir vendeur' en haut de la page pour commencer votre aventure avec nous !"
+  },
+  {
+    slug: 'training-center',
+    title: "Centre de formation",
+    content: "Bientôt disponible : des tutoriels et des guides pour vous aider à maximiser vos ventes."
+  },
+  {
+    slug: 'logistics',
+    title: "Logistique & Livraison",
+    content: "Notre réseau de livreurs est à votre disposition pour garantir des livraisons rapides et fiables à vos clients."
+  }
+];
+
 const initialAdvertisements: Advertisement[] = [
     { id: 'ad1', imageUrl: 'https://images.unsplash.com/photo-1555529771-835f59fc5efe?q=80&w=1920&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
     { id: 'ad2', imageUrl: 'https://images.unsplash.com/photo-1598327105151-586673437584?q=80&w=1920&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
@@ -538,6 +576,7 @@ export default function App() {
   const [infoPageContent, setInfoPageContent] = useState({ title: '', content: '' });
   const [searchQuery, setSearchQuery] = useState('');
   const [siteSettings, setSiteSettings] = usePersistentState<SiteSettings>('siteSettings', initialSiteSettings);
+  const [siteContent, setSiteContent] = usePersistentState<SiteContent[]>('siteContent', initialSiteContent);
 
   const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
   const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
@@ -1296,6 +1335,8 @@ export default function App() {
             onResolveRefund={handleResolveRefund}
             onAdminStoreMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')}
             onAdminCustomerMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')}
+            siteContent={siteContent}
+            onUpdateSiteContent={setSiteContent}
         /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       case 'order-history': return user ? <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home', resetSelections)} onSelectOrder={(order) => { setSelectedOrder(order); handleNavigate('order-detail'); }} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       case 'order-detail': return selectedOrder ? <OrderDetailPage order={selectedOrder} allPickupPoints={allPickupPoints} allUsers={allUsers} onBack={() => handleNavigate('order-history', resetSelections)} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} onCustomerDisputeMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'customer')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
@@ -1363,7 +1404,16 @@ export default function App() {
       <main className="min-h-[calc(100vh-136px)]">
         {currentPage}
       </main>
-      <Footer onNavigate={(title, content) => { setInfoPageContent({title, content}); handleNavigate('info'); }} logoUrl={siteSettings.logoUrl}/>
+      <Footer onNavigate={(slug: string) => {
+          const pageContent = siteContent.find(p => p.slug === slug);
+          if (pageContent) {
+            setInfoPageContent({ title: pageContent.title, content: pageContent.content });
+            handleNavigate('info');
+          } else {
+            setInfoPageContent({ title: "Page non trouvée", content: "Le contenu pour cette page n'est pas encore disponible." });
+            handleNavigate('info');
+          }
+        }} logoUrl={siteSettings.logoUrl}/>
       
       {isModalOpen && modalProduct && (
         <AddToCartModal 

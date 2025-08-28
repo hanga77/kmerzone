@@ -289,6 +289,12 @@ export interface PickupPoint {
 
 export type Theme = 'light' | 'dark';
 
+export interface SiteContent {
+  slug: string;
+  title: string;
+  content: string;
+}
+
 export interface SiteSettings {
   logoUrl: string;
   isStoriesEnabled: boolean;

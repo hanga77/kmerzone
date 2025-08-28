@@ -1,5 +1,6 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage, SiteContent } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
@@ -55,6 +56,8 @@ interface SuperAdminDashboardProps {
     onResolveRefund: (orderId: string, resolution: 'approved' | 'rejected') => void;
     onAdminStoreMessage: (orderId: string, message: string) => void;
     onAdminCustomerMessage: (orderId: string, message: string) => void;
+    siteContent: SiteContent[];
+    onUpdateSiteContent: (newContent: SiteContent[]) => void;
 }
 
 const getFinalPriceForPayout = (item: CartItem): number => {
@@ -414,7 +417,7 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
     );
 };
 
-const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'onApproveStore' | 'onRejectStore' | 'onToggleStoreStatus' | 'onToggleStorePremiumStatus' | 'onWarnStore' | 'onRequestDocument' | 'onVerifyDocumentStatus' | 'siteSettings' | 'onActivateSubscription'>> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onToggleStorePremiumStatus, onWarnStore, onRequestDocument, onVerifyDocumentStatus, siteSettings, onActivateSubscription }) => {
+const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' | 'allUsers' | 'onApproveStore' | 'onRejectStore' | 'onToggleStoreStatus' | 'onToggleStorePremiumStatus' | 'onWarnStore' | 'onRequestDocument' | 'onVerifyDocumentStatus' | 'siteSettings' | 'onActivateSubscription'>> = ({ allStores, allUsers, onApproveStore, onRejectStore, onToggleStoreStatus, onToggleStorePremiumStatus, onWarnStore, onRequestDocument, onVerifyDocumentStatus, siteSettings, onActivateSubscription }) => {
     const [warningStore, setWarningStore] = useState<Store | null>(null);
     const [warningReason, setWarningReason] = useState('');
     const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -513,9 +516,9 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                   {store.premiumStatus === 'premium' && <StarIcon className="w-5 h-5 text-kmer-yellow" title="Boutique Premium" />}
                                 </span>
                                 <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${
-                                    store.status === 'active' ? 'bg-green-100 text-green-800' :
-                                    store.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    'bg-red-100 text-red-800'
+                                    store.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                                    store.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
+                                    'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
                                 }`}>{store.status}</span>
                             </summary>
                             <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-4">
@@ -523,14 +526,14 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                     <h4 className="font-semibold mb-2 dark:text-white text-sm">Actions Rapides</h4>
                                     <div className="flex flex-wrap gap-2">
                                         {store.status === 'pending' && <>
-                                            <button onClick={() => onApproveStore(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Approuver</button>
-                                            <button onClick={() => onRejectStore(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Rejeter</button>
+                                            <button onClick={() => { if (window.confirm(`Approuver la boutique "${store.name}" ?`)) onApproveStore(store); }} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Approuver</button>
+                                            <button onClick={() => { if (window.confirm(`Rejeter et supprimer la boutique "${store.name}" ?`)) onRejectStore(store); }} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Rejeter</button>
                                         </>}
-                                        {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
-                                        {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
+                                        {store.status === 'active' && <button onClick={() => { if (window.confirm(`Êtes-vous sûr de vouloir suspendre cette boutique ?`)) onToggleStoreStatus(store); }} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
+                                        {store.status === 'suspended' && <button onClick={() => { if (window.confirm(`Êtes-vous sûr de vouloir réactiver cette boutique ?`)) onToggleStoreStatus(store); }} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
                                         {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors">Avertir</button>}
                                         {store.status === 'active' && (
-                                            <button onClick={() => onToggleStorePremiumStatus(store)} className={`text-sm text-white px-3 py-1.5 rounded-md transition-colors ${store.premiumStatus === 'premium' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-kmer-yellow hover:bg-yellow-500'}`}>
+                                            <button onClick={() => { if (window.confirm(`Êtes-vous sûr de vouloir ${store.premiumStatus === 'premium' ? 'retirer le statut Premium' : 'promouvoir en Premium'} ?`)) onToggleStorePremiumStatus(store); }} className={`text-sm text-white px-3 py-1.5 rounded-md transition-colors ${store.premiumStatus === 'premium' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-kmer-yellow hover:bg-yellow-500'}`}>
                                                 {store.premiumStatus === 'premium' ? 'Retirer Premium' : 'Promouvoir en Premium'}
                                             </button>
                                         )}
@@ -598,6 +601,12 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                         </div>
                                     </form>
                                 </div>
+                                 <div>
+                                    <h4 className="font-semibold mb-2 dark:text-white text-sm">Personnel Assigné</h4>
+                                    <div className="text-sm bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700 p-2">
+                                        {(allUsers.filter(u => u.role === 'depot_agent' && u.depotId === store.id).map(agent => agent.name).join(', ') || <span className="text-gray-500 italic">Aucun agent assigné</span>)}
+                                    </div>
+                                </div>
                             </div>
                         </details>
                     ))}
@@ -607,12 +616,83 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
     );
 };
 
-const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUser' | 'onCreateUserByAdmin' | 'allPickupPoints'>> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, allPickupPoints }) => {
+const UserDetailModal: React.FC<{
+    user: User;
+    allStores: Store[];
+    allPickupPoints: PickupPoint[];
+    onClose: () => void;
+    onUpdateUser: (userId: string, updates: Partial<User>) => void;
+}> = ({ user, allStores, allPickupPoints, onClose, onUpdateUser }) => {
+    const [formData, setFormData] = useState<Partial<User>>(user);
+
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleSave = () => {
+        onUpdateUser(user.id, formData);
+        onClose();
+    };
+
+    return (
+         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full">
+                <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold dark:text-white">Détails de l'utilisateur</h3>
+                    <button onClick={onClose}><XIcon className="w-6 h-6"/></button>
+                </div>
+                <div className="space-y-4">
+                     <div>
+                        <label className="text-sm font-medium">Nom</label>
+                        <input type="text" name="name" value={formData.name || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                    </div>
+                     <div>
+                        <label className="text-sm font-medium">Email (non modifiable)</label>
+                        <input type="email" value={formData.email || ''} readOnly className="mt-1 w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600 cursor-not-allowed"/>
+                    </div>
+                     <div>
+                        <label className="text-sm font-medium">Rôle</label>
+                        <select name="role" value={formData.role} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                            <option value="customer">Client</option>
+                            <option value="seller">Vendeur</option>
+                            <option value="delivery_agent">Livreur</option>
+                            <option value="depot_agent">Agent de dépôt</option>
+                            <option value="superadmin">Super Admin</option>
+                        </select>
+                    </div>
+                    {formData.role === 'seller' && (
+                        <div>
+                            <label className="text-sm font-medium">Boutique Associée</label>
+                            <input type="text" name="shopName" value={formData.shopName || ''} onChange={handleChange} placeholder="Nom exact de la boutique" className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                        </div>
+                    )}
+                    {formData.role === 'depot_agent' && (
+                        <div>
+                            <label className="text-sm font-medium">Dépôt Assigné</label>
+                            <select name="depotId" value={formData.depotId || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                                <option value="">-- Aucun dépôt --</option>
+                                {allPickupPoints.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                            </select>
+                        </div>
+                    )}
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md">Annuler</button>
+                    <button onClick={handleSave} className="px-4 py-2 bg-blue-500 text-white rounded-md">Enregistrer</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 'onUpdateUser' | 'onCreateUserByAdmin' | 'allPickupPoints' | 'allStores'>> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, allPickupPoints, allStores }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [isCreatingUser, setIsCreatingUser] = useState(false);
     const [newUserData, setNewUserData] = useState({ name: '', email: '', role: 'seller' as UserRole });
     const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
     const [currentPage, setCurrentPage] = useState(1);
+    const [editingUser, setEditingUser] = useState<User | null>(null);
     const usersPerPage = 10;
 
     const handleCreateUser = (e: React.FormEvent) => {
@@ -641,6 +721,15 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
     
     return (
         <div className="p-4 sm:p-6">
+             {editingUser && (
+                <UserDetailModal 
+                    user={editingUser}
+                    allStores={allStores}
+                    allPickupPoints={allPickupPoints}
+                    onClose={() => setEditingUser(null)}
+                    onUpdateUser={onUpdateUser}
+                />
+            )}
             <div className="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
                 <h2 className="text-xl font-bold dark:text-white">Gestion des Utilisateurs</h2>
                 <div className="flex flex-col sm:flex-row items-center gap-2 w-full sm:w-auto">
@@ -700,7 +789,7 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
 
             <div className="space-y-2">
                 {paginatedUsers.map(user => (
-                    <div key={user.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex flex-col sm:flex-row justify-between sm:items-center gap-2">
+                    <button key={user.id} onClick={() => setEditingUser(user)} className="w-full text-left p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex flex-col sm:flex-row justify-between sm:items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-900">
                         <div>
                             <p className="font-semibold dark:text-white">{user.name}
                                 {user.loyalty.status === 'premium' && <StarIcon filled className="inline-block w-4 h-4 ml-1 text-kmer-yellow" />}
@@ -709,29 +798,9 @@ const UserManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allUsers' | 
                             <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
                         </div>
                         <div className="flex items-center gap-4">
-                            {user.role === 'depot_agent' && (
-                                <select
-                                    value={user.depotId || ''}
-                                    onChange={(e) => onUpdateUser(user.id, { depotId: e.target.value })}
-                                    className="text-sm border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500"
-                                >
-                                    <option value="">-- Assigner un dépôt --</option>
-                                    {allPickupPoints.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
-                                </select>
-                            )}
-                             <select
-                                value={user.role}
-                                onChange={(e) => onUpdateUser(user.id, { role: e.target.value as UserRole })}
-                                className="text-sm border-gray-300 rounded-md shadow-sm dark:bg-gray-600 dark:border-gray-500"
-                            >
-                                <option value="customer">Client</option>
-                                <option value="seller">Vendeur</option>
-                                <option value="delivery_agent">Livreur</option>
-                                <option value="depot_agent">Agent de dépôt</option>
-                                <option value="superadmin">Super Admin</option>
-                            </select>
+                           <span className="text-sm font-semibold capitalize px-2 py-1 bg-gray-200 dark:bg-gray-700 rounded-md">{user.role.replace('_', ' ')}</span>
                         </div>
-                    </div>
+                    </button>
                 ))}
             </div>
             {totalPages > 1 && (
@@ -883,7 +952,7 @@ const FlashSaleManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'flashSa
   );
 };
 
-const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPickupPoints' | 'onAddPickupPoint' | 'onUpdatePickupPoint' | 'onDeletePickupPoint'>> = ({ allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint }) => {
+const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPickupPoints' | 'onAddPickupPoint' | 'onUpdatePickupPoint' | 'onDeletePickupPoint' | 'allUsers'>> = ({ allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint, allUsers }) => {
     const mapContainerRef = useRef<HTMLDivElement>(null);
     const mapRef = useRef<any>(null);
     const markerRef = useRef<any>(null);
@@ -990,15 +1059,26 @@ const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPi
                  <div>
                     <h3 className="text-lg font-bold mb-4">Points Relais Existants</h3>
                     <div className="space-y-2 max-h-60 overflow-y-auto">
-                        {allPickupPoints.map(point => (
-                            <div key={point.id} className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md flex justify-between items-center">
-                                <div><p className="font-semibold">{point.name}</p><p className="text-xs">{point.neighborhood}, {point.city}</p></div>
-                                <div className="flex gap-2">
-                                    <button onClick={() => handleEdit(point)} className="text-blue-500"><PencilSquareIcon className="w-5 h-5"/></button>
-                                    <button onClick={() => onDeletePickupPoint(point.id)} className="text-red-500"><TrashIcon className="w-5 h-5"/></button>
-                                </div>
-                            </div>
-                        ))}
+                        {allPickupPoints.map(point => {
+                            const assignedAgents = allUsers.filter(u => u.role === 'depot_agent' && u.depotId === point.id);
+                            return (
+                                <details key={point.id} className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md">
+                                    <summary className="font-semibold flex justify-between items-center cursor-pointer">
+                                        <span>{point.name} <span className="text-xs text-gray-500">({point.city})</span></span>
+                                        <div className="flex gap-2">
+                                            <button onClick={(e) => { e.preventDefault(); handleEdit(point); }} className="text-blue-500"><PencilSquareIcon className="w-5 h-5"/></button>
+                                            <button onClick={(e) => { e.preventDefault(); onDeletePickupPoint(point.id); }} className="text-red-500"><TrashIcon className="w-5 h-5"/></button>
+                                        </div>
+                                    </summary>
+                                    <div className="mt-2 pt-2 border-t dark:border-gray-600">
+                                        <h4 className="text-xs font-bold">Personnel Assigné:</h4>
+                                        <p className="text-xs text-gray-600 dark:text-gray-300">
+                                            {assignedAgents.length > 0 ? assignedAgents.map(a => a.name).join(', ') : <i className="text-gray-400">Aucun</i>}
+                                        </p>
+                                    </div>
+                                </details>
+                            );
+                        })}
                     </div>
                 </div>
             </div>
@@ -1395,8 +1475,7 @@ const DeliveryTrackingPanel: React.FC<{
                             </div>
                             <button
                                 onClick={() => handleSanction(agent)}
-                                disabled={!agent}
-                                className="mt-2 sm:mt-0 w-full sm:w-auto bg-yellow-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-yellow-600 disabled:bg-gray-400"
+                                className="mt-2 sm:mt-0 bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600"
                             >
                                 Sanctionner le livreur
                             </button>
@@ -1404,172 +1483,166 @@ const DeliveryTrackingPanel: React.FC<{
                     ))}
                 </div>
             ) : (
-                <p className="text-gray-500 dark:text-gray-400">Aucun retard de livraison majeur détecté.</p>
+                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
+                    <CheckCircleIcon className="w-12 h-12 mx-auto text-green-500 mb-4"/>
+                    <p className="font-semibold">Félicitations !</p>
+                    <p>Aucun retard de livraison significatif n'a été détecté.</p>
+                </div>
             )}
         </div>
     );
 };
 
-const DisputesPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onResolveRefund' | 'onAdminStoreMessage' | 'onAdminCustomerMessage'>> = ({ allOrders, allUsers, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage }) => {
-    const disputedOrders = useMemo(() => allOrders.filter(o => o.status === 'refund-requested' || (o.disputeLog && o.disputeLog.length > 0)), [allOrders]);
-    
+const SiteContentPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteContent' | 'onUpdateSiteContent'>> = ({ siteContent, onUpdateSiteContent }) => {
+    const [editingContent, setEditingContent] = useState<SiteContent | null>(null);
+
+    const handleSave = () => {
+        if (editingContent) {
+            const newContentArray = siteContent.map(c => c.slug === editingContent.slug ? editingContent : c);
+            onUpdateSiteContent(newContentArray);
+            setEditingContent(null);
+        }
+    };
+
     return (
         <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4 dark:text-white">Litiges & Remboursements</h2>
-            <div className="space-y-4">
-                {disputedOrders.map(order => {
-                    const client = allUsers.find(u => u.id === order.userId);
-                    return (
-                        <details key={order.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group" open>
-                            <summary className="font-semibold cursor-pointer dark:text-white flex justify-between items-center">
-                                Commande {order.id} - Client: {client?.name || 'Inconnu'}
-                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
-                                    {statusTranslations[order.status]}
-                                </span>
-                            </summary>
-                            <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-4">
-                                {order.status === 'refund-requested' && (
-                                     <div className="p-3 bg-purple-50 dark:bg-purple-900/50 rounded-md border border-purple-200 dark:border-purple-700">
-                                        <h4 className="font-bold text-purple-800 dark:text-purple-200">Demande Initiale du Client</h4>
-                                        <p className="text-sm italic text-purple-700 dark:text-purple-300 my-2">"{order.refundReason}"</p>
-                                        {order.refundEvidenceUrls && order.refundEvidenceUrls.length > 0 && (
-                                            <div className="flex gap-2 flex-wrap">
-                                                {order.refundEvidenceUrls.map((url, i) => (
-                                                    <a href={url} target="_blank" rel="noopener noreferrer" key={i}><img src={url} alt={`Evidence ${i + 1}`} className="h-20 w-20 object-cover rounded-md border-2 border-purple-300"/></a>
-                                                ))}
-                                            </div>
-                                        )}
-                                        <div className="mt-3 flex gap-2">
-                                            <button onClick={() => onResolveRefund(order.id, 'approved')} className="text-sm bg-green-500 text-white px-3 py-1 rounded-md hover:bg-green-600">Approuver le remboursement</button>
-                                            <button onClick={() => onResolveRefund(order.id, 'rejected')} className="text-sm bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600">Rejeter la demande</button>
-                                        </div>
-                                    </div>
-                                )}
-                               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Communication avec le client */}
-                                    <div>
-                                        <h4 className="font-semibold mb-2">Communication avec le Client</h4>
-                                        <div className="p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700 max-h-40 overflow-y-auto space-y-2 mb-2 text-sm">
-                                            {order.disputeLog?.filter(m => m.author !== 'seller').map((msg, i) => (
-                                                <div key={i}>
-                                                    <span className={`font-bold ${msg.author === 'admin' ? 'text-purple-600' : 'text-blue-600'}`}>{msg.author === 'admin' ? 'Vous' : 'Client'}:</span> {msg.message}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <form onSubmit={e => { e.preventDefault(); const input = (e.target as any).message; onAdminCustomerMessage(order.id, input.value); input.value=''; }}>
-                                            <div className="flex gap-2">
-                                                <input name="message" placeholder="Répondre au client..." className="flex-grow text-sm p-1 border rounded-md dark:bg-gray-600"/>
-                                                <button type="submit" className="text-sm p-1.5 bg-blue-500 text-white rounded-md"><PaperAirplaneIcon className="w-4 h-4"/></button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                    {/* Communication avec la boutique */}
-                                    <div>
-                                        <h4 className="font-semibold mb-2">Communication avec la Boutique</h4>
-                                         <div className="p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700 max-h-40 overflow-y-auto space-y-2 mb-2 text-sm">
-                                            {order.disputeLog?.filter(m => m.author !== 'customer').map((msg, i) => (
-                                                <div key={i}>
-                                                    <span className={`font-bold ${msg.author === 'admin' ? 'text-purple-600' : 'text-green-600'}`}>{msg.author === 'admin' ? 'Vous' : 'Vendeur'}:</span> {msg.message}
-                                                </div>
-                                            ))}
-                                        </div>
-                                        <form onSubmit={e => { e.preventDefault(); const input = (e.target as any).message; onAdminStoreMessage(order.id, input.value); input.value=''; }}>
-                                             <div className="flex gap-2">
-                                                <input name="message" placeholder="Donner des instructions..." className="flex-grow text-sm p-1 border rounded-md dark:bg-gray-600"/>
-                                                <button type="submit" className="text-sm p-1.5 bg-green-500 text-white rounded-md"><PaperAirplaneIcon className="w-4 h-4"/></button>
-                                            </div>
-                                        </form>
-                                    </div>
-                               </div>
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion du Contenu du Site</h2>
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-3">
+                    {siteContent.map(page => (
+                        <button 
+                            key={page.slug}
+                            onClick={() => setEditingContent(JSON.parse(JSON.stringify(page)))}
+                            className={`w-full text-left p-3 rounded-md font-semibold transition-colors ${editingContent?.slug === page.slug ? 'bg-kmer-green/20 text-kmer-green' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200'}`}
+                        >
+                            {page.title}
+                        </button>
+                    ))}
+                </div>
+                <div>
+                    {editingContent ? (
+                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                            <h3 className="font-bold text-lg mb-2">{editingContent.title}</h3>
+                            <textarea
+                                value={editingContent.content}
+                                onChange={e => setEditingContent(c => c ? { ...c, content: e.target.value } : null)}
+                                rows={10}
+                                className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                            />
+                            <div className="flex justify-end gap-2 mt-2">
+                                <button onClick={() => setEditingContent(null)} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-md">Annuler</button>
+                                <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-2 rounded-md">Sauvegarder</button>
                             </div>
-                        </details>
-                    );
-                })}
+                        </div>
+                    ) : (
+                        <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-lg h-full flex items-center justify-center">
+                            Sélectionnez une page à modifier.
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
 
-export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
-    const [activeTab, setActiveTab] = useState('overview');
-    const [assignModal, setAssignModal] = useState<{ isOpen: boolean; orderId: string | null }>({ isOpen: false, orderId: null });
+// @FIX: Export the SuperAdminDashboard component to make it available for import.
+export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
+    allOrders, allCategories, allStores, siteActivityLogs, onUpdateOrderStatus, onUpdateCategoryImage,
+    onWarnStore, onToggleStoreStatus, onToggleStorePremiumStatus, onApproveStore, onRejectStore, onSaveFlashSale, flashSales, allProducts, onUpdateFlashSaleSubmissionStatus,
+    onRequestDocument, onVerifyDocumentStatus, allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint,
+    allUsers, onAssignAgent, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature, siteSettings, onUpdateSiteSettings,
+    onAdminAddCategory, onAdminDeleteCategory, onUpdateUser, payouts, onPayoutSeller, onActivateSubscription,
+    advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement,
+    onCreateUserByAdmin, onBatchUpdateFlashSaleStatus, onSanctionAgent, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage,
+    siteContent, onUpdateSiteContent
+}) => {
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'stores' | 'users' | 'categories' | 'flash-sales' | 'logistics' | 'payouts' | 'marketing' | 'settings'>('overview');
+    const [assigningOrder, setAssigningOrder] = useState<string | null>(null);
 
-    const deliveryAgents = useMemo(() => props.allUsers.filter(u => u.role === 'delivery_agent'), [props.allUsers]);
-    const availableDeliveryAgents = useMemo(() => deliveryAgents.filter(agent => agent.availabilityStatus === 'available'), [deliveryAgents]);
+    const availableAgents = useMemo(() => {
+        return allUsers.filter(u => u.role === 'delivery_agent' && u.availabilityStatus === 'available');
+    }, [allUsers]);
 
-    const handleOpenAssignModal = (orderId: string) => {
-        setAssignModal({ isOpen: true, orderId });
-    };
-
-    const handleCloseAssignModal = () => {
-        setAssignModal({ isOpen: false, orderId: null });
-    };
-
-    const handleAssignAgent = (orderId: string, agentId: string) => {
-        props.onAssignAgent(orderId, agentId);
-        handleCloseAssignModal();
-    };
-
+    if (!user || user.role !== 'superadmin') {
+        return (
+            <div className="container mx-auto px-6 py-12 text-center">
+                <p className="text-xl dark:text-white">Accès non autorisé.</p>
+            </div>
+        );
+    }
+    
     const renderContent = () => {
-        switch (activeTab) {
-            case 'overview': return <DashboardOverviewPanel {...props} />;
-            case 'orders': return <OrderManagementPanel {...props} onOpenAssignModal={handleOpenAssignModal} />;
-            case 'stores': return <StoreManagementPanel {...props} />;
-            case 'users': return <UserManagementPanel {...props} />;
-            case 'availability': return <AvailabilityPanel deliveryAgents={deliveryAgents} />;
-            case 'delivery-tracking': return <DeliveryTrackingPanel allOrders={props.allOrders} allUsers={props.allUsers} onSanctionAgent={props.onSanctionAgent} />;
-            case 'categories': return <CategoryManagementPanel {...props} />;
-            case 'flash-sales': return <FlashSaleManagementPanel {...props} />;
-            case 'pickup-points': return <PickupPointManagementPanel {...props} />;
-            case 'payouts': return <PayoutsPanel {...props} />;
-            case 'advertisements': return <AdManagementPanel {...props} />;
-            case 'disputes': return <DisputesPanel {...props} />;
-            case 'settings': return <SiteSettingsPanel {...props} />;
-            case 'logs': return <LogsPanel siteActivityLogs={props.siteActivityLogs} />;
-            default: return <DashboardOverviewPanel {...props} />;
+        switch(activeTab) {
+            case 'orders': return <OrderManagementPanel allOrders={allOrders} allUsers={allUsers} onUpdateOrderStatus={onUpdateOrderStatus} onAssignAgent={onAssignAgent} onOpenAssignModal={setAssigningOrder} onResolveRefund={onResolveRefund} onAdminStoreMessage={onAdminStoreMessage} onAdminCustomerMessage={onAdminCustomerMessage} />;
+            case 'stores': return <StoreManagementPanel allStores={allStores} allUsers={allUsers} onApproveStore={onApproveStore} onRejectStore={onRejectStore} onToggleStoreStatus={onToggleStoreStatus} onToggleStorePremiumStatus={onToggleStorePremiumStatus} onWarnStore={onWarnStore} onRequestDocument={onRequestDocument} onVerifyDocumentStatus={onVerifyDocumentStatus} siteSettings={siteSettings} onActivateSubscription={onActivateSubscription} />;
+            case 'users': return <UserManagementPanel allUsers={allUsers} onUpdateUser={onUpdateUser} onCreateUserByAdmin={onCreateUserByAdmin} allPickupPoints={allPickupPoints} allStores={allStores} />;
+            case 'categories': return <CategoryManagementPanel allCategories={allCategories} onUpdateCategoryImage={onUpdateCategoryImage} onAdminAddCategory={onAdminAddCategory} onAdminDeleteCategory={onAdminDeleteCategory} />;
+            case 'flash-sales': return <FlashSaleManagementPanel flashSales={flashSales} onSaveFlashSale={onSaveFlashSale} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={onUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={onBatchUpdateFlashSaleStatus} />;
+            case 'logistics': return (
+                <div>
+                    <PickupPointManagementPanel allPickupPoints={allPickupPoints} onAddPickupPoint={onAddPickupPoint} onUpdatePickupPoint={onUpdatePickupPoint} onDeletePickupPoint={onDeletePickupPoint} allUsers={allUsers} />
+                    <div className="my-6 border-t dark:border-gray-700"></div>
+                    <AvailabilityPanel deliveryAgents={allUsers.filter(u => u.role === 'delivery_agent')} />
+                     <div className="my-6 border-t dark:border-gray-700"></div>
+                     <DeliveryTrackingPanel allOrders={allOrders} allUsers={allUsers} onSanctionAgent={onSanctionAgent} />
+                </div>
+            );
+            case 'payouts': return <PayoutsPanel payouts={payouts} allStores={allStores} allOrders={allOrders} onPayoutSeller={onPayoutSeller} flashSales={flashSales} />;
+            case 'marketing': return <AdManagementPanel advertisements={advertisements} onAddAdvertisement={onAddAdvertisement} onUpdateAdvertisement={onUpdateAdvertisement} onDeleteAdvertisement={onDeleteAdvertisement} />;
+            case 'settings': return (
+                <div>
+                    <SiteSettingsPanel siteSettings={siteSettings} onUpdateSiteSettings={onUpdateSiteSettings} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={onToggleChatFeature} onToggleComparisonFeature={onToggleComparisonFeature} />
+                    <div className="my-6 border-t dark:border-gray-700"></div>
+                    <SiteContentPanel siteContent={siteContent} onUpdateSiteContent={onUpdateSiteContent} />
+                </div>
+            );
+            case 'overview':
+            default:
+                return <DashboardOverviewPanel allOrders={allOrders} allStores={allStores} allUsers={allUsers} siteActivityLogs={siteActivityLogs} />;
         }
     };
-    
+
     return (
         <>
-        {assignModal.isOpen && assignModal.orderId && (
+        {assigningOrder && (
             <AssignAgentModal
-                orderId={assignModal.orderId}
-                deliveryAgents={availableDeliveryAgents}
-                onClose={handleCloseAssignModal}
-                onAssign={handleAssignAgent}
+                orderId={assigningOrder}
+                deliveryAgents={availableAgents}
+                onClose={() => setAssigningOrder(null)}
+                onAssign={(orderId, agentId) => { onAssignAgent(orderId, agentId); setAssigningOrder(null); }}
             />
         )}
-        <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+        <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
             <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-                <div className="container mx-auto px-4 sm:px-6 py-4">
-                     <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
+                <div className="container mx-auto px-4 sm:px-6 py-3">
+                    <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-3">
                             <AcademicCapIcon className="w-8 h-8 text-kmer-green"/>
-                            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Super Administration</h1>
+                            <div>
+                                <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Tableau de Bord Super Admin</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Connecté en tant que {user.name}</p>
+                            </div>
                         </div>
                     </div>
-                     <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
-                        <div className="flex space-x-1 sm:space-x-2 overflow-x-auto">
-                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
-                            <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} />
-                            <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
-                            <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Suivi Livraisons" isActive={activeTab === 'delivery-tracking'} onClick={() => setActiveTab('delivery-tracking')} />
-                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
-                            <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
-                            <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup-points'} onClick={() => setActiveTab('pickup-points')} />
-                             <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
-                             <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Publicités" isActive={activeTab === 'advertisements'} onClick={() => setActiveTab('advertisements')} />
-                            <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-                            <TabButton icon={<ClockIcon className="w-5 h-5"/>} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
+                     <div className="mt-3 border-t border-gray-200 dark:border-gray-700 pt-1 -mb-4">
+                        <div className="flex space-x-1 overflow-x-auto">
+                           <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                           <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
+                           <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
+                           <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
+                           <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
+                           <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
+                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Logistique" isActive={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
+                           <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
+                           <TabButton icon={<StarIcon className="w-5 h-5"/>} label="Marketing" isActive={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} />
+                           <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                         </div>
                     </div>
                 </div>
             </header>
-            <main className="container mx-auto px-4 sm:px-6 py-6">
+             <main className="container mx-auto px-4 sm:px-6 py-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
                     {renderContent()}
                 </div>

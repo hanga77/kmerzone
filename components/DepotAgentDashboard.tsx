@@ -1,7 +1,7 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, User, PickupPoint } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon, ChevronDownIcon, TruckIcon } from './Icons';
+import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ArrowPathIcon, ChartPieIcon, BuildingStorefrontIcon, ChevronDownIcon, TruckIcon, SearchIcon, CheckCircleIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
@@ -247,6 +247,8 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
   const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
   const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
   const [orderToProcess, setOrderToProcess] = useState<Order | null>(null);
+  const [arrivalsSearch, setArrivalsSearch] = useState('');
+  const [inventorySearch, setInventorySearch] = useState('');
   
   const ordersForDepot = useMemo(() => {
     if (!user?.depotId) return [];
@@ -259,6 +261,26 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
   }, [allOrders, user]);
 
   const occupiedSlots = useMemo(() => inventory.map(o => o.storageLocationId!).filter(Boolean), [inventory]);
+
+  const filteredArrivals = useMemo(() => {
+    if (!arrivalsSearch.trim()) return ordersForDepot;
+    const searchTerm = arrivalsSearch.toLowerCase();
+    return ordersForDepot.filter(o =>
+        o.id.toLowerCase().includes(searchTerm) ||
+        o.shippingAddress.fullName.toLowerCase().includes(searchTerm) ||
+        o.items.some(i => i.vendor.toLowerCase().includes(searchTerm))
+    );
+  }, [ordersForDepot, arrivalsSearch]);
+
+  const filteredInventory = useMemo(() => {
+    if (!inventorySearch.trim()) return inventory;
+    const searchTerm = inventorySearch.toLowerCase();
+    return inventory.filter(o =>
+        o.id.toLowerCase().includes(searchTerm) ||
+        o.shippingAddress.fullName.toLowerCase().includes(searchTerm) ||
+        o.storageLocationId?.toLowerCase().includes(searchTerm)
+    );
+  }, [inventory, inventorySearch]);
 
   const handleScanSuccess = (decodedText: string) => {
     if (scanResult) return;
@@ -347,13 +369,27 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
               return (
                   <div className="p-6">
                       <h2 className="text-xl font-bold mb-4 dark:text-white">Colis en attente de réception</h2>
+                       <div className="relative mb-4">
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                value={arrivalsSearch}
+                                onChange={e => setArrivalsSearch(e.target.value)}
+                                placeholder="Rechercher par ID, nom client ou vendeur..."
+                                className="w-full p-2 pl-10 border rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-kmer-green focus:border-kmer-green"
+                            />
+                        </div>
                       <div className="space-y-3">
-                          {ordersForDepot.map(o => (
+                          {filteredArrivals.length > 0 ? (
+                            filteredArrivals.map(o => (
                               <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
                                   <p className="font-semibold">{o.id}</p>
                                   <p className="text-sm text-gray-500 dark:text-gray-400">En provenance de: {o.items.map(i => i.vendor).join(', ')}</p>
                               </div>
-                          ))}
+                            ))
+                          ) : (
+                            <p className="text-center text-gray-500 py-8">Aucun colis trouvé.</p>
+                          )}
                       </div>
                   </div>
               );
@@ -361,8 +397,19 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
               return (
                   <div className="p-6">
                       <h2 className="text-xl font-bold mb-4 dark:text-white">Inventaire Actuel</h2>
+                       <div className="relative mb-4">
+                            <SearchIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                            <input
+                                type="text"
+                                value={inventorySearch}
+                                onChange={e => setInventorySearch(e.target.value)}
+                                placeholder="Rechercher par ID, nom client ou emplacement..."
+                                className="w-full p-2 pl-10 border rounded-md dark:bg-gray-700 dark:border-gray-600 focus:ring-kmer-green focus:border-kmer-green"
+                            />
+                        </div>
                       <div className="space-y-3">
-                          {inventory.map(o => {
+                          {filteredInventory.length > 0 ? (
+                            filteredInventory.map(o => {
                               const checkedInByAgent = allUsers.find(u => u.id === o.checkedInBy);
                               return (
                                   <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
@@ -386,7 +433,10 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                                       </div>
                                   </div>
                               );
-                          })}
+                            })
+                          ) : (
+                            <p className="text-center text-gray-500 py-8">Aucun colis trouvé.</p>
+                          )}
                       </div>
                   </div>
               );
