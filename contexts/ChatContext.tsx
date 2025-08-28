@@ -1,7 +1,6 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
-import type { GenerateContentResponse } from '@google/genai';
 // L'importation statique a été supprimée pour éviter les erreurs de plantage dans les environnements de navigateur.
 
 interface ChatContextType {
