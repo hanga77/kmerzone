@@ -5,7 +5,7 @@ import { useAuth } from './AuthContext';
 
 interface CartContextType {
   cart: CartItem[];
-  addToCart: (product: Product, quantity?: number, selectedVariant?: Record<string, string>) => void;
+  addToCart: (product: Product, quantity?: number, selectedVariant?: Record<string, string>, options?: { suppressModal?: boolean }) => void;
   removeFromCart: (productId: string, selectedVariant?: Record<string, string>) => void;
   updateQuantity: (productId: string, quantity: number, selectedVariant?: Record<string, string>) => void;
   clearCart: () => void;
@@ -27,7 +27,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { openModal } = useUI();
   const { user } = useAuth();
 
-  const addToCart = useCallback((product: Product, quantity: number = 1, selectedVariant?: Record<string, string>) => {
+  const addToCart = useCallback((product: Product, quantity: number = 1, selectedVariant?: Record<string, string>, options?: { suppressModal?: boolean }) => {
     if (user && ['superadmin', 'seller', 'delivery_agent', 'depot_agent'].includes(user.role)) {
         alert("Votre rôle ne vous autorise pas à effectuer des achats sur la plateforme.");
         return;
@@ -76,7 +76,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       }
     });
 
-    if (itemAdded && !selectedVariant) { // Do not open modal for variants, as it's complex.
+    if (itemAdded && !selectedVariant && !options?.suppressModal) {
       openModal(product);
     }
   }, [user, openModal]);

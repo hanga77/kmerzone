@@ -1,15 +1,16 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { Order, OrderStatus } from '../types';
-import { ArrowLeftIcon } from './Icons';
+import { ArrowLeftIcon, ArrowPathIcon } from './Icons';
 
 interface OrderHistoryPageProps {
   userOrders: Order[];
   onBack: () => void;
   onSelectOrder: (order: Order) => void;
+  onRepeatOrder: (order: Order) => void;
 }
 
-const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack, onSelectOrder }) => {
+const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack, onSelectOrder, onRepeatOrder }) => {
   const { user } = useAuth();
   
   const getStatusClass = (status: OrderStatus) => {
@@ -81,9 +82,15 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
                         </span>
                     </td>
                     <td className="px-6 py-4">
-                      <button onClick={() => onSelectOrder(order)} className="font-medium text-kmer-green hover:underline">
-                        Voir détails
-                      </button>
+                      <div className="flex items-center gap-4">
+                        <button onClick={() => onSelectOrder(order)} className="font-medium text-kmer-green hover:underline whitespace-nowrap">
+                          Voir détails
+                        </button>
+                        <button onClick={() => onRepeatOrder(order)} className="font-medium text-blue-500 hover:underline whitespace-nowrap flex items-center gap-1">
+                          <ArrowPathIcon className="w-4 h-4"/>
+                          Commander à nouveau
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

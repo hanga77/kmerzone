@@ -174,6 +174,7 @@ export interface User {
     warnings?: Warning[];
     depotId?: string;
     addresses?: Address[];
+    followedStores?: string[];
 }
 
 export interface Address {

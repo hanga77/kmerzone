@@ -577,6 +577,7 @@ export default function App() {
   const [searchQuery, setSearchQuery] = useState('');
   const [siteSettings, setSiteSettings] = usePersistentState<SiteSettings>('siteSettings', initialSiteSettings);
   const [siteContent, setSiteContent] = usePersistentState<SiteContent[]>('siteContent', initialSiteContent);
+  const [activeAccountTab, setActiveAccountTab] = useState('profile');
 
   const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
   const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
@@ -591,7 +592,7 @@ export default function App() {
 
     const { user, logout: authLogout, allUsers, setAllUsers, updateUser: authUpdateUser, resetPassword } = useAuth();
     const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
-    const { cart, clearCart } = useCart();
+    const { cart, clearCart, addToCart } = useCart();
     const { comparisonList, setProducts: setComparisonProducts } = useComparison();
     const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
     const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
@@ -841,6 +842,11 @@ export default function App() {
     const handleNavigateLoginFromReset = () => {
         handleNavigate('home');
         setIsLoginModalOpen(true);
+    };
+
+    const handleNavigateToAccount = (tab: string = 'profile') => {
+        setActiveAccountTab(tab);
+        handleNavigate('account');
     };
 
 
@@ -1211,6 +1217,59 @@ export default function App() {
         }));
     };
 
+    const handleRepeatOrder = useCallback((order: Order) => {
+        const areVariantsEqual = (v1?: Record<string, string>, v2?: Record<string, string>): boolean => {
+            if (!v1 && !v2) return true;
+            if (!v1 || !v2) return false;
+            const keys1 = Object.keys(v1);
+            const keys2 = Object.keys(v2);
+            if (keys1.length !== keys2.length) return false;
+            return keys1.every(key => v1[key] === v2[key]);
+        };
+
+        const addedItems: string[] = [];
+        const outOfStockItems: string[] = [];
+
+        order.items.forEach(item => {
+            const currentProduct = allProducts.find(p => p.id === item.id);
+            
+            if (currentProduct) {
+                let stock = currentProduct.stock;
+                if(currentProduct.variantDetails && item.selectedVariant) {
+                    const variantDetail = currentProduct.variantDetails.find(vd => areVariantsEqual(vd.options, item.selectedVariant!));
+                    stock = variantDetail?.stock ?? 0;
+                }
+
+                if (stock >= item.quantity) {
+                    addToCart(currentProduct, item.quantity, item.selectedVariant, { suppressModal: true });
+                    addedItems.push(`${item.name} (x${item.quantity})`);
+                } else {
+                    outOfStockItems.push(`${item.name} (x${item.quantity})`);
+                }
+            } else {
+                 outOfStockItems.push(`${item.name} (x${item.quantity})`);
+            }
+        });
+
+        let alertMessage = '';
+        if (addedItems.length > 0) {
+            alertMessage += `Les produits suivants ont été ajoutés à votre panier :\n- ${addedItems.join('\n- ')}\n\n`;
+        }
+        if (outOfStockItems.length > 0) {
+            alertMessage += `Les produits suivants sont en rupture de stock ou indisponibles et n'ont pas pu être ajoutés :\n- ${outOfStockItems.join('\n- ')}`;
+        }
+
+        if (alertMessage.trim()) {
+            alert(alertMessage.trim());
+        } else {
+            alert("Aucun produit de cette commande n'est actuellement disponible.");
+        }
+
+        if (addedItems.length > 0) {
+            handleNavigate('cart');
+        }
+    }, [allProducts, addToCart, handleNavigate]);
+
     if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
         return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
     }
@@ -1322,7 +1381,7 @@ export default function App() {
             onAddAdvertisement={(ad) => setAdvertisements(ads => [...ads, {id: `ad-${Date.now()}`, ...ad}])}
             onUpdateAdvertisement={(ad) => setAdvertisements(ads => ads.map(a => a.id === ad.id ? ad : a))}
             onDeleteAdvertisement={(id) => setAdvertisements(ads => ads.filter(a => a.id !== id))}
-            onCreateUserByAdmin={(userData) => setAllUsers(users => [...users, {id: `user-${Date.now()}`, loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, ...userData}])}
+            onCreateUserByAdmin={(userData) => setAllUsers(users => [...users, {id: `user-${Date.now()}`, loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, followedStores: [], ...userData}])}
             onSanctionAgent={(agentId, reason) => {
                 const agent = allUsers.find(u => u.id === agentId);
                 if (agent) {
@@ -1338,7 +1397,7 @@ export default function App() {
             siteContent={siteContent}
             onUpdateSiteContent={setSiteContent}
         /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'order-history': return user ? <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home', resetSelections)} onSelectOrder={(order) => { setSelectedOrder(order); handleNavigate('order-detail'); }} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'order-history': return user ? <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home', resetSelections)} onSelectOrder={(order) => { setSelectedOrder(order); handleNavigate('order-detail'); }} onRepeatOrder={handleRepeatOrder} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       case 'order-detail': return selectedOrder ? <OrderDetailPage order={selectedOrder} allPickupPoints={allPickupPoints} allUsers={allUsers} onBack={() => handleNavigate('order-history', resetSelections)} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} onCustomerDisputeMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'customer')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       case 'promotions': return <PromotionsPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
       case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
@@ -1366,10 +1425,10 @@ export default function App() {
       case 'review-moderation': return user?.role === 'superadmin' ? <ReviewModeration onBack={() => handleNavigate('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={handleReviewModeration} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
       case 'reset-password': return <ResetPasswordPage onPasswordReset={handlePasswordReset} onNavigateLogin={handleNavigateLoginFromReset} />;
-      case 'account': return user ? <AccountPage onBack={() => handleNavigate('home')} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'account': return user ? <AccountPage onBack={() => handleNavigate('home')} initialTab={activeAccountTab} allStores={allStores} onVendorClick={handleVendorClick}/> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
       default: return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
     }
-  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, user, allProducts, allCategories, allStores, allOrders, cart, searchQuery, allPromoCodes, appliedPromoCode, productToEdit, promotionModalProduct, infoPageContent, isLoginModalOpen, isModalOpen, modalProduct, isForgotPasswordModalOpen, emailForPasswordReset, comparisonList, viewingStoriesOfStore, isChatEnabled, isComparisonEnabled, siteSettings, siteActivityLogs, flashSales, allPickupPoints, payouts, advertisements, visibleProducts, handleNavigate]);
+  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, user, allProducts, allCategories, allStores, allOrders, cart, searchQuery, allPromoCodes, appliedPromoCode, productToEdit, promotionModalProduct, infoPageContent, isLoginModalOpen, isModalOpen, modalProduct, isForgotPasswordModalOpen, emailForPasswordReset, comparisonList, viewingStoriesOfStore, isChatEnabled, isComparisonEnabled, siteSettings, siteActivityLogs, flashSales, allPickupPoints, payouts, advertisements, visibleProducts, handleNavigate, activeAccountTab]);
 
   return (
     <>
@@ -1392,7 +1451,7 @@ export default function App() {
         onNavigateToBecomePremium={() => handleNavigate('become-premium')}
         onNavigateToAnalyticsDashboard={() => handleNavigate('analytics-dashboard')}
         onNavigateToReviewModeration={() => handleNavigate('review-moderation')}
-        onNavigateToAccount={() => handleNavigate('account')}
+        onNavigateToAccount={handleNavigateToAccount}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
         onSearch={handleSearch}

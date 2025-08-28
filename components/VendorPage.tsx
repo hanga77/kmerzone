@@ -4,6 +4,7 @@ import ProductCard from './ProductCard';
 import { ArrowLeftIcon, StarIcon, CheckCircleIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
+import { useAuth } from '../contexts/AuthContext';
 
 interface VendorPageProps {
   vendorName: string;
@@ -17,9 +18,11 @@ interface VendorPageProps {
 }
 
 const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
+  const { user, toggleFollowStore } = useAuth();
   const productsFromVendor = useMemo(() => allProducts.filter(p => p.vendor === vendorName), [allProducts, vendorName]);
   const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(productsFromVendor);
   const store = allStores.find(s => s.name === vendorName);
+  const isFollowing = user?.followedStores?.includes(store?.id || '');
 
   return (
     <div className="container mx-auto px-4 sm:px-6 py-12">
@@ -49,16 +52,26 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
         />
         <main className="flex-grow">
             <div className="mb-6">
-                <div className="flex items-center gap-4">
-                  <img src={store?.logoUrl} alt={store?.name} className="h-16 w-16 object-contain rounded-md bg-white p-1 shadow-sm"/>
-                  <div>
-                    <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
-                        Boutique <span className="text-kmer-green">{vendorName}</span>
-                    </h1>
-                     {store && <p className="text-gray-500 dark:text-gray-400">{store.location}</p>}
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <img src={store?.logoUrl} alt={store?.name} className="h-16 w-16 object-contain rounded-md bg-white p-1 shadow-sm"/>
+                    <div>
+                      <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                          Boutique <span className="text-kmer-green">{vendorName}</span>
+                      </h1>
+                       {store && <p className="text-gray-500 dark:text-gray-400">{store.location}</p>}
+                    </div>
                   </div>
+                   {store && user && user.role === 'customer' && (
+                      <button 
+                          onClick={() => toggleFollowStore(store.id)}
+                          className={`px-6 py-2 rounded-lg font-bold transition-colors w-full sm:w-auto ${isFollowing ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300' : 'bg-kmer-green text-white hover:bg-green-700'}`}
+                      >
+                          {isFollowing ? 'Ne plus suivre' : 'Suivre la boutique'}
+                      </button>
+                  )}
                 </div>
-                <p className="text-gray-600 dark:text-gray-300 mt-2">
+                <p className="text-gray-600 dark:text-gray-300 mt-4">
                     {filteredAndSortedProducts.length} sur {productsFromVendor.length} produits affichés
                 </p>
             </div>

@@ -16,20 +16,21 @@ interface AuthContextType {
   updateAddress: (userId: string, address: Address) => void;
   deleteAddress: (userId: string, addressId: string) => void;
   setDefaultAddress: (userId: string, addressId: string) => void;
+  toggleFollowStore: (storeId: string) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const initialUsers: User[] = [
-    { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', password: 'password', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
-    { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', password: 'password', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
-    { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', password: 'password', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
-    { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', password: 'password', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
-    { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', password: 'password', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
-    { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', password: 'password', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
-    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [] },
-    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [] },
-    { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', password: 'password', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [] },
+    { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', password: 'password', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
+    { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', password: 'password', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
+    { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', password: 'password', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
+    { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', password: 'password', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
+    { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', password: 'password', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
+    { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', password: 'password', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
+    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [] },
+    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [] },
+    { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', password: 'password', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
 ];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -37,13 +38,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [allUsers, setAllUsers] = usePersistentState<User[]>('allUsers', initialUsers);
 
   useEffect(() => {
-    // Ensure all users have an addresses array
+    // Ensure all users have an addresses array and followedStores array
     setAllUsers(prevUsers => {
         let needsUpdate = false;
         const updatedUsers = prevUsers.map(u => {
-            if (!u.addresses) {
+            if (!u.addresses || !u.followedStores) {
                 needsUpdate = true;
-                return { ...u, addresses: [] };
+                return { ...u, addresses: u.addresses || [], followedStores: u.followedStores || [] };
             }
             return u;
         });
@@ -104,6 +105,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
       password: password,
       addresses: [],
+      followedStores: [],
     };
     setAllUsers(prev => [...prev, newUser]);
     setUser(newUser);
@@ -129,6 +131,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
           password: password,
           addresses: [],
+          followedStores: [],
       };
 
       setAllUsers(prev => [...prev, newUser]);
@@ -231,6 +234,25 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       return u;
     }));
   }, [setAllUsers]);
+
+  const toggleFollowStore = useCallback((storeId: string) => {
+    if (!user) return;
+    setAllUsers(prevUsers =>
+      prevUsers.map(u => {
+        if (u.id === user.id) {
+          const followed = u.followedStores || [];
+          const isFollowing = followed.includes(storeId);
+          return {
+            ...u,
+            followedStores: isFollowing
+              ? followed.filter(id => id !== storeId)
+              : [...followed, storeId],
+          };
+        }
+        return u;
+      })
+    );
+  }, [user, setAllUsers]);
   
   const contextValue = useMemo(() => ({
     user,
@@ -246,8 +268,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     updateAddress,
     deleteAddress,
     setDefaultAddress,
+    toggleFollowStore,
     setAllUsers
-  }), [user, allUsers, login, logout, register, updateUser, resetPassword, updateUserInfo, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress, setAllUsers]);
+  }), [user, allUsers, login, logout, register, updateUser, resetPassword, updateUserInfo, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress, toggleFollowStore, setAllUsers]);
 
   return (
     <AuthContext.Provider value={contextValue as any}>

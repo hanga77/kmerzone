@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeftIcon, UserCircleIcon, MapPinIcon, ShieldCheckIcon, TrashIcon, PencilSquareIcon, StarIcon, CheckCircleIcon, PlusIcon, XIcon } from './Icons';
-import type { Address } from '../types';
+import { ArrowLeftIcon, UserCircleIcon, MapPinIcon, ShieldCheckIcon, TrashIcon, PencilSquareIcon, StarIcon, CheckCircleIcon, PlusIcon, XIcon, BuildingStorefrontIcon } from './Icons';
+import type { Address, Store } from '../types';
 
 interface AddressFormProps {
     address?: Address | null;
@@ -59,9 +59,18 @@ const AddressForm: React.FC<AddressFormProps> = ({ address, onSave, onCancel }) 
     );
 };
 
-const AccountPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
-    const { user, updateUserInfo, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress } = useAuth();
-    const [activeTab, setActiveTab] = useState<'profile' | 'addresses' | 'security'>('profile');
+type AccountTab = 'profile' | 'addresses' | 'security' | 'followed-stores';
+
+interface AccountPageProps {
+  onBack: () => void;
+  initialTab?: string;
+  allStores?: Store[];
+  onVendorClick?: (storeName: string) => void;
+}
+
+const AccountPage: React.FC<AccountPageProps> = ({ onBack, initialTab = 'profile', allStores = [], onVendorClick = () => {} }) => {
+    const { user, updateUserInfo, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress, toggleFollowStore } = useAuth();
+    const [activeTab, setActiveTab] = useState<AccountTab>(initialTab as AccountTab);
     
     // Profile state
     const [name, setName] = useState(user?.name || '');
@@ -77,6 +86,10 @@ const AccountPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
     // Addresses state
     const [isAddingAddress, setIsAddingAddress] = useState(false);
     const [editingAddress, setEditingAddress] = useState<Address | null>(null);
+
+    useEffect(() => {
+        setActiveTab(initialTab as AccountTab);
+    }, [initialTab]);
 
     const handleUpdateName = (e: React.FormEvent) => {
         e.preventDefault();
@@ -131,6 +144,8 @@ const AccountPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
 
     if (!user) return null;
 
+    const followedStores = allStores.filter(store => user.followedStores?.includes(store.id));
+
     return (
         <div className="container mx-auto px-4 sm:px-6 py-12">
             <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
@@ -144,6 +159,7 @@ const AccountPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                     <nav className="flex lg:flex-col p-2 bg-gray-100 dark:bg-gray-800 rounded-lg">
                         <button onClick={() => setActiveTab('profile')} className={`flex items-center gap-3 w-full text-left p-3 rounded-md font-semibold ${activeTab === 'profile' ? 'bg-white dark:bg-gray-700 text-kmer-green' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50'}`}><UserCircleIcon className="w-5 h-5"/> Profil</button>
                         <button onClick={() => setActiveTab('addresses')} className={`flex items-center gap-3 w-full text-left p-3 rounded-md font-semibold ${activeTab === 'addresses' ? 'bg-white dark:bg-gray-700 text-kmer-green' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50'}`}><MapPinIcon className="w-5 h-5"/> Adresses</button>
+                        <button onClick={() => setActiveTab('followed-stores')} className={`flex items-center gap-3 w-full text-left p-3 rounded-md font-semibold ${activeTab === 'followed-stores' ? 'bg-white dark:bg-gray-700 text-kmer-green' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50'}`}><BuildingStorefrontIcon className="w-5 h-5"/> Boutiques Suivies</button>
                         <button onClick={() => setActiveTab('security')} className={`flex items-center gap-3 w-full text-left p-3 rounded-md font-semibold ${activeTab === 'security' ? 'bg-white dark:bg-gray-700 text-kmer-green' : 'hover:bg-gray-200 dark:hover:bg-gray-700/50'}`}><ShieldCheckIcon className="w-5 h-5"/> Sécurité</button>
                     </nav>
                 </aside>
@@ -203,6 +219,28 @@ const AccountPage: React.FC<{ onBack: () => void }> = ({ onBack }) => {
                                     ))
                                 ) : (
                                     <p className="text-center text-gray-500 dark:text-gray-400 py-8">Vous n'avez aucune adresse enregistrée.</p>
+                                )}
+                            </div>
+                        </div>
+                    )}
+                    {activeTab === 'followed-stores' && (
+                         <div>
+                            <h2 className="text-2xl font-bold mb-6">Boutiques Suivies</h2>
+                             <div className="space-y-4">
+                                {followedStores.length > 0 ? (
+                                    followedStores.map(store => (
+                                        <div key={store.id} className="p-3 border dark:border-gray-700 rounded-lg flex justify-between items-center">
+                                            <button onClick={() => onVendorClick(store.name)} className="flex items-center gap-4 text-left">
+                                                <img src={store.logoUrl} alt={store.name} className="h-12 w-12 object-contain rounded-md bg-white"/>
+                                                <p className="font-semibold">{store.name}</p>
+                                            </button>
+                                            <button onClick={() => toggleFollowStore(store.id)} className="bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md text-sm hover:bg-gray-300">
+                                                Ne plus suivre
+                                            </button>
+                                        </div>
+                                    ))
+                                ) : (
+                                    <p className="text-center text-gray-500 dark:text-gray-400 py-8">Vous ne suivez aucune boutique pour le moment.</p>
                                 )}
                             </div>
                         </div>

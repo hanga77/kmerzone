@@ -26,7 +26,7 @@ interface HeaderProps {
   onNavigateToBecomePremium: () => void;
   onNavigateToAnalyticsDashboard: () => void;
   onNavigateToReviewModeration: () => void;
-  onNavigateToAccount: () => void;
+  onNavigateToAccount: (tab?: string) => void;
   onOpenLogin: () => void;
   onLogout: () => void;
   onSearch: (query: string) => void;
@@ -117,7 +117,8 @@ const Header: React.FC<HeaderProps> = (props) => {
         { label: 'Mon Profil', action: onNavigateToSellerProfile, icon: <Cog8ToothIcon className="h-5 w-5" /> }
     ] : []),
     ...(user?.role === 'customer' ? [
-        { label: 'Mon Compte', action: onNavigateToAccount, icon: <UserCircleIcon className="h-5 w-5" /> }
+        { label: 'Mon Compte', action: () => onNavigateToAccount('profile'), icon: <UserCircleIcon className="h-5 w-5" /> },
+        { label: 'Boutiques Suivies', action: () => onNavigateToAccount('followed-stores'), icon: <BuildingStorefrontIcon className="h-5 w-5" /> }
     ] : []),
     ...(user?.role === 'delivery_agent' ? [{ label: 'Tableau de bord Livreur', action: onNavigateToDeliveryAgentDashboard, icon: <TruckIcon className="h-5 w-5" /> }] : []),
     ...(user?.role === 'depot_agent' ? [{ label: 'Tableau de bord Dépôt', action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
