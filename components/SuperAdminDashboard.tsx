@@ -146,7 +146,8 @@ const statusTranslations: Record<OrderStatus, string> = {
     'refund-requested': 'Remboursement demandé',
     refunded: 'Remboursé',
     returned: 'Retourné',
-    'depot-issue': 'Problème au dépôt'
+    'depot-issue': 'Problème au dépôt',
+    'delivery-failed': 'Échec de livraison'
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -161,6 +162,7 @@ const getStatusClass = (status: OrderStatus) => {
         case 'refund-requested': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
         case 'depot-issue': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200';
+        case 'delivery-failed': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200 font-bold';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 };
@@ -343,6 +345,15 @@ const OrderManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' 
                                     </ul>
                                 </div>
                                 
+                                {order.deliveryFailureReason && (
+                                    <div className="p-2 bg-red-50 dark:bg-red-900/50 rounded-md text-sm">
+                                        <p className="font-semibold text-red-800 dark:text-red-200">Échec de livraison :</p>
+                                        <p className="italic text-red-700 dark:text-red-300">
+                                            <strong>Motif:</strong> {order.deliveryFailureReason.reason} <br />
+                                            <strong>Détails:</strong> {order.deliveryFailureReason.details || 'N/A'}
+                                        </p>
+                                    </div>
+                                )}
                                 {order.status === 'refund-requested' && (
                                     <div className="p-2 bg-purple-50 dark:bg-purple-900/50 rounded-md">
                                         <p className="font-semibold text-sm text-purple-800 dark:text-purple-200">Demande de remboursement :</p>

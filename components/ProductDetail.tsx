@@ -428,4 +428,28 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
                     <span className="ml-4 font-bold text-gray-800 dark:text-white">{review.author}</span>
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{new Date(review.date).toLocaleDateString('fr-FR')}</p>
-                  <p className="text-gray-600 dark:text-gray-300
+                  <p className="text-gray-600 dark:text-gray-300 italic">"{review.comment}"</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-gray-500 dark:text-gray-400">Aucun avis pour ce produit pour le moment.</p>
+          )}
+
+          <ReviewForm productId={product.id} onAddReview={onAddReview} onOpenLogin={onOpenLogin} />
+        </div>
+      </div>
+      <RecommendedProducts 
+        currentProduct={product} 
+        allProducts={allProducts} 
+        stores={stores}
+        flashSales={flashSales}
+        onProductClick={onProductClick}
+        onVendorClick={onVendorClick}
+        isComparisonEnabled={isComparisonEnabled}
+      />
+    </>
+  );
+};
+
+export default ProductDetail;

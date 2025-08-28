@@ -53,27 +53,6 @@ const censorText = (text: string, storeInfo?: Chat['sellerStoreInfo']): string =
     return censoredText;
 };
 
-// Helper to add a timeout to a promise
-const withTimeout = <T,>(promise: Promise<T>, ms: number): Promise<T> => {
-  return new Promise((resolve, reject) => {
-    const timeoutId = setTimeout(() => {
-      reject(new Error(`Promise timed out after ${ms} ms`));
-    }, ms);
-
-    promise.then(
-      (res) => {
-        clearTimeout(timeoutId);
-        resolve(res);
-      },
-      (err) => {
-        clearTimeout(timeoutId);
-        reject(err);
-      }
-    );
-  });
-};
-
-
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>(initialChats);
@@ -211,7 +190,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     // Set typing indicator
     setIsTyping(prev => ({ ...prev, [chatId]: true }));
     
-    // AI Logic
+    // AI Logic with Streaming
     try {
         const chat = chats.find(c => c.id === chatId);
         if (!chat) throw new Error("Chat not found");
@@ -252,28 +231,46 @@ The customer just said: "${text}"
 
 Please provide a helpful response as the KMER ZONE assistant.
         `;
-
-        const response: GenerateContentResponse = await withTimeout(ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        }), 20000); // 20 second timeout
-
-        const aiResponseText = response.text;
         
-        const assistantMessage: Message = {
-            id: `msg_assistant_${Date.now()}`,
+        // Create an initial empty assistant message
+        const assistantMessageId = `msg_assistant_${Date.now()}`;
+        const initialAssistantMessage: Message = {
+            id: assistantMessageId,
             chatId,
             senderId: 'assistant-id',
-            text: aiResponseText,
+            text: '', // Start with empty text
             timestamp: new Date().toISOString(),
             isRead: false,
         };
-
         setMessages(prev => ({
             ...prev,
-            [chatId]: [...(prev[chatId] || []), assistantMessage]
+            [chatId]: [...(prev[chatId] || []), initialAssistantMessage]
         }));
-         setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: assistantMessage.timestamp } : c));
+        
+        const stream = await ai.models.generateContentStream({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        let fullText = '';
+        for await (const chunk of stream) {
+            const chunkText = chunk.text;
+            if (chunkText) {
+                fullText += chunkText;
+                // Update the existing message with the new text chunk
+                setMessages(prev => ({
+                    ...prev,
+                    [chatId]: prev[chatId].map(msg => 
+                        msg.id === assistantMessageId 
+                            ? { ...msg, text: fullText } 
+                            : msg
+                    )
+                }));
+            }
+        }
+        
+        // Final update to timestamp on chat object after the whole message is received
+        setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: new Date().toISOString() } : c));
 
     } catch (error) {
         console.error("Gemini API call failed or timed out:", error);

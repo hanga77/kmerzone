@@ -15,6 +15,7 @@ interface DepotAgentDashboardProps {
   onProcessDeparture: (orderId: string, recipientInfo?: { name: string; idNumber: string }) => void;
 }
 
+// @FIX: Add missing 'delivery-failed' status translation.
 const statusTranslations: {[key in OrderStatus]: string} = {
   confirmed: 'Confirmée',
   'ready-for-pickup': 'Prêt pour enlèvement',
@@ -26,7 +27,8 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   'refund-requested': 'Remboursement demandé',
   refunded: 'Remboursé',
   returned: 'Retourné',
-  'depot-issue': 'Problème au dépôt'
+  'depot-issue': 'Problème au dépôt',
+  'delivery-failed': 'Échec de livraison'
 };
 
 const CustomerPickupModal: React.FC<{

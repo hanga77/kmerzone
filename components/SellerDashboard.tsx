@@ -49,6 +49,7 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   refunded: 'Remboursé',
   returned: 'Retourné',
   'depot-issue': 'Problème au dépôt',
+  'delivery-failed': 'Échec de livraison',
 };
 
 const getStatusClass = (status: OrderStatus) => {
@@ -63,6 +64,7 @@ const getStatusClass = (status: OrderStatus) => {
         case 'refund-requested': return 'bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300';
         case 'refunded': return 'bg-gray-200 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
         case 'depot-issue': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200';
+        case 'delivery-failed': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200 font-bold';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 };
@@ -810,9 +812,9 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
       setScanResult(null);
     };
 
-    const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
+    const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue', 'delivery-failed'].includes(o.status)), [sellerOrders]);
     const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
-    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue'].includes(o.status)), [sellerOrders]);
+    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue', 'delivery-failed'].includes(o.status)), [sellerOrders]);
     const lowStockProductsCount = useMemo(() => products.filter(p => p.stock < 5).length, [products]);
 
     const analytics = useMemo(() => {

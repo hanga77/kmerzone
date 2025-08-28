@@ -588,32 +588,38 @@ export default function App() {
         }
     }, []); // Run only once on mount
 
-    // @FIX: Stabilize dependencies to prevent infinite loops.
     const userId = user?.id;
-    const userRole = user?.role;
-    const userLoyaltyStatus = user?.loyalty?.status;
-    const userLoyaltyMethod = user?.loyalty?.premiumStatusMethod;
 
     useEffect(() => {
-        if (userId && userRole === 'customer' && siteSettings.isPremiumProgramEnabled) {
+        // This effect automatically upgrades a customer to Premium status based on their order history.
+        // It's designed to prevent infinite loops by checking the most current user data from `allUsers`
+        // instead of the potentially stale `user` object from context.
+        if (userId) {
+            const currentUserInList = allUsers.find(u => u.id === userId);
+
+            if (!currentUserInList || currentUserInList.role !== 'customer' || !siteSettings.isPremiumProgramEnabled) {
+                return;
+            }
+
+            if (currentUserInList.loyalty.status !== 'standard' || currentUserInList.loyalty.premiumStatusMethod === 'deposit') {
+                return;
+            }
+
             const userOrders = allOrders.filter(o => o.userId === userId && o.status === 'delivered');
             const totalSpent = userOrders.reduce((sum, o) => sum + o.total, 0);
             const orderCount = userOrders.length;
 
             const shouldBePremium = orderCount >= siteSettings.premiumThresholds.orders || totalSpent >= siteSettings.premiumThresholds.spending;
-            
-            if (shouldBePremium && userLoyaltyStatus === 'standard' && userLoyaltyMethod !== 'deposit') {
-                setAllUsers(users => {
-                    const currentUserInList = users.find(u => u.id === userId);
-                    if (currentUserInList && currentUserInList.loyalty.status === 'standard' && currentUserInList.loyalty.premiumStatusMethod !== 'deposit') {
-                        const updatedUser = { ...currentUserInList, loyalty: { ...currentUserInList.loyalty, status: 'premium' as const, premiumStatusMethod: 'loyalty' as const } };
-                        return users.map(u => u.id === userId ? updatedUser : u);
-                    }
-                    return users;
-                });
+
+            if (shouldBePremium) {
+                setAllUsers(users => users.map(u => 
+                    u.id === userId 
+                        ? { ...u, loyalty: { ...u.loyalty, status: 'premium' as const, premiumStatusMethod: 'loyalty' as const } }
+                        : u
+                ));
             }
         }
-    }, [allOrders, userId, userRole, userLoyaltyStatus, userLoyaltyMethod, siteSettings]);
+    }, [allOrders, allUsers, userId, siteSettings, setAllUsers]);
 
     const logActivity = useCallback((action: string, details: string) => {
         if (!user) return;

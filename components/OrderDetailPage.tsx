@@ -123,7 +123,8 @@ const statusTranslations: Record<OrderStatus, { title: string, description: stri
     'refund-requested': { title: 'Remboursement demandé', description: 'Votre demande est en cours d\'examen.' },
     refunded: { title: 'Remboursé', description: 'Cette commande a été remboursée.' },
     returned: { title: 'Retourné', description: 'Le colis a été retourné.' },
-    'depot-issue': { title: 'Problème au dépôt', description: 'Un problème a été signalé avec votre colis au dépôt.' }
+    'depot-issue': { title: 'Problème au dépôt', description: 'Un problème a été signalé avec votre colis au dépôt.' },
+    'delivery-failed': { title: 'Échec de livraison', description: 'Un problème est survenu lors de la livraison.' },
 };
 
 
@@ -199,15 +200,17 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack,
           {/* Timeline */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-6 dark:text-white">Suivi de la commande</h2>
-            {order.status === 'cancelled' || order.status === 'refund-requested' || order.status === 'refunded' || order.status === 'depot-issue' ? (
+            {['cancelled', 'refund-requested', 'refunded', 'depot-issue', 'delivery-failed'].includes(order.status) ? (
                 <div className={`p-4 rounded-lg ${
                     order.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' :
                     order.status === 'refund-requested' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' :
                     order.status === 'depot-issue' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 font-bold' :
+                    order.status === 'delivery-failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 font-bold' :
                     'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
                 }`}>
                     {statusTranslations[order.status].title}
                     {order.status === 'depot-issue' && <p className="font-normal mt-1">{order.discrepancy?.reason}</p>}
+                    {order.status === 'delivery-failed' && <p className="font-normal mt-1">{order.deliveryFailureReason?.reason}: {order.deliveryFailureReason?.details}</p>}
                 </div>
             ) : (
                 <div className="flex flex-col sm:flex-row justify-between items-start">

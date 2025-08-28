@@ -187,7 +187,7 @@ export interface Address {
     longitude?: number;
 }
 
-export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded' | 'returned' | 'depot-issue';
+export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded' | 'returned' | 'depot-issue' | 'delivery-failed';
 
 export interface PromoCode {
   code: string;
@@ -255,6 +255,11 @@ export interface Order extends NewOrderData {
     discrepancy?: Discrepancy;
     disputeLog?: DisputeMessage[];
     statusChangeLog?: StatusChangeLogEntry[];
+    deliveryFailureReason?: {
+        reason: 'client-absent' | 'adresse-erronee' | 'colis-refuse';
+        details: string;
+        date: string; // ISO String
+    };
     // For depot departure traceability
     departureProcessedByAgentId?: string; // ID of the depot agent
     processedForDepartureAt?: string; // ISO string
