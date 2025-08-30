@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -15,7 +16,8 @@ import StoresPage from './components/StoresPage';
 import StoresMapPage from './components/StoresMapPage';
 import BecomeSeller from './components/BecomeSeller';
 import CategoryPage from './components/CategoryPage';
-import SellerDashboard from './components/SellerDashboard';
+// FIX: Module '"file:///components/SellerDashboard"' has no default export. Changed to a named import.
+import { SellerDashboard } from './components/SellerDashboard';
 import VendorPage from './components/VendorPage';
 import ProductForm from './components/ProductForm';
 import SellerProfile from './components/SellerProfile';
@@ -41,7 +43,7 @@ import ServerErrorPage from './components/ServerErrorPage';
 import AccountPage from './components/AccountPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod, Notification, Page } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
@@ -51,8 +53,7 @@ import ChatWidget from './components/ChatWidget';
 import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon, XIcon } from './components/Icons';
 import { usePersistentState } from './hooks/usePersistentState';
 
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard';
-
+// FIX: Removed duplicate 'Page' type definition as it conflicts with the one imported from './types'. The imported type will be used instead.
 const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
     const now = new Date();
     for (const sale of flashSales) {
@@ -398,6 +399,7 @@ const initialPickupPoints: PickupPoint[] = [
     { id: 'pp3', name: 'Relais KMER ZONE - Bastos', city: 'Yaoundé', neighborhood: 'Bastos', street: 'Avenue des Banques', latitude: 3.89, longitude: 11.52 },
 ];
 
+// FIX: Added missing deliverySettings property to initialSiteSettings.
 const initialSiteSettings: SiteSettings = {
   logoUrl: '',
   isStoriesEnabled: true,
@@ -416,6 +418,11 @@ const initialSiteSettings: SiteSettings = {
   rentAmount: 5000,
   canSellersCreateCategories: true,
   commissionRate: 10,
+  deliverySettings: {
+    intraUrbanBaseFee: 1000, // Example value for same-city delivery
+    interUrbanBaseFee: 2500, // Example value for different-city delivery
+    costPerKg: 500,        // Example value for cost per kg surcharge
+  },
   maintenanceMode: {
       isEnabled: false,
       message: "Nous effectuons une mise à jour. Nous serons de retour très bientôt !",
@@ -516,6 +523,10 @@ export default function App() {
     const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', initialAdvertisements);
     const [allTickets, setAllTickets] = usePersistentState<Ticket[]>('allTickets', []);
     const [allAnnouncements, setAllAnnouncements] = usePersistentState<Announcement[]>('allAnnouncements', []);
+    const [allNotifications, setAllNotifications] = usePersistentState<Notification[]>('allNotifications', [
+        { id: 'notif1', userId: 'customer-1', message: 'Votre commande ORDER-SAMPLE-1 a été livrée !', link: { page: 'order-detail', params: { orderId: 'ORDER-SAMPLE-1' } }, isRead: false, timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString() },
+        { id: 'notif2', userId: 'customer-1', message: 'Une nouvelle vente flash a commencé : Vente Flash de la Rentrée', link: { page: 'flash-sales' }, isRead: true, timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString() }
+    ]);
     const [dismissedAnnouncements, setDismissedAnnouncements] = useState<string[]>([]);
     const [paymentMethods, setPaymentMethods] = usePersistentState<PaymentMethod[]>('paymentMethods', initialPaymentMethods);
 
@@ -600,6 +611,22 @@ export default function App() {
         };
         setSiteActivityLogs(prev => [newLog, ...prev].slice(0, 100));
     }, [user, setSiteActivityLogs]);
+
+    const handleMarkNotificationAsRead = useCallback((notificationId: string) => {
+        setAllNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
+        logActivity('Notification Read', `Notification ID ${notificationId} marked as read.`);
+    }, [setAllNotifications, logActivity]);
+
+    const handleNavigateFromNotification = useCallback((link: Notification['link']) => {
+        if (!link) return;
+        if (link.page === 'order-detail' && link.params?.orderId) {
+            const orderToView = allOrders.find(o => o.id === link.params.orderId);
+            if (orderToView) {
+                setSelectedOrder(orderToView);
+            }
+        }
+        handleNavigate(link.page);
+    }, [allOrders]);
 
     const addStatusLog = (order: Order, status: OrderStatus, changedBy: string): Order => {
         const newLogEntry: StatusChangeLogEntry = {
@@ -1328,6 +1355,13 @@ export default function App() {
         });
     }, [allAnnouncements, user, dismissedAnnouncements]);
 
+    const userNotifications = useMemo(() => {
+        if (!user) return [];
+        // Superadmin sees all notifications for now
+        if (user.role === 'superadmin') return allNotifications.slice(0, 10);
+        return allNotifications.filter(n => n.userId === user.id).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }, [user, allNotifications]);
+
      // --- START OF ADMIN HANDLERS ---
 
     const handleUpdateCategoryImage = useCallback((categoryId: string, imageUrl: string) => {
@@ -1468,7 +1502,7 @@ export default function App() {
       case 'home': return <HomePage categories={allCategories} products={visibleProducts} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} recentlyViewedIds={recentlyViewedIds} />;
       case 'product': return selectedProduct ? <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home', resetSelections)} onAddReview={handleAddReview} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onProductView={handleProductView} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
       case 'cart': return <CartView onBack={() => handleNavigate('home')} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={handleApplyPromoCode} />;
-      case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handlePlaceOrder} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
+      case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handlePlaceOrder} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} siteSettings={siteSettings} />;
       case 'order-success': return selectedOrder ? <OrderSuccess order={selectedOrder} onNavigateHome={() => handleNavigate('home', resetSelections)} onNavigateToOrders={() => handleNavigate('order-history')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
       case 'stores': return <StoresPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('home')} onVisitStore={handleVendorClick} onNavigateToStoresMap={() => handleNavigate('stores-map')} />;
       case 'stores-map': return <StoresMapPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('stores')} onVisitStore={handleVendorClick} />;
@@ -1540,6 +1574,9 @@ export default function App() {
         isPremiumProgramEnabled={siteSettings.isPremiumProgramEnabled}
         logoUrl={siteSettings.logoUrl}
         onLoginSuccess={handleLoginSuccess}
+        notifications={userNotifications}
+        onMarkNotificationAsRead={handleMarkNotificationAsRead}
+        onNavigateFromNotification={handleNavigateFromNotification}
       />
       <main className="flex-grow">
         {currentPage}

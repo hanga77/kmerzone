@@ -32,11 +32,11 @@ export interface Product {
   variants?: Variant[];
   variantDetails?: VariantDetail[];
   status: 'published' | 'draft';
-  shippingCost?: number;
+  additionalShippingFee?: number;
   
   // Generic / Shared fields
   brand?: string;
-  weight?: string; // e.g. "500g", "1kg"
+  weight?: number; // in kg
   dimensions?: string; // e.g. "10x5x3 cm"
   material?: string;
   gender?: 'Homme' | 'Femme' | 'Enfant' | 'Unisexe';
@@ -322,6 +322,11 @@ export interface SiteSettings {
   rentAmount: number;
   canSellersCreateCategories: boolean;
   commissionRate: number;
+  deliverySettings: {
+    intraUrbanBaseFee: number;
+    interUrbanBaseFee: number;
+    costPerKg: number;
+  };
   maintenanceMode: {
     isEnabled: boolean;
     message: string;
@@ -421,3 +426,17 @@ export interface Announcement {
   endDate: string; // ISO string date
   isActive: boolean;
 }
+
+export interface Notification {
+  id: string;
+  userId: string;
+  message: string;
+  link?: {
+    page: Page;
+    params?: Record<string, any>;
+  };
+  isRead: boolean;
+  timestamp: string; // ISO string
+}
+
+export type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard';

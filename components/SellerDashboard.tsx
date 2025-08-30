@@ -319,7 +319,8 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
     };
 
     const handleExportProducts = () => {
-        const headers: (keyof Product)[] = [ 'id', 'name', 'price', 'promotionPrice', 'stock', 'categoryId', 'status', 'description', 'imageUrls', 'brand', 'weight', 'dimensions', 'material', 'gender', 'color', 'modelNumber', 'warranty', 'operatingSystem', 'accessories', 'shippingCost', 'promotionStartDate', 'promotionEndDate', 'serialNumber', 'productionDate', 'expirationDate', 'ingredients', 'allergens', 'storageInstructions', 'origin', 'assemblyInstructions', 'productType', 'volume', 'skinType', 'author', 'publisher', 'publicationYear', 'isbn' ];
+        // FIX: Replaced 'shippingCost' with 'additionalShippingFee' to match the Product type.
+        const headers: (keyof Product)[] = [ 'id', 'name', 'price', 'promotionPrice', 'stock', 'categoryId', 'status', 'description', 'imageUrls', 'brand', 'weight', 'dimensions', 'material', 'gender', 'color', 'modelNumber', 'warranty', 'operatingSystem', 'accessories', 'additionalShippingFee', 'promotionStartDate', 'promotionEndDate', 'serialNumber', 'productionDate', 'expirationDate', 'ingredients', 'allergens', 'storageInstructions', 'origin', 'assemblyInstructions', 'productType', 'volume', 'skinType', 'author', 'publisher', 'publicationYear', 'isbn' ];
         const csvRows = [headers.join(',')];
         
         products.forEach(product => {
@@ -890,7 +891,7 @@ const DisputesPanel: React.FC<{
     );
 };
 
-const SellerDashboard: React.FC<SellerDashboardProps> = ({
+export const SellerDashboard: React.FC<SellerDashboardProps> = ({
   store,
   products,
   sellerOrders,
@@ -1153,21 +1154,19 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                             Payer le loyer ({siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA)
                         </button>
                     </div>
-                )}
+                 )}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
                     {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
-                        <div className="p-4 border-b dark:border-gray-700 flex gap-2">
-                             <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({inProgressOrders.length})</button>
-                             <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livrées ({deliveredOrders.length})</button>
-                             <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulées ({cancelledRefundedOrders.length})</button>
+                        <div className="p-2 border-b dark:border-gray-700 flex flex-wrap gap-1">
+                            <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({inProgressOrders.length})</button>
+                            <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livré ({deliveredOrders.length})</button>
+                            <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulé / Retourné ({cancelledRefundedOrders.length})</button>
                         </div>
                     )}
                     {renderContent()}
                 </div>
             </main>
-      </div>
-    </>
+        </div>
+      </>
     );
 };
-
-export default SellerDashboard;

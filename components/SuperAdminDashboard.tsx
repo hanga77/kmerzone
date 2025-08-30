@@ -1436,6 +1436,24 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
                  </div>
             </div>
 
+            <div className="p-4 border dark:border-gray-700 rounded-lg space-y-4">
+              <h3 className="font-semibold dark:text-white">Paramètres de Livraison</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-sm font-medium">Frais de base intra-urbain (FCFA)</label>
+                  <input type="number" name="deliverySettings.intraUrbanBaseFee" value={localSettings.deliverySettings.intraUrbanBaseFee} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Frais de base inter-urbain (FCFA)</label>
+                  <input type="number" name="deliverySettings.interUrbanBaseFee" value={localSettings.deliverySettings.interUrbanBaseFee} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium">Coût par Kg supplémentaire (FCFA)</label>
+                  <input type="number" name="deliverySettings.costPerKg" value={localSettings.deliverySettings.costPerKg} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md" />
+                </div>
+              </div>
+            </div>
+
             <PaymentMethodsPanel paymentMethods={paymentMethods} onUpdatePaymentMethods={onUpdatePaymentMethods} />
 
             <div className="p-4 border dark:border-gray-700 rounded-lg space-y-4">

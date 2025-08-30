@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BarChartIcon, ShieldCheckIcon } from './Icons';
+// FIX: Add BellIcon to imports
+import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BarChartIcon, ShieldCheckIcon, BellIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useChatContext } from '../contexts/ChatContext';
-import type { Category, User } from '../types';
+import type { Category, User, Notification, Page } from '../types';
 
 interface HeaderProps {
   categories: Category[];
@@ -32,13 +33,17 @@ interface HeaderProps {
   isPremiumProgramEnabled: boolean;
   logoUrl: string;
   onLoginSuccess: (user: User) => void;
+  notifications: Notification[];
+  onMarkNotificationAsRead: (notificationId: string) => void;
+  onNavigateFromNotification: (link: Notification['link']) => void;
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, onLoginSuccess } = props;
+  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, onLoginSuccess, notifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
@@ -50,9 +55,11 @@ const Header: React.FC<HeaderProps> = (props) => {
   const { setIsWidgetOpen, totalUnreadCount } = useChatContext();
   const cartItemCount = cart.reduce((count, item) => count + item.quantity, 0);
   const wishlistItemCount = wishlist.length;
+  const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
 
   const categoryMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const notificationsMenuRef = useRef<HTMLDivElement>(null);
 
   const categoryTree = useMemo(() => {
     const mainCategories = categories.filter(c => !c.parentId);
@@ -75,6 +82,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     stores: { fr: 'Boutiques', en: 'Stores' },
     becomeSeller: { fr: 'Devenir vendeur', en: 'Become a seller' },
     becomePremium: { fr: 'Devenir Premium', en: 'Become Premium' },
+    notifications: { fr: 'Notifications', en: 'Notifications' },
   };
 
   useEffect(() => {
@@ -85,9 +93,12 @@ const Header: React.FC<HeaderProps> = (props) => {
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
       }
+      if (notificationsMenuRef.current && !notificationsMenuRef.current.contains(event.target as Node)) {
+        setIsNotificationsOpen(false);
+      }
     };
 
-    if (isCategoryMenuOpen || isUserMenuOpen) {
+    if (isCategoryMenuOpen || isUserMenuOpen || isNotificationsOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -96,7 +107,7 @@ const Header: React.FC<HeaderProps> = (props) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isCategoryMenuOpen, isUserMenuOpen]);
+  }, [isCategoryMenuOpen, isUserMenuOpen, isNotificationsOpen]);
 
 
   const handleSearchSubmit = (e: React.FormEvent, query: string) => {
@@ -168,6 +179,7 @@ const Header: React.FC<HeaderProps> = (props) => {
 
           <div className="hidden lg:flex items-center space-x-2">
             {user ? (
+              <>
               <div className="relative" ref={userMenuRef}>
                  <button onClick={() => setIsUserMenuOpen(!isUserMenuOpen)} className="flex flex-col items-center text-center text-gray-600 dark:text-gray-300 hover:text-kmer-green px-2 py-1">
                   <div className="relative">
@@ -195,6 +207,36 @@ const Header: React.FC<HeaderProps> = (props) => {
                   </div>
                 )}
               </div>
+              
+               <div className="relative" ref={notificationsMenuRef}>
+                    <ActionButton onClick={() => setIsNotificationsOpen(o => !o)} icon={<BellIcon className="h-6 w-6" />} label={translations.notifications[language]} count={unreadNotificationsCount} />
+                    {isNotificationsOpen && (
+                        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 max-h-96 overflow-y-auto">
+                           <div className="p-3 border-b dark:border-gray-700">
+                            <h3 className="font-semibold text-gray-800 dark:text-white">Notifications</h3>
+                           </div>
+                           {notifications.length === 0 ? (
+                               <p className="p-4 text-sm text-gray-500">Aucune notification.</p>
+                           ) : (
+                               notifications.map(notif => (
+                                <button
+                                    key={notif.id}
+                                    onClick={() => {
+                                        onMarkNotificationAsRead(notif.id);
+                                        if (notif.link) onNavigateFromNotification(notif.link);
+                                        setIsNotificationsOpen(false);
+                                    }}
+                                    className={`w-full text-left p-3 border-b dark:border-gray-700/50 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${!notif.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                >
+                                    <p className="text-sm text-gray-700 dark:text-gray-200">{notif.message}</p>
+                                    <p className="text-xs text-gray-400 mt-1">{new Date(notif.timestamp).toLocaleString('fr-FR')}</p>
+                                </button>
+                               ))
+                           )}
+                        </div>
+                    )}
+                </div>
+              </>
             ) : (
               <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label={translations.login[language]} />
             )}

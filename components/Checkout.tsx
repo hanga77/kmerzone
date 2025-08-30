@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeftIcon, OrangeMoneyLogo, MtnMomoLogo, PaypalIcon, TruckIcon, BuildingStorefrontIcon, VisaIcon, MastercardIcon } from './Icons';
-import type { Order, Address, Product, FlashSale, PickupPoint, NewOrderData, CartItem, PromoCode, Store } from '../types';
+import type { Order, Address, Product, FlashSale, PickupPoint, NewOrderData, CartItem, PromoCode, Store, SiteSettings } from '../types';
 
 declare const L: any;
 
@@ -13,6 +13,7 @@ interface CheckoutProps {
   allPickupPoints: PickupPoint[];
   appliedPromoCode: PromoCode | null;
   allStores: Store[];
+  siteSettings: SiteSettings;
 }
 
 const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
@@ -51,7 +52,7 @@ const isPromotionActive = (product: Product): boolean => {
 };
 
 
-const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales, allPickupPoints, appliedPromoCode, allStores }) => {
+const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales, allPickupPoints, appliedPromoCode, allStores, siteSettings }) => {
   const { cart } = useCart();
   const { user } = useAuth();
   const [deliveryMethod, setDeliveryMethod] = useState<'home-delivery' | 'pickup'>('home-delivery');
@@ -95,10 +96,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
       return 0;
     }
 
-    const deliveryFeesConfig = {
-      intraUrban: 1000,
-      interUrban: 2500,
-    };
+    const { intraUrbanBaseFee, interUrbanBaseFee, costPerKg } = siteSettings.deliverySettings;
 
     const itemsByVendor = cart.reduce((acc, item) => {
       (acc[item.vendor] = acc[item.vendor] || []).push(item);
@@ -112,25 +110,30 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
       const vendorStore = allStores.find(s => s.name === vendorName);
 
       if (!vendorStore) {
-        totalFee += deliveryFeesConfig.interUrban; // Fallback
+        totalFee += interUrbanBaseFee; // Fallback for unknown store location
         continue;
       }
 
-      const maxProductShippingCost = Math.max(0, ...vendorItems
-        .map(item => item.shippingCost)
+      // 1. Base fee based on distance
+      const isIntraUrban = vendorStore.location.toLowerCase() === shippingAddress.city.toLowerCase();
+      let shipmentFee = isIntraUrban ? intraUrbanBaseFee : interUrbanBaseFee;
+
+      // 2. Weight surcharge
+      const totalWeight = vendorItems.reduce((sum, item) => sum + (item.weight || 0) * item.quantity, 0); // weight in kg
+      shipmentFee += totalWeight * costPerKg;
+
+      // 3. Additional product-specific fees (take the highest one in the shipment)
+      const maxAdditionalFee = Math.max(0, ...vendorItems
+        .map(item => item.additionalShippingFee)
         .filter((cost): cost is number => cost !== undefined && cost >= 0)
       );
-
-      const zoneFee = vendorStore.location.toLowerCase() === shippingAddress.city.toLowerCase()
-        ? deliveryFeesConfig.intraUrban
-        : deliveryFeesConfig.interUrban;
       
-      const shipmentFee = Math.max(maxProductShippingCost, zoneFee);
+      shipmentFee += maxAdditionalFee;
       totalFee += shipmentFee;
     }
 
     return totalFee;
-  }, [cart, deliveryMethod, shippingAddress.city, subtotal, allStores]);
+  }, [cart, deliveryMethod, shippingAddress.city, subtotal, allStores, siteSettings.deliverySettings]);
   
   const discount = appliedPromoCode
     ? appliedPromoCode.discountType === 'percentage'
