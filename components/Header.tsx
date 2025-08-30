@@ -65,6 +65,7 @@ const Header: React.FC<HeaderProps> = (props) => {
   const translations = {
     searchPlaceholder: { fr: 'Rechercher un produit...', en: 'Search for a product...' },
     login: { fr: 'Connexion', en: 'Login' },
+    myOrders: { fr: 'Mes Commandes', en: 'My Orders' },
     wishlist: { fr: 'Favoris', en: 'Wishlist' },
     messages: { fr: 'Messages', en: 'Messages' },
     cart: { fr: 'Panier', en: 'Cart' },
@@ -198,6 +199,8 @@ const Header: React.FC<HeaderProps> = (props) => {
               <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label={translations.login[language]} />
             )}
             
+            {user?.role === 'customer' && <ActionButton onClick={onNavigateToOrderHistory} icon={<ClipboardDocumentListIcon className="h-6 w-6" />} label={translations.myOrders[language]} />}
+
             {user && (user.role === 'customer' || user.role === 'seller') && (
               <>
                 <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={translations.wishlist[language]} count={wishlistItemCount} />

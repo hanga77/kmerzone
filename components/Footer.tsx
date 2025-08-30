@@ -1,12 +1,14 @@
 import React from 'react';
-import { FacebookIcon, TwitterIcon, InstagramIcon, OrangeMoneyLogo, MtnMomoLogo, LogoIcon, VisaIcon, MastercardIcon, PaypalIcon } from './Icons';
+import { FacebookIcon, TwitterIcon, InstagramIcon, LogoIcon } from './Icons';
+import type { PaymentMethod } from '../types';
 
 interface FooterProps {
   onNavigate: (slug: string) => void;
   logoUrl: string;
+  paymentMethods: PaymentMethod[];
 }
 
-const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl }) => {
+const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods }) => {
   return (
     <footer className="bg-gray-800 text-white dark:bg-gray-950">
       <div className="container mx-auto px-6 py-12">
@@ -47,12 +49,10 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl }) => {
               <a href="#" className="text-gray-400 hover:text-white"><InstagramIcon className="h-6 w-6" /></a>
             </div>
             <h3 className="text-lg font-bold mb-4 text-white">Moyens de Paiement</h3>
-            <div className="flex items-center space-x-4 flex-wrap gap-y-2">
-              <OrangeMoneyLogo className="h-6" />
-              <MtnMomoLogo className="h-6" />
-              <VisaIcon className="h-6" />
-              <MastercardIcon className="h-6"/>
-              <PaypalIcon className="h-6"/>
+            <div className="flex items-center space-x-2 flex-wrap gap-y-2">
+              {paymentMethods.map(method => (
+                  <img key={method.id} src={method.imageUrl} alt={method.name} title={method.name} className="h-8 bg-white rounded-md p-1" />
+              ))}
             </div>
           </div>
         </div>

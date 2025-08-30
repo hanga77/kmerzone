@@ -1,7 +1,6 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage, SiteContent, Review, Ticket, TicketStatus, TicketPriority, Announcement } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage, SiteContent, Review, Ticket, TicketStatus, TicketPriority, Announcement, PaymentMethod } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon, ShieldCheckIcon, MegaphoneIcon, BanknotesIcon, BarChartIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
@@ -65,6 +64,8 @@ interface SuperAdminDashboardProps {
     onCreateOrUpdateAnnouncement: (announcement: Omit<Announcement, 'id'> | Announcement) => void;
     onDeleteAnnouncement: (id: string) => void;
     onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => void;
+    paymentMethods: PaymentMethod[];
+    onUpdatePaymentMethods: (newMethods: PaymentMethod[]) => void;
 }
 
 // Helper functions (could be moved to a utils file)
@@ -1283,7 +1284,85 @@ const AdManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'advertisements
     );
 };
 
-const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'onUpdateSiteSettings' | 'isChatEnabled' | 'isComparisonEnabled' | 'onToggleChatFeature' | 'onToggleComparisonFeature'>> = ({ siteSettings, onUpdateSiteSettings, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature }) => {
+const PaymentMethodsPanel: React.FC<{
+    paymentMethods: PaymentMethod[];
+    onUpdatePaymentMethods: (newMethods: PaymentMethod[]) => void;
+}> = ({ paymentMethods, onUpdatePaymentMethods }) => {
+    const [isAdding, setIsAdding] = useState(false);
+    const [newMethod, setNewMethod] = useState({ name: '', imageUrl: '' });
+
+    const handleAdd = () => {
+        if (newMethod.name && newMethod.imageUrl) {
+            const updatedMethods = [...paymentMethods, { ...newMethod, id: `pm-${Date.now()}` }];
+            onUpdatePaymentMethods(updatedMethods);
+            setNewMethod({ name: '', imageUrl: '' });
+            setIsAdding(false);
+        }
+    };
+
+    const handleUpdate = (id: string, field: 'name' | 'imageUrl', value: string) => {
+        const updatedMethods = paymentMethods.map(m => m.id === id ? { ...m, [field]: value } : m);
+        onUpdatePaymentMethods(updatedMethods);
+    };
+
+    const handleDelete = (id: string) => {
+        if(window.confirm("Supprimer ce moyen de paiement ?")) {
+            const updatedMethods = paymentMethods.filter(m => m.id !== id);
+            onUpdatePaymentMethods(updatedMethods);
+        }
+    };
+
+    const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, id?: string) => {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const imageUrl = reader.result as string;
+                if (id) {
+                    handleUpdate(id, 'imageUrl', imageUrl);
+                } else {
+                    setNewMethod(prev => ({ ...prev, imageUrl }));
+                }
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    };
+    
+    return (
+      <div className="p-4 border dark:border-gray-700 rounded-lg space-y-4">
+        <div className="flex justify-between items-center">
+            <h3 className="font-semibold dark:text-white">Moyens de Paiement</h3>
+            <button onClick={() => setIsAdding(!isAdding)} className="bg-blue-500 text-white text-sm font-semibold px-3 py-1 rounded-md">{isAdding ? 'Annuler' : 'Ajouter'}</button>
+        </div>
+
+        {isAdding && (
+          <div className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-3 border dark:border-gray-600">
+            <h4 className="font-medium">Nouveau moyen de paiement</h4>
+            <input type="text" placeholder="Nom (ex: Wave)" value={newMethod.name} onChange={e => setNewMethod(p => ({...p, name: e.target.value}))} className="w-full p-2 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-600"/>
+            <input type="text" placeholder="URL de l'image" value={newMethod.imageUrl} onChange={e => setNewMethod(p => ({...p, imageUrl: e.target.value}))} className="w-full p-2 border rounded-md text-sm dark:bg-gray-700 dark:border-gray-600"/>
+            <div className="flex items-center gap-2">
+              <label className="text-sm">Ou téléverser :</label>
+              <input type="file" onChange={handleImageUpload} className="text-sm" />
+            </div>
+            <button onClick={handleAdd} className="bg-kmer-green text-white px-4 py-2 rounded-md">Ajouter</button>
+          </div>
+        )}
+        
+        <div className="space-y-2">
+            {paymentMethods.map(method => (
+                <div key={method.id} className="flex items-center gap-4 p-2 border dark:border-gray-600 rounded-md">
+                    <img src={method.imageUrl} alt={method.name} className="h-8 w-12 object-contain bg-white rounded p-1"/>
+                    <input type="text" value={method.name} onChange={e => handleUpdate(method.id, 'name', e.target.value)} className="flex-grow p-1 border rounded-md text-sm bg-transparent dark:bg-gray-700"/>
+                    <input type="file" id={`file-${method.id}`} onChange={(e) => handleImageUpload(e, method.id)} className="hidden"/>
+                    <label htmlFor={`file-${method.id}`} className="text-blue-500 cursor-pointer text-sm hover:underline">Changer l'image</label>
+                    <button onClick={() => handleDelete(method.id)} className="text-red-500 p-1"><TrashIcon className="w-5 h-5"/></button>
+                </div>
+            ))}
+        </div>
+      </div>
+    );
+};
+
+const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' | 'onUpdateSiteSettings' | 'isChatEnabled' | 'isComparisonEnabled' | 'onToggleChatFeature' | 'onToggleComparisonFeature' | 'paymentMethods' | 'onUpdatePaymentMethods'>> = ({ siteSettings, onUpdateSiteSettings, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature, paymentMethods, onUpdatePaymentMethods }) => {
     const [localSettings, setLocalSettings] = useState(siteSettings);
     const [logoPreview, setLogoPreview] = useState(siteSettings.logoUrl);
     
@@ -1356,6 +1435,8 @@ const SiteSettingsPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteSettings' 
                     </div>
                  </div>
             </div>
+
+            <PaymentMethodsPanel paymentMethods={paymentMethods} onUpdatePaymentMethods={onUpdatePaymentMethods} />
 
             <div className="p-4 border dark:border-gray-700 rounded-lg space-y-4">
                 <h3 className="font-semibold dark:text-white">Programme Premium</h3>
@@ -1729,7 +1810,7 @@ const AnalyticsPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders'| 'allP
 };
 
 const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
-    const { allOrders, allStores, allUsers, allCategories, allProducts, siteActivityLogs, onUpdateOrderStatus, onUpdateCategoryImage, onWarnStore, onToggleStoreStatus, onToggleStorePremiumStatus, onApproveStore, onRejectStore, onSaveFlashSale, flashSales, onUpdateFlashSaleSubmissionStatus, onBatchUpdateFlashSaleStatus, onRequestDocument, onVerifyDocumentStatus, allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint, onAssignAgent, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature, siteSettings, onUpdateSiteSettings, onAdminAddCategory, onAdminDeleteCategory, onUpdateUser, payouts, onPayoutSeller, onActivateSubscription, advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement, onCreateUserByAdmin, onSanctionAgent, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage, siteContent, onUpdateSiteContent, allTickets, allAnnouncements, onAdminReplyToTicket, onAdminUpdateTicketStatus, onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onReviewModeration } = props;
+    const { allOrders, allStores, allUsers, allCategories, allProducts, siteActivityLogs, onUpdateOrderStatus, onUpdateCategoryImage, onWarnStore, onToggleStoreStatus, onToggleStorePremiumStatus, onApproveStore, onRejectStore, onSaveFlashSale, flashSales, onUpdateFlashSaleSubmissionStatus, onBatchUpdateFlashSaleStatus, onRequestDocument, onVerifyDocumentStatus, allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint, onAssignAgent, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature, siteSettings, onUpdateSiteSettings, onAdminAddCategory, onAdminDeleteCategory, onUpdateUser, payouts, onPayoutSeller, onActivateSubscription, advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement, onCreateUserByAdmin, onSanctionAgent, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage, siteContent, onUpdateSiteContent, allTickets, allAnnouncements, onAdminReplyToTicket, onAdminUpdateTicketStatus, onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onReviewModeration, paymentMethods, onUpdatePaymentMethods } = props;
     const { user } = useAuth();
     const [activeTab, setActiveTab] = useState('overview');
     const [assigningOrder, setAssigningOrder] = useState<string | null>(null);
@@ -1748,7 +1829,7 @@ const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
             case 'agent-availability': return <AvailabilityPanel deliveryAgents={allUsers.filter(u => u.role === 'delivery_agent')} />;
             case 'delivery-tracking': return <DeliveryTrackingPanel allOrders={allOrders} allUsers={allUsers} onSanctionAgent={onSanctionAgent} />;
             case 'site-content': return <SiteContentPanel siteContent={siteContent} onUpdateSiteContent={onUpdateSiteContent} />;
-            case 'settings': return <SiteSettingsPanel siteSettings={siteSettings} onUpdateSiteSettings={onUpdateSiteSettings} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={onToggleChatFeature} onToggleComparisonFeature={onToggleComparisonFeature} />;
+            case 'settings': return <SiteSettingsPanel siteSettings={siteSettings} onUpdateSiteSettings={onUpdateSiteSettings} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={onToggleChatFeature} onToggleComparisonFeature={onToggleComparisonFeature} paymentMethods={paymentMethods} onUpdatePaymentMethods={onUpdatePaymentMethods} />;
             case 'analytics': return <AnalyticsPanel allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} allCategories={allCategories} flashSales={flashSales} />;
             case 'logs': return <LogsPanel siteActivityLogs={siteActivityLogs} />;
             default: return <div>Contenu à venir...</div>;

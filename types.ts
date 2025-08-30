@@ -279,6 +279,12 @@ export interface Payout {
   date: string; // ISO String
 }
 
+export interface PaymentMethod {
+  id: string;
+  name: string;
+  imageUrl: string;
+}
+
 export interface PickupPoint {
   id: string;
   name: string;

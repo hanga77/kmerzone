@@ -107,54 +107,6 @@ export const InstagramIcon: React.FC<IconProps> = (props) => (
   </svg>
 );
 
-export const OrangeMoneyLogo: React.FC<IconProps> = (props) => (
-    <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Orange Money Logo">
-        <rect width="64" height="40" rx="4" fill="#FF7900"/>
-        <text x="32" y="22" fontFamily="Helvetica, Arial, sans-serif" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">
-            ORANGE
-        </text>
-         <text x="32" y="31" fontFamily="Helvetica, Arial, sans-serif" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">
-            MONEY
-        </text>
-        <rect x="8" y="8" width="10" height="7" rx="2" fill="white" fillOpacity="0.8"/>
-    </svg>
-);
-  
-export const MtnMomoLogo: React.FC<IconProps> = (props) => (
-    <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="MTN Mobile Money Logo">
-        <rect width="64" height="40" rx="4" fill="#FFCC00"/>
-        <text x="32" y="26" fontFamily="Helvetica, Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#004F9F" textAnchor="middle">
-            MoMo
-        </text>
-         <rect x="8" y="8" width="10" height="7" rx="2" fill="#004F9F" fillOpacity="0.8"/>
-    </svg>
-);
-
-export const PaypalIcon: React.FC<IconProps> = (props) => (
-  <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="PayPal Logo">
-      <rect width="64" height="40" rx="4" fill="#003087"/>
-      <path fill="#fff" d="M32.12,12.62c-2.28-.1-4.2,1.3-4.72,3.42-.64,2.58.74,4.52,2.7,5.2,2.16.76,4.48.3,5.92-1.32,1.26-1.42,1.68-3.32,1-5.12-1.02-3.1-3.6-4.5-5-4.2h.1Z"/>
-      <path fill="#009cde" d="M29.1,19.2c-.52,2.12,1.02,4,2.94,4.54,2.14.6,4.5.1,5.9-1.52.92-1.04,1.2-2.38.74-3.6-.82-2.18-3-3.44-4.9-2.92h.22Z"/>
-  </svg>
-);
-
-export const VisaIcon: React.FC<IconProps> = (props) => (
-    <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Visa Logo">
-        <rect width="64" height="40" rx="4" fill="#fff" stroke="#E0E0E0"/>
-        <path d="M24.7,25.8h-3.4L17.6,14h3.8l2,7.1c0.4,1.6,0.6,2.7,0.8,3.6h0.1c0.2-0.9,0.5-2.1,0.8-3.6l2-7.1h3.7L24.7,25.8z M45.1,14.2c-0.8-0.2-1.9-0.5-3.1-0.5c-3.1,0-5.4,1.7-5.4,4.2c0,2.1,1.7,3.4,3.1,4.1c1.4,0.6,1.9,1,1.9,1.6c0,0.8-0.9,1.2-2.1,1.2c-1.6,0-2.4-0.3-3.3-0.6l-0.5-0.2l-0.6,3.2c0.8,0.3,2.3,0.5,4,0.5c3.3,0,5.6-1.7,5.6-4.4c0-2.6-1.9-3.7-3.4-4.4c-1.3-0.6-1.7-1-1.7-1.5c0-0.5,0.6-1.1,2-1.1c1.3,0,2.1,0.3,2.8,0.6l0.4,0.2L45.1,14.2z M47,14h-3.1l-2.1,11.8h3.8L47,14z M14.8,14.2l-3,11.6h3.7l3-11.6H14.8z" fill="#142688" />
-    </svg>
-);
-
-export const MastercardIcon: React.FC<IconProps> = (props) => (
-    <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Mastercard Logo">
-        <rect width="64" height="40" rx="4" fill="#fff" stroke="#E0E0E0"/>
-        <circle cx="26" cy="20" r="8" fill="#EA001B"/>
-        <circle cx="38" cy="20" r="8" fill="#F79E1B"/>
-        <path d="M32,20 a8,8 0 0,1 -6,-1.41a8,8 0 0,0 0,2.82a8,8 0 0,1 6,1.41a8,8 0 0,0 6,-1.41a8,8 0 0,1 0,-2.82A8,8 0 0,0 32,20Z" fill="#FF5F00" />
-    </svg>
-);
-
-
 export const SparklesIcon: React.FC<IconProps> = (props) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456zM16.898 20.562L16.5 21.75l-.398-1.188a2.25 2.25 0 00-1.423-1.423L13.5 18.75l1.188-.398a2.25 2.25 0 001.423-1.423L16.5 15.75l.398 1.188a2.25 2.25 0 001.423 1.423L19.5 18.75l-1.188.398a2.25 2.25 0 00-1.423 1.423z" />
@@ -433,5 +385,47 @@ export const PrinterIcon: React.FC<IconProps> = (props) => (
 export const MegaphoneIcon: React.FC<IconProps> = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 100 12h-3a7.5 7.5 0 00-7.5-7.5h1.5m10.5-4.5h4.5m-4.5 0l4.5-4.5m-4.5 4.5l4.5 4.5m-13.5 0A7.5 7.5 0 016 10.5v-1.5a1.5 1.5 0 013 0v1.5a7.5 7.5 0 01-7.5 7.5h-1.5" />
+  </svg>
+);
+
+// FIX: Add missing payment method icons
+export const OrangeMoneyLogo: React.FC<IconProps> = (props) => (
+  <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Orange Money Logo">
+    <rect width="64" height="40" rx="4" fill="#FF7900"/>
+    <text x="32" y="22" fontFamily="Helvetica, Arial, sans-serif" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">ORANGE</text>
+    <text x="32" y="31" fontFamily="Helvetica, Arial, sans-serif" fontSize="9" fontWeight="bold" fill="white" textAnchor="middle">MONEY</text>
+    <rect x="8" y="8" width="10" height="7" rx="2" fill="white" fillOpacity="0.8"/>
+  </svg>
+);
+
+export const MtnMomoLogo: React.FC<IconProps> = (props) => (
+  <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="MTN Mobile Money Logo">
+    <rect width="64" height="40" rx="4" fill="#FFCC00"/>
+    <text x="32" y="26" fontFamily="Helvetica, Arial, sans-serif" fontSize="14" fontWeight="bold" fill="#004F9F" textAnchor="middle">MoMo</text>
+    <rect x="8" y="8" width="10" height="7" rx="2" fill="#004F9F" fillOpacity="0.8"/>
+  </svg>
+);
+
+export const VisaIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Visa Logo">
+    <rect width="64" height="40" rx="4" fill="white" stroke="#E0E0E0" />
+    <path d="M24.7,25.8h-3.4L17.6,14h3.8l2,7.1c0.4,1.6,0.6,2.7,0.8,3.6h0.1c0.2-0.9,0.5-2.1,0.8-3.6l2-7.1h3.7L24.7,25.8z M45.1,14.2c-0.8-0.2-1.9-0.5-3.1-0.5c-3.1,0-5.4,1.7-5.4,4.2c0,2.1,1.7,3.4,3.1,4.1c1.4,0.6,1.9,1,1.9,1.6c0,0.8-0.9,1.2-2.1,1.2c-1.6,0-2.4-0.3-3.3-0.6l-0.5-0.2l-0.6,3.2c0.8,0.3,2.3,0.5,4,0.5c3.3,0,5.6-1.7,5.6-4.4c0-2.6-1.9-3.7-3.4-4.4c-1.3-0.6-1.7-1-1.7-1.5c0-0.5,0.6-1.1,2-1.1c1.3,0,2.1,0.3,2.8,0.6l0.4,0.2L45.1,14.2z M47,14h-3.1l-2.1,11.8h3.8L47,14z M14.8,14.2l-3,11.6h3.7l3-11.6H14.8z" fill="#142688" />
+  </svg>
+);
+
+export const MastercardIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Mastercard Logo">
+    <rect width="64" height="40" rx="4" fill="white" stroke="#E0E0E0"/>
+    <circle cx="26" cy="20" r="8" fill="#EA001B"/>
+    <circle cx="38" cy="20" r="8" fill="#F79E1B"/>
+    <path d="M32,20 a8,8 0 0,1 -6,-1.41a8,8 0 0,0 0,2.82a8,8 0 0,1 6,1.41a8,8 0 0,0 6,-1.41a8,8 0 0,1 0,-2.82A8,8 0 0,0 32,20Z" fill="#FF5F00" />
+  </svg>
+);
+
+export const PaypalIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="PayPal Logo">
+    <rect width="64" height="40" rx="4" fill="#003087"/>
+    <path fill="white" d="M32.12,12.62c-2.28-.1-4.2,1.3-4.72,3.42-.64,2.58.74,4.52,2.7,5.2,2.16.76,4.48.3,5.92-1.32,1.26-1.42,1.68-3.32,1-5.12-1.02-3.1-3.6-4.5-5-4.2h.1Z"/>
+    <path fill="#009cde" d="M29.1,19.2c-.52,2.12,1.02,4,2.94,4.54,2.14.6,4.5.1,5.9-1.52.92-1.04,1.2-2.38.74-3.6-.82-2.18-3-3.44-4.9-2.92h.22Z"/>
   </svg>
 );

@@ -8,7 +8,7 @@ interface DepotAgentDashboardProps {
   user: User;
   allUsers: User[];
   allOrders: Order[];
-  onCheckIn: (orderId: string, storageLocationId: string) => void;
+  onCheckIn: (orderId: string, storageLocationId: string, notes?: string) => void;
   onReportDiscrepancy: (orderId: string, reason: string) => void;
   onLogout: () => void;
   onProcessDeparture: (orderId: string, recipientInfo?: { name: string; idNumber: string }) => void;
@@ -70,8 +70,10 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     const [activeTab, setActiveTab] = useState<'overview' | 'checkin' | 'inventory' | 'reports'>('overview');
     const [scanMode, setScanMode] = useState<'checkin' | 'checkout' | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [showManualForm, setShowManualForm] = useState(false);
+    const [manualFormData, setManualFormData] = useState({ trackingNumber: '', storageLocation: '', notes: '' });
 
-    const depotOrders = useMemo(() => allOrders.filter(o => o.pickupPointId === user.depotId), [allOrders, user.depotId]);
+    const depotOrders = useMemo(() => allOrders.filter(o => o.pickupPointId === user.depotId || o.status === 'picked-up'), [allOrders, user.depotId]);
     const ordersInDepot = useMemo(() => depotOrders.filter(o => o.status === 'at-depot'), [depotOrders]);
 
     const handleScanSuccess = (decodedText: string) => {
@@ -96,6 +98,27 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
         }
         setScanMode(null);
     };
+    
+    const handleManualCheckin = (e: React.FormEvent) => {
+        e.preventDefault();
+        const { trackingNumber, storageLocation, notes } = manualFormData;
+        const order = allOrders.find(o => o.trackingNumber === trackingNumber);
+        if(!order) {
+            alert("Aucune commande trouvée avec ce numéro de suivi.");
+            return;
+        }
+        if(!STORAGE_LOCATIONS.includes(storageLocation.toUpperCase())) {
+            alert("Emplacement de stockage invalide.");
+            return;
+        }
+        onCheckIn(order.id, storageLocation.toUpperCase(), notes || undefined);
+        if(notes) {
+            onReportDiscrepancy(order.id, notes);
+        }
+        alert(`Commande ${order.id} enregistrée manuellement.`);
+        setManualFormData({ trackingNumber: '', storageLocation: '', notes: '' });
+        setShowManualForm(false);
+    };
 
     const renderOverview = () => (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -115,95 +138,95 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     );
     
     const renderCheckIn = () => (
-        <div className="text-center p-8 border-2 border-dashed rounded-lg">
-            <h3 className="text-xl font-bold">Enregistrement des Colis</h3>
-            <p className="text-gray-500 my-4">Scannez le QR code d'un colis pour l'enregistrer à son arrivée au dépôt.</p>
-            <button onClick={() => setScanMode('checkin')} className="bg-kmer-green text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2 mx-auto">
-                <QrCodeIcon className="w-6 h-6"/> Démarrer le Scan d'Arrivée
-            </button>
-        </div>
-    );
-
-    const renderInventory = () => (
         <div>
-            <h3 className="text-xl font-bold mb-4">Plan de l'Entrepôt</h3>
-            <div className="grid grid-cols-10 gap-2 p-4 bg-gray-100 dark:bg-gray-900/50 rounded-lg">
-                {STORAGE_LOCATIONS.map(loc => {
-                    const order = ordersInDepot.find(o => o.storageLocationId === loc);
-                    const isSelected = selectedOrder?.storageLocationId === loc;
-                    return (
-                        <button key={loc} onClick={() => setSelectedOrder(order || null)} 
-                                className={`h-16 rounded-md flex flex-col items-center justify-center text-xs font-bold transition-all
-                                ${order ? 'bg-orange-200 dark:bg-orange-800 hover:bg-orange-300' : 'bg-green-200 dark:bg-green-800 hover:bg-green-300'}
-                                ${isSelected ? 'ring-2 ring-kmer-green' : ''}`}>
-                            <span>{loc}</span>
-                            {order && <ArchiveBoxIcon className="w-5 h-5 mt-1" />}
-                        </button>
-                    )
-                })}
-            </div>
-            {selectedOrder && (
-                <div className="mt-4 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700/50">
-                    <h4 className="font-bold">Détails de l'Emplacement {selectedOrder.storageLocationId}</h4>
-                    <p>Commande: {selectedOrder.id}</p>
-                    <p>Client: {selectedOrder.shippingAddress.fullName}</p>
-                    <button onClick={() => { onProcessDeparture(selectedOrder.id); setSelectedOrder(null); }} className="mt-2 text-sm bg-blue-500 text-white font-semibold px-3 py-1.5 rounded-md">
-                        Marquer comme sorti
+            <div className="p-8 border-2 border-dashed rounded-lg text-center">
+                <h3 className="text-xl font-bold">Enregistrement des Colis</h3>
+                <p className="text-gray-500 my-4">Scannez le QR code d'un colis ou saisissez ses informations manuellement.</p>
+                <div className="flex justify-center gap-4">
+                    <button onClick={() => setScanMode('checkin')} className="bg-kmer-green text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2">
+                        <QrCodeIcon className="w-6 h-6"/> Démarrer le Scan
+                    </button>
+                    <button onClick={() => setShowManualForm(prev => !prev)} className="bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
+                        Saisie Manuelle
                     </button>
                 </div>
+            </div>
+            {showManualForm && (
+                <form onSubmit={handleManualCheckin} className="mt-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700/50 space-y-4 animate-in">
+                    <h4 className="font-semibold text-lg">Saisie Manuelle</h4>
+                    <div>
+                        <label htmlFor="trackingNumber" className="block text-sm font-medium">Numéro de suivi</label>
+                        <input 
+                            type="text" 
+                            id="trackingNumber" 
+                            value={manualFormData.trackingNumber}
+                            onChange={e => setManualFormData(d => ({...d, trackingNumber: e.target.value}))}
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required 
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="storageLocation" className="block text-sm font-medium">Emplacement de stockage</label>
+                        <input 
+                            type="text" 
+                            id="storageLocation" 
+                            value={manualFormData.storageLocation}
+                            onChange={e => setManualFormData(d => ({...d, storageLocation: e.target.value.toUpperCase()}))}
+                            placeholder="Ex: A5, C12"
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required 
+                        />
+                    </div>
+                    <div>
+                        <label htmlFor="notes" className="block text-sm font-medium">Notes / Anomalies (optionnel)</label>
+                        <textarea 
+                            id="notes" 
+                            value={manualFormData.notes}
+                            onChange={e => setManualFormData(d => ({...d, notes: e.target.value}))}
+                            rows={2}
+                            placeholder="Ex: Colis endommagé sur un côté"
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                        <button type="button" onClick={() => setShowManualForm(false)} className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 py-2 rounded-md">Annuler</button>
+                        <button type="submit" className="bg-blue-500 text-white font-semibold px-4 py-2 rounded-md">Enregistrer</button>
+                    </div>
+                </form>
             )}
         </div>
     );
 
-    const renderReports = () => (
-        <div className="text-center p-8">
-            <h3 className="text-xl font-bold">Rapports</h3>
-            <p className="text-gray-500 my-4">Générez des rapports sur les activités du dépôt.</p>
-            <button className="bg-gray-300 text-gray-800 font-bold py-3 px-6 rounded-lg cursor-not-allowed">
-                Rapport journalier (Bientôt disponible)
-            </button>
-        </div>
-    );
-
-    const renderTabContent = () => {
-        switch(activeTab) {
-            case 'overview': return renderOverview();
-            case 'checkin': return renderCheckIn();
-            case 'inventory': return renderInventory();
-            case 'reports': return renderReports();
-            default: return null;
-        }
-    }
-
     return (
-    <>
-        {scanMode && <ScannerModal title={scanMode === 'checkin' ? "Scanner un colis à l'arrivée" : "Scanner un colis au départ"} onClose={() => setScanMode(null)} onScanSuccess={handleScanSuccess} />}
-        <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-            <header className="bg-white dark:bg-gray-800 shadow-sm">
-                 <div className="container mx-auto px-4 sm:px-6 py-4">
-                    <div className="flex justify-between items-center">
-                      <div>
-                        <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Agent de Dépôt</h1>
-                        <p className="text-gray-500 dark:text-gray-400">Dépôt: {allOrders.find(o => o.pickupPointId === user.depotId)?.pickupPointId || 'Non assigné'}</p>
-                      </div>
-                      <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
+        <>
+            {scanMode && <ScannerModal title={scanMode === 'checkin' ? 'Enregistrer un colis' : 'Sortir un colis'} onClose={() => setScanMode(null)} onScanSuccess={handleScanSuccess} />}
+            <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
+                 <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                    <div className="container mx-auto px-4 sm:px-6 py-3">
+                         <div className="flex justify-between items-center">
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Tableau de bord Agent de Dépôt</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Dépôt: {user.depotId || 'Non assigné'} | Agent: {user.name}</p>
+                            </div>
+                            <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">Déconnexion</button>
+                        </div>
                     </div>
-                </div>
-            </header>
-            <main className="container mx-auto px-4 sm:px-6 py-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    <div className="p-2 border-b dark:border-gray-700 flex justify-around">
-                        <button onClick={() => setActiveTab('overview')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'overview' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ChartPieIcon className="w-5 h-5"/> Aperçu</button>
-                        <button onClick={() => setActiveTab('checkin')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'checkin' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ArchiveBoxIcon className="w-5 h-5"/> Arrivages</button>
-                        <button onClick={() => setActiveTab('inventory')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'inventory' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><BuildingStorefrontIcon className="w-5 h-5"/> Inventaire</button>
-                        <button onClick={() => setActiveTab('reports')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'reports' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><DocumentTextIcon className="w-5 h-5"/> Rapports</button>
+                </header>
+                <main className="container mx-auto px-4 sm:px-6 py-6 space-y-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                        <div className="p-2 border-b dark:border-gray-700 flex justify-around">
+                             <button onClick={() => setActiveTab('overview')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'overview' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ChartPieIcon className="w-5 h-5"/>Aperçu</button>
+                             <button onClick={() => setActiveTab('checkin')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'checkin' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ArchiveBoxIcon className="w-5 h-5"/>Enregistrement</button>
+                             <button onClick={() => setActiveTab('inventory')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'inventory' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ShoppingBagIcon className="w-5 h-5"/>Inventaire</button>
+                             <button onClick={() => setActiveTab('reports')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'reports' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ExclamationTriangleIcon className="w-5 h-5"/>Rapports</button>
+                        </div>
+                        <div className="p-4 sm:p-6">
+                            {activeTab === 'overview' && renderOverview()}
+                            {activeTab === 'checkin' && renderCheckIn()}
+                            {activeTab === 'inventory' && <p>La section Inventaire sera bientôt disponible.</p>}
+                            {activeTab === 'reports' && <p>La section Rapports sera bientôt disponible.</p>}
+                        </div>
                     </div>
-                    <div className="p-6">
-                        {renderTabContent()}
-                    </div>
-                </div>
-            </main>
-        </div>
-    </>
+                </main>
+            </div>
+        </>
     );
 };
