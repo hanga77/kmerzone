@@ -1,9 +1,11 @@
+
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
@@ -33,6 +35,8 @@ interface SellerDashboardProps {
   siteSettings: SiteSettings;
   onAddStory: (storeId: string, imageUrl: string) => void;
   onDeleteStory: (storeId: string, storyId: string) => void;
+  payouts: Payout[];
+  onSellerDisputeMessage: (orderId: string, message: string) => void;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -68,6 +72,36 @@ const getStatusClass = (status: OrderStatus) => {
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
 };
+
+const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
+    const now = new Date();
+    for (const sale of flashSales) {
+        const startDate = new Date(sale.startDate);
+        const endDate = new Date(sale.endDate);
+        if (now >= startDate && now <= endDate) {
+            const productInSale = sale.products.find(p => p.productId === productId && p.status === 'approved');
+            if (productInSale) return productInSale.flashPrice;
+        }
+    }
+    return null;
+}
+
+const isPromotionActive = (product: Product): boolean => {
+  if (!product.promotionPrice || product.promotionPrice >= product.price) {
+    return false;
+  }
+  const now = new Date();
+  const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
+  const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
+
+  if (!startDate && !endDate) return false; 
+  if (startDate && endDate) return now >= startDate && now <= endDate;
+  if (startDate) return now >= startDate;
+  if (endDate) return now <= endDate;
+  
+  return false; 
+};
+
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
     <button
@@ -359,7 +393,11 @@ const OrdersPanel: React.FC<{ title: string, orders: Order[], onUpdateOrderStatu
       <div className="p-6">
         <h2 className="text-xl font-bold dark:text-white mb-4">{title}</h2>
         <div className="space-y-4">
-          {orders.map((o: Order) => <OrderCard key={o.id} order={o} onUpdateOrderStatus={onUpdateOrderStatus} onScan={onScan} onPrint={onPrint} />)}
+          {orders.length > 0 ? (
+            orders.map((o: Order) => <OrderCard key={o.id} order={o} onUpdateOrderStatus={onUpdateOrderStatus} onScan={onScan} onPrint={onPrint} />)
+          ) : (
+            <p className="text-center text-gray-500 py-8">Aucune commande dans cette catégorie.</p>
+          )}
         </div>
       </div>
     );
@@ -718,6 +756,140 @@ const StoriesPanel: React.FC<{
     );
 };
 
+const FinancePanel: React.FC<{
+    deliveredOrders: Order[];
+    payouts: Payout[];
+    commissionRate: number;
+    flashSales: FlashSale[];
+}> = ({ deliveredOrders, payouts, commissionRate, flashSales }) => {
+     const getFinalPrice = (item: CartItem) => {
+        const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
+        if (flashPrice !== null) return flashPrice;
+        if (isPromotionActive(item)) return item.promotionPrice!;
+        return item.price;
+     };
+
+     const financials = useMemo(() => {
+        const totalRevenue = deliveredOrders.reduce((sum, order) => {
+            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
+            return sum + sellerItemsTotal;
+        }, 0);
+
+        const totalCommission = totalRevenue * (commissionRate / 100);
+        const totalPaidOut = payouts.reduce((sum, p) => sum + p.amount, 0);
+        const currentBalance = totalRevenue - totalCommission - totalPaidOut;
+
+        return { totalRevenue, totalCommission, totalPaidOut, currentBalance };
+    }, [deliveredOrders, payouts, commissionRate, flashSales]);
+
+    return (
+        <div className="p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Tableau de Bord Financier</h2>
+             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Brut Total (Livré)" value={`${financials.totalRevenue.toLocaleString('fr-CM')} FCFA`} />
+                <StatCard icon={<ChartPieIcon className="w-7 h-7"/>} label="Commission KMER ZONE" value={`${financials.totalCommission.toLocaleString('fr-CM')} FCFA`} />
+                <StatCard icon={<BanknotesIcon className="w-7 h-7"/>} label="Total Payé" value={`${financials.totalPaidOut.toLocaleString('fr-CM')} FCFA`} />
+                 <div className="p-4 bg-kmer-green/10 dark:bg-kmer-green/20 rounded-lg border-l-4 border-kmer-green">
+                    <div className="flex items-center gap-4">
+                        <div className="text-kmer-green"><BanknotesIcon className="w-7 h-7"/></div>
+                        <div>
+                            <p className="text-2xl font-bold text-kmer-green">{financials.currentBalance.toLocaleString('fr-CM')} FCFA</p>
+                            <p className="text-sm text-kmer-green/80 font-semibold">Solde Actuel</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <h3 className="text-lg font-bold mt-8 mb-4 dark:text-white">Historique des Paiements (Payouts)</h3>
+            <div className="overflow-x-auto max-h-80">
+                <table className="w-full text-sm text-left">
+                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                        <tr>
+                            <th className="p-2">Date</th>
+                            <th className="p-2">Montant</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {payouts.length > 0 ? (
+                            payouts.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => (
+                                <tr key={index} className="border-b dark:border-gray-700">
+                                    <td className="p-2">{new Date(payout.date).toLocaleDateString('fr-FR')}</td>
+                                    <td className="p-2 font-semibold">{payout.amount.toLocaleString('fr-CM')} FCFA</td>
+                                </tr>
+                            ))
+                        ) : (
+                             <tr>
+                                <td colSpan={2} className="p-4 text-center text-gray-500">Aucun paiement enregistré.</td>
+                            </tr>
+                        )}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+const DisputesPanel: React.FC<{
+    disputedOrders: Order[];
+    onSellerDisputeMessage: (orderId: string, message: string) => void;
+}> = ({ disputedOrders, onSellerDisputeMessage }) => {
+    
+    const handleSendMessage = (e: React.FormEvent<HTMLFormElement>, orderId: string) => {
+        e.preventDefault();
+        const input = (e.target as any).message as HTMLInputElement;
+        if(input.value.trim()){
+            onSellerDisputeMessage(orderId, input.value.trim());
+            input.value = '';
+        }
+    };
+
+    return (
+        <div className="p-6">
+            <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion des Litiges</h2>
+            <div className="space-y-4">
+                {disputedOrders.length > 0 ? (
+                    disputedOrders.map(order => (
+                        <details key={order.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                            <summary className="font-semibold cursor-pointer">
+                                Commande {order.id} - Client: {order.shippingAddress.fullName}
+                            </summary>
+                             <div className="mt-4 pt-4 border-t dark:border-gray-700">
+                                <p className="font-semibold text-sm mb-2">Motif du client:</p>
+                                <p className="text-sm italic p-2 bg-white dark:bg-gray-800 rounded-md">"{order.refundReason}"</p>
+                                
+                                <h4 className="font-semibold text-sm mt-4 mb-2">Conversation:</h4>
+                                <div className="space-y-3 p-3 bg-white dark:bg-gray-800 rounded-lg max-h-60 overflow-y-auto">
+                                   {(order.disputeLog || []).map((msg, i) => {
+                                        const isMe = msg.author === 'seller';
+                                        const authorName = msg.author.charAt(0).toUpperCase() + msg.author.slice(1);
+                                        return (
+                                           <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                            <div className={`max-w-md p-3 rounded-xl text-sm ${isMe ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                                <p className="font-bold mb-1">{isMe ? 'Vous' : authorName}</p>
+                                                <p>{msg.message}</p>
+                                                <p className="text-xs opacity-70 mt-1 text-right">{new Date(msg.date).toLocaleTimeString('fr-FR')}</p>
+                                            </div>
+                                        </div>
+                                        );
+                                   })}
+                                </div>
+                                <form onSubmit={(e) => handleSendMessage(e, order.id)} className="mt-3">
+                                    <div className="flex gap-2">
+                                        <input name="message" placeholder="Répondre au client ou à l'admin..." className="flex-grow text-sm p-2 border rounded-md dark:bg-gray-700"/>
+                                        <button type="submit" className="p-2 bg-blue-500 text-white rounded-md"><PaperAirplaneIcon className="w-5 h-5"/></button>
+                                    </div>
+                                </form>
+                            </div>
+                        </details>
+                    ))
+                ) : (
+                    <p className="text-center text-gray-500 py-8">Aucun litige en cours.</p>
+                )}
+            </div>
+        </div>
+    );
+};
+
 const SellerDashboard: React.FC<SellerDashboardProps> = ({
   store,
   products,
@@ -742,8 +914,10 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onDeleteStory,
   flashSales,
   onProposeForFlashSale,
+  payouts,
+  onSellerDisputeMessage,
 }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
@@ -814,12 +988,20 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
 
     const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue', 'delivery-failed'].includes(o.status)), [sellerOrders]);
     const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
-    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue', 'delivery-failed'].includes(o.status)), [sellerOrders]);
+    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'returned', 'depot-issue', 'delivery-failed'].includes(o.status)), [sellerOrders]);
+    const disputedOrders = useMemo(() => sellerOrders.filter(o => o.status === 'refund-requested' || (o.disputeLog && o.disputeLog.length > 0)), [sellerOrders]);
     const lowStockProductsCount = useMemo(() => products.filter(p => p.stock < 5).length, [products]);
+
+    const getFinalPrice = (item: CartItem) => {
+        const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
+        if (flashPrice !== null) return flashPrice;
+        if (isPromotionActive(item)) return item.promotionPrice!;
+        return item.price;
+     };
 
     const analytics = useMemo(() => {
         const totalRevenue = deliveredOrders.reduce((sum, order) => {
-            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + (item.promotionPrice ?? item.price) * item.quantity, 0);
+            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
             return sum + sellerItemsTotal;
         }, 0);
 
@@ -834,7 +1016,7 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
             totalRevenue,
             avgRating: avgRating.toFixed(1),
         };
-    }, [products, deliveredOrders, inProgressOrders]);
+    }, [products, deliveredOrders, inProgressOrders, flashSales]);
     
     if (!user || user.role !== 'seller' || !store) {
         return (
@@ -868,6 +1050,10 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                  return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode} flashSales={flashSales} products={products} onProposeForFlashSale={onProposeForFlashSale} storeName={store.name} />;
             case 'documents':
                  return <DocumentsPanel store={store} onUploadDocument={onUploadDocument} />;
+            case 'finances':
+                return <FinancePanel deliveredOrders={deliveredOrders} payouts={payouts.filter(p => p.storeId === store.id)} commissionRate={siteSettings.commissionRate} flashSales={flashSales} />;
+            case 'disputes':
+                return <DisputesPanel disputedOrders={disputedOrders} onSellerDisputeMessage={onSellerDisputeMessage} />;
             case 'overview':
             default:
                 return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} />;
@@ -932,10 +1118,10 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
                            <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
-                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="En cours" isActive={activeTab === 'orders-in-progress'} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
-                           <TabButton icon={<CheckCircleIcon className="w-5 h-5"/>} label="Livrées" isActive={activeTab === 'orders-delivered'} onClick={() => setActiveTab('orders-delivered')} />
-                           <TabButton icon={<XIconSmall className="w-5 h-5"/>} label="Annulées / Remb." isActive={activeTab === 'orders-cancelled'} onClick={() => setActiveTab('orders-cancelled')} count={cancelledRefundedOrders.length} />
+                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={['orders-in-progress', 'orders-delivered', 'orders-cancelled'].some(t => t === activeTab)} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
+                           <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label="Finances" isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
+                           <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} count={disputedOrders.length} />
                            <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
                            {isChatEnabled && <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label="Messages" isActive={false} onClick={() => setIsWidgetOpen(true)} count={totalUnreadCount} />}
                         </div>
@@ -969,6 +1155,13 @@ const SellerDashboard: React.FC<SellerDashboardProps> = ({
                     </div>
                 )}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                    {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
+                        <div className="p-4 border-b dark:border-gray-700 flex gap-2">
+                             <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({inProgressOrders.length})</button>
+                             <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livrées ({deliveredOrders.length})</button>
+                             <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulées ({cancelledRefundedOrders.length})</button>
+                        </div>
+                    )}
                     {renderContent()}
                 </div>
             </main>

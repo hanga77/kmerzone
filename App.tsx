@@ -1,4 +1,5 @@
-// @FIX: Correct the import statement for React and its hooks.
+
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -18,14 +19,16 @@ import SellerDashboard from './components/SellerDashboard';
 import VendorPage from './components/VendorPage';
 import ProductForm from './components/ProductForm';
 import SellerProfile from './components/SellerProfile';
-import { SuperAdminDashboard } from './components/SuperAdminDashboard';
+// Fix: Import SuperAdminDashboard as a default import since it is a default export.
+import SuperAdminDashboard from './components/SuperAdminDashboard';
 import OrderHistoryPage from './components/OrderHistoryPage';
 import { OrderDetailPage } from './components/OrderDetailPage';
 import PromotionsPage from './components/PromotionsPage';
 import FlashSalesPage from './components/FlashSalesPage';
 import SearchResultsPage from './components/SearchResultsPage';
 import WishlistPage from './components/WishlistPage';
-import DeliveryAgentDashboard from './components/DeliveryAgentDashboard';
+// Fix: Import DeliveryAgentDashboard as a named import.
+import { DeliveryAgentDashboard } from './components/DeliveryAgentDashboard';
 import { DepotAgentDashboard } from './components/DepotAgentDashboard';
 import ComparisonPage from './components/ComparisonPage';
 import ComparisonBar from './components/ComparisonBar';
@@ -38,19 +41,46 @@ import ServerErrorPage from './components/ServerErrorPage';
 import AccountPage from './components/AccountPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-// @FIX: Import RequestedDocument type.
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
 import PromotionModal from './components/PromotionModal';
 import { useCart } from './contexts/CartContext';
 import ChatWidget from './components/ChatWidget';
-import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon } from './components/Icons';
+import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon, XIcon } from './components/Icons';
 import { usePersistentState } from './hooks/usePersistentState';
 
-// @FIX: Add 'reset-password' to the Page type to handle the password reset view.
-type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'analytics-dashboard' | 'review-moderation' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard';
+type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard';
+
+const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
+    const now = new Date();
+    for (const sale of flashSales) {
+        const startDate = new Date(sale.startDate);
+        const endDate = new Date(sale.endDate);
+        if (now >= startDate && now <= endDate) {
+            const productInSale = sale.products.find(p => p.productId === productId && p.status === 'approved');
+            if (productInSale) return productInSale.flashPrice;
+        }
+    }
+    return null;
+}
+
+const isPromotionActive = (product: Product): boolean => {
+  if (!product.promotionPrice || product.promotionPrice >= product.price) {
+    return false;
+  }
+  const now = new Date();
+  const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
+  const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
+
+  if (!startDate && !endDate) return false;
+  if (startDate && endDate) return now >= startDate && now <= endDate;
+  if (startDate) return now >= startDate;
+  if (endDate) return now <= endDate;
+  
+  return false; 
+};
 
 const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
@@ -64,31 +94,28 @@ const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string |
     </div>
 );
 
-const AnalyticsSection: React.FC<{ title: string, children: React.ReactNode }> = ({ title, children }) => (
-    <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6">
-        <h2 className="text-xl font-bold mb-4">{title}</h2>
-        {children}
-    </div>
-);
-
 const SellerAnalyticsDashboard: React.FC<{
     onBack: () => void;
     sellerOrders: Order[];
     sellerProducts: Product[];
-}> = ({ onBack, sellerOrders, sellerProducts }) => {
+    flashSales: FlashSale[];
+}> = ({ onBack, sellerOrders, sellerProducts, flashSales }) => {
     const analytics = useMemo(() => {
+        const getFinalPrice = (item: CartItem) => {
+            const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
+            if (flashPrice !== null) return flashPrice;
+            if (isPromotionActive(item)) return item.promotionPrice!;
+            return item.price;
+        };
+
         const deliveredOrders = sellerOrders.filter(o => o.status === 'delivered');
         const totalRevenue = deliveredOrders.reduce((sum, order) => {
-             const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + (item.promotionPrice ?? item.price) * item.quantity, 0);
+             const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
              return sum + sellerItemsTotal;
         }, 0);
         
         const totalDeliveredOrders = deliveredOrders.length;
         const averageOrderValue = totalDeliveredOrders > 0 ? totalRevenue / totalDeliveredOrders : 0;
-
-        const getFinalPrice = (item: CartItem) => {
-            return item.promotionPrice ?? item.price;
-        };
 
         const topProducts = deliveredOrders
             .flatMap(o => o.items)
@@ -112,7 +139,7 @@ const SellerAnalyticsDashboard: React.FC<{
             averageOrderValue,
             topProducts: sortedTopProducts,
         };
-    }, [sellerOrders]);
+    }, [sellerOrders, flashSales]);
 
     return (
         <div className="container mx-auto p-4 sm:p-8 animate-in bg-gray-50 dark:bg-gray-900">
@@ -132,7 +159,8 @@ const SellerAnalyticsDashboard: React.FC<{
             </div>
 
             <div className="grid grid-cols-1 gap-6">
-                <AnalyticsSection title="Top 5 Produits (par revenu)">
+                <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6 h-full">
+                    <h2 className="text-xl font-bold mb-4">Top 5 Produits (par revenu)</h2>
                     <ul className="space-y-3">
                         {analytics.topProducts.map((product) => (
                             <li key={product.id} className="flex justify-between items-center text-sm">
@@ -145,181 +173,9 @@ const SellerAnalyticsDashboard: React.FC<{
                         ))}
                          {analytics.topProducts.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Aucune donnée de vente pour le moment.</p>}
                     </ul>
-                </AnalyticsSection>
-            </div>
-        </div>
-    );
-};
-
-const AnalyticsDashboard: React.FC<{ onBack: () => void; allOrders: Order[]; allProducts: Product[]; allStores: Store[]; allUsers: User[]; allCategories: Category[] }> = ({ onBack, allOrders, allProducts, allStores, allUsers, allCategories }) => {
-    const analytics = useMemo(() => {
-        const deliveredOrders = allOrders.filter(o => o.status === 'delivered');
-        const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
-        const totalCustomers = allUsers.filter(u => u.role === 'customer').length;
-        const averageOrderValue = deliveredOrders.length > 0 ? totalRevenue / deliveredOrders.length : 0;
-
-        const getFinalPrice = (item: CartItem) => {
-            return item.promotionPrice ?? item.price;
-        };
-
-        const topProducts = deliveredOrders
-            .flatMap(o => o.items)
-            .reduce((acc, item) => {
-                acc[item.id] = (acc[item.id] || 0) + getFinalPrice(item) * item.quantity;
-                return acc;
-            }, {} as Record<string, number>);
-        
-        const sortedTopProducts = Object.entries(topProducts)
-            .sort(([, a], [, b]) => b - a)
-            .slice(0, 5)
-            .map(([id, revenue]) => ({ product: allProducts.find(p => p.id === id), revenue }));
-
-        const salesByCategory = deliveredOrders
-            .flatMap(o => o.items)
-            .reduce((acc, item) => {
-                const category = allCategories.find(c => c.id === item.categoryId);
-                const categoryName = category?.name || 'Inconnue';
-                acc[categoryName] = (acc[categoryName] || 0) + getFinalPrice(item) * item.quantity;
-                return acc;
-            }, {} as Record<string, number>);
-        
-        const sortedSalesByCategory = Object.entries(salesByCategory).sort(([, a], [, b]) => b - a);
-        
-        const salesByStore = deliveredOrders
-            .flatMap(o => o.items.map(item => ({ vendor: item.vendor, amount: getFinalPrice(item) * item.quantity })))
-            .reduce((acc, { vendor, amount }) => {
-                acc[vendor] = (acc[vendor] || 0) + amount;
-                return acc;
-            }, {} as Record<string, number>);
-
-        const sortedTopStores = Object.entries(salesByStore).sort(([, a], [, b]) => b - a).slice(0, 5);
-        
-        return {
-            totalRevenue,
-            totalOrders: deliveredOrders.length,
-            totalCustomers,
-            averageOrderValue,
-            topProducts: sortedTopProducts,
-            salesByCategory: sortedSalesByCategory,
-            topStores: sortedTopStores
-        };
-    }, [allOrders, allProducts, allUsers, allCategories]);
-
-    return (
-        <div className="container mx-auto p-4 sm:p-8 animate-in bg-gray-50 dark:bg-gray-900">
-            <button onClick={onBack} className="text-kmer-green font-semibold mb-6 inline-flex items-center gap-2">
-                <ArrowLeftIcon className="w-5 h-5"/>
-                Retour
-            </button>
-            <div className="flex items-center gap-3 mb-8">
-                <BarChartIcon className="w-8 h-8"/>
-                <h1 className="text-3xl font-bold">Tableau de Bord Analytique (BI)</h1>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
-                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Commandes" value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
-                <StatCard icon={<UsersIcon className="w-7 h-7"/>} label="Clients" value={analytics.totalCustomers} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" />
-                <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Panier Moyen" value={`${analytics.averageOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <AnalyticsSection title="Top 5 Produits (par revenu)">
-                    <ul className="space-y-3">
-                        {analytics.topProducts.map(({ product, revenue }) => product ? (
-                            <li key={product.id} className="flex justify-between items-center text-sm">
-                                <span className="font-medium dark:text-gray-200">{product.name}</span>
-                                <span className="font-bold text-kmer-green">{revenue.toLocaleString('fr-CM')} FCFA</span>
-                            </li>
-                        ) : null)}
-                    </ul>
-                </AnalyticsSection>
-                <AnalyticsSection title="Top 5 Boutiques (par revenu)">
-                     <ul className="space-y-3">
-                        {analytics.topStores.map(([vendorName, revenue]) => (
-                            <li key={vendorName} className="flex justify-between items-center text-sm">
-                                <span className="font-medium dark:text-gray-200">{vendorName}</span>
-                                <span className="font-bold text-kmer-green">{revenue.toLocaleString('fr-CM')} FCFA</span>
-                            </li>
-                        ))}
-                    </ul>
-                </AnalyticsSection>
-                 <AnalyticsSection title="Ventes par Catégorie">
-                     <ul className="space-y-3">
-                        {analytics.salesByCategory.map(([category, revenue]) => (
-                            <li key={category} className="flex justify-between items-center text-sm">
-                                <span className="font-medium dark:text-gray-200">{category}</span>
-                                <span className="font-bold text-kmer-green">{revenue.toLocaleString('fr-CM')} FCFA</span>
-                            </li>
-                        ))}
-                    </ul>
-                </AnalyticsSection>
-            </div>
-        </div>
-    );
-};
-
-const ReviewModeration: React.FC<{ onBack: () => void; allProducts: Product[]; onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => void; }> = ({ onBack, allProducts, onReviewModeration }) => {
-    const [activeTab, setActiveTab] = useState<'pending' | 'approved' | 'rejected'>('pending');
-
-    const allReviews = useMemo(() => allProducts.flatMap(p => 
-        p.reviews.map(r => ({ ...r, productName: p.name, productId: p.id }))
-    ).sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()), [allProducts]);
-    
-    const filteredReviews = allReviews.filter(r => r.status === activeTab);
-
-    return (
-      <div className="container mx-auto p-4 sm:p-8 animate-in bg-gray-50 dark:bg-gray-900">
-        <button onClick={onBack} className="text-kmer-green font-semibold mb-6 inline-flex items-center gap-2">
-            <ArrowLeftIcon className="w-5 h-5"/>
-            Retour
-        </button>
-        <div className="flex items-center gap-3 mb-6">
-             <ShieldCheckIcon className="w-8 h-8"/>
-             <h1 className="text-3xl font-bold">Modération des Avis Clients</h1>
-        </div>
-        
-        <div className="border-b border-gray-200 dark:border-gray-700 mb-6">
-            <nav className="-mb-px flex space-x-6" aria-label="Tabs">
-                <button onClick={() => setActiveTab('pending')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'pending' ? 'border-kmer-green text-kmer-green' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-                    En attente ({allReviews.filter(r=>r.status === 'pending').length})
-                </button>
-                <button onClick={() => setActiveTab('approved')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'approved' ? 'border-kmer-green text-kmer-green' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-                    Approuvés
-                </button>
-                 <button onClick={() => setActiveTab('rejected')} className={`whitespace-nowrap py-3 px-1 border-b-2 font-medium text-sm ${activeTab === 'rejected' ? 'border-kmer-green text-kmer-green' : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'}`}>
-                    Rejetés
-                </button>
-            </nav>
-        </div>
-
-        <div className="space-y-4">
-            {filteredReviews.length > 0 ? filteredReviews.map((review, index) => (
-                 <div key={index} className="bg-white dark:bg-gray-800 rounded-lg shadow-sm p-4">
-                    <div className="flex justify-between items-start">
-                        <div>
-                           <p className="text-sm font-semibold text-gray-800 dark:text-gray-200">{review.productName}</p>
-                           <p className="text-xs text-gray-500 dark:text-gray-400">Par {review.author} le {new Date(review.date).toLocaleDateString('fr-FR')}</p>
-                        </div>
-                        <div className="flex items-center gap-1">
-                            {[...Array(5)].map((_, i) => <StarIcon key={i} className={`w-4 h-4 ${i < review.rating ? 'text-kmer-yellow' : 'text-gray-300'}`}/>)}
-                        </div>
-                    </div>
-                    <p className="mt-2 text-gray-600 dark:text-gray-300 italic">"{review.comment}"</p>
-                    {activeTab === 'pending' && (
-                        <div className="flex gap-2 mt-3 pt-3 border-t dark:border-gray-700 justify-end">
-                            <button onClick={() => onReviewModeration(review.productId, review, 'rejected')} className="text-xs bg-red-500 text-white px-3 py-1.5 rounded-md font-semibold hover:bg-red-600">Rejeter</button>
-                            <button onClick={() => onReviewModeration(review.productId, review, 'approved')} className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-md font-semibold hover:bg-green-600">Approuver</button>
-                        </div>
-                    )}
-                 </div>
-             )) : (
-                 <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                    <p>Aucun avis dans cette catégorie.</p>
                 </div>
-             )}
+            </div>
         </div>
-      </div>
     );
 };
 
@@ -422,6 +278,41 @@ const sampleDeliveredOrder: Order = {
     ]
 };
 
+const sampleDeliveredOrder2: Order = {
+    id: 'ORDER-SAMPLE-2',
+    userId: 'customer-1',
+    items: [
+        { ...initialProducts.find(p => p.id === '2')!, quantity: 1 }, // Robe en Tissu Pagne
+        { ...initialProducts.find(p => p.id === '12')!, quantity: 1 } // Sac à main
+    ],
+    subtotal: 27000,
+    deliveryFee: 1000,
+    total: 28000,
+    shippingAddress: { fullName: 'Client de Test 2', phone: '655555556', address: '456 Rue du Test', city: 'Douala' },
+    deliveryMethod: 'home-delivery',
+    orderDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString(), // 2 weeks ago
+    status: 'delivered',
+    trackingNumber: 'KZSAMPLE2',
+    trackingHistory: [],
+};
+
+const sampleDeliveredOrder3: Order = {
+    id: 'ORDER-SAMPLE-3',
+    userId: 'customer-1',
+    items: [
+        { ...initialProducts.find(p => p.id === '13')!, quantity: 1 } // TV
+    ],
+    subtotal: 85000,
+    deliveryFee: 2500,
+    total: 87500,
+    shippingAddress: { fullName: 'Client de Test 3', phone: '655555557', address: '789 Rue du Test', city: 'Yaoundé' },
+    deliveryMethod: 'home-delivery',
+    orderDate: new Date(Date.now() - 60 * 24 * 60 * 60 * 1000).toISOString(), // 2 months ago
+    status: 'delivered',
+    trackingNumber: 'KZSAMPLE3',
+    trackingHistory: [],
+};
+
 const initialStores: Store[] = [
     { 
         id: 'store-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
@@ -516,6 +407,7 @@ const initialSiteSettings: SiteSettings = {
   isRentEnabled: true,
   rentAmount: 5000,
   canSellersCreateCategories: true,
+  commissionRate: 10,
   maintenanceMode: {
       isEnabled: false,
       message: "Nous effectuons une mise à jour. Nous serons de retour très bientôt !",
@@ -566,6 +458,22 @@ const initialAdvertisements: Advertisement[] = [
     { id: 'ad2', imageUrl: 'https://images.unsplash.com/photo-1598327105151-586673437584?q=80&w=1920&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
 ];
 
+const AnnouncementBanner: React.FC<{
+  announcement: Announcement;
+  onDismiss: (id: string) => void;
+}> = ({ announcement, onDismiss }) => {
+  return (
+    <div className="bg-kmer-yellow text-gray-900 p-3 text-center relative font-semibold text-sm">
+      <p>
+        <strong className="font-bold uppercase">{announcement.title}:</strong> {announcement.content}
+      </p>
+      <button onClick={() => onDismiss(announcement.id)} className="absolute top-1/2 right-4 -translate-y-1/2">
+        <XIcon className="w-5 h-5" />
+      </button>
+    </div>
+  );
+};
+
 export default function App() {
   const [page, setPage] = useState<Page>('home');
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -582,13 +490,16 @@ export default function App() {
   const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
   const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
   const [allStores, setAllStores] = usePersistentState<Store[]>('allStores', initialStores);
-  const [allOrders, setAllOrders] = usePersistentState<Order[]>('allOrders', [sampleDeliveredOrder]);
+  const [allOrders, setAllOrders] = usePersistentState<Order[]>('allOrders', [sampleDeliveredOrder, sampleDeliveredOrder2, sampleDeliveredOrder3]);
   const [allPromoCodes, setAllPromoCodes] = usePersistentState<PromoCode[]>('allPromoCodes', []);
   const [siteActivityLogs, setSiteActivityLogs] = usePersistentState<SiteActivityLog[]>('siteActivityLogs', []);
   const [flashSales, setFlashSales] = usePersistentState<FlashSale[]>('flashSales', initialFlashSales);
   const [allPickupPoints, setAllPickupPoints] = usePersistentState<PickupPoint[]>('allPickupPoints', initialPickupPoints);
     const [payouts, setPayouts] = usePersistentState<Payout[]>('payouts', []);
     const [advertisements, setAdvertisements] = usePersistentState<Advertisement[]>('advertisements', initialAdvertisements);
+    const [allTickets, setAllTickets] = usePersistentState<Ticket[]>('allTickets', []);
+    const [allAnnouncements, setAllAnnouncements] = usePersistentState<Announcement[]>('allAnnouncements', []);
+    const [dismissedAnnouncements, setDismissedAnnouncements] = useState<string[]>([]);
 
     const { user, logout: authLogout, allUsers, setAllUsers, updateUser: authUpdateUser, resetPassword } = useAuth();
     const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
@@ -598,7 +509,6 @@ export default function App() {
     const [appliedPromoCode, setAppliedPromoCode] = useState<PromoCode | null>(null);
     const [productToEdit, setProductToEdit] = useState<Product | null>(null);
     const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
-    // @FIX: Add state for the forgot password modal and user email to reset.
     const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
     const [emailForPasswordReset, setEmailForPasswordReset] = useState<string | null>(null);
 
@@ -801,7 +711,6 @@ export default function App() {
         }
     }, [handleNavigate]);
 
-    // @FIX: Add handlers for the forgot/reset password flow.
     const handleOpenForgotPassword = () => {
         setIsLoginModalOpen(false);
         setIsForgotPasswordModalOpen(true);
@@ -1048,7 +957,6 @@ export default function App() {
         setAppliedPromoCode(code);
     };
 
-    // @FIX: Create a dedicated function for adding a new review to fix prop type mismatch.
     const handleAddReview = useCallback((productId: string, review: Review) => {
         setAllProducts(prev => prev.map(p => {
             if (p.id === productId) {
@@ -1063,6 +971,7 @@ export default function App() {
     const handleReviewModeration = (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => {
         setAllProducts(prev => prev.map(p => {
             if (p.id === productId) {
+                logActivity('Review Moderated', `Review from ${reviewIdentifier.author} on product ${p.name} was ${newStatus}.`);
                 return {
                     ...p,
                     reviews: p.reviews.map(r => 
@@ -1217,6 +1126,16 @@ export default function App() {
         }));
     };
 
+    const handleSellerDisputeMessage = (orderId: string, message: string) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId && user && user.role === 'seller') {
+                const newMsg: DisputeMessage = { author: 'seller', message, date: new Date().toISOString() };
+                return { ...o, disputeLog: [...(o.disputeLog || []), newMsg] };
+            }
+            return o;
+        }));
+    };
+
     const handleRepeatOrder = useCallback((order: Order) => {
         const areVariantsEqual = (v1?: Record<string, string>, v2?: Record<string, string>): boolean => {
             if (!v1 && !v2) return true;
@@ -1270,6 +1189,232 @@ export default function App() {
         }
     }, [allProducts, addToCart, handleNavigate]);
 
+    const handleUpdateOrderFromAgent = useCallback((orderId: string, updates: Partial<Order>) => {
+        const order = allOrders.find(o => o.id === orderId);
+        if (!order || !user) return;
+        
+        const actorName = user.name;
+        let updatedOrder: Order = { ...order, ...updates };
+
+        if (updates.status && updates.status !== order.status) {
+            updatedOrder = addStatusLog(updatedOrder, updates.status, actorName);
+        }
+
+        setAllOrders(prev => prev.map(o => (o.id === orderId ? updatedOrder : o)));
+        logActivity('Order Updated by Agent', `Agent ${actorName} updated order ${orderId}. Details: ${JSON.stringify(updates)}`);
+    }, [allOrders, user, addStatusLog, setAllOrders, logActivity]);
+    
+    const handleCreateTicket = useCallback((subject: string, message: string, relatedOrderId?: string) => {
+        if (!user) return;
+        const now = new Date().toISOString();
+        const newTicket: Ticket = {
+            id: `TICKET-${Date.now()}`,
+            userId: user.id,
+            userName: user.name,
+            subject,
+            relatedOrderId,
+            status: 'Ouvert',
+            priority: 'Moyenne',
+            createdAt: now,
+            updatedAt: now,
+            messages: [{
+                authorId: user.id,
+                authorName: user.name,
+                message,
+                date: now
+            }]
+        };
+        setAllTickets(prev => [newTicket, ...prev]);
+        logActivity('Ticket Created', `User ${user.name} created ticket #${newTicket.id} with subject "${subject}".`);
+    }, [user, setAllTickets, logActivity]);
+
+    const handleUserReplyToTicket = useCallback((ticketId: string, message: string) => {
+        if (!user) return; // Only logged in users can reply
+        const now = new Date().toISOString();
+        setAllTickets(prev => prev.map(t => {
+            if (t.id === ticketId && (t.userId === user.id || user.role === 'superadmin')) {
+                const newMessage: TicketMessage = {
+                    authorId: user.id,
+                    authorName: user.name,
+                    message,
+                    date: now,
+                };
+                // User sets status to 'Ouvert', Admin to 'En cours'
+                const newStatus = user.role === 'superadmin' ? 'En cours' : 'Ouvert';
+                return { ...t, status: newStatus, updatedAt: now, messages: [...t.messages, newMessage] };
+            }
+            return t;
+        }));
+        logActivity('Ticket Reply', `User ${user.name} replied to ticket #${ticketId}.`);
+    }, [user, setAllTickets, logActivity]);
+
+    const handleAdminReplyToTicket = useCallback((ticketId: string, message: string) => {
+        if (!user || user.role !== 'superadmin') return;
+        handleUserReplyToTicket(ticketId, message); // Reuse the logic but with admin context
+    }, [user, handleUserReplyToTicket]);
+    
+    const handleAdminUpdateTicketStatus = useCallback((ticketId: string, status: TicketStatus, priority: TicketPriority) => {
+         setAllTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status, priority, updatedAt: new Date().toISOString() } : t));
+         logActivity('Ticket Update', `Admin updated ticket #${ticketId} status to ${status} and priority to ${priority}.`);
+    }, [setAllTickets, logActivity]);
+
+    const handleCreateOrUpdateAnnouncement = useCallback((announcement: Omit<Announcement, 'id'> | Announcement) => {
+        setAllAnnouncements(prev => {
+            if ('id' in announcement) { // Update
+                logActivity('Announcement Updated', `Announcement "${announcement.title}" was updated.`);
+                return prev.map(a => a.id === announcement.id ? announcement : a);
+            } else { // Create
+                const newAnnouncement = { ...announcement, id: `ANNC-${Date.now()}` };
+                logActivity('Announcement Created', `Announcement "${newAnnouncement.title}" was created.`);
+                return [newAnnouncement, ...prev];
+            }
+        });
+    }, [setAllAnnouncements, logActivity]);
+
+    const handleDeleteAnnouncement = useCallback((id: string) => {
+        if (window.confirm("Êtes-vous sûr de vouloir supprimer cette annonce ?")) {
+             setAllAnnouncements(prev => prev.filter(a => a.id !== id));
+             logActivity('Announcement Deleted', `Announcement ID ${id} was deleted.`);
+        }
+    }, [setAllAnnouncements, logActivity]);
+
+
+    const activeAnnouncements = useMemo(() => {
+        if (!user) return [];
+        const now = new Date();
+        return allAnnouncements.filter(ann => {
+            const targetsUser = 
+                ann.target === 'all' ||
+                (ann.target === 'customers' && user?.role === 'customer') ||
+                (ann.target === 'sellers' && user?.role === 'seller');
+
+            return (
+                ann.isActive &&
+                targetsUser &&
+                new Date(ann.startDate) <= now &&
+                new Date(ann.endDate) >= now &&
+                !dismissedAnnouncements.includes(ann.id)
+            );
+        });
+    }, [allAnnouncements, user, dismissedAnnouncements]);
+
+     // --- START OF ADMIN HANDLERS ---
+
+    const handleUpdateCategoryImage = useCallback((categoryId: string, imageUrl: string) => {
+        setAllCategories(prev => prev.map(c => (c.id === categoryId ? { ...c, imageUrl } : c)));
+        logActivity('Category Image Updated', `Image for category ID ${categoryId} was updated.`);
+    }, [setAllCategories, logActivity]);
+
+    const handleWarnStore = useCallback((store: Store, reason: string) => {
+        setAllStores(prev => prev.map(s => (s.id === store.id ? { ...s, warnings: [...s.warnings, { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason }] } : s)));
+        logActivity('Store Warned', `Store "${store.name}" was warned. Reason: ${reason}`);
+    }, [setAllStores, logActivity]);
+
+    const handleToggleStoreStatus = useCallback((store: Store) => {
+        const newStatus = store.status === 'active' ? 'suspended' : 'active';
+        setAllStores(prev => prev.map(s => (s.id === store.id ? { ...s, status: newStatus } : s)));
+        logActivity('Store Status Toggled', `Store "${store.name}" status changed to ${newStatus}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleToggleStorePremiumStatus = useCallback((store: Store) => {
+        const newStatus = store.premiumStatus === 'premium' ? 'standard' : 'premium';
+        setAllStores(prev => prev.map(s => (s.id === store.id ? { ...s, premiumStatus: newStatus } : s)));
+        logActivity('Store Premium Status Toggled', `Store "${store.name}" premium status changed to ${newStatus}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleApproveStore = useCallback((store: Store) => {
+        setAllStores(prev => prev.map(s => (s.id === store.id ? { ...s, status: 'active' } : s)));
+        logActivity('Store Approved', `Store "${store.name}" has been approved and is now active.`);
+    }, [setAllStores, logActivity]);
+
+    const handleRejectStore = useCallback((store: Store) => {
+        setAllStores(prev => prev.filter(s => s.id !== store.id));
+        logActivity('Store Rejected', `Store application for "${store.name}" has been rejected and removed.`);
+    }, [setAllStores, logActivity]);
+    
+    const handleSaveFlashSale = useCallback((flashSaleData: Omit<FlashSale, 'id' | 'products'>) => {
+        const newFlashSale: FlashSale = { ...flashSaleData, id: `fs-${Date.now()}`, products: [] };
+        setFlashSales(prev => [...prev, newFlashSale]);
+        logActivity('Flash Sale Created', `New flash sale event "${newFlashSale.name}" was created.`);
+    }, [setFlashSales, logActivity]);
+
+    const handleAddOrUpdatePickupPoint = useCallback((pointData: Omit<PickupPoint, 'id'> | PickupPoint) => {
+        if ('id' in pointData) { // Update
+            setAllPickupPoints(prev => prev.map(p => p.id === pointData.id ? pointData : p));
+            logActivity('Pickup Point Updated', `Pickup point "${pointData.name}" was updated.`);
+        } else { // Add
+            const newPoint = { ...pointData, id: `pp-${Date.now()}`};
+            setAllPickupPoints(prev => [...prev, newPoint]);
+            logActivity('Pickup Point Added', `New pickup point "${newPoint.name}" was added.`);
+        }
+    }, [setAllPickupPoints, logActivity]);
+
+    const handleDeletePickupPoint = useCallback((pointId: string) => {
+        if (window.confirm("Êtes-vous sûr de vouloir supprimer ce point de dépôt ?")) {
+            setAllPickupPoints(prev => prev.filter(p => p.id !== pointId));
+            logActivity('Pickup Point Deleted', `Pickup point ID ${pointId} was deleted.`);
+        }
+    }, [setAllPickupPoints, logActivity]);
+
+    const handleUpdateUserFromAdmin = useCallback((userId: string, updates: Partial<User>) => {
+        setAllUsers(prev => prev.map(u => (u.id === userId ? { ...u, ...updates } : u)));
+        logActivity('User Updated by Admin', `User account ${userId} was updated by an admin.`);
+    }, [setAllUsers, logActivity]);
+    
+    const handlePayoutSeller = useCallback((store: Store, amount: number) => {
+        const newPayout: Payout = { storeId: store.id, amount, date: new Date().toISOString() };
+        setPayouts(prev => [...prev, newPayout]);
+        logActivity('Seller Payout', `Processed a payout of ${amount} FCFA for store "${store.name}".`);
+    }, [setPayouts, logActivity]);
+
+    const handleActivateSubscription = useCallback((store: Store) => {
+        const dueDate = new Date();
+        dueDate.setDate(dueDate.getDate() + 30); // 30 days from now
+        setAllStores(prev => prev.map(s => s.id === store.id ? { ...s, subscriptionStatus: 'active', subscriptionDueDate: dueDate.toISOString() } : s));
+        logActivity('Seller Subscription Activated', `Subscription for "${store.name}" activated.`);
+    }, [setAllStores, logActivity]);
+
+    const handleAddOrUpdateAdvertisement = useCallback((adData: Omit<Advertisement, 'id'> | Advertisement) => {
+        if ('id' in adData) { // Update
+            setAdvertisements(prev => prev.map(ad => ad.id === adData.id ? adData : ad));
+            logActivity('Advertisement Updated', `Advertisement ${adData.id} updated.`);
+        } else { // Add
+            const newAd = { ...adData, id: `ad-${Date.now()}` };
+            setAdvertisements(prev => [...prev, newAd]);
+            logActivity('Advertisement Added', `New advertisement created.`);
+        }
+    }, [setAdvertisements, logActivity]);
+    
+    const handleDeleteAdvertisement = useCallback((adId: string) => {
+        if (window.confirm("Supprimer cette publicité ?")) {
+            setAdvertisements(prev => prev.filter(ad => ad.id !== adId));
+            logActivity('Advertisement Deleted', `Advertisement ${adId} deleted.`);
+        }
+    }, [setAdvertisements, logActivity]);
+
+    const handleCreateUserByAdmin = useCallback((userData: Omit<User, 'id' | 'loyalty' | 'password'>) => {
+        const defaultPassword = 'password123';
+        const newUser: User = {
+            ...userData,
+            id: `user-${Date.now()}`,
+            password: defaultPassword,
+            loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
+            addresses: [],
+            followedStores: []
+        };
+        setAllUsers(prev => [...prev, newUser]);
+        logActivity('User Created by Admin', `New user "${newUser.name}" (${newUser.role}) created.`);
+        alert(`Utilisateur créé avec succès ! Le mot de passe par défaut est : ${defaultPassword}`);
+    }, [setAllUsers, logActivity]);
+
+    const handleSanctionAgent = useCallback((agentId: string, reason: string) => {
+        setAllUsers(prev => prev.map(u => u.id === agentId ? { ...u, warnings: [...(u.warnings || []), { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason }] } : u));
+        const agentName = allUsers.find(u => u.id === agentId)?.name;
+        logActivity('Agent Sanctioned', `Agent ${agentName} sanctioned. Reason: ${reason}`);
+    }, [setAllUsers, allUsers, logActivity]);
+
+    // --- END OF ADMIN HANDLERS ---
+
     if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
         return <MaintenancePage message={siteSettings.maintenanceMode.message} reopenDate={siteSettings.maintenanceMode.reopenDate} />;
     }
@@ -1277,163 +1422,58 @@ export default function App() {
   const currentPage = useMemo(() => {
     switch(page) {
       case 'home': return <HomePage categories={allCategories} products={visibleProducts} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
-      // @FIX: Pass handleAddReview instead of handleReviewModeration to onAddReview prop.
-      case 'product': return selectedProduct ? <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home', resetSelections)} onAddReview={handleAddReview} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'cart': return <CartView onBack={() => handleNavigate('home', resetSelections)} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={handleApplyPromoCode} />;
+      case 'product': return selectedProduct ? <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home', resetSelections)} onAddReview={handleAddReview} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'cart': return <CartView onBack={() => handleNavigate('home')} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={handleApplyPromoCode} />;
       case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handlePlaceOrder} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
-      case 'order-success': return selectedOrder ? <OrderSuccess order={selectedOrder} onNavigateHome={() => handleNavigate('home', resetSelections)} onNavigateToOrders={() => handleNavigate('order-history', resetSelections)} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'stores': return <StoresPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('home')} onVisitStore={handleVendorClick} onNavigateToStoresMap={() => handleNavigate('stores-map')}/>;
+      case 'order-success': return selectedOrder ? <OrderSuccess order={selectedOrder} onNavigateHome={() => handleNavigate('home', resetSelections)} onNavigateToOrders={() => handleNavigate('order-history')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'stores': return <StoresPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('home')} onVisitStore={handleVendorClick} onNavigateToStoresMap={() => handleNavigate('stores-map')} />;
       case 'stores-map': return <StoresMapPage stores={allStores.filter(s => s.status === 'active')} onBack={() => handleNavigate('stores')} onVisitStore={handleVendorClick} />;
       case 'become-seller': return <BecomeSeller onBack={() => handleNavigate('home')} onBecomeSeller={handleBecomeSeller} onRegistrationSuccess={() => handleNavigate('seller-dashboard')} siteSettings={siteSettings} />;
-      case 'category': return selectedCategoryId ? <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'seller-dashboard':
-        if (user?.role === 'seller') {
-            const sellerStore = allStores.find(s => s.name === user.shopName);
-            if (sellerStore) {
-                 return <SellerDashboard
-                    store={sellerStore}
-                    products={allProducts.filter(p => p.vendor === user.shopName)}
-                    sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))}
-                    promoCodes={allPromoCodes.filter(pc => pc.sellerId === user.id)}
-                    categories={allCategories}
-                    flashSales={flashSales}
-                    onBack={() => handleNavigate('home')}
-                    onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }}
-                    onEditProduct={(product) => { setProductToEdit(product); handleNavigate('product-form'); }}
-                    onDeleteProduct={handleDeleteProduct}
-                    onToggleStatus={handleToggleStatus}
-                    onNavigateToProfile={() => handleNavigate('seller-profile')}
-                    onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')}
-                    onSetPromotion={(product) => setPromotionModalProduct(product)}
-                    onRemovePromotion={handleRemovePromotion}
-                    onProposeForFlashSale={handleProposeForFlashSale}
-                    onUploadDocument={handleUploadDocument}
-                    onUpdateOrderStatus={handleUpdateOrderWithSeller}
-                    onCreatePromoCode={handleCreatePromoCode}
-                    onDeletePromoCode={handleDeletePromoCode}
-                    isChatEnabled={isChatEnabled}
-                    onPayRent={(storeId) => {
-                        setAllStores(prev => prev.map(s => s.id === storeId ? { ...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() } : s))
-                        alert('Paiement du loyer effectué !');
-                    }}
-                    siteSettings={siteSettings}
-                    onAddStory={handleAddStory}
-                    onDeleteStory={handleDeleteStory}
-                />;
-            }
-        }
-        return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'vendor-page': return selectedVendor ? <VendorPage vendorName={selectedVendor} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'product-form': return user?.role === 'seller' ? <ProductForm onSave={handleAddProduct} onCancel={() => handleNavigate('seller-dashboard', resetSelections)} productToEdit={productToEdit} categories={allCategories} onAddCategory={(name) => {const newCat:Category = {id: `cat-new-${Date.now()}`, name, imageUrl:''}; setAllCategories(c => [...c, newCat]); return newCat;}} siteSettings={siteSettings} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'seller-profile':
-        if (user?.role === 'seller') {
-            const sellerStore = allStores.find(s => s.name === user.shopName);
-            return sellerStore ? <SellerProfile store={sellerStore} onBack={() => handleNavigate('seller-dashboard')} onUpdateProfile={(storeId, updates) => {
-                setAllStores(prev => prev.map(s => s.id === storeId ? {...s, name: updates.shopName, location: updates.location, logoUrl: updates.logoUrl } : s));
-            }}/> : <NotFoundPage onNavigateHome={() => handleNavigate('home')}/>;
-        }
-        return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'superadmin-dashboard': return user?.role === 'superadmin' ? <SuperAdminDashboard 
-            allOrders={allOrders}
-            allCategories={allCategories}
-            allStores={allStores}
-            siteActivityLogs={siteActivityLogs}
-            onUpdateOrderStatus={handleUpdateOrderWithAdmin}
-            onUpdateCategoryImage={(id, url) => setAllCategories(cats => cats.map(c => c.id === id ? {...c, imageUrl: url} : c))}
-            onWarnStore={(store, reason) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, warnings: [...s.warnings, { id: Date.now().toString(), date: new Date().toISOString(), reason}]} : s))}
-            onToggleStoreStatus={(store) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, status: s.status === 'active' ? 'suspended' : 'active'} : s))}
-            onToggleStorePremiumStatus={(store) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, premiumStatus: s.premiumStatus === 'premium' ? 'standard' : 'premium' } : s))}
-            onApproveStore={(store) => setAllStores(stores => stores.map(s => s.id === store.id ? {...s, status: 'active'} : s))}
-            onRejectStore={(store) => setAllStores(stores => stores.filter(s => s.id !== store.id))}
-            onSaveFlashSale={(data) => setFlashSales(fs => [...fs, { id: `fs-${Date.now()}`, ...data, products: []}])}
-            flashSales={flashSales}
-            allProducts={allProducts}
-            onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus}
-            onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus}
-            onRequestDocument={handleRequestDocument}
-            onVerifyDocumentStatus={handleVerifyDocumentStatus}
-            allPickupPoints={allPickupPoints}
-            onAddPickupPoint={(data) => setAllPickupPoints(pts => [...pts, {id: `pp-${Date.now()}`, ...data}])}
-            onUpdatePickupPoint={(data) => setAllPickupPoints(pts => pts.map(p => p.id === data.id ? data : p))}
-            onDeletePickupPoint={(id) => setAllPickupPoints(pts => pts.filter(p => p.id !== id))}
-            allUsers={allUsers}
-            onAssignAgent={handleAssignAgent}
-            isChatEnabled={isChatEnabled}
-            isComparisonEnabled={isComparisonEnabled}
-            onToggleChatFeature={() => setIsChatEnabled(e => !e)}
-            onToggleComparisonFeature={() => setIsComparisonEnabled(e => !e)}
-            siteSettings={siteSettings}
-            onUpdateSiteSettings={setSiteSettings}
-            onAdminAddCategory={handleAdminAddCategory}
-            onAdminDeleteCategory={handleAdminDeleteCategory}
-            onUpdateUser={(userId, updates) => setAllUsers(users => users.map(u => u.id === userId ? {...u, ...updates} : u))}
-            payouts={payouts}
-            onPayoutSeller={(store, amount) => {
-                const newPayout: Payout = { storeId: store.id, amount, date: new Date().toISOString() };
-                setPayouts(p => [...p, newPayout]);
-                logActivity('Payout Processed', `Paid ${amount.toLocaleString('fr-CM')} FCFA to "${store.name}".`);
-            }}
-            onActivateSubscription={(store) => {
-                 setAllStores(prev => prev.map(s => s.id === store.id ? { ...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() } : s));
-                 logActivity('Subscription Activated', `Subscription for "${store.name}" has been manually activated.`);
-            }}
-            advertisements={advertisements}
-            onAddAdvertisement={(ad) => setAdvertisements(ads => [...ads, {id: `ad-${Date.now()}`, ...ad}])}
-            onUpdateAdvertisement={(ad) => setAdvertisements(ads => ads.map(a => a.id === ad.id ? ad : a))}
-            onDeleteAdvertisement={(id) => setAdvertisements(ads => ads.filter(a => a.id !== id))}
-            onCreateUserByAdmin={(userData) => setAllUsers(users => [...users, {id: `user-${Date.now()}`, loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, followedStores: [], ...userData}])}
-            onSanctionAgent={(agentId, reason) => {
-                const agent = allUsers.find(u => u.id === agentId);
-                if (agent) {
-                    const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason };
-                    setAllUsers(users => users.map(u => u.id === agentId ? { ...u, warnings: [...(u.warnings || []), newWarning]} : u));
-                    logActivity('Agent Sanctioned', `Agent ${agent.name} sanctioned. Reason: ${reason}`);
-                    alert(`Agent ${agent.name} a été sanctionné.`);
-                }
-            }}
-            onResolveRefund={handleResolveRefund}
-            onAdminStoreMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')}
-            onAdminCustomerMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')}
-            siteContent={siteContent}
-            onUpdateSiteContent={setSiteContent}
-        /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'order-history': return user ? <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home', resetSelections)} onSelectOrder={(order) => { setSelectedOrder(order); handleNavigate('order-detail'); }} onRepeatOrder={handleRepeatOrder} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'order-detail': return selectedOrder ? <OrderDetailPage order={selectedOrder} allPickupPoints={allPickupPoints} allUsers={allUsers} onBack={() => handleNavigate('order-history', resetSelections)} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} onCustomerDisputeMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'customer')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'promotions': return <PromotionsPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-      case 'flash-sales': return <FlashSalesPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-      case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={visibleProducts} allStores={allStores} allCategories={allCategories} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-      case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
-      case 'delivery-agent-dashboard': return user?.role === 'delivery_agent' ? <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrderStatus={(orderId, status) => { const order=allOrders.find(o=>o.id===orderId); if(order) { const updatedOrder=addStatusLog(order,status,user.name); setAllOrders(os=>os.map(o=>o.id===orderId ? updatedOrder:o)); } }} onLogout={handleLogout} onUpdateUserAvailability={handleUpdateUserAvailability} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
-      case 'depot-agent-dashboard': return user?.role === 'depot_agent' ? <DepotAgentDashboard user={user} allUsers={allUsers} allOrders={allOrders} onCheckIn={(orderId, storageId) => { const o=allOrders.find(o=>o.id===orderId); if(o){ const uo = addStatusLog({...o, storageLocationId:storageId, checkedInAt: new Date().toISOString(), checkedInBy: user.id}, 'at-depot', user.name); setAllOrders(os => os.map(ord => ord.id === orderId ? uo : ord)); } }} onReportDiscrepancy={(orderId, reason) => {const o=allOrders.find(o=>o.id===orderId); if(o){ const uo = addStatusLog({...o, discrepancy: {reason, reportedAt: new Date().toISOString(), reportedBy: user.id}}, 'depot-issue', user.name); setAllOrders(os => os.map(ord => ord.id === orderId ? uo : ord));} }} onLogout={handleLogout} onProcessDeparture={(orderId, recipient) => { const o=allOrders.find(o=>o.id===orderId); if(o) {const newStatus=o.deliveryMethod === 'pickup' ? 'delivered' : 'out-for-delivery'; const uo=addStatusLog({...o, departureProcessedByAgentId: user.id, processedForDepartureAt: new Date().toISOString(), pickupRecipientName: recipient?.name, pickupRecipientId: recipient?.idNumber}, newStatus, user.name); setAllOrders(os=>os.map(ord=>ord.id===orderId ? uo : ord))}}} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
-      case 'comparison': return <ComparisonPage onBack={() => window.history.back()} allCategories={allCategories}/>;
+      case 'category': return selectedCategoryId ? <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'seller-dashboard': return user && user.role === 'seller' && user.shopName ? <SellerDashboard store={allStores.find(s=>s.name === user.shopName)} products={allProducts.filter(p=>p.vendor === user.shopName)} sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))} categories={allCategories} flashSales={flashSales} promoCodes={allPromoCodes.filter(pc => pc.sellerId === user.id)} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={handleDeleteProduct} onToggleStatus={handleToggleStatus} onNavigateToProfile={() => handleNavigate('seller-profile')} onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')} onSetPromotion={(p) => setPromotionModalProduct(p)} onRemovePromotion={handleRemovePromotion} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderWithSeller} onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={()=>{}} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} payouts={payouts} onSellerDisputeMessage={handleSellerDisputeMessage} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'seller-analytics-dashboard': return user && user.role === 'seller' && user.shopName ? <SellerAnalyticsDashboard onBack={() => handleNavigate('seller-dashboard')} sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))} sellerProducts={allProducts.filter(p=>p.vendor === user.shopName)} flashSales={flashSales} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'vendor-page': return selectedVendor ? <VendorPage vendorName={selectedVendor} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'product-form': return user && user.role === 'seller' ? <ProductForm onSave={handleAddProduct} onCancel={() => handleNavigate('seller-dashboard')} productToEdit={productToEdit} categories={allCategories} onAddCategory={() => {return {id: '', name: '', imageUrl: ''}}} siteSettings={siteSettings} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'seller-profile': return user && user.role === 'seller' && user.shopName ? <SellerProfile store={allStores.find(s=>s.name === user.shopName)!} onBack={() => handleNavigate('seller-dashboard')} onUpdateProfile={() => {}} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      // FIX: Corrected the function name for requesting a document from `onRequestDocument` to `handleRequestDocument`.
+      case 'superadmin-dashboard': return user && user.role === 'superadmin' ? <SuperAdminDashboard allOrders={allOrders} allCategories={allCategories} allStores={allStores} allProducts={allProducts} allUsers={allUsers} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderWithAdmin} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddOrUpdatePickupPoint} onUpdatePickupPoint={handleAddOrUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(p => !p)} onToggleComparisonFeature={() => setIsComparisonEnabled(p => !p)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUser={handleUpdateUserFromAdmin} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} advertisements={advertisements} onAddAdvertisement={handleAddOrUpdateAdvertisement} onUpdateAdvertisement={handleAddOrUpdateAdvertisement} onDeleteAdvertisement={handleDeleteAdvertisement} onCreateUserByAdmin={handleCreateUserByAdmin} onSanctionAgent={handleSanctionAgent} onResolveRefund={handleResolveRefund} onAdminStoreMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')} onAdminCustomerMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')} siteContent={siteContent} onUpdateSiteContent={setSiteContent} allTickets={allTickets} allAnnouncements={allAnnouncements} onAdminReplyToTicket={handleAdminReplyToTicket} onAdminUpdateTicketStatus={handleAdminUpdateTicketStatus} onCreateOrUpdateAnnouncement={handleCreateOrUpdateAnnouncement} onDeleteAnnouncement={handleDeleteAnnouncement} onReviewModeration={handleReviewModeration} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'order-history': return user ? <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home')} onSelectOrder={(order) => { setSelectedOrder(order); handleNavigate('order-detail'); }} onRepeatOrder={handleRepeatOrder} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'order-detail': return selectedOrder ? <OrderDetailPage order={selectedOrder} onBack={() => handleNavigate('order-history', resetSelections)} allPickupPoints={allPickupPoints} allUsers={allUsers} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} onCustomerDisputeMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'customer')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'promotions': return <PromotionsPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+      case 'flash-sales': return <FlashSalesPage allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+      case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={visibleProducts} allCategories={allCategories} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
+      case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled}/>;
+      case 'delivery-agent-dashboard': return user && user.role === 'delivery_agent' ? <DeliveryAgentDashboard allOrders={allOrders.filter(o => o.agentId === user.id)} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrder={handleUpdateOrderFromAgent} onLogout={handleLogout} onUpdateUserAvailability={handleUpdateUserAvailability} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'depot-agent-dashboard': return user && user.role === 'depot_agent' ? <DepotAgentDashboard user={user} allUsers={allUsers} allOrders={allOrders} onCheckIn={()=>{}} onReportDiscrepancy={()=>{}} onLogout={handleLogout} onProcessDeparture={()=>{}} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'comparison': return <ComparisonPage onBack={() => handleNavigate('home')} allCategories={allCategories} />;
       case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => handleNavigate('home')} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} />;
-      case 'analytics-dashboard': return user?.role === 'superadmin' ? <AnalyticsDashboard onBack={() => handleNavigate('superadmin-dashboard')} allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} allCategories={allCategories} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
-      case 'seller-analytics-dashboard':
-        if (user?.role === 'seller') {
-            const sellerStore = allStores.find(s => s.name === user.shopName);
-            if (sellerStore) {
-                 const sellerProducts = allProducts.filter(p => p.vendor === user.shopName);
-                 const sellerOrders = allOrders.filter(o => o.items.some(i => i.vendor === user.shopName));
-                 return <SellerAnalyticsDashboard
-                    onBack={() => handleNavigate('seller-dashboard')}
-                    sellerOrders={sellerOrders}
-                    sellerProducts={sellerProducts}
-                />;
-            }
-        }
-        return <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      case 'review-moderation': return user?.role === 'superadmin' ? <ReviewModeration onBack={() => handleNavigate('superadmin-dashboard')} allProducts={allProducts} onReviewModeration={handleReviewModeration} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
       case 'reset-password': return <ResetPasswordPage onPasswordReset={handlePasswordReset} onNavigateLogin={handleNavigateLoginFromReset} />;
-      case 'account': return user ? <AccountPage onBack={() => handleNavigate('home')} initialTab={activeAccountTab} allStores={allStores} onVendorClick={handleVendorClick}/> : <ForbiddenPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
-      default: return <NotFoundPage onNavigateHome={() => handleNavigate('home', resetSelections)}/>;
+      case 'account': return user ? <AccountPage onBack={() => handleNavigate('home')} initialTab={activeAccountTab} allStores={allStores} onVendorClick={handleVendorClick} allTickets={allTickets.filter(t => t.userId === user.id)} userOrders={allOrders.filter(o=>o.userId === user.id)} onCreateTicket={handleCreateTicket} onUserReplyToTicket={handleUserReplyToTicket} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'forbidden': return <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'server-error': return <ServerErrorPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'not-found':
+      default: return <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
     }
-  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, user, allProducts, allCategories, allStores, allOrders, cart, searchQuery, allPromoCodes, appliedPromoCode, productToEdit, promotionModalProduct, infoPageContent, isLoginModalOpen, isModalOpen, modalProduct, isForgotPasswordModalOpen, emailForPasswordReset, comparisonList, viewingStoriesOfStore, isChatEnabled, isComparisonEnabled, siteSettings, siteActivityLogs, flashSales, allPickupPoints, payouts, advertisements, visibleProducts, handleNavigate, activeAccountTab]);
+  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, searchQuery, allProducts, allCategories, allStores, allOrders, user, allPromoCodes, appliedPromoCode, productToEdit, siteActivityLogs, allUsers, cart, flashSales, allPickupPoints, payouts, advertisements, allTickets, allAnnouncements, visibleProducts, isChatEnabled, isComparisonEnabled, siteSettings.isStoriesEnabled, siteSettings, siteContent, infoPageContent, viewingStoriesOfStore, modalProduct, isModalOpen, comparisonList, promotionModalProduct, dismissedAnnouncements, activeAccountTab, handleNavigate]);
+
+  const handleInfoPageNavigate = (slug: string) => {
+    const content = siteContent.find(c => c.slug === slug);
+    if (content) {
+      setInfoPageContent(content);
+      handleNavigate('info');
+    } else {
+      handleNavigate('not-found');
+    }
+  };
 
   return (
-    <>
-      <Header 
-        categories={allCategories} 
+    <div className="flex flex-col min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-200">
+      {activeAnnouncements.map(ann => (
+          <AnnouncementBanner key={ann.id} announcement={ann} onDismiss={(id) => setDismissedAnnouncements(prev => [...prev, id])} />
+      ))}
+      <Header
+        categories={allCategories}
         onNavigateHome={() => handleNavigate('home', resetSelections)}
         onNavigateCart={() => handleNavigate('cart')}
         onNavigateToStores={() => handleNavigate('stores')}
@@ -1449,8 +1489,6 @@ export default function App() {
         onNavigateToDeliveryAgentDashboard={() => handleNavigate('delivery-agent-dashboard')}
         onNavigateToDepotAgentDashboard={() => handleNavigate('depot-agent-dashboard')}
         onNavigateToBecomePremium={() => handleNavigate('become-premium')}
-        onNavigateToAnalyticsDashboard={() => handleNavigate('analytics-dashboard')}
-        onNavigateToReviewModeration={() => handleNavigate('review-moderation')}
         onNavigateToAccount={handleNavigateToAccount}
         onOpenLogin={() => setIsLoginModalOpen(true)}
         onLogout={handleLogout}
@@ -1460,63 +1498,17 @@ export default function App() {
         logoUrl={siteSettings.logoUrl}
         onLoginSuccess={handleLoginSuccess}
       />
-      <main className="min-h-[calc(100vh-136px)]">
+      <main className="flex-grow">
         {currentPage}
       </main>
-      <Footer onNavigate={(slug: string) => {
-          const pageContent = siteContent.find(p => p.slug === slug);
-          if (pageContent) {
-            setInfoPageContent({ title: pageContent.title, content: pageContent.content });
-            handleNavigate('info');
-          } else {
-            setInfoPageContent({ title: "Page non trouvée", content: "Le contenu pour cette page n'est pas encore disponible." });
-            handleNavigate('info');
-          }
-        }} logoUrl={siteSettings.logoUrl}/>
-      
-      {isModalOpen && modalProduct && (
-        <AddToCartModal 
-            product={modalProduct}
-            onClose={uiCloseModal}
-            onNavigateToCart={() => { uiCloseModal(); handleNavigate('cart'); }}
-        />
-      )}
-      
-      {isLoginModalOpen && (
-        <LoginModal 
-            onClose={() => setIsLoginModalOpen(false)}
-            onLoginSuccess={handleLoginSuccess}
-            onForgotPassword={handleOpenForgotPassword}
-        />
-      )}
-
-      {isForgotPasswordModalOpen && (
-          <ForgotPasswordModal
-              onClose={() => setIsForgotPasswordModalOpen(false)}
-              onEmailSubmit={handleForgotPasswordSubmit}
-          />
-      )}
-
-      {promotionModalProduct && (
-        <PromotionModal 
-          product={promotionModalProduct}
-          onClose={() => setPromotionModalProduct(null)}
-          onSave={handleSetPromotion}
-        />
-      )}
-      
-      {viewingStoriesOfStore && (
-        <StoryViewer 
-            store={viewingStoriesOfStore}
-            onClose={() => setViewingStoriesOfStore(null)}
-        />
-      )}
-      
-      {comparisonList.length > 0 && isComparisonEnabled && (
-        <ComparisonBar onCompareClick={() => handleNavigate('comparison')}/>
-      )}
-      
-      {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} allCategories={allCategories}/>}
-    </>
+      <Footer onNavigate={handleInfoPageNavigate} logoUrl={siteSettings.logoUrl} />
+      {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={uiCloseModal} onNavigateToCart={() => { uiCloseModal(); handleNavigate('cart'); }} />}
+      {isLoginModalOpen && <LoginModal onClose={() => setIsLoginModalOpen(false)} onLoginSuccess={handleLoginSuccess} onForgotPassword={handleOpenForgotPassword} />}
+      {isForgotPasswordModalOpen && <ForgotPasswordModal onClose={() => setIsForgotPasswordModalOpen(false)} onEmailSubmit={handleForgotPasswordSubmit} />}
+      {viewingStoriesOfStore && <StoryViewer store={viewingStoriesOfStore} onClose={() => setViewingStoriesOfStore(null)} />}
+      {promotionModalProduct && <PromotionModal product={promotionModalProduct} onClose={() => setPromotionModalProduct(null)} onSave={handleSetPromotion} />}
+      {isComparisonEnabled && <ComparisonBar onCompareClick={() => handleNavigate('comparison')} />}
+      {isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={allProducts} allCategories={allCategories} />}
+    </div>
   );
 }

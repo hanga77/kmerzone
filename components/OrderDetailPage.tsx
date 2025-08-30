@@ -270,21 +270,25 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack,
             <div className="border-t dark:border-gray-700 pt-6 mt-8">
                 <h3 className="font-semibold mb-4 dark:text-white">Discussion sur le litige</h3>
                 <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg space-y-4">
-                    <div className="max-h-48 overflow-y-auto space-y-3 pr-2">
-                        {order.disputeLog.filter(m => m.author !== 'seller').map((msg, i) => (
-                            <div key={i} className={`flex ${msg.author === 'customer' ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-md p-3 rounded-xl text-sm ${msg.author === 'customer' ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                    <p className="font-bold mb-1">{msg.author === 'customer' ? 'Vous' : 'Admin'}</p>
+                    <div className="max-h-60 overflow-y-auto space-y-3 pr-2">
+                        {order.disputeLog.map((msg, i) => {
+                            const isMe = msg.author === 'customer';
+                            const authorName = msg.author.charAt(0).toUpperCase() + msg.author.slice(1);
+                            return (
+                               <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                                <div className={`max-w-md p-3 rounded-xl text-sm ${isMe ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                    <p className="font-bold mb-1">{isMe ? 'Vous' : authorName}</p>
                                     <p>{msg.message}</p>
                                     <p className="text-xs opacity-70 mt-1 text-right">{new Date(msg.date).toLocaleTimeString('fr-FR')}</p>
                                 </div>
                             </div>
-                        ))}
+                            );
+                        })}
                     </div>
                     <form onSubmit={e => { e.preventDefault(); const input = (e.target as any).message; onCustomerDisputeMessage(order.id, input.value); input.value=''; }}>
                         <div className="flex gap-2">
-                            <input name="message" placeholder="Répondre à l'administrateur..." className="flex-grow text-sm p-2 border rounded-md dark:bg-gray-700"/>
-                            <button type="submit" className="p-2 bg-blue-500 text-white rounded-md"><PaperAirplaneIcon className="w-5 h-5"/></button>
+                            <input name="message" placeholder="Envoyer un message..." className="flex-grow text-sm p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
+                            <button type="submit" className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"><PaperAirplaneIcon className="w-5 h-5"/></button>
                         </div>
                     </form>
                 </div>

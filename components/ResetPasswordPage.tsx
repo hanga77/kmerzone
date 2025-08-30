@@ -3,7 +3,6 @@ import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeftIcon, CheckCircleIcon } from './Icons';
 
 interface ResetPasswordPageProps {
-  // @FIX: Update prop type to accept the new password string.
   onPasswordReset: (newPassword: string) => void;
   onNavigateLogin: () => void;
 }

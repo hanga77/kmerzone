@@ -24,8 +24,6 @@ interface HeaderProps {
   onNavigateToDeliveryAgentDashboard: () => void;
   onNavigateToDepotAgentDashboard: () => void;
   onNavigateToBecomePremium: () => void;
-  onNavigateToAnalyticsDashboard: () => void;
-  onNavigateToReviewModeration: () => void;
   onNavigateToAccount: (tab?: string) => void;
   onOpenLogin: () => void;
   onLogout: () => void;
@@ -37,7 +35,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAnalyticsDashboard, onNavigateToReviewModeration, onNavigateToAccount, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, onLoginSuccess } = props;
+  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, onLoginSuccess } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -122,7 +120,10 @@ const Header: React.FC<HeaderProps> = (props) => {
     ] : []),
     ...(user?.role === 'delivery_agent' ? [{ label: 'Tableau de bord Livreur', action: onNavigateToDeliveryAgentDashboard, icon: <TruckIcon className="h-5 w-5" /> }] : []),
     ...(user?.role === 'depot_agent' ? [{ label: 'Tableau de bord Dépôt', action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
-    ...(user && (user.role === 'customer' || user.role === 'seller') ? [{ label: 'Mes Commandes', action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> }] : [])
+    ...(user && (user.role === 'customer' || user.role === 'seller') ? [
+        { label: 'Mes Commandes', action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> },
+        { label: 'Support', action: () => onNavigateToAccount('support'), icon: <ChatBubbleBottomCenterTextIcon className="h-5 w-5" /> }
+    ] : [])
   ];
 
   const ActionButton: React.FC<{onClick: () => void, icon: React.ReactNode, label: string, count?: number}> = ({onClick, icon, label, count}) => (
@@ -224,12 +225,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           </div>
         </div>
 
-        {user?.role === 'superadmin' ? (
-           <nav className="hidden lg:flex items-center justify-center space-x-6 border-t border-gray-200 dark:border-gray-700 mt-3 pt-2">
-              <button onClick={onNavigateToAnalyticsDashboard} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-2"><BarChartIcon className="w-5 h-5"/>Tableau de Bord Analytique</button>
-              <button onClick={onNavigateToReviewModeration} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-2"><ShieldCheckIcon className="w-5 h-5"/>Modération des Avis</button>
-           </nav>
-        ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
+        {(!user || (user.role !== 'superadmin' && user.role !== 'delivery_agent' && user.role !== 'depot_agent')) && (
           <nav className="hidden lg:flex items-center justify-center space-x-6 border-t border-gray-200 dark:border-gray-700 mt-3 pt-2">
             <div className="relative" ref={categoryMenuRef}>
               <button
@@ -275,7 +271,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 </button>
             )}
           </nav>
-        ) : null}
+        )}
       </div>
 
       {isMenuOpen && (
@@ -299,12 +295,7 @@ const Header: React.FC<HeaderProps> = (props) => {
           
           <div className="flex-grow overflow-y-auto p-4">
             <nav className="flex flex-col space-y-4">
-              {user?.role === 'superadmin' ? (
-                <>
-                  <button onClick={() => {onNavigateToAnalyticsDashboard(); setIsMenuOpen(false);}} className="text-left font-semibold py-2 flex items-center gap-2"><BarChartIcon className="w-5 h-5"/>Tableau de Bord Analytique</button>
-                  <button onClick={() => {onNavigateToReviewModeration(); setIsMenuOpen(false);}} className="text-left font-semibold py-2 flex items-center gap-2"><ShieldCheckIcon className="w-5 h-5"/>Modération des Avis</button>
-                </>
-              ) : user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' ? (
+              {user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' && (
                 <>
                   <button onClick={() => {onNavigateToPromotions(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Promotions</button>
                   <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Ventes Flash</button>
@@ -326,7 +317,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                      </div>
                   </div>
                 </>
-              ) : null}
+              )}
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                  <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Mon Compte</h3>

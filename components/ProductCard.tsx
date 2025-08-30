@@ -15,7 +15,7 @@ interface ProductCardProps {
   isComparisonEnabled: boolean;
 }
 
-const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
+const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
 
 const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
     const now = new Date();
@@ -67,7 +67,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
   const { isInComparison, toggleComparison } = useComparison();
   const { user } = useAuth();
 
-  const isOwner = user?.role === 'seller' && user.shopName === product.vendor;
+  const isSeller = user?.role === 'seller';
   const hasVariants = product.variants && product.variants.length > 0;
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -150,10 +150,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
         <div className="absolute bottom-2 right-2">
             <button 
               onClick={handleAddToCart} 
-              disabled={totalStock === 0 || isOwner}
+              disabled={totalStock === 0 || isSeller}
               className={`flex items-center justify-center h-12 w-12 text-gray-900 rounded-full shadow-md transform transition-all duration-300 hover:scale-110 bg-kmer-yellow disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed`}
-              aria-label={isOwner ? "Vous ne pouvez pas acheter votre propre produit" : (totalStock === 0 ? "Épuisé" : (hasVariants ? "Choisir options" : "Ajouter au panier"))}
-              title={isOwner ? "Vous ne pouvez pas acheter votre propre produit" : (hasVariants ? "Choisir les options" : "Ajouter au panier")}
+              aria-label={isSeller ? "Les vendeurs ne peuvent pas effectuer d'achats" : (totalStock === 0 ? "Épuisé" : (hasVariants ? "Choisir options" : "Ajouter au panier"))}
+              title={isSeller ? "Les vendeurs ne peuvent pas effectuer d'achats" : (hasVariants ? "Choisir les options" : "Ajouter au panier")}
             >
                 {totalStock === 0 ? <span className="text-xs font-bold text-white">ÉPUISÉ</span> : <ShoppingCartIcon className="h-5 w-5" />}
             </button>

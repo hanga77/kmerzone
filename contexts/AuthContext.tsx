@@ -23,6 +23,9 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const initialUsers: User[] = [
     { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', password: 'password', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
+    { id: 'customer-1', name: 'Client Test', email: 'customer@example.com', password: 'password', role: 'customer', loyalty: { status: 'premium', orderCount: 12, totalSpent: 62000, premiumStatusMethod: 'loyalty' }, addresses: [
+        { id: 'addr1', isDefault: true, fullName: 'Client Test', phone: '690123456', address: '123 Rue de la Liberté', city: 'Douala' }
+    ], followedStores: ['store-1'] },
     { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', password: 'password', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
     { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', password: 'password', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
     { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', password: 'password', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },

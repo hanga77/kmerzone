@@ -207,6 +207,7 @@ export interface NewOrderData {
     items: CartItem[];
     subtotal: number;
     deliveryFee: number;
+
     total: number;
     shippingAddress: Address;
     deliveryMethod: 'pickup' | 'home-delivery';
@@ -267,6 +268,8 @@ export interface Order extends NewOrderData {
     // For customer pickup verification
     pickupRecipientName?: string;
     pickupRecipientId?: string;
+    proofOfDeliveryUrl?: string;
+    signatureUrl?: string;
 }
 
 export interface Payout {
@@ -311,6 +314,7 @@ export interface SiteSettings {
   isRentEnabled: boolean;
   rentAmount: number;
   canSellersCreateCategories: boolean;
+  commissionRate: number;
   maintenanceMode: {
     isEnabled: boolean;
     message: string;
@@ -375,5 +379,38 @@ export interface Advertisement {
   imageUrl: string;
   linkUrl: string;
   location: 'homepage-banner';
+  isActive: boolean;
+}
+
+export interface TicketMessage {
+  authorId: string;
+  authorName: string;
+  message: string;
+  date: string; // ISO string
+}
+
+export type TicketStatus = 'Ouvert' | 'En cours' | 'Résolu';
+export type TicketPriority = 'Basse' | 'Moyenne' | 'Haute';
+
+export interface Ticket {
+  id: string;
+  userId: string;
+  userName: string;
+  subject: string;
+  relatedOrderId?: string;
+  status: TicketStatus;
+  priority: TicketPriority;
+  createdAt: string; // ISO string
+  updatedAt: string; // ISO string
+  messages: TicketMessage[];
+}
+
+export interface Announcement {
+  id: string;
+  title: string;
+  content: string;
+  target: 'all' | 'customers' | 'sellers';
+  startDate: string; // ISO string date
+  endDate: string; // ISO string date
   isActive: boolean;
 }

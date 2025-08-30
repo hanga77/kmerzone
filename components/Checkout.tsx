@@ -226,6 +226,10 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
       alert("Veuillez vous connecter pour passer une commande.");
       return;
     }
+    if (user.role === 'seller') {
+        alert("Votre compte vendeur ne vous autorise pas à passer des commandes.");
+        return;
+    }
     
     if (deliveryMethod === 'home-delivery' && (!shippingAddress.fullName || !shippingAddress.phone || !shippingAddress.address)) {
       alert("Veuillez remplir toutes les informations de livraison.");

@@ -1,10 +1,10 @@
 
 import React, { useState, useMemo, useRef, useEffect } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage, SiteContent } from '../types';
-import { useAuth } from '../contexts/AuthContext';
-import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon } from './Icons';
-import FlashSaleForm from './FlashSaleForm';
 import QRCode from 'qrcode';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage, SiteContent, Review, Ticket, TicketStatus, TicketPriority, Announcement } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon, ShieldCheckIcon, MegaphoneIcon, BanknotesIcon, BarChartIcon } from './Icons';
+import FlashSaleForm from './FlashSaleForm';
 
 declare const L: any;
 
@@ -15,6 +15,7 @@ interface SuperAdminDashboardProps {
     allOrders: Order[];
     allCategories: Category[];
     allStores: Store[];
+    allProducts: Product[];
     siteActivityLogs: SiteActivityLog[];
     onUpdateOrderStatus: (order: Order, status: OrderStatus) => void;
     onUpdateCategoryImage: (categoryId: string, imageUrl: string) => void;
@@ -25,7 +26,6 @@ interface SuperAdminDashboardProps {
     onRejectStore: (store: Store) => void;
     onSaveFlashSale: (flashSaleData: Omit<FlashSale, 'id' | 'products'>) => void;
     flashSales: FlashSale[];
-    allProducts: Product[];
     onUpdateFlashSaleSubmissionStatus: (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => void;
     onBatchUpdateFlashSaleStatus: (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => void;
     onRequestDocument: (storeId: string, documentName: string) => void;
@@ -58,9 +58,40 @@ interface SuperAdminDashboardProps {
     onAdminCustomerMessage: (orderId: string, message: string) => void;
     siteContent: SiteContent[];
     onUpdateSiteContent: (newContent: SiteContent[]) => void;
+    allTickets: Ticket[];
+    allAnnouncements: Announcement[];
+    onAdminReplyToTicket: (ticketId: string, message: string) => void;
+    onAdminUpdateTicketStatus: (ticketId: string, status: TicketStatus, priority: TicketPriority) => void;
+    onCreateOrUpdateAnnouncement: (announcement: Omit<Announcement, 'id'> | Announcement) => void;
+    onDeleteAnnouncement: (id: string) => void;
+    onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => void;
 }
 
-const getFinalPriceForPayout = (item: CartItem): number => {
+// Helper functions (could be moved to a utils file)
+const isPromotionActive = (product: Product): boolean => {
+  if (!product.promotionPrice || product.promotionPrice >= product.price) { return false; }
+  const now = new Date();
+  const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
+  const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
+  if (!startDate && !endDate) return false;
+  if (startDate && endDate) return now >= startDate && now <= endDate;
+  if (startDate) return now >= startDate;
+  if (endDate) return now <= endDate;
+  return false;
+};
+
+const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
+    const now = new Date();
+    for (const sale of flashSales) {
+        if (now >= new Date(sale.startDate) && now <= new Date(sale.endDate)) {
+            const productInSale = sale.products.find(p => p.productId === productId && p.status === 'approved');
+            if (productInSale) return productInSale.flashPrice;
+        }
+    }
+    return null;
+};
+
+const getFinalPriceForPayout = (item: CartItem, flashSales: FlashSale[]): number => {
     if (item.selectedVariant) {
         const variantDetail = item.variantDetails?.find(vd => {
             if (!item.selectedVariant) return false;
@@ -73,10 +104,12 @@ const getFinalPriceForPayout = (item: CartItem): number => {
             return variantDetail.price;
         }
     }
-    // Note: This cannot reliably recalculate historical flash sales or date-bound promotions.
-    // It uses the promotion price if it exists on the product data within the order item.
-    // A better data model would store the exact price paid per item in the order.
-    return item.promotionPrice ?? item.price;
+    const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
+    if (flashPrice !== null) return flashPrice;
+    
+    if (isPromotionActive(item)) return item.promotionPrice!;
+    
+    return item.price;
 };
 
 
@@ -112,10 +145,10 @@ const AssignAgentModal: React.FC<{
     );
 };
 
-const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void }> = ({ icon, label, isActive, onClick }) => (
+const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
     <button
         onClick={onClick}
-        className={`flex items-center gap-2 px-3 py-3 text-sm font-semibold rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${
+        className={`relative flex items-center gap-2 px-3 py-3 text-sm font-semibold rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${
             isActive
                 ? 'text-kmer-green border-kmer-green'
                 : 'text-gray-500 border-transparent hover:text-kmer-green hover:border-kmer-green/50 dark:text-gray-400 dark:hover:text-gray-200'
@@ -123,6 +156,9 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
     >
         {icon}
         <span className="hidden sm:inline">{label}</span>
+         {count !== undefined && count > 0 && (
+            <span className="ml-1 text-xs bg-kmer-red text-white rounded-full px-1.5 py-0.5">{count}</span>
+        )}
     </button>
 );
 
@@ -1089,21 +1125,27 @@ const PickupPointManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allPi
     );
 };
 
-const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStores' | 'allOrders' | 'onPayoutSeller' | 'flashSales'>> = ({ payouts, allStores, allOrders, onPayoutSeller, flashSales }) => {
+const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStores' | 'allOrders' | 'onPayoutSeller' | 'flashSales' | 'siteSettings'>> = ({ payouts, allStores, allOrders, onPayoutSeller, flashSales, siteSettings }) => {
     const storeBalances = useMemo(() => {
+        const commissionRate = siteSettings.commissionRate || 0;
+
         return allStores.map(store => {
             const deliveredOrders = allOrders.filter(o => o.status === 'delivered' && o.items.some(i => i.vendor === store.name));
+            
             const totalRevenue = deliveredOrders.reduce((sum, order) => {
                 const storeItemsTotal = order.items
                     .filter(i => i.vendor === store.name)
-                    .reduce((itemSum, item) => itemSum + getFinalPriceForPayout(item) * item.quantity, 0);
+                    .reduce((itemSum, item) => itemSum + getFinalPriceForPayout(item, flashSales) * item.quantity, 0);
                 return sum + storeItemsTotal;
             }, 0);
+            
+            const commission = totalRevenue * (commissionRate / 100);
             const totalPaidOut = payouts.filter(p => p.storeId === store.id).reduce((sum, p) => sum + p.amount, 0);
-            const balance = totalRevenue - totalPaidOut;
-            return { store, totalRevenue, totalPaidOut, balance };
+            const balance = totalRevenue - commission - totalPaidOut;
+            
+            return { store, totalRevenue, totalPaidOut, commission, balance };
         });
-    }, [allStores, allOrders, payouts]);
+    }, [allStores, allOrders, payouts, flashSales, siteSettings.commissionRate]);
 
     const handlePayout = (store: Store, amount: number) => {
         if (amount > 0 && window.confirm(`Confirmez-vous le paiement de ${amount.toLocaleString('fr-CM')} FCFA à la boutique "${store.name}" ?`)) {
@@ -1120,16 +1162,18 @@ const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStor
                         <tr>
                             <th className="p-2">Boutique</th>
                             <th className="p-2">Revenu Total (Livré)</th>
+                            <th className="p-2">Commission KMER ZONE ({siteSettings.commissionRate}%)</th>
                             <th className="p-2">Déjà Payé</th>
                             <th className="p-2">Solde Actuel</th>
                             <th className="p-2">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {storeBalances.map(({ store, balance, totalRevenue, totalPaidOut }) => (
+                        {storeBalances.map(({ store, balance, totalRevenue, totalPaidOut, commission }) => (
                             <tr key={store.id} className="border-b dark:border-gray-700">
                                 <td className="p-2 font-semibold">{store.name}</td>
                                 <td className="p-2">{totalRevenue.toLocaleString('fr-CM')} FCFA</td>
+                                <td className="p-2 text-red-600">-{commission.toLocaleString('fr-CM')} FCFA</td>
                                 <td className="p-2">{totalPaidOut.toLocaleString('fr-CM')} FCFA</td>
                                 <td className="p-2 font-bold">{balance.toLocaleString('fr-CM')} FCFA</td>
                                 <td className="p-2">
@@ -1141,7 +1185,7 @@ const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStor
                 </table>
             </div>
 
-             <h3 className="text-lg font-bold mt-8 mb-4">Historique Détaillé des Paiements</h3>
+            <h3 className="text-lg font-bold mt-8 mb-4">Historique Détaillé des Paiements</h3>
             <div className="overflow-x-auto max-h-80">
                 <table className="w-full text-sm text-left">
                     <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
@@ -1216,42 +1260,25 @@ const AdManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'advertisements
     };
     
     return (
-        <div className="p-6 grid md:grid-cols-3 gap-6">
-            <div className="md:col-span-1">
-                <h3 className="text-lg font-bold mb-4">{editingAd ? 'Modifier' : 'Ajouter'} une Publicité</h3>
-                <form onSubmit={handleSubmit} className="space-y-4">
-                    <div>
-                        <label className="text-sm">Image (URL ou téléverser)</label>
-                        <input type="file" onChange={handleImageChange} className="mt-1 w-full text-sm"/>
-                        <input type="text" name="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="Ou coller une URL" className="mt-1 w-full p-2 border rounded text-sm"/>
-                        {formData.imageUrl && <img src={formData.imageUrl} alt="preview" className="mt-2 h-24 w-full object-contain rounded"/>}
-                    </div>
-                    <input type="text" name="linkUrl" value={formData.linkUrl} onChange={handleChange} placeholder="Lien de redirection" className="w-full p-2 border rounded" required />
-                    <select name="location" value={formData.location} onChange={handleChange} className="w-full p-2 border rounded">
-                        <option value="homepage-banner">Bannière page d'accueil</option>
-                    </select>
-                    <label className="flex items-center gap-2"><input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} /> Actif</label>
-                    <div className="flex gap-2">
-                        <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md">{editingAd ? 'Mettre à jour' : 'Ajouter'}</button>
-                        {editingAd && <button type="button" onClick={handleCancel} className="bg-gray-200 px-4 py-2 rounded-md">Annuler</button>}
-                    </div>
-                </form>
-            </div>
-            <div className="md:col-span-2">
-                 <h3 className="text-lg font-bold mb-4">Publicités Actuelles</h3>
-                 <div className="space-y-2">
-                    {advertisements.map(ad => (
-                        <div key={ad.id} className="p-2 bg-gray-100 dark:bg-gray-700 rounded-md flex justify-between items-center">
-                            <img src={ad.imageUrl} alt="ad" className="h-12 w-24 object-cover rounded"/>
-                            <span className={`text-xs font-bold ${ad.isActive ? 'text-green-500' : 'text-gray-500'}`}>{ad.isActive ? 'Actif' : 'Inactif'}</span>
-                            <div className="flex gap-2">
-                                <button onClick={() => handleEdit(ad)} className="text-blue-500"><PencilSquareIcon className="w-5 h-5"/></button>
-                                <button onClick={() => onDeleteAdvertisement(ad.id)} className="text-red-500"><TrashIcon className="w-5 h-5"/></button>
-                            </div>
-                        </div>
-                    ))}
-                 </div>
-            </div>
+        <div className="md:col-span-1">
+            <h3 className="text-lg font-bold mb-4">{editingAd ? 'Modifier' : 'Ajouter'} une Publicité</h3>
+            <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                    <label className="text-sm">Image (URL ou téléverser)</label>
+                    <input type="file" onChange={handleImageChange} className="mt-1 w-full text-sm"/>
+                    <input type="text" name="imageUrl" value={formData.imageUrl} onChange={handleChange} placeholder="Ou coller une URL" className="mt-1 w-full p-2 border rounded text-sm"/>
+                    {formData.imageUrl && <img src={formData.imageUrl} alt="preview" className="mt-2 h-24 w-full object-contain rounded"/>}
+                </div>
+                <input type="text" name="linkUrl" value={formData.linkUrl} onChange={handleChange} placeholder="Lien de redirection" className="w-full p-2 border rounded" required />
+                <select name="location" value={formData.location} onChange={handleChange} className="w-full p-2 border rounded">
+                    <option value="homepage-banner">Bannière page d'accueil</option>
+                </select>
+                <label className="flex items-center gap-2"><input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} /> Actif</label>
+                <div className="flex gap-2">
+                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-md">{editingAd ? 'Mettre à jour' : 'Ajouter'}</button>
+                    {editingAd && <button type="button" onClick={handleCancel} className="bg-gray-200 px-4 py-2 rounded-md">Annuler</button>}
+                </div>
+            </form>
         </div>
     );
 };
@@ -1545,109 +1572,235 @@ const SiteContentPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteContent' | 
     );
 };
 
+const AnalyticsPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders'| 'allProducts'| 'allStores'| 'allUsers'| 'allCategories'| 'flashSales'>> = (props) => {
+    const { allOrders, allProducts, allStores, allUsers, allCategories, flashSales } = props;
+    const [timeRange, setTimeRange] = useState<'all' | 'week' | 'month'>('all');
 
-// @FIX: Export the SuperAdminDashboard component to make it available for import.
-export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({
-    allOrders, allCategories, allStores, siteActivityLogs, onUpdateOrderStatus, onUpdateCategoryImage,
-    onWarnStore, onToggleStoreStatus, onToggleStorePremiumStatus, onApproveStore, onRejectStore, onSaveFlashSale, flashSales, allProducts, onUpdateFlashSaleSubmissionStatus,
-    onRequestDocument, onVerifyDocumentStatus, allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint,
-    allUsers, onAssignAgent, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature, siteSettings, onUpdateSiteSettings,
-    onAdminAddCategory, onAdminDeleteCategory, onUpdateUser, payouts, onPayoutSeller, onActivateSubscription,
-    advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement,
-    onCreateUserByAdmin, onBatchUpdateFlashSaleStatus, onSanctionAgent, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage,
-    siteContent, onUpdateSiteContent
-}) => {
-    const { user } = useAuth();
-    const [activeTab, setActiveTab] = useState<'overview' | 'orders' | 'stores' | 'users' | 'categories' | 'flash-sales' | 'logistics' | 'payouts' | 'marketing' | 'settings'>('overview');
-    const [assigningOrder, setAssigningOrder] = useState<string | null>(null);
+    const analytics = useMemo(() => {
+        const now = new Date();
+        const filteredOrders = allOrders.filter(order => {
+            const orderDate = new Date(order.orderDate);
+            if (timeRange === 'week') return orderDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (timeRange === 'month') return orderDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return true; // for 'all'
+        });
 
-    const availableAgents = useMemo(() => {
-        return allUsers.filter(u => u.role === 'delivery_agent' && u.availabilityStatus === 'available');
-    }, [allUsers]);
+        const deliveredOrders = filteredOrders.filter(o => o.status === 'delivered');
+        const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+        
+        const topSellingProducts = deliveredOrders
+            .flatMap(o => o.items)
+            .reduce((acc, item) => {
+                const existing = acc.find(p => p.id === item.id);
+                const revenue = getFinalPriceForPayout(item, flashSales) * item.quantity;
+                if (existing) {
+                    existing.revenue += revenue;
+                    existing.quantitySold += item.quantity;
+                } else {
+                    acc.push({ id: item.id, name: item.name, revenue, quantitySold: item.quantity });
+                }
+                return acc;
+            }, [] as { id: string; name: string; revenue: number; quantitySold: number }[])
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
 
-    if (!user || user.role !== 'superadmin') {
-        return (
-            <div className="container mx-auto px-6 py-12 text-center">
-                <p className="text-xl dark:text-white">Accès non autorisé.</p>
+        const topCategories = deliveredOrders
+            .flatMap(o => o.items)
+            .reduce((acc, item) => {
+                const category = allCategories.find(c => c.id === item.categoryId);
+                if (!category) return acc;
+                const parentCat = category.parentId ? allCategories.find(c => c.id === category.parentId) : category;
+                if (!parentCat) return acc;
+
+                const existing = acc.find(c => c.id === parentCat.id);
+                const revenue = getFinalPriceForPayout(item, flashSales) * item.quantity;
+                if (existing) {
+                    existing.revenue += revenue;
+                } else {
+                    acc.push({ id: parentCat.id, name: parentCat.name, revenue });
+                }
+                return acc;
+            }, [] as { id: string; name: string; revenue: number }[])
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+
+        const topSellers = deliveredOrders
+            .flatMap(o => o.items)
+            .reduce((acc, item) => {
+                const store = allStores.find(s => s.name === item.vendor);
+                if (!store) return acc;
+                const existing = acc.find(s => s.id === store.id);
+                const revenue = getFinalPriceForPayout(item, flashSales) * item.quantity;
+                if (existing) {
+                    existing.revenue += revenue;
+                } else {
+                    acc.push({ id: store.id, name: store.name, revenue });
+                }
+                return acc;
+            }, [] as { id: string; name: string; revenue: number }[])
+            .sort((a, b) => b.revenue - a.revenue)
+            .slice(0, 5);
+        
+        const newUsers = allUsers.filter(u => {
+            const joinDate = new Date(); // Placeholder - user object doesn't have a join date
+            if (timeRange === 'week') return joinDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+            if (timeRange === 'month') return joinDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+            return true;
+        });
+
+        return {
+            totalRevenue,
+            totalOrders: filteredOrders.length,
+            newUsers: newUsers.length,
+            avgOrderValue: totalRevenue / deliveredOrders.length || 0,
+            topSellingProducts,
+            topCategories,
+            topSellers
+        };
+    }, [allOrders, allProducts, allStores, allUsers, allCategories, flashSales, timeRange]);
+
+    return (
+        <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-900/50">
+            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
+                <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><BarChartIcon className="w-6 h-6"/> Analyse Approfondie</h2>
+                <div className="flex items-center gap-1 p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
+                    {(['all', 'month', 'week'] as const).map(range => (
+                        <button 
+                            key={range} 
+                            onClick={() => setTimeRange(range)}
+                            className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${timeRange === range ? 'bg-white dark:bg-gray-800 text-kmer-green shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50'}`}
+                        >
+                            {range === 'all' ? 'Tout' : (range === 'month' ? '30 jours' : '7 jours')}
+                        </button>
+                    ))}
+                </div>
             </div>
-        );
-    }
-    
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
+                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Total Commandes" value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
+                <StatCard icon={<UserGroupIcon className="w-7 h-7"/>} label="Nouveaux Utilisateurs" value={analytics.newUsers} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" />
+                <StatCard icon={<ChartPieIcon className="w-7 h-7"/>} label="Panier Moyen" value={`${analytics.avgOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-4">
+                    <h3 className="font-bold mb-3">Top 5 Produits (par revenu)</h3>
+                    <ul className="space-y-2 text-sm">
+                        {analytics.topSellingProducts.map(p => (
+                            <li key={p.id} className="flex justify-between items-center">
+                                <div>
+                                    <p className="font-medium dark:text-gray-200 truncate max-w-[150px]">{p.name}</p>
+                                    <p className="text-xs text-gray-500">{p.quantitySold} vendus</p>
+                                </div>
+                                <span className="font-semibold text-kmer-green">{p.revenue.toLocaleString('fr-CM')} FCFA</span>
+                            </li>
+                        ))}
+                        {analytics.topSellingProducts.length === 0 && <p className="text-gray-500 text-xs">Aucune donnée.</p>}
+                    </ul>
+                </div>
+                <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-4">
+                     <h3 className="font-bold mb-3">Top 5 Catégories (par revenu)</h3>
+                     <ul className="space-y-2 text-sm">
+                         {analytics.topCategories.map(c => (
+                            <li key={c.id} className="flex justify-between items-center">
+                                <p className="font-medium dark:text-gray-200">{c.name}</p>
+                                <span className="font-semibold text-kmer-green">{c.revenue.toLocaleString('fr-CM')} FCFA</span>
+                            </li>
+                         ))}
+                         {analytics.topCategories.length === 0 && <p className="text-gray-500 text-xs">Aucune donnée.</p>}
+                     </ul>
+                </div>
+                 <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-4">
+                     <h3 className="font-bold mb-3">Top 5 Vendeurs (par revenu)</h3>
+                     <ul className="space-y-2 text-sm">
+                         {analytics.topSellers.map(s => (
+                            <li key={s.id} className="flex justify-between items-center">
+                                <p className="font-medium dark:text-gray-200">{s.name}</p>
+                                <span className="font-semibold text-kmer-green">{s.revenue.toLocaleString('fr-CM')} FCFA</span>
+                            </li>
+                         ))}
+                         {analytics.topSellers.length === 0 && <p className="text-gray-500 text-xs">Aucune donnée.</p>}
+                     </ul>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
+    const { allOrders, allStores, allUsers, allCategories, allProducts, siteActivityLogs, onUpdateOrderStatus, onUpdateCategoryImage, onWarnStore, onToggleStoreStatus, onToggleStorePremiumStatus, onApproveStore, onRejectStore, onSaveFlashSale, flashSales, onUpdateFlashSaleSubmissionStatus, onBatchUpdateFlashSaleStatus, onRequestDocument, onVerifyDocumentStatus, allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint, onAssignAgent, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature, siteSettings, onUpdateSiteSettings, onAdminAddCategory, onAdminDeleteCategory, onUpdateUser, payouts, onPayoutSeller, onActivateSubscription, advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement, onCreateUserByAdmin, onSanctionAgent, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage, siteContent, onUpdateSiteContent, allTickets, allAnnouncements, onAdminReplyToTicket, onAdminUpdateTicketStatus, onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onReviewModeration } = props;
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState('overview');
+    const [assigningOrder, setAssigningOrder] = useState<string | null>(null);
+    const availableAgents = useMemo(() => allUsers.filter(u => u.role === 'delivery_agent' && u.availabilityStatus === 'available'), [allUsers]);
+
     const renderContent = () => {
         switch(activeTab) {
+            case 'overview': return <DashboardOverviewPanel allOrders={allOrders} allStores={allStores} allUsers={allUsers} siteActivityLogs={siteActivityLogs} />;
             case 'orders': return <OrderManagementPanel allOrders={allOrders} allUsers={allUsers} onUpdateOrderStatus={onUpdateOrderStatus} onAssignAgent={onAssignAgent} onOpenAssignModal={setAssigningOrder} onResolveRefund={onResolveRefund} onAdminStoreMessage={onAdminStoreMessage} onAdminCustomerMessage={onAdminCustomerMessage} />;
             case 'stores': return <StoreManagementPanel allStores={allStores} allUsers={allUsers} onApproveStore={onApproveStore} onRejectStore={onRejectStore} onToggleStoreStatus={onToggleStoreStatus} onToggleStorePremiumStatus={onToggleStorePremiumStatus} onWarnStore={onWarnStore} onRequestDocument={onRequestDocument} onVerifyDocumentStatus={onVerifyDocumentStatus} siteSettings={siteSettings} onActivateSubscription={onActivateSubscription} />;
             case 'users': return <UserManagementPanel allUsers={allUsers} onUpdateUser={onUpdateUser} onCreateUserByAdmin={onCreateUserByAdmin} allPickupPoints={allPickupPoints} allStores={allStores} />;
             case 'categories': return <CategoryManagementPanel allCategories={allCategories} onUpdateCategoryImage={onUpdateCategoryImage} onAdminAddCategory={onAdminAddCategory} onAdminDeleteCategory={onAdminDeleteCategory} />;
             case 'flash-sales': return <FlashSaleManagementPanel flashSales={flashSales} onSaveFlashSale={onSaveFlashSale} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={onUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={onBatchUpdateFlashSaleStatus} />;
-            case 'logistics': return (
-                <div>
-                    <PickupPointManagementPanel allPickupPoints={allPickupPoints} onAddPickupPoint={onAddPickupPoint} onUpdatePickupPoint={onUpdatePickupPoint} onDeletePickupPoint={onDeletePickupPoint} allUsers={allUsers} />
-                    <div className="my-6 border-t dark:border-gray-700"></div>
-                    <AvailabilityPanel deliveryAgents={allUsers.filter(u => u.role === 'delivery_agent')} />
-                     <div className="my-6 border-t dark:border-gray-700"></div>
-                     <DeliveryTrackingPanel allOrders={allOrders} allUsers={allUsers} onSanctionAgent={onSanctionAgent} />
-                </div>
-            );
-            case 'payouts': return <PayoutsPanel payouts={payouts} allStores={allStores} allOrders={allOrders} onPayoutSeller={onPayoutSeller} flashSales={flashSales} />;
-            case 'marketing': return <AdManagementPanel advertisements={advertisements} onAddAdvertisement={onAddAdvertisement} onUpdateAdvertisement={onUpdateAdvertisement} onDeleteAdvertisement={onDeleteAdvertisement} />;
-            case 'settings': return (
-                <div>
-                    <SiteSettingsPanel siteSettings={siteSettings} onUpdateSiteSettings={onUpdateSiteSettings} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={onToggleChatFeature} onToggleComparisonFeature={onToggleComparisonFeature} />
-                    <div className="my-6 border-t dark:border-gray-700"></div>
-                    <SiteContentPanel siteContent={siteContent} onUpdateSiteContent={onUpdateSiteContent} />
-                </div>
-            );
-            case 'overview':
-            default:
-                return <DashboardOverviewPanel allOrders={allOrders} allStores={allStores} allUsers={allUsers} siteActivityLogs={siteActivityLogs} />;
+            case 'pickup-points': return <PickupPointManagementPanel allPickupPoints={allPickupPoints} onAddPickupPoint={onAddPickupPoint} onUpdatePickupPoint={onUpdatePickupPoint} onDeletePickupPoint={onDeletePickupPoint} allUsers={allUsers} />;
+            case 'payouts': return <PayoutsPanel payouts={payouts} allStores={allStores} allOrders={allOrders} onPayoutSeller={onPayoutSeller} flashSales={flashSales} siteSettings={siteSettings} />;
+            case 'agent-availability': return <AvailabilityPanel deliveryAgents={allUsers.filter(u => u.role === 'delivery_agent')} />;
+            case 'delivery-tracking': return <DeliveryTrackingPanel allOrders={allOrders} allUsers={allUsers} onSanctionAgent={onSanctionAgent} />;
+            case 'site-content': return <SiteContentPanel siteContent={siteContent} onUpdateSiteContent={onUpdateSiteContent} />;
+            case 'settings': return <SiteSettingsPanel siteSettings={siteSettings} onUpdateSiteSettings={onUpdateSiteSettings} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={onToggleChatFeature} onToggleComparisonFeature={onToggleComparisonFeature} />;
+            case 'analytics': return <AnalyticsPanel allOrders={allOrders} allProducts={allProducts} allStores={allStores} allUsers={allUsers} allCategories={allCategories} flashSales={flashSales} />;
+            case 'logs': return <LogsPanel siteActivityLogs={siteActivityLogs} />;
+            default: return <div>Contenu à venir...</div>;
         }
     };
 
     return (
         <>
-        {assigningOrder && (
-            <AssignAgentModal
-                orderId={assigningOrder}
-                deliveryAgents={availableAgents}
-                onClose={() => setAssigningOrder(null)}
-                onAssign={(orderId, agentId) => { onAssignAgent(orderId, agentId); setAssigningOrder(null); }}
-            />
-        )}
-        <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
-            <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-                <div className="container mx-auto px-4 sm:px-6 py-3">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                            <AcademicCapIcon className="w-8 h-8 text-kmer-green"/>
-                            <div>
-                                <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">Tableau de Bord Super Admin</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Connecté en tant que {user.name}</p>
+            {assigningOrder && <AssignAgentModal orderId={assigningOrder} deliveryAgents={availableAgents} onClose={() => setAssigningOrder(null)} onAssign={(orderId, agentId) => { onAssignAgent(orderId, agentId); setAssigningOrder(null); }} />}
+            <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+                <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                    <div className="container mx-auto px-4 sm:px-6 py-4">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <AcademicCapIcon className="h-8 w-8 text-kmer-green"/>
+                                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Super Admin</h1>
+                            </div>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">Connecté en tant que {user?.name}</p>
+                        </div>
+                        <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
+                            <div className="flex space-x-1 overflow-x-auto">
+                               <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                               <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} count={allOrders.filter(o => o.status === 'confirmed').length} />
+                               <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} count={allStores.filter(s => s.status === 'pending').length}/>
+                               <TabButton icon={<UserGroupIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
+                               <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
+                               <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
+                               <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup-points'} onClick={() => setActiveTab('pickup-points')} />
+                               <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
+                               <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Livreurs" isActive={['agent-availability', 'delivery-tracking'].includes(activeTab)} onClick={() => setActiveTab('agent-availability')} />
+                               <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Contenu Site" isActive={activeTab === 'site-content'} onClick={() => setActiveTab('site-content')} />
+                               <TabButton icon={<BarChartIcon className="w-5 h-5"/>} label="Analyses" isActive={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
+                               <TabButton icon={<ClockIcon className="w-5 h-5"/>} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
+                               <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                             </div>
                         </div>
                     </div>
-                     <div className="mt-3 border-t border-gray-200 dark:border-gray-700 pt-1 -mb-4">
-                        <div className="flex space-x-1 overflow-x-auto">
-                           <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                           <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
-                           <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} />
-                           <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-                           <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
-                           <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
-                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Logistique" isActive={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
-                           <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
-                           <TabButton icon={<StarIcon className="w-5 h-5"/>} label="Marketing" isActive={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} />
-                           <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
-                        </div>
+                </header>
+                <main className="container mx-auto px-4 sm:px-6 py-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                        {['agent-availability', 'delivery-tracking'].includes(activeTab) && (
+                            <div className="p-4 border-b dark:border-gray-700 flex gap-2">
+                                <button onClick={() => setActiveTab('agent-availability')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'agent-availability' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Disponibilité</button>
+                                <button onClick={() => setActiveTab('delivery-tracking')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'delivery-tracking' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Suivi des Retards</button>
+                            </div>
+                        )}
+                        {renderContent()}
                     </div>
-                </div>
-            </header>
-             <main className="container mx-auto px-4 sm:px-6 py-6">
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    {renderContent()}
-                </div>
-            </main>
-        </div>
+                </main>
+            </div>
         </>
     );
 };
+
+export default SuperAdminDashboard;

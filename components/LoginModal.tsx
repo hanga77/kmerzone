@@ -96,6 +96,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                 </p>
                  <div className="text-center text-gray-500 dark:text-gray-400 text-xs mt-4 space-y-1 bg-gray-100 dark:bg-gray-700 p-3 rounded-md w-full">
                     <p className="font-bold">Comptes de test (mot de passe : "password")</p>
+                    <p className="text-left"><strong className="text-blue-500">Client:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">customer@example.com</code></p>
                     <p className="text-left"><strong className="text-purple-500">Admin:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">superadmin@example.com</code></p>
                     <p className="text-left"><strong className="text-green-500">Vendeurs:</strong></p>
                     <ul className="list-none text-left pl-2">
@@ -109,7 +110,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                         <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">agent1@example.com</code></li>
                         <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">agent2@example.com</code></li>
                     </ul>
-                    <p className="text-left"><strong className="text-blue-500">Agent Dépôt:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">depot@example.com</code></p>
+                    <p className="text-left"><strong className="text-indigo-500">Agent Dépôt:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">depot@example.com</code></p>
                 </div>
               </div>
             </form>

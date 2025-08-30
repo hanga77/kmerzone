@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef } from 'react';
-import type { Order, OrderStatus, Store, PickupPoint, UserAvailabilityStatus } from '../types';
+import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { TruckIcon, MapPinIcon, BuildingStorefrontIcon, CheckIcon, ShoppingBagIcon, QrCodeIcon, XIcon, ExclamationTriangleIcon, MapIcon, ListBulletIcon, CheckCircleIcon } from './Icons';
+import { TruckIcon, MapPinIcon, BuildingStorefrontIcon, CheckIcon, ShoppingBagIcon, QrCodeIcon, XIcon, ExclamationTriangleIcon, MapIcon, ListBulletIcon, CheckCircleIcon, PaperAirplaneIcon, PhotoIcon, ArrowPathIcon, ChartPieIcon, SunIcon } from './Icons';
 
 declare const L: any; // Leaflet is loaded from a script tag in index.html
 declare const Html5Qrcode: any;
@@ -10,12 +10,11 @@ interface DeliveryAgentDashboardProps {
   allOrders: Order[];
   allStores: Store[];
   allPickupPoints: PickupPoint[];
-  onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  onUpdateOrder: (orderId: string, updates: Partial<Order>) => void;
   onLogout: () => void;
   onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
 }
 
-// @FIX: Add missing 'delivery-failed' status translation.
 const statusTranslations: {[key in OrderStatus]: string} = {
   confirmed: 'Confirmée',
   'ready-for-pickup': 'Prêt pour enlèvement',
@@ -28,46 +27,25 @@ const statusTranslations: {[key in OrderStatus]: string} = {
   refunded: 'Remboursé',
   returned: 'Retourné',
   'depot-issue': 'Problème au dépôt',
-  'delivery-failed': 'Échec de livraison'
-};
-
-const getActionForOrder = (order: Order) => {
-    switch (order.status) {
-      case 'ready-for-pickup':
-        return { text: 'Scanner la prise en charge', newStatus: 'picked-up' as OrderStatus };
-      case 'picked-up':
-        return null;
-      case 'at-depot':
-        if (order.deliveryMethod === 'home-delivery') {
-          return { text: 'Scanner pour livraison', newStatus: 'out-for-delivery' as OrderStatus };
-        }
-        return null; 
-      case 'out-for-delivery':
-        return { text: 'Scanner comme Livré', newStatus: 'delivered' as OrderStatus };
-      default:
-        return null;
-    }
+  'delivery-failed': 'Échec de livraison',
 };
 
 const ScannerModal: React.FC<{
     onClose: () => void;
     onScanSuccess: (decodedText: string) => void;
-    scanResult: { success: boolean, message: string } | null;
-}> = ({ onClose, onScanSuccess, scanResult }) => {
+}> = ({ onClose, onScanSuccess }) => {
     const html5QrCodeRef = useRef<any>(null);
     const [scannerError, setScannerError] = useState<string | null>(null);
-    const viewRef = useRef<HTMLDivElement>(null);
 
     useEffect(() => {
         if (!Html5Qrcode) {
-            console.error("Html5Qrcode library not loaded!");
-            setScannerError("La bibliothèque de scan n'a pas pu être chargée. Veuillez rafraîchir la page.");
+            setScannerError("La bibliothèque de scan n'a pas pu être chargée.");
             return;
         }
 
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCodeRef.current = html5QrCode;
-        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
 
         const startScanner = async () => {
             try {
@@ -76,15 +54,17 @@ const ScannerModal: React.FC<{
                     await html5QrCode.start(
                         { facingMode: "environment" },
                         config,
-                        (decodedText: string, decodedResult: any) => {
+                        (decodedText: string) => {
                            onScanSuccess(decodedText);
+                           html5QrCode.stop();
+                           onClose();
                         },
-                        (errorMessage: string) => {}
+                        () => {}
                     );
                 }
             } catch (err) {
                 console.error("Failed to start scanner", err);
-                setScannerError("Impossible d'activer la caméra. Veuillez vérifier les permissions dans votre navigateur.");
+                setScannerError("Impossible d'activer la caméra. Veuillez vérifier les permissions.");
             }
         };
 
@@ -93,347 +73,289 @@ const ScannerModal: React.FC<{
         return () => {
             clearTimeout(timer);
             if (html5QrCodeRef.current?.isScanning) {
-                html5QrCodeRef.current.stop().catch((err: any) => console.error("Failed to stop scanner on unmount", err));
+                html5QrCodeRef.current.stop().catch((err: any) => {});
             }
         };
-    }, [onScanSuccess]);
-
-    useEffect(() => {
-        if (scanResult && html5QrCodeRef.current?.isScanning) {
-            html5QrCodeRef.current.stop().catch((err: any) => console.error("Failed to stop scanner on result", err));
-            if (viewRef.current) {
-                viewRef.current.style.display = 'none';
-            }
-        }
-    }, [scanResult]);
+    }, [onClose, onScanSuccess]);
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4">
             <div className="bg-gray-900 border border-gray-700 rounded-lg shadow-2xl p-6 max-w-lg w-full relative text-white">
-                <h3 className="text-xl font-bold mb-4 text-center">Scanner le code-barres du colis</h3>
-                
-                <div className="w-full h-64 bg-gray-800 rounded-md overflow-hidden flex items-center justify-center">
-                    <div id="reader" ref={viewRef} className="w-full"></div>
-                    
-                    {scannerError && (
-                         <div className="text-center p-4">
-                            <ExclamationTriangleIcon className="w-12 h-12 text-red-400 mb-4 mx-auto"/>
-                            <p className="text-red-300 font-semibold">Erreur de Caméra</p>
-                            <p className="text-sm text-red-300/80">{scannerError}</p>
-                        </div>
-                    )}
-                    
-                    {scanResult && (
-                        <div className="text-center p-4">
-                            <div className={`p-3 rounded-full mb-4 inline-block ${scanResult.success ? 'bg-green-600/30' : 'bg-red-600/30'}`}>
-                               {scanResult.success ? <CheckCircleIcon className="w-10 h-10 text-green-300"/> : <ExclamationTriangleIcon className="w-10 h-10 text-red-300"/>}
-                            </div>
-                            <p className={`font-semibold text-lg ${scanResult.success ? 'text-green-300' : 'text-red-300'}`}>
-                               {scanResult.message}
-                            </p>
-                        </div>
-                    )}
-                </div>
+                <h3 className="text-xl font-bold mb-4 text-center">Scanner le QR Code</h3>
+                <div id="reader" className="w-full h-64 bg-gray-800 rounded-md"></div>
+                {scannerError && <p className="text-red-400 text-center mt-2">{scannerError}</p>}
+                <button onClick={onClose} className="mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Fermer</button>
+            </div>
+        </div>
+    );
+};
 
-                {!scanResult && !scannerError && (
-                    <p className="text-center text-gray-400 text-sm mt-4">Visez le code-barres avec votre caméra.</p>
-                )}
-                
-                <button onClick={onClose} className="mt-4 w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">
-                    Fermer
+const DeliveryConfirmationModal: React.FC<{
+    order: Order;
+    onClose: () => void;
+    onConfirm: (orderId: string, proofUrl: string) => void;
+}> = ({ order, onClose, onConfirm }) => {
+    const [proof, setProof] = useState<string | null>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onloadend = () => setProof(reader.result as string);
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    };
+
+    return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-lg font-bold">Confirmer la livraison de #{order.id}</h3>
+                <input type="file" accept="image/*" capture="environment" onChange={handleFileChange} ref={fileInputRef} className="hidden" />
+                <button onClick={() => fileInputRef.current?.click()} className="mt-4 w-full flex items-center justify-center gap-2 p-4 border-2 border-dashed rounded-md hover:border-kmer-green">
+                    <PhotoIcon className="w-6 h-6" />
+                    Prendre une photo comme preuve
                 </button>
+                {proof && <img src={proof} alt="Preuve" className="mt-4 h-32 w-auto mx-auto rounded-md" />}
+                <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={onClose} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-md">Annuler</button>
+                    <button onClick={() => onConfirm(order.id, proof || '')} className="px-4 py-2 bg-kmer-green text-white rounded-md" disabled={!proof}>Confirmer</button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DeliveryFailureModal: React.FC<{
+    order: Order;
+    onClose: () => void;
+    onReport: (orderId: string, reason: 'client-absent' | 'adresse-erronee' | 'colis-refuse', details: string, photoUrl: string) => void;
+}> = ({ order, onClose, onReport }) => {
+    const [reason, setReason] = useState<'client-absent' | 'adresse-erronee' | 'colis-refuse'>('client-absent');
+    const [details, setDetails] = useState('');
+    const [photo, setPhoto] = useState<string | null>(null);
+
+    return (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-lg font-bold">Signaler un échec de livraison</h3>
+                <select value={reason} onChange={e => setReason(e.target.value as any)} className="w-full mt-4 p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                    <option value="client-absent">Client absent</option>
+                    <option value="adresse-erronee">Adresse erronée</option>
+                    <option value="colis-refuse">Colis refusé</option>
+                </select>
+                <textarea value={details} onChange={e => setDetails(e.target.value)} placeholder="Détails supplémentaires..." className="w-full mt-2 p-2 border rounded-md" />
+                {/* ... Photo upload logic similar to confirmation modal ... */}
+                <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={onClose}>Annuler</button>
+                    <button onClick={() => onReport(order.id, reason, details, photo || '')}>Signaler</button>
+                </div>
             </div>
         </div>
     );
 };
 
 
-const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrderStatus, onLogout, onUpdateUserAvailability }) => {
-  const { user } = useAuth();
-  const [isScannerOpen, setIsScannerOpen] = useState(false);
-  const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
-  const [viewMode, setViewMode] = useState<'list' | 'map'>('list');
+export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrder, onLogout, onUpdateUserAvailability }) => {
+    const { user } = useAuth();
+    const [activeTab, setActiveTab] = useState<'missions' | 'map' | 'stats'>('missions');
+    const [isAvailable, setIsAvailable] = useState(user?.availabilityStatus === 'available');
+    const [isScannerOpen, setScannerOpen] = useState(false);
+    const [confirmingOrder, setConfirmingOrder] = useState<Order | null>(null);
+    const [failingOrder, setFailingOrder] = useState<Order | null>(null);
 
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  
-  const assignedOrders = useMemo(() => {
-    if (!user) return [];
-    return allOrders.filter(order => order.agentId === user.id)
-      .sort((a, b) => new Date(b.orderDate).getTime() - new Date(a.orderDate).getTime());
-  }, [allOrders, user]);
+    const mapRef = useRef<any>(null);
+    const mapContainerRef = useRef<HTMLDivElement>(null);
+    const routingControlRef = useRef<any>(null);
 
-  const tasks = useMemo(() => {
-    if (!user) return [];
-    const taskList: { type: 'pickup' | 'dropoff', order: Order, location: any, name: string, taskTypeLabel: 'COLLECTE' | 'DESTINATION' }[] = [];
+    const missions = useMemo(() => {
+        const toPickup = allOrders.filter(o => ['ready-for-pickup', 'picked-up'].includes(o.status));
+        const toDeliver = allOrders.filter(o => ['at-depot', 'out-for-delivery'].includes(o.status));
+        return { toPickup, toDeliver };
+    }, [allOrders]);
+
+    const stats = useMemo(() => {
+        const delivered = allOrders.filter(o => o.status === 'delivered');
+        const failed = allOrders.filter(o => o.status === 'delivery-failed');
+        const total = delivered.length + failed.length;
+        return {
+            delivered: delivered.length,
+            failed: failed.length,
+            successRate: total > 0 ? ((delivered.length / total) * 100).toFixed(0) : 100,
+        };
+    }, [allOrders]);
     
-    assignedOrders.forEach(order => {
-        // Pickup from store
-        if (order.status === 'ready-for-pickup') {
-            const store = allStores.find(s => s.name === order.items[0].vendor);
-            if (store) {
-                taskList.push({ type: 'pickup', order, location: { lat: store.latitude, lng: store.longitude, address: store.physicalAddress }, name: `Chez ${store.name}`, taskTypeLabel: 'COLLECTE' });
-            }
+    useEffect(() => {
+        if(user) onUpdateUserAvailability(user.id, isAvailable ? 'available' : 'unavailable');
+    }, [isAvailable, user, onUpdateUserAvailability]);
+
+    useEffect(() => {
+        if (activeTab === 'map' && mapContainerRef.current && !mapRef.current) {
+            mapRef.current = L.map(mapContainerRef.current).setView([4.05, 9.75], 13); // Centered on Douala
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
         }
-        // Dropoff at depot/pickup point or deliver to customer
-        if (order.status === 'picked-up' || order.status === 'at-depot' || order.status === 'out-for-delivery') {
-            if (order.deliveryMethod === 'pickup') {
-                const point = allPickupPoints.find(p => p.id === order.pickupPointId);
-                if (point) {
-                    taskList.push({ type: 'dropoff', order, location: { lat: point.latitude, lng: point.longitude, address: `${point.name}, ${point.neighborhood}` }, name: `Point Dépôt: ${point.name}`, taskTypeLabel: 'DESTINATION' });
-                }
-            } else {
-                 taskList.push({ type: 'dropoff', order, location: { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude, address: order.shippingAddress.address }, name: `Client: ${order.shippingAddress.fullName}`, taskTypeLabel: 'DESTINATION' });
-            }
-        }
-    });
-    return taskList;
-  }, [assignedOrders, allStores, allPickupPoints, user]);
-  
-  const deliveryMissions = useMemo(() => {
-    return assignedOrders.map(order => {
-        const store = allStores.find(s => s.name === order.items[0]?.vendor);
-        const startPoint = (store && store.latitude && store.longitude) 
-            ? { lat: store.latitude, lng: store.longitude, name: `Retrait: ${store.name}` }
-            : null;
-
-        let endPoint = null;
-        if (order.deliveryMethod === 'home-delivery' && order.shippingAddress.latitude && order.shippingAddress.longitude) {
-            endPoint = { lat: order.shippingAddress.latitude, lng: order.shippingAddress.longitude, name: `Livraison: ${order.shippingAddress.fullName}` };
-        } else if (order.deliveryMethod === 'pickup') {
-            const pickupPoint = allPickupPoints.find(p => p.id === order.pickupPointId);
-            if (pickupPoint && pickupPoint.latitude && pickupPoint.longitude) {
-                endPoint = { lat: pickupPoint.latitude, lng: pickupPoint.longitude, name: `Dépôt: ${pickupPoint.name}` };
-            }
-        }
-        
-        if (startPoint && endPoint) {
-            return { order, startPoint, endPoint };
-        }
-        return null;
-    }).filter((mission): mission is { order: Order; startPoint: any; endPoint: any; } => mission !== null);
-  }, [assignedOrders, allStores, allPickupPoints]);
-
-
-  const [scannedOrder, setScannedOrder] = useState<Order | null>(null);
-
-  const handleScanSuccess = (decodedText: string) => {
-      if (scanResult) return;
-
-      const orderToActOn = scannedOrder || assignedOrders.find(o => o.id === decodedText || o.trackingNumber === decodedText);
-
-      if (!orderToActOn) {
-          setScanResult({ success: false, message: "Code-barres inconnu ou commande non assignée." });
-          return;
-      }
-      
-      if (scannedOrder && scannedOrder.trackingNumber !== decodedText) {
-          setScanResult({ success: false, message: `Code-barres incorrect. Attendu pour: ${scannedOrder.id}` });
-          return;
-      }
-
-      const action = getActionForOrder(orderToActOn);
-      if (action) {
-          onUpdateOrderStatus(orderToActOn.id, action.newStatus);
-          setScanResult({ success: true, message: `Statut de ${orderToActOn.id} mis à jour vers: ${statusTranslations[action.newStatus]}` });
-      } else {
-          setScanResult({ success: false, message: `Aucune action disponible pour le statut: ${statusTranslations[orderToActOn.status]}` });
-      }
-  };
-
-
-  const closeScanner = () => {
-    setIsScannerOpen(false);
-    setScanResult(null);
-    setScannedOrder(null);
-  };
-  
-  // Map Initialization & Cleanup
-  useEffect(() => {
-    if (viewMode === 'map' && mapContainerRef.current && !mapRef.current) {
-        mapRef.current = L.map(mapContainerRef.current).setView([3.8480, 11.5021], 7);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(mapRef.current);
-    } else if (viewMode !== 'map' && mapRef.current) {
-        mapRef.current.remove();
-        mapRef.current = null;
-    }
-    
-    return () => {
         if (mapRef.current) {
-            mapRef.current.remove();
-            mapRef.current = null;
+            setTimeout(() => mapRef.current.invalidateSize(), 100);
+        }
+    }, [activeTab]);
+
+    useEffect(() => {
+        if (mapRef.current && activeTab === 'map') {
+            if (routingControlRef.current) {
+                mapRef.current.removeControl(routingControlRef.current);
+            }
+            
+            const waypoints = [
+                ...missions.toPickup.map(o => {
+                    const store = allStores.find(s => s.name === o.items[0].vendor);
+                    return store?.latitude && store?.longitude ? L.latLng(store.latitude, store.longitude) : null;
+                }),
+                ...missions.toDeliver.map(o => {
+                    const point = allPickupPoints.find(p => p.id === o.pickupPointId);
+                    if (o.deliveryMethod === 'pickup' && point?.latitude && point?.longitude) {
+                        return L.latLng(point.latitude, point.longitude);
+                    }
+                    if (o.shippingAddress.latitude && o.shippingAddress.longitude) {
+                        return L.latLng(o.shippingAddress.latitude, o.shippingAddress.longitude);
+                    }
+                    return null;
+                })
+            ].filter(Boolean);
+
+            if (waypoints.length > 1) {
+                routingControlRef.current = L.Routing.control({
+                    waypoints,
+                    routeWhileDragging: true,
+                    show: false,
+                }).addTo(mapRef.current);
+            }
+        }
+    }, [missions, allStores, allPickupPoints, activeTab]);
+
+    const handleScanSuccess = (decodedText: string) => {
+        const orderToUpdate = allOrders.find(o => o.trackingNumber === decodedText);
+        if (orderToUpdate) {
+            if (orderToUpdate.status === 'ready-for-pickup') onUpdateOrder(orderToUpdate.id, { status: 'picked-up' });
+            else if (orderToUpdate.status === 'at-depot') onUpdateOrder(orderToUpdate.id, { status: 'out-for-delivery' });
+            else alert(`Statut invalide pour le scan : ${statusTranslations[orderToUpdate.status]}`);
+        } else {
+            alert('Commande non trouvée');
         }
     };
-  }, [viewMode]);
+    
+    const handleConfirmDelivery = (orderId: string, proofUrl: string) => {
+        onUpdateOrder(orderId, { status: 'delivered', proofOfDeliveryUrl: proofUrl });
+        setConfirmingOrder(null);
+    };
 
-  // Drawing on Map
-  useEffect(() => {
-    if (mapRef.current && viewMode === 'map') {
-        mapRef.current.eachLayer((layer: any) => { 
-            if (layer instanceof L.Marker || layer instanceof L.Polyline) {
-                mapRef.current.removeLayer(layer);
-            }
+    const handleReportFailure = (orderId: string, reason: any, details: string, photoUrl: string) => {
+        onUpdateOrder(orderId, { 
+            status: 'delivery-failed', 
+            deliveryFailureReason: { reason, details, date: new Date().toISOString() } 
         });
+        setFailingOrder(null);
+    };
 
-        const greenIcon = new L.Icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-        });
 
-        const redIcon = new L.Icon({
-            iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-            shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-            iconSize: [25, 41], iconAnchor: [12, 41], popupAnchor: [1, -34], shadowSize: [41, 41]
-        });
+    if (!user) return null;
 
-        const allPoints = [];
-
-        deliveryMissions.forEach(mission => {
-            const { startPoint, endPoint, order } = mission;
-            const startLatLng = L.latLng(startPoint.lat, startPoint.lng);
-            const endLatLng = L.latLng(endPoint.lat, endPoint.lng);
-
-            L.marker(startLatLng, { icon: greenIcon }).addTo(mapRef.current)
-                .bindPopup(`<b>${startPoint.name}</b><br>Commande: ${order.id}`);
-            L.marker(endLatLng, { icon: redIcon }).addTo(mapRef.current)
-                .bindPopup(`<b>${endPoint.name}</b><br>Commande: ${order.id}`);
-            
-            L.polyline([startLatLng, endLatLng], { color: '#003366', dashArray: '5, 10' }).addTo(mapRef.current);
-            
-            allPoints.push(startLatLng, endLatLng);
-        });
-
-        if (allPoints.length > 0) {
-            const bounds = L.latLngBounds(allPoints);
-            mapRef.current.fitBounds(bounds, { padding: [50, 50] });
-        }
-    }
-  }, [deliveryMissions, viewMode]);
-
-  if (!user || user.role !== 'delivery_agent') {
-    return <div className="p-8 text-center text-red-500">Accès non autorisé.</div>;
-  }
-
-  const handleAvailabilityToggle = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newStatus: UserAvailabilityStatus = e.target.checked ? 'available' : 'unavailable';
-    onUpdateUserAvailability(user.id, newStatus);
-  };
-  
-  return (
-    <>
-      {isScannerOpen && (
-        <ScannerModal 
-          onClose={closeScanner}
-          onScanSuccess={handleScanSuccess}
-          scanResult={scanResult}
-        />
-      )}
-      <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-        <header className="bg-white dark:bg-gray-800 shadow-sm">
-          <div className="container mx-auto px-4 sm:px-6 py-4">
-            <div className="flex justify-between items-center">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Livreur</h1>
-                <p className="text-gray-500 dark:text-gray-400">Bienvenue, {user.name}</p>
-              </div>
-              <div className="flex items-center gap-3">
-                 <div className="flex items-center gap-2">
-                    <label htmlFor="agent-availability-toggle" className="flex items-center cursor-pointer">
-                        <div className="relative">
-                            <input
-                                type="checkbox"
-                                id="agent-availability-toggle"
-                                className="sr-only peer"
-                                checked={user.availabilityStatus === 'available'}
-                                onChange={handleAvailabilityToggle}
-                            />
-                            <div className="block bg-gray-300 dark:bg-gray-600 w-14 h-8 rounded-full peer-checked:bg-kmer-green/70"></div>
-                            <div className="dot absolute left-1 top-1 bg-white w-6 h-6 rounded-full transition-transform transform peer-checked:translate-x-full"></div>
+    const renderMissions = () => (
+        <div className="space-y-6">
+            <div>
+                <h3 className="font-bold mb-2">À récupérer ({missions.toPickup.length})</h3>
+                <div className="space-y-3">
+                    {missions.toPickup.map(o => (
+                        <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p className="font-semibold">{o.items[0].vendor}</p>
+                            <p className="text-sm">ID: {o.id}</p>
                         </div>
-                    </label>
-                    <span className={`font-bold text-lg ${user.availabilityStatus === 'available' ? 'text-green-500' : 'text-red-500'}`}>
-                        {user.availabilityStatus === 'available' ? 'Disponible' : 'Indisponible'}
-                    </span>
-                 </div>
-                 <button onClick={onLogout} className="text-sm text-gray-500 dark:text-gray-400 hover:underline">Déconnexion</button>
-              </div>
-            </div>
-            <div className="mt-4 flex flex-col sm:flex-row justify-between items-center gap-4">
-              <div className="flex bg-gray-200 dark:bg-gray-700 rounded-lg p-1">
-                <button onClick={() => setViewMode('list')} className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'list' ? 'bg-white dark:bg-gray-800 text-kmer-green shadow-sm' : 'text-gray-600 dark:text-gray-300'}`}>
-                  <ListBulletIcon className="w-5 h-5 inline-block sm:hidden"/> <span className="hidden sm:inline">Liste</span>
-                </button>
-                <button onClick={() => setViewMode('map')} className={`px-4 py-1.5 text-sm font-semibold rounded-md transition-colors ${viewMode === 'map' ? 'bg-white dark:bg-gray-800 text-kmer-green shadow-sm' : 'text-gray-600 dark:text-gray-300'}`}>
-                  <MapIcon className="w-5 h-5 inline-block sm:hidden"/> <span className="hidden sm:inline">Carte</span>
-                </button>
-              </div>
-              <button 
-                onClick={() => {
-                  setScannedOrder(null);
-                  setIsScannerOpen(true);
-                }}
-                className="w-full sm:w-auto bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2"
-              >
-                <QrCodeIcon className="w-5 h-5"/> Scanner un Colis
-              </button>
-            </div>
-          </div>
-        </header>
-        <main className="container mx-auto px-4 sm:px-6 py-6">
-          {viewMode === 'list' ? (
-            <div className="space-y-4">
-              {tasks.length > 0 ? tasks.map((task, index) => {
-                const action = getActionForOrder(task.order);
-                return (
-                  <div key={`${task.order.id}-${index}`} className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 flex flex-col sm:flex-row justify-between items-start gap-4">
-                    <div className="flex items-start gap-4 flex-grow">
-                        <div className="flex flex-col items-center flex-shrink-0">
-                            <div className={`p-3 rounded-full ${task.type === 'pickup' ? 'bg-green-100 dark:bg-green-900/50 text-green-600' : 'bg-blue-100 dark:bg-blue-900/50 text-blue-600'}`}>
-                                {task.type === 'pickup' ? <BuildingStorefrontIcon className="w-6 h-6"/> : <MapPinIcon className="w-6 h-6"/>}
-                            </div>
-                            <span className={`text-xs font-bold mt-1 px-2 py-0.5 rounded-full ${task.taskTypeLabel === 'COLLECTE' ? 'bg-green-200 text-green-800' : 'bg-blue-200 text-blue-800'}`}>{task.taskTypeLabel}</span>
-                        </div>
-                      <div>
-                        <p className="font-bold text-lg dark:text-white">{task.name}</p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">{task.order.id}</p>
-                        <p className="text-sm dark:text-gray-300 mt-1">{task.location.address}</p>
-                      </div>
-                    </div>
-                    <div className="w-full sm:w-auto flex-shrink-0 text-right">
-                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${task.order.status === 'ready-for-pickup' ? 'bg-yellow-100 text-yellow-800' : (task.order.status === 'out-for-delivery' ? 'bg-purple-100 text-purple-800' : 'bg-indigo-100 text-indigo-800')}`}>
-                          {statusTranslations[task.order.status]}
-                       </span>
-                       {action && (
-                          <button 
-                              onClick={() => { 
-                                  setIsScannerOpen(true);
-                                  setScannedOrder(task.order);
-                              }}
-                              className="mt-2 w-full sm:w-auto text-sm bg-kmer-green text-white font-semibold px-3 py-2 rounded-md hover:bg-green-700 flex items-center justify-center gap-2"
-                          >
-                              <QrCodeIcon className="w-4 h-4"/> {action.text}
-                          </button>
-                       )}
-                    </div>
-                  </div>
-                );
-              }) : (
-                <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                  <h2 className="text-2xl font-semibold mb-2 dark:text-white">Aucune tâche pour le moment.</h2>
-                  <p className="text-gray-600 dark:text-gray-400">Vos courses et livraisons assignées apparaîtront ici.</p>
+                    ))}
                 </div>
-              )}
             </div>
-          ) : (
-            <div ref={mapContainerRef} style={{ height: '70vh', width: '100%' }} className="rounded-lg shadow-md bg-gray-300 dark:bg-gray-700"></div>
-          )}
-        </main>
-      </div>
-    </>
-  );
-};
+             <div>
+                <h3 className="font-bold mb-2">À livrer ({missions.toDeliver.length})</h3>
+                <div className="space-y-3">
+                    {missions.toDeliver.map(o => (
+                        <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <p className="font-semibold">{o.shippingAddress.fullName}</p>
+                            <p className="text-sm">{o.shippingAddress.address}, {o.shippingAddress.city}</p>
+                            <div className="flex gap-2 mt-2">
+                                <button onClick={() => setConfirmingOrder(o)} className="text-xs bg-green-500 text-white font-semibold px-3 py-1 rounded-md">Livré</button>
+                                <button onClick={() => setFailingOrder(o)} className="text-xs bg-red-500 text-white font-semibold px-3 py-1 rounded-md">Échec</button>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
 
-export default DeliveryAgentDashboard;
+    const renderMap = () => (
+        <div ref={mapContainerRef} className="h-96 w-full rounded-lg shadow-md z-0" />
+    );
+
+    const renderStats = () => (
+        <div className="grid grid-cols-2 gap-4">
+            <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-lg text-center">
+                <p className="text-3xl font-bold text-green-700 dark:text-green-300">{stats.delivered}</p>
+                <p className="text-sm font-semibold text-green-800 dark:text-green-400">Livraisons Réussies</p>
+            </div>
+             <div className="p-4 bg-red-100 dark:bg-red-900/50 rounded-lg text-center">
+                <p className="text-3xl font-bold text-red-700 dark:text-red-300">{stats.failed}</p>
+                <p className="text-sm font-semibold text-red-800 dark:text-red-400">Échecs</p>
+            </div>
+            <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-lg text-center col-span-2">
+                <p className="text-3xl font-bold text-blue-700 dark:text-blue-300">{stats.successRate}%</p>
+                <p className="text-sm font-semibold text-blue-800 dark:text-blue-400">Taux de Réussite</p>
+            </div>
+        </div>
+    );
+
+    return (
+        <>
+            {isScannerOpen && <ScannerModal onClose={() => setScannerOpen(false)} onScanSuccess={handleScanSuccess} />}
+            {confirmingOrder && <DeliveryConfirmationModal order={confirmingOrder} onClose={() => setConfirmingOrder(null)} onConfirm={handleConfirmDelivery} />}
+            {failingOrder && <DeliveryFailureModal order={failingOrder} onClose={() => setFailingOrder(null)} onReport={handleReportFailure} />}
+            
+            <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
+                 <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                    <div className="container mx-auto px-4 sm:px-6 py-3">
+                         <div className="flex justify-between items-center">
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Tableau de bord Livreur</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Bienvenue, {user.name}</p>
+                            </div>
+                            <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">Déconnexion</button>
+                        </div>
+                    </div>
+                </header>
+                <main className="container mx-auto px-4 sm:px-6 py-6 space-y-6">
+                    <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md flex justify-between items-center">
+                        <p className="font-semibold">Mon statut :</p>
+                        <label className="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" checked={isAvailable} onChange={() => setIsAvailable(v => !v)} className="sr-only peer" />
+                            <div className="w-14 h-8 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-1 after:left-1 after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all dark:border-gray-600 peer-checked:bg-kmer-green"></div>
+                            <span className={`ml-3 text-sm font-bold ${isAvailable ? 'text-kmer-green' : 'text-red-500'}`}>{isAvailable ? 'Disponible' : 'Indisponible'}</span>
+                        </label>
+                    </div>
+
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                        <div className="p-2 border-b dark:border-gray-700 flex justify-around">
+                            <button onClick={() => setActiveTab('missions')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'missions' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ListBulletIcon className="w-5 h-5"/>Missions</button>
+                            <button onClick={() => setActiveTab('map')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'map' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><MapIcon className="w-5 h-5"/>Carte</button>
+                            <button onClick={() => setActiveTab('stats')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'stats' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ChartPieIcon className="w-5 h-5"/>Stats</button>
+                        </div>
+                        <div className="p-4">
+                            {activeTab === 'missions' && renderMissions()}
+                            {activeTab === 'map' && renderMap()}
+                            {activeTab === 'stats' && renderStats()}
+                        </div>
+                    </div>
+
+                    <button onClick={() => setScannerOpen(true)} className="fixed bottom-6 right-6 bg-kmer-green text-white rounded-full p-4 shadow-lg hover:bg-green-700 z-30">
+                        <QrCodeIcon className="w-8 h-8" />
+                    </button>
+                </main>
+            </div>
+        </>
+    );
+};

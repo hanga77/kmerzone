@@ -206,7 +206,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
   const { startChat } = useChatContext();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isInComparison, toggleComparison } = useComparison();
-  const isOwner = user?.role === 'seller' && user.shopName === product.vendor;
+  const isSeller = user?.role === 'seller';
   const vendorStore = stores.find(s => s.name === product.vendor);
   const sellerUser = allUsers.find(u => u.role === 'seller' && u.shopName === product.vendor);
   const inComparison = isInComparison(product.id);
@@ -383,9 +383,9 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <button
                 onClick={handleAddToCart}
-                disabled={product.stock === 0 || isOwner}
+                disabled={product.stock === 0 || isSeller}
                 className="w-full flex-grow bg-kmer-green text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-3 hover:bg-green-700 transition-colors disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
-                title={isOwner ? "Vous ne pouvez pas acheter votre propre produit" : ""}
+                title={isSeller ? "Les vendeurs ne peuvent pas effectuer d'achats" : ""}
               >
                 <ShoppingCartIcon className="w-6 h-6" />
                 {product.stock === 0 ? 'Rupture de stock' : 'Ajouter au panier'}
@@ -402,7 +402,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
                     <ShareIcon className="w-6 h-6"/>
                 </button>
             </div>
-            {isChatEnabled && !isOwner && (
+            {isChatEnabled && !isSeller && (
                  <button onClick={handleContactSeller} className="mt-4 w-full bg-blue-500 text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-3 hover:bg-blue-600 transition-colors">
                     <ChatBubbleBottomCenterTextIcon className="w-6 h-6" />
                     Contacter le vendeur

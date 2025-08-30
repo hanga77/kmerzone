@@ -1,3 +1,5 @@
+
+
 import React from 'react';
 
 type IconProps = {
@@ -139,7 +141,7 @@ export const PaypalIcon: React.FC<IconProps> = (props) => (
 export const VisaIcon: React.FC<IconProps> = (props) => (
     <svg {...props} viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Visa Logo">
         <rect width="64" height="40" rx="4" fill="#fff" stroke="#E0E0E0"/>
-        <path d="M24.7,25.8h-3.4L17.6,14h3.8l2,7.1c0.4,1.6,0.6,2.7,0.8,3.6h0.1c0.2-0.9,0.5-2.1,0.8-3.6l2-7.1h3.7L24.7,25.8z M45.1,14.2c-0.8-0.2-1.9-0.5-3.1-0.5c-3.1,0-5.4,1.7-5.4,4.2c0,2.1,1.7,3.4,3.1,4.1c1.4,0.6,1.9,1,1.9,1.6c0,0.8-0.9,1.2-2.1,1.2c-1.6,0-2.4-0.3-3.3-0.6l-0.5-0.2l-0.6,3.2c0.8,0.3,2.3,0.5,4,0.5c3.3,0,5.6-1.7,5.6-4.4c0-2.6-1.9-3.7-3.4-4.4c-1.3-0.6-1.7-1-1.7-1.5c0-0.5,0.6-1.1,2-1.1c1.3,0,2.1,0.3,2.8,0.6l0.4,0.2L45.1,14.2z M47,14h-3.1l-2.1,11.8h3.8L47,14z M14.8,14.2l-3,11.6h3.7l3-11.6H14.8z" fill="#142688"/>
+        <path d="M24.7,25.8h-3.4L17.6,14h3.8l2,7.1c0.4,1.6,0.6,2.7,0.8,3.6h0.1c0.2-0.9,0.5-2.1,0.8-3.6l2-7.1h3.7L24.7,25.8z M45.1,14.2c-0.8-0.2-1.9-0.5-3.1-0.5c-3.1,0-5.4,1.7-5.4,4.2c0,2.1,1.7,3.4,3.1,4.1c1.4,0.6,1.9,1,1.9,1.6c0,0.8-0.9,1.2-2.1,1.2c-1.6,0-2.4-0.3-3.3-0.6l-0.5-0.2l-0.6,3.2c0.8,0.3,2.3,0.5,4,0.5c3.3,0,5.6-1.7,5.6-4.4c0-2.6-1.9-3.7-3.4-4.4c-1.3-0.6-1.7-1-1.7-1.5c0-0.5,0.6-1.1,2-1.1c1.3,0,2.1,0.3,2.8,0.6l0.4,0.2L45.1,14.2z M47,14h-3.1l-2.1,11.8h3.8L47,14z M14.8,14.2l-3,11.6h3.7l3-11.6H14.8z" fill="#142688" />
     </svg>
 );
 
@@ -148,7 +150,7 @@ export const MastercardIcon: React.FC<IconProps> = (props) => (
         <rect width="64" height="40" rx="4" fill="#fff" stroke="#E0E0E0"/>
         <circle cx="26" cy="20" r="8" fill="#EA001B"/>
         <circle cx="38" cy="20" r="8" fill="#F79E1B"/>
-        <path d="M32,20 a8,8 0 0,1 -6,-1.41a8,8 0 0,0 0,2.82a8,8 0 0,1 6,1.41a8,8 0 0,0 6,-1.41a8,8 0 0,1 0,-2.82A8,8 0 0,0 32,20Z" fill="#FF5F00"/>
+        <path d="M32,20 a8,8 0 0,1 -6,-1.41a8,8 0 0,0 0,2.82a8,8 0 0,1 6,1.41a8,8 0 0,0 6,-1.41a8,8 0 0,1 0,-2.82A8,8 0 0,0 32,20Z" fill="#FF5F00" />
     </svg>
 );
 
@@ -252,10 +254,7 @@ export const ClipboardDocumentListIcon: React.FC<IconProps> = (props) => (
 
 export const AcademicCapIcon: React.FC<IconProps> = (props) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-        <path d="M12 14.25a.75.75 0 01.75.75v5.25a.75.75 0 01-1.5 0v-5.25a.75.75 0 01.75-.75z" />
-        <path fillRule="evenodd" d="M16.28 11.47a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06L12 14.94l3.72-3.72a.75.75 0 011.06 0z" clipRule="evenodd" />
-        <path fillRule="evenodd" d="M3 10.5a.75.75 0 01.75-.75h16.5a.75.75 0 010 1.5H3.75a.75.75 0 01-.75-.75zM12 1.5a.75.75 0 01.75.75v6a.75.75 0 01-1.5 0V2.25A.75.75 0 0112 1.5z" clipRule="evenodd" />
-        <path d="M16.28 11.47a.75.75 0 010 1.06l-4.5 4.5a.75.75 0 01-1.06 0l-4.5-4.5a.75.75 0 111.06-1.06L12 14.94l3.72-3.72a.75.75 0 011.06 0z" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.26 10.147a60.436 60.436 0 00-.491 6.347A48.627 48.627 0 0112 20.904a48.627 48.627 0 018.232-4.41 60.46 60.46 0 00-.491-6.347m-15.482 0a50.57 50.57 0 00-2.658-.813A59.905 59.905 0 0112 3.493a59.902 59.902 0 0110.399 5.84c-.896.248-1.783.52-2.658.814m-15.482 0A50.697 50.697 0 0112 13.489a50.702 50.702 0 017.74-3.342M6.75 15a.75.75 0 100-1.5.75.75 0 000 1.5z" />
     </svg>
 );
 
@@ -378,7 +377,8 @@ export const PlusIcon: React.FC<IconProps> = (props) => (
 
 export const QrCodeIcon: React.FC<IconProps> = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5v15h15V4.5h-15zm9 3.75h.75v.75h-.75v-.75zm-3.75 0h.75v.75h-.75v-.75zm0 3.75h.75v.75h-.75v-.75zm0 3.75h.75v.75h-.75v-.75zm3.75 0h.75v.75h-.75v-.75zm3.75 0h.75v.75h-.75v-.75zm-7.5-7.5h.75v.75h-.75v-.75zm3.75 3.75h.75v.75h-.75v-.75zm3.75-3.75h.75v.75h-.75v-.75zm-3.75-3.75h.75v.75h-.75v-.75zm-3.75 0h.75v.75h-.75v-.75zm0 3.75h.75v.75h-.75v-.75zm0 3.75h.75v.75h-.75v-.75zm3.75 0h.75v.75h-.75v-.75zm3.75 0h.75v.75h-.75v-.75zm-7.5-7.5h.75v.75h-.75v-.75zm3.75 3.75h.75v.75h-.75v-.75zm3.75-3.75h.75v.75h-.75v-.75zm-3.75-3.75h.75v.75h-.75v-.75z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 4.5v15h15V4.5h-15Z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 9h.75v.75h-.75V9Zm0 3.75h.75v.75h-.75v-.75Zm0 3.75h.75v.75h-.75v-.75Zm3.75-7.5h.75v.75h-.75V9Zm0 7.5h.75v.75h-.75v-.75Zm3.75-7.5h.75v.75h-.75V9Zm0 3.75h.75v.75h-.75v-.75Zm0 3.75h.75v.75h-.75v-.75Z" />
   </svg>
 );
 
@@ -397,6 +397,12 @@ export const FilterIcon: React.FC<IconProps> = (props) => (
 export const PaperAirplaneIcon: React.FC<IconProps> = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+  </svg>
+);
+
+export const BanknotesIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z" />
   </svg>
 );
 
@@ -421,5 +427,11 @@ export const ListBulletIcon: React.FC<IconProps> = (props) => (
 export const PrinterIcon: React.FC<IconProps> = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M6.72 13.829c-.24.03-.48.062-.72.096m.72-.096a42.415 42.415 0 0110.56 0m-10.56 0L6.34 18m10.94-4.171c.24.03.48.062.72.096m-.72-.096L17.66 18m0 0l.229 2.523a1.125 1.125 0 01-1.12 1.227H7.231c-.662 0-1.18-.568-1.12-1.227L6.34 18m11.318 0h1.091A2.25 2.25 0 0021 15.75V9.456c0-1.081-.768-2.015-1.837-2.175a48.055 48.055 0 00-1.913-.247M6.34 18H5.25A2.25 2.25 0 013 15.75V9.456c0-1.081.768-2.015 1.837-2.175a48.041 48.041 0 011.913-.247m10.5 0a48.536 48.536 0 00-10.5 0m10.5 0V3.375c0-.621-.504-1.125-1.125-1.125h-8.25c-.621 0-1.125.504-1.125 1.125v3.659M18 10.5h.008v.008H18V10.5zm-3 0h.008v.008H15V10.5z" />
+  </svg>
+);
+
+export const MegaphoneIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6a7.5 7.5 0 100 12h-3a7.5 7.5 0 00-7.5-7.5h1.5m10.5-4.5h4.5m-4.5 0l4.5-4.5m-4.5 4.5l4.5 4.5m-13.5 0A7.5 7.5 0 016 10.5v-1.5a1.5 1.5 0 013 0v1.5a7.5 7.5 0 01-7.5 7.5h-1.5" />
   </svg>
 );
