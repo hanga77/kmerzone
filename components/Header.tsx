@@ -202,8 +202,11 @@ const Header: React.FC<HeaderProps> = (props) => {
               <>
                 <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={translations.wishlist[language]} count={wishlistItemCount} />
                 {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={translations.messages[language]} count={totalUnreadCount} />}
-                <ActionButton onClick={onNavigateCart} icon={<ShoppingCartIcon className="h-6 w-6" />} label={translations.cart[language]} count={cartItemCount} />
               </>
+            )}
+
+            {user && user.role === 'customer' && (
+               <ActionButton onClick={onNavigateCart} icon={<ShoppingCartIcon className="h-6 w-6" />} label={translations.cart[language]} count={cartItemCount} />
             )}
             
             {user?.role === 'superadmin' && isChatEnabled && (

@@ -31,6 +31,12 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
         Retour
       </button>
       
+      {store?.bannerUrl && (
+        <div className="mb-8 rounded-lg overflow-hidden shadow-lg h-48 bg-gray-200 dark:bg-gray-800">
+            <img src={store.bannerUrl} alt={`${store.name} banner`} className="w-full h-full object-cover"/>
+        </div>
+      )}
+
       {store?.premiumStatus === 'premium' && (
         <div className="mb-8 p-4 bg-kmer-yellow/10 border-l-4 border-kmer-yellow text-yellow-800 dark:text-yellow-200 rounded-r-lg">
           <div className="flex items-center gap-3">

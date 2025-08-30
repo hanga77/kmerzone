@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import type { Product, Category, Store, FlashSale, Advertisement } from '../types';
 import CategoryCard from './CategoryCard';
 import ProductCard from './ProductCard';
@@ -18,6 +18,7 @@ interface HomePageProps {
     onViewStories: (store: Store) => void;
     isComparisonEnabled: boolean;
     isStoriesEnabled: boolean;
+    recentlyViewedIds: string[];
 }
 
 const StoryCarousel: React.FC<{ stores: Store[], onViewStories: (store: Store) => void }> = ({ stores, onViewStories }) => {
@@ -128,7 +129,7 @@ const AdCarousel: React.FC<{ advertisements: Advertisement[] }> = ({ advertiseme
 };
 
 
-const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled, isStoriesEnabled }) => {
+const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled, isStoriesEnabled, recentlyViewedIds }) => {
     
     const popularProductsRef = React.useRef<HTMLDivElement>(null);
     const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
@@ -139,6 +140,11 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
         return category?.parentId === madeInCameroonCategoryId || p.categoryId === madeInCameroonCategoryId;
     }).slice(0, 4);
 
+    const recentlyViewedProducts = useMemo(() => {
+        if (!recentlyViewedIds || recentlyViewedIds.length === 0) return [];
+        const productMap = new Map(products.map(p => [p.id, p]));
+        return recentlyViewedIds.map(id => productMap.get(id)).filter((p): p is Product => !!p);
+    }, [recentlyViewedIds, products]);
 
     const handleScrollToProducts = () => {
         popularProductsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -217,6 +223,28 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
                 </div>
               </div>
             </section>
+
+            {/* Recently Viewed Section */}
+            {recentlyViewedProducts.length > 0 && (
+                <section className="py-16 bg-white dark:bg-gray-800/30">
+                    <div className="container mx-auto px-6">
+                        <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Consultés Récemment</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                            {recentlyViewedProducts.map(product => (
+                                <ProductCard 
+                                    key={product.id} 
+                                    product={product} 
+                                    onProductClick={onProductClick} 
+                                    onVendorClick={onVendorClick} 
+                                    location={findStoreLocation(product.vendor)} 
+                                    flashSales={flashSales} 
+                                    isComparisonEnabled={isComparisonEnabled} 
+                                />
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
             
             {/* How It Works Section */}
             <section className="py-20 bg-white dark:bg-gray-800/30">

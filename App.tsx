@@ -315,7 +315,9 @@ const sampleDeliveredOrder3: Order = {
 
 const initialStores: Store[] = [
     { 
-        id: 'store-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
+        id: 'store-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', 
+        bannerUrl: 'https://images.unsplash.com/photo-1555529669-e69e70197a29?q=80&w=2070&auto=format&fit=crop',
+        category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
         location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Aïcha', sellerLastName: 'Bakari', sellerPhone: '699887766',
         physicalAddress: '45 Avenue de la Mode, Akwa', latitude: 4.0483, longitude: 9.7020, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-15T00:00:00.000Z',
         documents: [
@@ -325,19 +327,25 @@ const initialStores: Store[] = [
         stories: [{id: 's1', imageUrl: 'https://i.pinimg.com/564x/08/94/a3/0894a30e8a719c676767576f3f054812.jpg', createdAt: new Date().toISOString() }]
     },
     { 
-        id: 'store-2', name: 'Mama Africa', logoUrl: 'https://img.freepik.com/vecteurs-premium/modele-logo-cuisine-africaine_210834-31.jpg', category: 'Alimentation', warnings: [], status: 'active', premiumStatus: 'standard',
+        id: 'store-2', name: 'Mama Africa', logoUrl: 'https://img.freepik.com/vecteurs-premium/modele-logo-cuisine-africaine_210834-31.jpg', 
+        bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop',
+        category: 'Alimentation', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Jeanne', sellerLastName: 'Abena', sellerPhone: '677665544',
         physicalAddress: '12 Rue des Saveurs, Bastos', latitude: 3.8968, longitude: 11.5213, subscriptionStatus: 'overdue', subscriptionDueDate: '2024-07-10T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'requested' }]
     },
     { 
-        id: 'store-3', name: 'Electro Plus', logoUrl: 'https://cdn.dribbble.com/users/188652/screenshots/1029415/electro-logo-2.jpg', category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'standard',
+        id: 'store-3', name: 'Electro Plus', logoUrl: 'https://cdn.dribbble.com/users/188652/screenshots/1029415/electro-logo-2.jpg', 
+        bannerUrl: 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=2069&auto=format&fit=crop',
+        category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Mokolo', sellerFirstName: 'Paul', sellerLastName: 'Kouam', sellerPhone: '655443322',
         physicalAddress: 'Grand Marché Mokolo, Stand 52', latitude: 3.8731, longitude: 11.5152, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-20T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }]
     },
     { 
-        id: 'store-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
+        id: 'store-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', 
+        bannerUrl: 'https://images.unsplash.com/photo-1583947581920-8025819a58a7?q=80&w=2071&auto=format&fit=crop',
+        category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
         location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
         physicalAddress: 'Rue Njo-Njo, Bonapriso', latitude: 4.0321, longitude: 9.715, subscriptionStatus: 'inactive',
         documents: [{ name: "Registre de Commerce", status: 'rejected', rejectionReason: 'Document illisible.' }]
@@ -486,6 +494,7 @@ export default function App() {
   const [siteSettings, setSiteSettings] = usePersistentState<SiteSettings>('siteSettings', initialSiteSettings);
   const [siteContent, setSiteContent] = usePersistentState<SiteContent[]>('siteContent', initialSiteContent);
   const [activeAccountTab, setActiveAccountTab] = useState('profile');
+  const [recentlyViewedIds, setRecentlyViewedIds] = usePersistentState<string[]>('recentlyViewed', []);
 
   const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
   const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
@@ -653,10 +662,15 @@ export default function App() {
 
 
     const handleNavigate = useCallback((newPage: Page, stateReset: () => void = () => {}) => {
+        if (user?.role === 'seller' && newPage === 'cart') {
+            alert("Les vendeurs ne peuvent pas accéder au panier. Veuillez utiliser un compte client.");
+            setPage('seller-dashboard');
+            return;
+        }
         setPage(newPage);
         stateReset();
         window.scrollTo(0, 0);
-    }, []);
+    }, [user]);
 
     const resetSelections = () => {
         setSelectedProduct(null);
@@ -665,6 +679,13 @@ export default function App() {
         setSelectedOrder(null);
         setProductToEdit(null);
     };
+
+    const handleProductView = useCallback((productId: string) => {
+        setRecentlyViewedIds(prevIds => {
+            const newIds = [productId, ...prevIds.filter(id => id !== productId)];
+            return newIds.slice(0, 8); // Garde les 8 derniers produits vus
+        });
+    }, [setRecentlyViewedIds]);
 
     const handleProductClick = (product: Product) => {
         setSelectedProduct(product);
@@ -1412,6 +1433,15 @@ export default function App() {
         const agentName = allUsers.find(u => u.id === agentId)?.name;
         logActivity('Agent Sanctioned', `Agent ${agentName} sanctioned. Reason: ${reason}`);
     }, [setAllUsers, allUsers, logActivity]);
+    
+    const handleUpdateSellerProfile = useCallback((storeId: string, updatedData: Partial<Store>) => {
+        setAllStores(prevStores => 
+            prevStores.map(store => 
+                store.id === storeId ? { ...store, ...updatedData } : store
+            )
+        );
+        logActivity('Seller Profile Updated', `Profile for store ID ${storeId} was updated.`);
+    }, [setAllStores, logActivity]);
 
     // --- END OF ADMIN HANDLERS ---
 
@@ -1421,8 +1451,8 @@ export default function App() {
 
   const currentPage = useMemo(() => {
     switch(page) {
-      case 'home': return <HomePage categories={allCategories} products={visibleProducts} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} />;
-      case 'product': return selectedProduct ? <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home', resetSelections)} onAddReview={handleAddReview} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'home': return <HomePage categories={allCategories} products={visibleProducts} stores={allStores.filter(s => s.status === 'active')} flashSales={flashSales} advertisements={advertisements.filter(ad => ad.isActive)} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(store) => setViewingStoriesOfStore(store)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} recentlyViewedIds={recentlyViewedIds} />;
+      case 'product': return selectedProduct ? <ProductDetail product={selectedProduct} allProducts={allProducts} allUsers={allUsers} stores={allStores} flashSales={flashSales} onBack={() => handleNavigate('home', resetSelections)} onAddReview={handleAddReview} onVendorClick={handleVendorClick} onProductClick={handleProductClick} onOpenLogin={() => setIsLoginModalOpen(true)} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onProductView={handleProductView} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
       case 'cart': return <CartView onBack={() => handleNavigate('home')} onNavigateToCheckout={() => handleNavigate('checkout')} flashSales={flashSales} allPromoCodes={allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={handleApplyPromoCode} />;
       case 'checkout': return <Checkout onBack={() => handleNavigate('cart')} onOrderConfirm={handlePlaceOrder} flashSales={flashSales} allPickupPoints={allPickupPoints} appliedPromoCode={appliedPromoCode} allStores={allStores} />;
       case 'order-success': return selectedOrder ? <OrderSuccess order={selectedOrder} onNavigateHome={() => handleNavigate('home', resetSelections)} onNavigateToOrders={() => handleNavigate('order-history')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
@@ -1434,8 +1464,7 @@ export default function App() {
       case 'seller-analytics-dashboard': return user && user.role === 'seller' && user.shopName ? <SellerAnalyticsDashboard onBack={() => handleNavigate('seller-dashboard')} sellerOrders={allOrders.filter(o => o.items.some(i => i.vendor === user.shopName))} sellerProducts={allProducts.filter(p=>p.vendor === user.shopName)} flashSales={flashSales} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'vendor-page': return selectedVendor ? <VendorPage vendorName={selectedVendor} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
       case 'product-form': return user && user.role === 'seller' ? <ProductForm onSave={handleAddProduct} onCancel={() => handleNavigate('seller-dashboard')} productToEdit={productToEdit} categories={allCategories} onAddCategory={() => {return {id: '', name: '', imageUrl: ''}}} siteSettings={siteSettings} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
-      case 'seller-profile': return user && user.role === 'seller' && user.shopName ? <SellerProfile store={allStores.find(s=>s.name === user.shopName)!} onBack={() => handleNavigate('seller-dashboard')} onUpdateProfile={() => {}} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
-      // FIX: Corrected the function name for requesting a document from `onRequestDocument` to `handleRequestDocument`.
+      case 'seller-profile': return user && user.role === 'seller' && user.shopName ? <SellerProfile store={allStores.find(s=>s.name === user.shopName)!} onBack={() => handleNavigate('seller-dashboard')} onUpdateProfile={handleUpdateSellerProfile} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'superadmin-dashboard': return user && user.role === 'superadmin' ? <SuperAdminDashboard allOrders={allOrders} allCategories={allCategories} allStores={allStores} allProducts={allProducts} allUsers={allUsers} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={handleUpdateOrderWithAdmin} onUpdateCategoryImage={handleUpdateCategoryImage} onWarnStore={handleWarnStore} onToggleStoreStatus={handleToggleStoreStatus} onToggleStorePremiumStatus={handleToggleStorePremiumStatus} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={handleSaveFlashSale} flashSales={flashSales} onUpdateFlashSaleSubmissionStatus={handleUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={handleBatchUpdateFlashSaleStatus} onRequestDocument={handleRequestDocument} onVerifyDocumentStatus={handleVerifyDocumentStatus} allPickupPoints={allPickupPoints} onAddPickupPoint={handleAddOrUpdatePickupPoint} onUpdatePickupPoint={handleAddOrUpdatePickupPoint} onDeletePickupPoint={handleDeletePickupPoint} onAssignAgent={handleAssignAgent} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(p => !p)} onToggleComparisonFeature={() => setIsComparisonEnabled(p => !p)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={handleAdminAddCategory} onAdminDeleteCategory={handleAdminDeleteCategory} onUpdateUser={handleUpdateUserFromAdmin} payouts={payouts} onPayoutSeller={handlePayoutSeller} onActivateSubscription={handleActivateSubscription} advertisements={advertisements} onAddAdvertisement={handleAddOrUpdateAdvertisement} onUpdateAdvertisement={handleAddOrUpdateAdvertisement} onDeleteAdvertisement={handleDeleteAdvertisement} onCreateUserByAdmin={handleCreateUserByAdmin} onSanctionAgent={handleSanctionAgent} onResolveRefund={handleResolveRefund} onAdminStoreMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')} onAdminCustomerMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'admin')} siteContent={siteContent} onUpdateSiteContent={setSiteContent} allTickets={allTickets} allAnnouncements={allAnnouncements} onAdminReplyToTicket={handleAdminReplyToTicket} onAdminUpdateTicketStatus={handleAdminUpdateTicketStatus} onCreateOrUpdateAnnouncement={handleCreateOrUpdateAnnouncement} onDeleteAnnouncement={handleDeleteAnnouncement} onReviewModeration={handleReviewModeration} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'order-history': return user ? <OrderHistoryPage userOrders={allOrders.filter(o => o.userId === user.id)} onBack={() => handleNavigate('home')} onSelectOrder={(order) => { setSelectedOrder(order); handleNavigate('order-detail'); }} onRepeatOrder={handleRepeatOrder} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'order-detail': return selectedOrder ? <OrderDetailPage order={selectedOrder} onBack={() => handleNavigate('order-history', resetSelections)} allPickupPoints={allPickupPoints} allUsers={allUsers} onCancelOrder={handleCancelOrder} onRequestRefund={handleRequestRefund} onCustomerDisputeMessage={(orderId, message) => handleAdminDisputeMessage(orderId, message, 'customer')} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
@@ -1455,7 +1484,7 @@ export default function App() {
       case 'not-found':
       default: return <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
     }
-  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, searchQuery, allProducts, allCategories, allStores, allOrders, user, allPromoCodes, appliedPromoCode, productToEdit, siteActivityLogs, allUsers, cart, flashSales, allPickupPoints, payouts, advertisements, allTickets, allAnnouncements, visibleProducts, isChatEnabled, isComparisonEnabled, siteSettings.isStoriesEnabled, siteSettings, siteContent, infoPageContent, viewingStoriesOfStore, modalProduct, isModalOpen, comparisonList, promotionModalProduct, dismissedAnnouncements, activeAccountTab, handleNavigate]);
+  }, [page, selectedProduct, selectedCategoryId, selectedVendor, selectedOrder, searchQuery, allProducts, allCategories, allStores, allOrders, user, allPromoCodes, appliedPromoCode, productToEdit, siteActivityLogs, allUsers, cart, flashSales, allPickupPoints, payouts, advertisements, allTickets, allAnnouncements, visibleProducts, isChatEnabled, isComparisonEnabled, siteSettings.isStoriesEnabled, siteSettings, siteContent, infoPageContent, viewingStoriesOfStore, modalProduct, isModalOpen, comparisonList, promotionModalProduct, dismissedAnnouncements, activeAccountTab, handleNavigate, handleProductView, recentlyViewedIds]);
 
   const handleInfoPageNavigate = (slug: string) => {
     const content = siteContent.find(c => c.slug === slug);

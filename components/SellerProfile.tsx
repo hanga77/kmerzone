@@ -1,16 +1,13 @@
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeftIcon, PencilSquareIcon, TrashIcon } from './Icons';
+import { ArrowLeftIcon, PencilSquareIcon, TrashIcon, PhotoIcon } from './Icons';
 import type { Store } from '../types';
 
 interface SellerProfileProps {
   store: Store;
   onBack: () => void;
-  onUpdateProfile: (storeId: string, updatedData: { shopName: string; location: string; logoUrl: string; }) => void;
+  onUpdateProfile: (storeId: string, updatedData: Partial<Store>) => void;
 }
-
-const PLACEHOLDER_LOGO_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M13.5 21v-7.5A.75.75 0 0114.25 12h.01a.75.75 0 01.75.75v7.5m-3.75-7.5A.75.75 0 0110.5 12h.01a.75.75 0 01.75.75v7.5m-3.75 0v-7.5A.75.75 0 017.5 12h.01a.75.75 0 01.75.75v7.5m-3.75 0A.75.75 0 013.75 12h.01a.75.75 0 01.75.75v7.5m0 0H3.75m0 0h16.5m0 0V6.75A.75.75 0 0020.25 6h-1.5a.75.75 0 00-.75.75v1.5m0 0v7.5m0-7.5h-1.5m0 0V6.75A.75.75 0 0016.5 6h-1.5a.75.75 0 00-.75.75v1.5m0 0V15m0-1.5H12m0 0V6.75A.75.75 0 0011.25 6h-1.5a.75.75 0 00-.75.75v1.5m0 0v7.5m0-7.5H6.75m0 0v7.5m0-7.5H3.75m0 0v7.5m16.5 0v-7.5A.75.75 0 0020.25 12h-1.5a.75.75 0 00-.75.75v7.5' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
-
 
 const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdateProfile }) => {
   const { user } = useAuth();
@@ -20,7 +17,9 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
     location: store.location || 'Douala',
   });
   const [logoPreview, setLogoPreview] = useState<string | null>(store.logoUrl);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [bannerPreview, setBannerPreview] = useState<string | null>(store.bannerUrl || null);
+  const logoFileInputRef = useRef<HTMLInputElement>(null);
+  const bannerFileInputRef = useRef<HTMLInputElement>(null);
 
   if (!user || user.role !== 'seller') {
     return (
@@ -49,21 +48,26 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
     }
   };
 
-  const handleDeleteLogo = () => {
-    if (window.confirm("Êtes-vous sûr de vouloir supprimer le logo ? Il sera remplacé par une image par défaut.")) {
-      setLogoPreview(PLACEHOLDER_LOGO_URL);
+  const handleBannerChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      const file = e.target.files[0];
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setBannerPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onUpdateProfile(store.id, {
-      shopName: formData.shopName,
+      name: formData.shopName,
       location: formData.location,
       logoUrl: logoPreview || store.logoUrl,
+      bannerUrl: bannerPreview || store.bannerUrl,
     });
     alert('Profil mis à jour avec succès !');
-    onBack();
   };
 
   return (
@@ -74,34 +78,61 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
       </button>
       <div className="max-w-2xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-md">
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="flex flex-col items-center">
-            <div className="relative group mb-2">
-                <img 
-                    src={logoPreview || store.logoUrl} 
-                    alt="Logo de la boutique" 
-                    className="w-32 h-32 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg bg-gray-200"
-                />
+          <div className="text-center">
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-white">Modifier le profil de la boutique</h1>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Logo</label>
+            <div className="mt-1 flex items-center gap-4">
+              <img 
+                  src={logoPreview || undefined} 
+                  alt="Logo de la boutique" 
+                  className="w-24 h-24 rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg bg-gray-200"
+              />
+              <button
+                  type="button"
+                  onClick={() => logoFileInputRef.current?.click()}
+                  className="bg-white dark:bg-gray-700 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600"
+              >
+                  Changer le logo
+              </button>
+              <input
+                  type="file"
+                  ref={logoFileInputRef}
+                  onChange={handleLogoChange}
+                  className="hidden"
+                  accept="image/*"
+              />
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Bannière (Ratio 16:6)</label>
+            <div className="mt-1 aspect-[16/6] w-full rounded-md bg-gray-100 dark:bg-gray-700 flex items-center justify-center relative group">
+                {bannerPreview ? (
+                    <img src={bannerPreview} alt="Aperçu de la bannière" className="h-full w-full object-cover rounded-md"/>
+                ) : (
+                    <PhotoIcon className="h-12 w-12 text-gray-400"/>
+                )}
                 <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
-                    className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
-                    aria-label="Changer le logo"
+                    onClick={() => bannerFileInputRef.current?.click()}
+                    className="absolute inset-0 bg-black bg-opacity-50 rounded-md flex items-center justify-center text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                    aria-label="Changer la bannière"
                 >
                     <PencilSquareIcon className="w-8 h-8"/>
                 </button>
             </div>
-            <button type="button" onClick={handleDeleteLogo} className="flex items-center gap-1 text-sm text-red-600 hover:underline">
-              <TrashIcon className="w-4 h-4" /> Supprimer le logo
-            </button>
-            <input
+             <input
                 type="file"
-                ref={fileInputRef}
-                onChange={handleLogoChange}
+                ref={bannerFileInputRef}
+                onChange={handleBannerChange}
                 className="hidden"
                 accept="image/*"
             />
-            <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">Modifier le profil</h1>
           </div>
+
           <div>
             <label htmlFor="shopName" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Nom de la boutique</label>
             <input type="text" id="shopName" name="shopName" value={formData.shopName} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-kmer-green focus:border-kmer-green dark:bg-gray-700 dark:border-gray-600 dark:text-white" required />

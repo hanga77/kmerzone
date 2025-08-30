@@ -131,6 +131,7 @@ export interface Store {
   id: string;
   name: string;
   logoUrl: string;
+  bannerUrl?: string;
   category: string;
   warnings: Warning[];
   status: 'active' | 'suspended' | 'pending';

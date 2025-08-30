@@ -22,6 +22,7 @@ interface ProductDetailProps {
   onOpenLogin: () => void;
   isChatEnabled: boolean;
   isComparisonEnabled: boolean;
+  onProductView: (productId: string) => void;
 }
 
 const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
@@ -194,7 +195,7 @@ const ProductCharacteristics: React.FC<{ product: Product }> = ({ product }) => 
   );
 };
 
-const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, allUsers, stores, flashSales, onBack, onAddReview, onVendorClick, onProductClick, onOpenLogin, isChatEnabled, isComparisonEnabled }) => {
+const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, allUsers, stores, flashSales, onBack, onAddReview, onVendorClick, onProductClick, onOpenLogin, isChatEnabled, isComparisonEnabled, onProductView }) => {
   const [quantity, setQuantity] = useState(1);
   const [selectedVariants, setSelectedVariants] = useState<Record<string, string>>({});
   const [mainImage, setMainImage] = useState(product.imageUrls[0]);
@@ -212,6 +213,10 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
   const inComparison = isInComparison(product.id);
   
   const approvedReviews = product.reviews.filter(r => r.status === 'approved');
+
+  useEffect(() => {
+    onProductView(product.id);
+  }, [product.id, onProductView]);
 
   useEffect(() => {
     // Find other offers for the same product
