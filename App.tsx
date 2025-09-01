@@ -1,6 +1,9 @@
 
 
 
+
+
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -43,7 +46,8 @@ import ServerErrorPage from './components/ServerErrorPage';
 import AccountPage from './components/AccountPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod, Notification, Page } from './types';
+// FIX: Add missing 'Notification' type to the import from './types' to resolve name collision with the global DOM `Notification` type.
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod, Page, Notification } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
@@ -1491,6 +1495,67 @@ export default function App() {
         logActivity('Site Settings Updated', 'Payment methods were updated.');
     }, [setPaymentMethods, logActivity]);
 
+    const handleDepotCheckIn = useCallback((orderId: string, storageLocationId: string, notes?: string) => {
+        const order = allOrders.find(o => o.id === orderId);
+        if (!order || !user || (user.role !== 'depot_agent' && user.role !== 'superadmin')) return;
+
+        const actor = user ? `${user.name} (${user.role})` : 'System';
+        let updatedOrder = addStatusLog(order, 'at-depot', actor);
+        updatedOrder.checkedInBy = user.id;
+        updatedOrder.checkedInAt = new Date().toISOString();
+        updatedOrder.storageLocationId = storageLocationId;
+
+        if (notes && notes.trim()) {
+            updatedOrder = addStatusLog(updatedOrder, 'depot-issue', actor);
+            updatedOrder.discrepancy = {
+                reason: notes,
+                reportedAt: new Date().toISOString(),
+                reportedBy: user.id,
+            };
+            logActivity('Depot Discrepancy', `Discrepancy reported for order ${orderId} by ${actor}. Reason: ${notes}`);
+        }
+        
+        setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+        logActivity('Depot Check-In', `Order ${orderId} checked in at depot by ${actor}, location ${storageLocationId}.`);
+    }, [allOrders, user, addStatusLog, setAllOrders, logActivity]);
+
+    const handleDepotReportDiscrepancy = useCallback((orderId: string, reason: string) => {
+        const order = allOrders.find(o => o.id === orderId);
+        if (!order || !user || (user.role !== 'depot_agent' && user.role !== 'superadmin')) return;
+
+        const actor = user ? `${user.name} (${user.role})` : 'System';
+        let updatedOrder = addStatusLog(order, 'depot-issue', actor);
+        updatedOrder.discrepancy = {
+            reason,
+            reportedAt: new Date().toISOString(),
+            reportedBy: user.id,
+        };
+        
+        setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+        logActivity('Depot Discrepancy', `Discrepancy reported for order ${orderId} by ${actor}. Reason: ${reason}`);
+    }, [allOrders, user, addStatusLog, setAllOrders, logActivity]);
+
+    const handleDepotProcessDeparture = useCallback((orderId: string, recipientInfo?: { name: string; idNumber: string }) => {
+        const order = allOrders.find(o => o.id === orderId);
+        if (!order || !user || (user.role !== 'depot_agent' && user.role !== 'superadmin')) return;
+
+        const actor = user ? `${user.name} (${user.role})` : 'System';
+        const newStatus = order.deliveryMethod === 'pickup' ? 'delivered' : 'out-for-delivery';
+        
+        let updatedOrder = addStatusLog(order, newStatus, actor);
+        updatedOrder.departureProcessedByAgentId = user.id;
+        updatedOrder.processedForDepartureAt = new Date().toISOString();
+        updatedOrder.storageLocationId = undefined;
+
+        if (newStatus === 'delivered' && recipientInfo) {
+            updatedOrder.pickupRecipientName = recipientInfo.name;
+            updatedOrder.pickupRecipientId = recipientInfo.idNumber;
+        }
+        
+        setAllOrders(prev => prev.map(o => o.id === orderId ? updatedOrder : o));
+        logActivity('Depot Departure', `Order ${orderId} processed for departure by ${actor}. New status: ${newStatus}.`);
+    }, [allOrders, user, addStatusLog, setAllOrders, logActivity]);
+
     // --- END OF ADMIN HANDLERS ---
 
     if (siteSettings.maintenanceMode.isEnabled && user?.role !== 'superadmin') {
@@ -1521,7 +1586,7 @@ export default function App() {
       case 'search-results': return <SearchResultsPage searchQuery={searchQuery} allProducts={visibleProducts} allCategories={allCategories} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} />;
       case 'wishlist': return <WishlistPage allProducts={allProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home')} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled}/>;
       case 'delivery-agent-dashboard': return user && user.role === 'delivery_agent' ? <DeliveryAgentDashboard allOrders={allOrders.filter(o => o.agentId === user.id)} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrder={handleUpdateOrderFromAgent} onLogout={handleLogout} onUpdateUserAvailability={handleUpdateUserAvailability} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
-      case 'depot-agent-dashboard': return user && user.role === 'depot_agent' ? <DepotAgentDashboard user={user} allUsers={allUsers} allOrders={allOrders} onCheckIn={()=>{}} onReportDiscrepancy={()=>{}} onLogout={handleLogout} onProcessDeparture={()=>{}} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+      case 'depot-agent-dashboard': return user && user.role === 'depot_agent' ? <DepotAgentDashboard user={user} allUsers={allUsers} allOrders={allOrders} onCheckIn={handleDepotCheckIn} onReportDiscrepancy={handleDepotReportDiscrepancy} onLogout={handleLogout} onProcessDeparture={handleDepotProcessDeparture} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
       case 'comparison': return <ComparisonPage onBack={() => handleNavigate('home')} allCategories={allCategories} />;
       case 'become-premium': return <BecomePremiumPage siteSettings={siteSettings} onBack={() => handleNavigate('home')} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} />;
       case 'info': return <InfoPage title={infoPageContent.title} content={infoPageContent.content} onBack={() => handleNavigate('home')} />;
