@@ -8,7 +8,7 @@ export const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.
         return JSON.parse(storedValue);
       }
     } catch (error) {
-      console.error(`Error reading localStorage key “${key}”:`, error);
+      console.error(`Error reading localStorage key "${key}":`, error);
     }
     return defaultValue;
   });
@@ -17,7 +17,7 @@ export const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.
     try {
       localStorage.setItem(key, JSON.stringify(state));
     } catch (error) {
-      console.error(`Error setting localStorage key “${key}”:`, error);
+      console.error(`Error setting localStorage key "${key}":`, error);
     }
   }, [key, state]);
 

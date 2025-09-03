@@ -1,9 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import type { Product, Category, Store, FlashSale, Advertisement } from '../types';
+import type { Product, Category, Store, FlashSale, Advertisement, Order, User } from '../types';
 import CategoryCard from './CategoryCard';
 import ProductCard from './ProductCard';
 import StoreCard from './StoreCard';
-import { ShoppingBagIcon, SparklesIcon, TruckIcon, CreditCardIcon, ChatBubbleBottomCenterTextIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon } from './Icons';
+import { ShoppingBagIcon, SparklesIcon, TruckIcon, CreditCardIcon, ChatBubbleBottomCenterTextIcon, TagIcon, ChevronLeftIcon, ChevronRightIcon, StarIcon } from './Icons';
+import { useAuth } from '../contexts/AuthContext';
+import { useWishlist } from '../contexts/WishlistContext';
 
 interface HomePageProps {
     categories: Category[];
@@ -19,6 +21,8 @@ interface HomePageProps {
     isComparisonEnabled: boolean;
     isStoriesEnabled: boolean;
     recentlyViewedIds: string[];
+    userOrders: Order[];
+    wishlist: string[];
 }
 
 const StoryCarousel: React.FC<{ stores: Store[], onViewStories: (store: Store) => void }> = ({ stores, onViewStories }) => {
@@ -129,7 +133,71 @@ const AdCarousel: React.FC<{ advertisements: Advertisement[] }> = ({ advertiseme
 };
 
 
-const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled, isStoriesEnabled, recentlyViewedIds }) => {
+const RecommendedForYou: React.FC<Omit<HomePageProps, 'advertisements' | 'isStoriesEnabled'>> = ({ userOrders, wishlist, recentlyViewedIds, products, categories, onProductClick, onVendorClick, stores, flashSales, isComparisonEnabled }) => {
+    const { user } = useAuth();
+    
+    const recommendedProducts = useMemo(() => {
+        if (!user) return [];
+
+        const interactedProductIds = new Set([
+            ...recentlyViewedIds,
+            ...wishlist,
+            ...userOrders.flatMap(o => o.items.map(i => i.id))
+        ]);
+
+        if (interactedProductIds.size === 0) return [];
+
+        const categoryCounts: Record<string, number> = {};
+        interactedProductIds.forEach(id => {
+            const product = products.find(p => p.id === id);
+            if (product) {
+                categoryCounts[product.categoryId] = (categoryCounts[product.categoryId] || 0) + 1;
+            }
+        });
+        
+        const sortedCategories = Object.entries(categoryCounts).sort((a, b) => b[1] - a[1]);
+        if (sortedCategories.length === 0) return [];
+        
+        const topCategoryId = sortedCategories[0][0];
+
+        return products
+            .filter(p => p.categoryId === topCategoryId && !interactedProductIds.has(p.id))
+            .slice(0, 4);
+
+    }, [user, userOrders, wishlist, recentlyViewedIds, products]);
+
+    if (recommendedProducts.length === 0) return null;
+    
+    const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
+
+    return (
+         <section className="py-16 bg-white dark:bg-gray-800/30">
+            <div className="container mx-auto px-6">
+                <div className="flex justify-center items-center gap-4 mb-10">
+                    <StarIcon className="w-8 h-8 text-kmer-yellow"/>
+                    <h2 className="text-3xl font-bold text-center dark:text-white">Recommandé pour Vous</h2>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
+                    {recommendedProducts.map(product => (
+                        <ProductCard 
+                            key={product.id} 
+                            product={product} 
+                            onProductClick={onProductClick} 
+                            onVendorClick={onVendorClick} 
+                            location={findStoreLocation(product.vendor)} 
+                            flashSales={flashSales} 
+                            isComparisonEnabled={isComparisonEnabled} 
+                        />
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+
+const HomePage: React.FC<HomePageProps> = (props) => {
+    const { categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled, isStoriesEnabled, recentlyViewedIds, userOrders, wishlist } = props;
     
     const popularProductsRef = React.useRef<HTMLDivElement>(null);
     const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
@@ -176,6 +244,8 @@ const HomePage: React.FC<HomePageProps> = ({ categories, products, stores, flash
             )}
 
             {isStoriesEnabled && <StoryCarousel stores={stores} onViewStories={onViewStories} />}
+            
+            <RecommendedForYou {...props} />
 
              {/* Promotions Section */}
             <section className="py-16 bg-white dark:bg-gray-800/30">

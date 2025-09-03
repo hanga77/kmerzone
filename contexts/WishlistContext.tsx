@@ -1,4 +1,5 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo } from 'react';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 interface WishlistContextType {
   wishlist: string[]; // Array of product IDs
@@ -9,7 +10,7 @@ interface WishlistContextType {
 const WishlistContext = createContext<WishlistContextType | undefined>(undefined);
 
 export const WishlistProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [wishlist, setWishlist] = useState<string[]>([]);
+  const [wishlist, setWishlist] = usePersistentState<string[]>('wishlist', []);
 
   const toggleWishlist = useCallback((productId: string) => {
     setWishlist(prevWishlist =>
@@ -17,7 +18,7 @@ export const WishlistProvider: React.FC<{ children: ReactNode }> = ({ children }
         ? prevWishlist.filter(id => id !== productId)
         : [...prevWishlist, productId]
     );
-  }, []);
+  }, [setWishlist]);
 
   const isWishlisted = useCallback((productId: string) => {
     return wishlist.includes(productId);

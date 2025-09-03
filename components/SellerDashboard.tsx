@@ -319,7 +319,6 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
     };
 
     const handleExportProducts = () => {
-        // FIX: Replaced 'shippingCost' with 'additionalShippingFee' to match the Product type.
         const headers: (keyof Product)[] = [ 'id', 'name', 'price', 'promotionPrice', 'stock', 'categoryId', 'status', 'description', 'imageUrls', 'brand', 'weight', 'dimensions', 'material', 'gender', 'color', 'modelNumber', 'warranty', 'operatingSystem', 'accessories', 'additionalShippingFee', 'promotionStartDate', 'promotionEndDate', 'serialNumber', 'productionDate', 'expirationDate', 'ingredients', 'allergens', 'storageInstructions', 'origin', 'assemblyInstructions', 'productType', 'volume', 'skinType', 'author', 'publisher', 'publicationYear', 'isbn' ];
         const csvRows = [headers.join(',')];
         

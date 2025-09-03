@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-// FIX: Add BellIcon to imports
-import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BarChartIcon, ShieldCheckIcon, BellIcon } from './Icons';
+import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BarChartIcon, ShieldCheckIcon, BellIcon, PhotoIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -26,6 +25,7 @@ interface HeaderProps {
   onNavigateToDepotAgentDashboard: () => void;
   onNavigateToBecomePremium: () => void;
   onNavigateToAccount: (tab?: string) => void;
+  onNavigateToVisualSearch: () => void;
   onOpenLogin: () => void;
   onLogout: () => void;
   onSearch: (query: string) => void;
@@ -39,7 +39,7 @@ interface HeaderProps {
 }
 
 const Header: React.FC<HeaderProps> = (props) => {
-  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, onLoginSuccess, notifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
+  const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onNavigateToVisualSearch, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, onLoginSuccess, notifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -162,6 +162,9 @@ const Header: React.FC<HeaderProps> = (props) => {
               onSubmit={(e) => handleSearchSubmit(e, searchQuery)} 
               className={`relative w-full ${isSearchFocused ? 'max-w-2xl' : 'max-w-md'} transition-all duration-300 ease-in-out`}
             >
+               <button type="button" onClick={onNavigateToVisualSearch} className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400 hover:text-kmer-green" title="Recherche par image">
+                <PhotoIcon className="h-5 w-5" />
+              </button>
               <input 
                 type="text" 
                 placeholder={translations.searchPlaceholder[language]}
@@ -169,7 +172,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
                 onBlur={() => setIsSearchFocused(false)}
-                className="w-full pl-4 pr-10 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-kmer-green focus:border-transparent transition-all duration-300"
+                className="w-full pl-12 pr-10 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-kmer-green focus:border-transparent transition-all duration-300"
               />
                <button type="submit" className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-500 dark:text-gray-400 hover:text-kmer-green">
                 <SearchIcon className="h-5 w-5" />

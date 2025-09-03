@@ -168,8 +168,8 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
     const routingControlRef = useRef<any>(null);
 
     const missions = useMemo(() => {
-        const toPickup = allOrders.filter(o => ['ready-for-pickup', 'picked-up'].includes(o.status));
-        const toDeliver = allOrders.filter(o => ['at-depot', 'out-for-delivery'].includes(o.status));
+        const toPickup = allOrders.filter(o => ['ready-for-pickup'].includes(o.status));
+        const toDeliver = allOrders.filter(o => ['picked-up', 'at-depot', 'out-for-delivery'].includes(o.status));
         return { toPickup, toDeliver };
     }, [allOrders]);
 
@@ -219,13 +219,14 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
                     }
                     return null;
                 })
-            ].filter(Boolean);
+            ].filter(wp => wp !== null);
 
             if (waypoints.length > 1) {
                 routingControlRef.current = L.Routing.control({
                     waypoints,
                     routeWhileDragging: true,
                     show: false,
+                    createMarker: () => null, // Disable default markers
                 }).addTo(mapRef.current);
             }
         }
@@ -275,14 +276,22 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
                 <h3 className="font-bold mb-2">À livrer ({missions.toDeliver.length})</h3>
                 <div className="space-y-3">
                     {missions.toDeliver.map(o => (
-                        <div key={o.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-                            <p className="font-semibold">{o.shippingAddress.fullName}</p>
-                            <p className="text-sm">{o.shippingAddress.address}, {o.shippingAddress.city}</p>
-                            <div className="flex gap-2 mt-2">
-                                <button onClick={() => setConfirmingOrder(o)} className="text-xs bg-green-500 text-white font-semibold px-3 py-1 rounded-md">Livré</button>
-                                <button onClick={() => setFailingOrder(o)} className="text-xs bg-red-500 text-white font-semibold px-3 py-1 rounded-md">Échec</button>
+                        <details key={o.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                            <summary className="font-semibold cursor-pointer">{o.shippingAddress.fullName} <span className="text-xs font-normal">({o.shippingAddress.address}, {o.shippingAddress.city})</span></summary>
+                            <div className="mt-3 pt-3 border-t dark:border-gray-600">
+                                <h4 className="font-bold text-sm">Actions de livraison</h4>
+                                <div className="flex gap-2 mt-2">
+                                    <button onClick={() => setConfirmingOrder(o)} className="text-xs bg-green-500 text-white font-semibold px-3 py-1 rounded-md">Livré</button>
+                                    <button onClick={() => setFailingOrder(o)} className="text-xs bg-red-500 text-white font-semibold px-3 py-1 rounded-md">Échec</button>
+                                </div>
+                                <h4 className="font-bold text-sm mt-3">Messages Rapides</h4>
+                                <div className="flex flex-wrap gap-2 mt-1">
+                                    <a href={`sms:${o.shippingAddress.phone}?body=Votre livreur KMER ZONE est en route.`} className="text-xs bg-blue-500 text-white font-semibold px-3 py-1 rounded-md">En route</a>
+                                    <a href={`sms:${o.shippingAddress.phone}?body=Je suis à 5 minutes de votre adresse.`} className="text-xs bg-blue-500 text-white font-semibold px-3 py-1 rounded-md">J'arrive dans 5 min</a>
+                                    <a href={`sms:${o.shippingAddress.phone}?body=Bonjour, j'ai du mal à trouver votre adresse. Pouvez-vous m'appeler ?`} className="text-xs bg-yellow-500 text-black font-semibold px-3 py-1 rounded-md">Problème d'adresse</a>
+                                </div>
                             </div>
-                        </div>
+                        </details>
                     ))}
                 </div>
             </div>

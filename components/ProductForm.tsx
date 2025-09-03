@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, Category, Variant, VariantDetail, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { PhotoIcon, XCircleIcon, TrashIcon } from './Icons';
+import { PhotoIcon, XCircleIcon, TrashIcon, SparklesIcon } from './Icons';
+import { GoogleGenAI } from '@google/genai';
 
 interface ProductFormProps {
   onSave: (product: Product) => void;
@@ -193,6 +194,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     status: 'draft',
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [keywords, setKeywords] = useState('');
+  const [isGenerating, setIsGenerating] = useState(false);
+  const ai = useMemo(() => new GoogleGenAI({ apiKey: process.env.API_KEY as string }), []);
   
   const categoryTree = useMemo(() => {
     const mainCategories = categories.filter(c => !c.parentId);
@@ -305,6 +309,38 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
       return detail?.[field] ?? '';
   };
 
+  const handleGenerateDescription = async () => {
+    if (!keywords.trim()) {
+        alert("Veuillez entrer des mots-clés.");
+        return;
+    }
+    setIsGenerating(true);
+    try {
+        const categoryName = categories.find(c => c.id === product.categoryId)?.name || 'générale';
+        const prompt = `En tant qu'expert en marketing pour un site e-commerce camerounais, rédige une description de produit attrayante et vendeuse en français. La description doit être bien structurée, mettre en avant les points forts et inciter à l'achat.
+
+        Informations sur le produit :
+        - Nom : ${product.name || 'Produit'}
+        - Catégorie : ${categoryName}
+        - Mots-clés fournis par le vendeur : ${keywords}
+
+        Génère uniquement la description du produit.`;
+        
+        const response = await ai.models.generateContent({
+            model: 'gemini-2.5-flash',
+            contents: prompt
+        });
+
+        const description = response.text;
+        setProduct(prev => ({ ...prev, description }));
+    } catch (error) {
+        console.error("Error generating description:", error);
+        alert("Une erreur est survenue lors de la génération de la description.");
+    } finally {
+        setIsGenerating(false);
+    }
+  };
+
   const handleSubmit = (status: 'published' | 'draft') => {
     if (!user?.shopName || !product.name || !product.price || product.stock === undefined || !product.imageUrls || product.imageUrls.length === 0 || !product.categoryId) {
         alert("Veuillez remplir tous les champs obligatoires (Nom, Prix, Stock, Catégorie et au moins une Image).");
@@ -361,7 +397,14 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                         </FieldWrapper>
                     </div>
                     <FieldWrapper label="Description">
-                        <textarea name="description" id="description" rows={4} value={product.description} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required placeholder="Inclure les caractéristiques principales ici (RAM, stockage, etc. pour l'électronique)."></textarea>
+                        <div className="flex items-center gap-2 mb-2">
+                            <input type="text" value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="Mots-clés (robe, pagne, soirée...)" className="flex-grow p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                            <button type="button" onClick={handleGenerateDescription} disabled={isGenerating} className="flex items-center gap-2 bg-purple-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-purple-600 disabled:bg-purple-300">
+                                <SparklesIcon className="w-5 h-5"/>
+                                {isGenerating ? 'Génération...' : "Générer avec l'IA"}
+                            </button>
+                        </div>
+                        <textarea name="description" id="description" rows={6} value={product.description} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" required placeholder="Décrivez votre produit ici ou générez une description avec l'IA."></textarea>
                     </FieldWrapper>
                 </div>
                 <FieldWrapper label="Images du produit (max 5)">

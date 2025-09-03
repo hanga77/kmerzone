@@ -1,6 +1,5 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, User } from '../types';
-// FIX: Added 'PaperAirplaneIcon' to the import from './Icons' to resolve a missing component error.
 import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ChartPieIcon, BuildingStorefrontIcon, TruckIcon, SearchIcon, PrinterIcon, DocumentTextIcon, CalendarDaysIcon, MapPinIcon, PaperAirplaneIcon } from './Icons';
 
 declare const Html5Qrcode: any;

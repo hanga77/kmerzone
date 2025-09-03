@@ -1,7 +1,8 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo } from 'react';
-import type { Product, CartItem, VariantDetail } from '../types';
+import type { Product, CartItem, VariantDetail, PromoCode } from '../types';
 import { useUI } from './UIContext';
 import { useAuth } from './AuthContext';
+import { usePersistentState } from '../hooks/usePersistentState';
 
 interface CartContextType {
   cart: CartItem[];
@@ -9,6 +10,8 @@ interface CartContextType {
   removeFromCart: (productId: string, selectedVariant?: Record<string, string>) => void;
   updateQuantity: (productId: string, quantity: number, selectedVariant?: Record<string, string>) => void;
   clearCart: () => void;
+  appliedPromoCode: PromoCode | null;
+  onApplyPromoCode: (code: PromoCode | null) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -23,7 +26,8 @@ const areVariantsEqual = (v1?: Record<string, string>, v2?: Record<string, strin
 };
 
 export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-  const [cart, setCart] = useState<CartItem[]>([]);
+  const [cart, setCart] = usePersistentState<CartItem[]>('cart', []);
+  const [appliedPromoCode, setAppliedPromoCode] = usePersistentState<PromoCode | null>('appliedPromoCode', null);
   const { openModal } = useUI();
   const { user } = useAuth();
 
@@ -79,11 +83,11 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     if (itemAdded && !selectedVariant && !options?.suppressModal) {
       openModal(product);
     }
-  }, [user, openModal]);
+  }, [user, openModal, setCart]);
 
   const removeFromCart = useCallback((productId: string, selectedVariant?: Record<string, string>) => {
     setCart(prevCart => prevCart.filter(item => !(item.id === productId && areVariantsEqual(item.selectedVariant, selectedVariant))));
-  }, []);
+  }, [setCart]);
 
   const updateQuantity = useCallback((productId: string, quantity: number, selectedVariant?: Record<string, string>) => {
     const productInCart = cart.find(item => item.id === productId && areVariantsEqual(item.selectedVariant, selectedVariant));
@@ -109,19 +113,26 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         )
       );
     }
-  }, [cart, removeFromCart]);
+  }, [cart, removeFromCart, setCart]);
 
   const clearCart = useCallback(() => {
     setCart([]);
-  }, []);
+    setAppliedPromoCode(null);
+  }, [setCart, setAppliedPromoCode]);
+
+  const onApplyPromoCode = useCallback((code: PromoCode | null) => {
+    setAppliedPromoCode(code);
+  }, [setAppliedPromoCode]);
 
   const contextValue = useMemo(() => ({
     cart,
     addToCart,
     removeFromCart,
     updateQuantity,
-    clearCart
-  }), [cart, addToCart, removeFromCart, updateQuantity, clearCart]);
+    clearCart,
+    appliedPromoCode,
+    onApplyPromoCode,
+  }), [cart, addToCart, removeFromCart, updateQuantity, clearCart, appliedPromoCode, onApplyPromoCode]);
 
   return (
     <CartContext.Provider value={contextValue}>
