@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
 import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage, SiteContent, Review, Ticket, TicketStatus, TicketPriority, Announcement, PaymentMethod } from '../types';
@@ -608,27 +610,39 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                                                     <span className={`px-2 py-0.5 mt-1 inline-block rounded-full text-xs font-medium ${getDocStatusClass(doc.status)}`}>{doc.status}</span>
                                                     {doc.status === 'rejected' && doc.rejectionReason && <p className="text-xs text-red-500 mt-1">Motif: {doc.rejectionReason}</p>}
                                                 </div>
-                                                {doc.status === 'uploaded' && (
-                                                    <div className="flex gap-2 mt-2 sm:mt-0">
-                                                        <button 
-                                                            onClick={() => {
-                                                                const reason = window.prompt('Motif du rejet (optionnel) :');
-                                                                if (reason !== null) {
-                                                                    onVerifyDocumentStatus(store, doc.name, 'rejected', reason || 'Non spécifié');
-                                                                }
-                                                            }} 
-                                                            className="text-xs bg-red-500 text-white px-2 py-1 rounded-md hover:bg-red-600"
+                                                <div className="flex gap-2 mt-2 sm:mt-0 items-center">
+                                                    {doc.fileUrl && ['uploaded', 'verified'].includes(doc.status) && (
+                                                        <a 
+                                                            href={doc.fileUrl} 
+                                                            target="_blank" 
+                                                            rel="noopener noreferrer" 
+                                                            className="text-xs bg-gray-500 text-white px-3 py-1.5 rounded-md hover:bg-gray-600 transition-colors"
                                                         >
-                                                            Rejeter
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => onVerifyDocumentStatus(store, doc.name, 'verified')} 
-                                                            className="text-xs bg-green-500 text-white px-2 py-1 rounded-md hover:bg-green-600"
-                                                        >
-                                                            Approuver
-                                                        </button>
-                                                    </div>
-                                                )}
+                                                            Voir le document
+                                                        </a>
+                                                    )}
+                                                    {doc.status === 'uploaded' && (
+                                                        <>
+                                                            <button 
+                                                                onClick={() => {
+                                                                    const reason = window.prompt('Motif du rejet (optionnel) :');
+                                                                    if (reason !== null) {
+                                                                        onVerifyDocumentStatus(store, doc.name, 'rejected', reason || 'Non spécifié');
+                                                                    }
+                                                                }} 
+                                                                className="text-xs bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors"
+                                                            >
+                                                                Rejeter
+                                                            </button>
+                                                            <button 
+                                                                onClick={() => onVerifyDocumentStatus(store, doc.name, 'verified')} 
+                                                                className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors"
+                                                            >
+                                                                Approuver
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
                                         ))}
                                     </div>

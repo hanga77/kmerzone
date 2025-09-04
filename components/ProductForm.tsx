@@ -192,6 +192,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     description: '',
     imageUrls: [],
     status: 'draft',
+    sku: '',
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [keywords, setKeywords] = useState('');
@@ -341,7 +342,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     }
   };
 
-  const handleSubmit = (status: 'published' | 'draft') => {
+  const handleSubmit = (status: 'published' | 'draft' | 'archived') => {
     if (!user?.shopName || !product.name || !product.price || product.stock === undefined || !product.imageUrls || product.imageUrls.length === 0 || !product.categoryId) {
         alert("Veuillez remplir tous les champs obligatoires (Nom, Prix, Stock, Catégorie et au moins une Image).");
         return;
@@ -383,19 +384,22 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                             <input type="number" name="stock" id="stock" value={product.stock ?? ''} onChange={handleChange} className={`mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600 ${hasVariants ? 'bg-gray-100 dark:bg-gray-600 cursor-not-allowed' : ''}`} required readOnly={hasVariants} />
                             {hasVariants && <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Calculé à partir des variantes.</p>}
                         </FieldWrapper>
-                        <FieldWrapper label="Catégorie">
-                            <select name="categoryId" id="categoryId" value={product.categoryId} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                                <option value="" disabled>-- Sélectionner une sous-catégorie --</option>
-                                {categoryTree.map(mainCat => (
-                                    <optgroup label={mainCat.name} key={mainCat.id}>
-                                    {mainCat.subCategories.map(subCat => (
-                                        <option key={subCat.id} value={subCat.id}>{subCat.name}</option>
-                                    ))}
-                                    </optgroup>
-                                ))}
-                            </select>
+                        <FieldWrapper label="SKU (Réf. article)">
+                          <input type="text" name="sku" id="sku" value={product.sku || ''} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600" />
                         </FieldWrapper>
                     </div>
+                     <FieldWrapper label="Catégorie">
+                        <select name="categoryId" id="categoryId" value={product.categoryId} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
+                            <option value="" disabled>-- Sélectionner une sous-catégorie --</option>
+                            {categoryTree.map(mainCat => (
+                                <optgroup label={mainCat.name} key={mainCat.id}>
+                                {mainCat.subCategories.map(subCat => (
+                                    <option key={subCat.id} value={subCat.id}>{subCat.name}</option>
+                                ))}
+                                </optgroup>
+                            ))}
+                        </select>
+                    </FieldWrapper>
                     <FieldWrapper label="Description">
                         <div className="flex items-center gap-2 mb-2">
                             <input type="text" value={keywords} onChange={e => setKeywords(e.target.value)} placeholder="Mots-clés (robe, pagne, soirée...)" className="flex-grow p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />

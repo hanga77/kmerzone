@@ -31,8 +31,9 @@ export interface Product {
   categoryId: string; // The ID of the category
   variants?: Variant[];
   variantDetails?: VariantDetail[];
-  status: 'published' | 'draft';
+  status: 'published' | 'draft' | 'archived';
   additionalShippingFee?: number;
+  sku?: string;
   
   // Generic / Shared fields
   brand?: string;

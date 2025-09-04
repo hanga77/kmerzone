@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
 import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem } from '../types';
@@ -20,7 +18,7 @@ interface SellerDashboardProps {
   onAddProduct: () => void;
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
-  onToggleStatus: (productId: string) => void;
+  onUpdateProductStatus: (productId: string, status: Product['status']) => void;
   onNavigateToProfile: () => void;
   onNavigateToAnalytics: () => void;
   onSetPromotion: (product: Product) => void;
@@ -37,6 +35,7 @@ interface SellerDashboardProps {
   onDeleteStory: (storeId: string, storyId: string) => void;
   payouts: Payout[];
   onSellerDisputeMessage: (orderId: string, message: string) => void;
+  onBulkUpdateProducts: (updates: Array<Pick<Product, 'id' | 'price' | 'stock'>>) => void;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -293,8 +292,53 @@ const OverviewPanel: React.FC<{ analytics: any; onNavigate: () => void; lowStock
     </div>
 );
 
-const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProduct' | 'onEditProduct' | 'onDeleteProduct' | 'onToggleStatus' | 'onSetPromotion' | 'onRemovePromotion'>> = ({ products, onAddProduct, onEditProduct, onDeleteProduct, onToggleStatus, onSetPromotion, onRemovePromotion }) => {
+const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProduct' | 'onEditProduct' | 'onDeleteProduct' | 'onUpdateProductStatus' | 'onSetPromotion' | 'onRemovePromotion'>> = ({ products, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onSetPromotion, onRemovePromotion }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [statusFilter, setStatusFilter] = useState<'active' | 'archived'>('active');
+    const [currentPage, setCurrentPage] = useState(1);
+    const PRODUCTS_PER_PAGE = 5;
+
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [statusFilter]);
+
+    const filteredProducts = useMemo(() => {
+        if (statusFilter === 'active') {
+            return products.filter(p => p.status === 'published' || p.status === 'draft');
+        }
+        return products.filter(p => p.status === 'archived');
+    }, [products, statusFilter]);
+
+    const totalPages = Math.ceil(filteredProducts.length / PRODUCTS_PER_PAGE);
+    const paginatedProducts = useMemo(() => {
+        const startIndex = (currentPage - 1) * PRODUCTS_PER_PAGE;
+        return filteredProducts.slice(startIndex, startIndex + PRODUCTS_PER_PAGE);
+    }, [filteredProducts, currentPage, PRODUCTS_PER_PAGE]);
+
+    const PaginationControls = () => {
+        if (totalPages <= 1) return null;
+        return (
+            <div className="flex justify-between items-center mt-4 pt-4 border-t dark:border-gray-700">
+                <button
+                    onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    disabled={currentPage === 1}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    Précédent
+                </button>
+                <span className="text-sm text-gray-700 dark:text-gray-300">
+                    Page {currentPage} sur {totalPages}
+                </span>
+                <button
+                    onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                    disabled={currentPage === totalPages}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed dark:bg-gray-800 dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
+                >
+                    Suivant
+                </button>
+            </div>
+        );
+    };
 
     const handleImportClick = () => {
         fileInputRef.current?.click();
@@ -356,34 +400,49 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
             <button onClick={onAddProduct} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Ajouter un produit</button>
           </div>
         </div>
-        <div className="space-y-2">
-          {products.map((p: Product) => {
+         <div className="flex gap-2 border-b dark:border-gray-700 mb-4">
+            <button onClick={() => setStatusFilter('active')} className={`py-2 px-4 text-sm font-semibold border-b-2 ${statusFilter === 'active' ? 'border-kmer-green text-kmer-green' : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-500'}`}>Actifs ({products.filter(p => p.status !== 'archived').length})</button>
+            <button onClick={() => setStatusFilter('archived')} className={`py-2 px-4 text-sm font-semibold border-b-2 ${statusFilter === 'archived' ? 'border-kmer-green text-kmer-green' : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-500'}`}>Archivés ({products.filter(p => p.status === 'archived').length})</button>
+        </div>
+        <div className="space-y-2 min-h-[350px]">
+          {paginatedProducts.length > 0 ? paginatedProducts.map((p: Product) => {
              const isLowStock = p.stock < 5;
              return (
                 <div key={p.id} className={`p-3 rounded-md flex justify-between items-center ${isLowStock ? 'bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-400' : 'bg-gray-50 dark:bg-gray-900/50'}`}>
-                <div className="flex items-center gap-3">
-                    <img src={p.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={p.name} className="w-12 h-12 object-cover rounded-md" />
-                    <div>
-                    <p className="font-semibold dark:text-gray-200">{p.name}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                        {p.price.toLocaleString('fr-CM')} FCFA - {p.stock} en stock
-                        {isLowStock && <span className="ml-2 text-xs font-bold text-orange-600 dark:text-orange-400">(Stock Faible)</span>}
-                    </p>
-                    <span className={`text-xs px-2 py-0.5 rounded-full ${p.status === 'published' ? 'bg-green-100 text-green-800' : 'bg-gray-200 text-gray-700'}`}>{p.status === 'published' ? 'Publié' : 'Brouillon'}</span>
+                    <div className="flex items-center gap-3">
+                        <img src={p.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={p.name} className="w-12 h-12 object-cover rounded-md" />
+                        <div>
+                            <p className="font-semibold dark:text-gray-200">{p.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                                {p.price.toLocaleString('fr-CM')} FCFA - {p.stock} en stock
+                                {isLowStock && <span className="ml-2 text-xs font-bold text-orange-600 dark:text-orange-400">(Stock Faible)</span>}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                         <select
+                            value={p.status}
+                            onChange={(e) => onUpdateProductStatus(p.id, e.target.value as Product['status'])}
+                            className={`text-xs p-1 rounded-md border bg-transparent dark:bg-gray-800 focus:ring-1 focus:ring-kmer-green
+                                ${p.status === 'published' ? 'border-green-500 text-green-600' : p.status === 'draft' ? 'border-gray-400 text-gray-500' : 'border-red-500 text-red-500'}`}
+                        >
+                          <option value="published">Publié</option>
+                          <option value="draft">Brouillon</option>
+                          <option value="archived">Archivé</option>
+                        </select>
+                        <button onClick={() => onSetPromotion(p)} className="p-2 text-gray-500 hover:text-kmer-red" title="Mettre en promotion"><TagIcon className="w-5 h-5"/></button>
+                        <button onClick={() => onEditProduct(p)} className="p-2 text-gray-500 hover:text-blue-500" title="Modifier"><PencilSquareIcon className="w-5 h-5"/></button>
+                        <button onClick={() => onDeleteProduct(p.id)} className="p-2 text-gray-500 hover:text-red-600" title="Supprimer"><TrashIcon className="w-5 h-5"/></button>
                     </div>
                 </div>
-                <div className="flex gap-2">
-                    <button onClick={() => onToggleStatus(p.id)} className="p-2 text-gray-500 hover:text-green-500" title={p.status === 'published' ? 'Mettre en brouillon' : 'Publier'}>
-                        <CheckCircleIcon className="w-5 h-5"/>
-                    </button>
-                    <button onClick={() => onSetPromotion(p)} className="p-2 text-gray-500 hover:text-kmer-red" title="Mettre en promotion"><TagIcon className="w-5 h-5"/></button>
-                    <button onClick={() => onEditProduct(p)} className="p-2 text-gray-500 hover:text-blue-500" title="Modifier"><PencilSquareIcon className="w-5 h-5"/></button>
-                    <button onClick={() => onDeleteProduct(p.id)} className="p-2 text-gray-500 hover:text-red-600" title="Supprimer"><TrashIcon className="w-5 h-5"/></button>
-                </div>
-                </div>
             );
-          })}
+          }) : (
+            <div className="text-center py-10 text-gray-500 dark:text-gray-400">
+                <p>Aucun produit trouvé dans cette catégorie.</p>
+            </div>
+          )}
         </div>
+        <PaginationControls />
       </div>
     );
 };
@@ -890,6 +949,114 @@ const DisputesPanel: React.FC<{
     );
 };
 
+const BulkEditPanel: React.FC<{
+    products: Product[];
+    onSave: (updates: Array<Pick<Product, 'id' | 'price' | 'stock'>>) => void;
+}> = ({ products, onSave }) => {
+    const [editedProducts, setEditedProducts] = useState<Product[]>([]);
+    const [searchTerm, setSearchTerm] = useState('');
+    const originalProductsMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
+
+    useEffect(() => {
+        // Deep copy to prevent mutation of the original prop
+        setEditedProducts(JSON.parse(JSON.stringify(products)));
+    }, [products]);
+
+    const handleCellChange = (id: string, field: 'price' | 'stock', value: string) => {
+        const numValue = parseInt(value, 10);
+        if (!isNaN(numValue) || value === '') {
+            setEditedProducts(prev => prev.map(p => 
+                p.id === id ? { ...p, [field]: value === '' ? 0 : numValue } : p
+            ));
+        }
+    };
+
+    const handleSave = () => {
+        const updates = editedProducts
+            .filter(ep => {
+                const original = originalProductsMap.get(ep.id);
+                if (!original) return false;
+                return ep.price !== original.price || ep.stock !== original.stock;
+            })
+            .map(p => ({ id: p.id, price: p.price, stock: p.stock }));
+        
+        if (updates.length > 0) {
+            onSave(updates);
+            alert(`${updates.length} produit(s) mis à jour !`);
+        } else {
+            alert("Aucune modification n'a été apportée.");
+        }
+    };
+
+    const filteredProducts = useMemo(() => {
+        if (!searchTerm) return editedProducts;
+        const lowerSearch = searchTerm.toLowerCase();
+        return editedProducts.filter(p => 
+            p.name.toLowerCase().includes(lowerSearch) ||
+            p.sku?.toLowerCase().includes(lowerSearch)
+        );
+    }, [editedProducts, searchTerm]);
+
+    return (
+        <div className="p-6">
+            <h2 className="text-xl font-bold dark:text-white mb-4">Modification Rapide des Produits</h2>
+            <div className="flex flex-col sm:flex-row gap-4 mb-4">
+                <input
+                    type="text"
+                    placeholder="Rechercher par nom ou SKU..."
+                    value={searchTerm}
+                    onChange={e => setSearchTerm(e.target.value)}
+                    className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                />
+                <button onClick={handleSave} className="bg-kmer-green text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 whitespace-nowrap">
+                    Enregistrer les modifications
+                </button>
+            </div>
+            <div className="overflow-x-auto max-h-[60vh] border rounded-lg dark:border-gray-700">
+                <table className="w-full min-w-[600px] text-sm">
+                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                        <tr>
+                            <th className="p-2 text-left font-semibold">Produit</th>
+                            <th className="p-2 text-left font-semibold w-24">SKU</th>
+                            <th className="p-2 text-left font-semibold w-32">Prix (FCFA)</th>
+                            <th className="p-2 text-left font-semibold w-24">Stock</th>
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y dark:divide-gray-700">
+                        {filteredProducts.map(p => (
+                            <tr key={p.id}>
+                                <td className="p-2 flex items-center gap-2">
+                                    <img src={p.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={p.name} className="w-10 h-10 object-cover rounded"/>
+                                    <span className="font-medium">{p.name}</span>
+                                </td>
+                                <td className="p-2 font-mono text-xs">{p.sku || '-'}</td>
+                                <td className="p-2">
+                                    <input 
+                                        type="number" 
+                                        value={p.price}
+                                        onChange={e => handleCellChange(p.id, 'price', e.target.value)}
+                                        className="w-full p-1 border rounded bg-transparent dark:bg-gray-800 dark:border-gray-600 focus:ring-1 focus:ring-kmer-green focus:outline-none"
+                                    />
+                                </td>
+                                <td className="p-2">
+                                    <input 
+                                        type="number" 
+                                        value={p.stock}
+                                        onChange={e => handleCellChange(p.id, 'stock', e.target.value)}
+                                        className={`w-full p-1 border rounded bg-transparent dark:bg-gray-800 dark:border-gray-600 focus:ring-1 focus:ring-kmer-green focus:outline-none ${!!p.variants?.length ? 'bg-gray-200 dark:bg-gray-700 cursor-not-allowed' : ''}`}
+                                        readOnly={!!p.variants?.length}
+                                        title={p.variants?.length ? "Le stock est géré au niveau des variantes" : ""}
+                                    />
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
 export const SellerDashboard: React.FC<SellerDashboardProps> = ({
   store,
   products,
@@ -898,7 +1065,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onAddProduct,
   onEditProduct,
   onDeleteProduct,
-  onToggleStatus,
+  onUpdateProductStatus,
   onNavigateToProfile,
   onNavigateToAnalytics,
   onSetPromotion,
@@ -916,8 +1083,9 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
   onProposeForFlashSale,
   payouts,
   onSellerDisputeMessage,
+  onBulkUpdateProducts,
 }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
@@ -1037,7 +1205,9 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
     const renderContent = () => {
         switch(activeTab) {
             case 'products':
-                return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onToggleStatus={onToggleStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
+                return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onUpdateProductStatus={onUpdateProductStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
+            case 'bulk-edit':
+                return <BulkEditPanel products={products} onSave={onBulkUpdateProducts} />;
             case 'stories':
                 return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
             case 'orders-in-progress':
@@ -1114,9 +1284,10 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                         </div>
                     </div>
                      <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
-                        <div className="flex space-x-2 overflow-x-auto">
+                        <div className="flex space-x-1 overflow-x-auto">
                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
+                           <TabButton icon={<PencilSquareIcon className="w-5 h-5"/>} label="Modif. Rapide" isActive={activeTab === 'bulk-edit'} onClick={() => setActiveTab('bulk-edit')} />
                            <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={['orders-in-progress', 'orders-delivered', 'orders-cancelled'].some(t => t === activeTab)} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
@@ -1142,24 +1313,21 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                                 {store.subscriptionStatus === 'overdue' ? (
                                     <p className="text-sm">Votre loyer est en retard. Veuillez payer pour éviter la suspension de votre boutique.</p>
                                 ) : (
-                                    <p className="text-sm">Votre prochain paiement de loyer est dû le {new Date(store.subscriptionDueDate!).toLocaleDateString('fr-FR')}.</p>
+                                    <p className="text-sm">Votre prochain paiement est prévu pour le {store.subscriptionDueDate ? new Date(store.subscriptionDueDate).toLocaleDateString('fr-FR') : 'N/A'}.</p>
                                 )}
                            </div>
                         </div>
-                        <button
-                            onClick={() => onPayRent(store.id)}
-                            className="bg-white text-gray-900 font-bold py-2 px-4 rounded-lg shadow-sm hover:bg-gray-200 transition-colors flex-shrink-0"
-                        >
-                            Payer le loyer ({siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA)
-                        </button>
+                        {store.subscriptionStatus === 'overdue' && (
+                            <button onClick={() => onPayRent(store.id)} className="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 flex-shrink-0">Payer {siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA</button>
+                        )}
                     </div>
-                 )}
+                )}
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                    {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
+                     {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
                         <div className="p-2 border-b dark:border-gray-700 flex flex-wrap gap-1">
                             <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({inProgressOrders.length})</button>
                             <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livré ({deliveredOrders.length})</button>
-                            <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulé / Retourné ({cancelledRefundedOrders.length})</button>
+                            <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulé/Retourné ({cancelledRefundedOrders.length})</button>
                         </div>
                     )}
                     {renderContent()}

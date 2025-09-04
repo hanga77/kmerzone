@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -46,7 +47,7 @@ import PromotionModal from './components/PromotionModal';
 import { useCart } from './contexts/CartContext';
 import { useWishlist } from './contexts/WishlistContext';
 import ChatWidget from './components/ChatWidget';
-import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon, XIcon } from './components/Icons';
+import { ArrowLeftIcon, BarChartIcon, ShieldCheckIcon, CurrencyDollarIcon, ShoppingBagIcon, UsersIcon, StarIcon, XIcon, ArchiveBoxIcon } from './components/Icons';
 import { usePersistentState } from './hooks/usePersistentState';
 import VisualSearchPage from './components/VisualSearchPage';
 
@@ -97,6 +98,8 @@ const SellerAnalyticsDashboard: React.FC<{
     sellerProducts: Product[];
     flashSales: FlashSale[];
 }> = ({ onBack, sellerOrders, sellerProducts, flashSales }) => {
+    const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'all'>('all');
+    
     const analytics = useMemo(() => {
         const getFinalPrice = (item: CartItem) => {
             const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
@@ -105,16 +108,29 @@ const SellerAnalyticsDashboard: React.FC<{
             return item.price;
         };
 
+        const now = new Date();
         const deliveredOrders = sellerOrders.filter(o => o.status === 'delivered');
-        const totalRevenue = deliveredOrders.reduce((sum, order) => {
+
+        const filteredDeliveredOrders = deliveredOrders.filter(o => {
+            const orderDate = new Date(o.orderDate);
+            if (timeRange === 'all') return true;
+            const cutoffDate = new Date();
+            if (timeRange === 'week') cutoffDate.setDate(now.getDate() - 7);
+            if (timeRange === 'month') cutoffDate.setDate(now.getDate() - 30);
+            if (timeRange === 'quarter') cutoffDate.setDate(now.getDate() - 90);
+            return orderDate >= cutoffDate;
+        });
+
+        const totalRevenue = filteredDeliveredOrders.reduce((sum, order) => {
              const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
              return sum + sellerItemsTotal;
         }, 0);
         
-        const totalDeliveredOrders = deliveredOrders.length;
+        const totalDeliveredOrders = filteredDeliveredOrders.length;
+        const totalItemsSold = filteredDeliveredOrders.flatMap(o => o.items).reduce((sum, item) => sum + item.quantity, 0);
         const averageOrderValue = totalDeliveredOrders > 0 ? totalRevenue / totalDeliveredOrders : 0;
 
-        const topProducts = deliveredOrders
+        const topProducts = filteredDeliveredOrders
             .flatMap(o => o.items)
             .reduce((acc, item) => {
                 const existing = acc.find(p => p.id === item.id);
@@ -130,36 +146,69 @@ const SellerAnalyticsDashboard: React.FC<{
         
         const sortedTopProducts = topProducts.sort((a, b) => b.revenue - a.revenue).slice(0, 5);
 
-        const monthlySalesData = deliveredOrders.reduce((acc, order) => {
-            const month = new Date(order.orderDate).toLocaleString('fr-CM', { month: 'short', year: '2-digit' });
-            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
-            acc[month] = (acc[month] || 0) + sellerItemsTotal;
-            return acc;
-        }, {} as Record<string, number>);
+        let salesChartData: { label: string; revenue: number }[] = [];
+        const getOrderTotal = (order: Order) => order.items.reduce((sum, item) => sum + getFinalPrice(item) * item.quantity, 0);
 
-        const last6Months = Array.from({ length: 6 }, (_, i) => {
-            const d = new Date();
-            d.setMonth(d.getMonth() - i);
-            return d.toLocaleString('fr-CM', { month: 'short', year: '2-digit' });
-        }).reverse();
-
-        const salesChartData = last6Months.map(month => ({
-            month,
-            revenue: monthlySalesData[month] || 0
-        }));
-
+        if (timeRange === 'week') {
+            const last7Days = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d; });
+            const dailySales = filteredDeliveredOrders.reduce((acc, order) => {
+                const day = new Date(order.orderDate).toLocaleDateString('fr-CM', { day: '2-digit', month: '2-digit' });
+                acc[day] = (acc[day] || 0) + getOrderTotal(order);
+                return acc;
+            }, {} as Record<string, number>);
+            salesChartData = last7Days.map(d => {
+                const label = d.toLocaleDateString('fr-CM', { day: '2-digit', month: '2-digit' });
+                return { label: d.toLocaleDateString('fr-CM', { weekday: 'short' }), revenue: dailySales[label] || 0 };
+            }).reverse();
+        } else if (timeRange === 'month') {
+            const last4WeeksLabels = ['-3 sem.', '-2 sem.', '-1 sem.', 'Cette sem.'];
+            const weeklySales = filteredDeliveredOrders.reduce((acc, order) => {
+                const weekIndex = Math.floor((now.getTime() - new Date(order.orderDate).getTime()) / (1000 * 60 * 60 * 24 * 7));
+                if (weekIndex < 4) acc[3 - weekIndex] = (acc[3 - weekIndex] || 0) + getOrderTotal(order);
+                return acc;
+            }, [] as number[]);
+            salesChartData = last4WeeksLabels.map((label, i) => ({ label, revenue: weeklySales[i] || 0 }));
+        } else { // quarter or all
+            const numMonths = (timeRange === 'quarter') ? 3 : 6;
+            const monthLabels = Array.from({ length: numMonths }, (_, i) => { const d = new Date(); d.setMonth(d.getMonth() - i); return d; }).reverse();
+            const monthlySales = filteredDeliveredOrders.reduce((acc, order) => {
+                const month = new Date(order.orderDate).toLocaleString('fr-CM', { month: 'short', year: '2-digit' });
+                acc[month] = (acc[month] || 0) + getOrderTotal(order);
+                return acc;
+            }, {} as Record<string, number>);
+            salesChartData = monthLabels.map(d => {
+                const label = d.toLocaleString('fr-CM', { month: 'short', year: '2-digit' });
+                return { label, revenue: monthlySales[label] || 0 };
+            });
+        }
+        
         return {
             totalRevenue,
             totalOrders: totalDeliveredOrders,
+            totalItemsSold,
             averageOrderValue,
             topProducts: sortedTopProducts,
             salesChartData
         };
-    }, [sellerOrders, flashSales]);
+    }, [sellerOrders, flashSales, timeRange]);
 
     const lowStockProducts = useMemo(() => {
         return sellerProducts.filter(p => p.stock < 5).slice(0, 5);
     }, [sellerProducts]);
+
+    const TimeRangeButton: React.FC<{ label: string; value: typeof timeRange; }> = ({ label, value }) => {
+        const isActive = timeRange === value;
+        return (
+             <button
+                onClick={() => setTimeRange(value)}
+                className={`px-3 py-1.5 text-sm font-semibold rounded-md transition-colors ${
+                    isActive ? 'bg-kmer-green text-white shadow' : 'bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600'
+                }`}
+            >
+                {label}
+            </button>
+        );
+    };
 
     return (
         <div className="container mx-auto p-4 sm:p-8 animate-in bg-gray-50 dark:bg-gray-900">
@@ -167,25 +216,33 @@ const SellerAnalyticsDashboard: React.FC<{
                 <ArrowLeftIcon className="w-5 h-5"/>
                 Retour au tableau de bord
             </button>
-            <div className="flex items-center gap-3 mb-8">
+            <div className="flex items-center gap-3 mb-4">
                 <BarChartIcon className="w-8 h-8"/>
                 <h1 className="text-3xl font-bold">Analyse des Ventes</h1>
             </div>
+             <div className="flex items-center gap-2 mb-8 flex-wrap">
+                <p className="font-semibold text-sm">Période :</p>
+                <TimeRangeButton label="7 jours" value="week" />
+                <TimeRangeButton label="30 jours" value="month" />
+                <TimeRangeButton label="90 jours" value="quarter" />
+                <TimeRangeButton label="Tout" value="all" />
+            </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
                 <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Commandes Livrées" value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
+                <StatCard icon={<ArchiveBoxIcon className="w-7 h-7"/>} label="Articles Vendus" value={analytics.totalItemsSold} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" />
                 <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Panier Moyen" value={`${analytics.averageOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6 h-full">
-                    <h2 className="text-xl font-bold mb-4">Évolution des Ventes (6 derniers mois)</h2>
+                    <h2 className="text-xl font-bold mb-4">Évolution des Ventes</h2>
                     <div className="flex justify-around items-end h-64 border-l border-b border-gray-200 dark:border-gray-700 pl-4 pb-4">
-                        {analytics.salesChartData.map(({ month, revenue }) => (
-                             <div key={month} className="flex flex-col items-center h-full justify-end" title={`${revenue.toLocaleString('fr-CM')} FCFA`}>
+                        {analytics.salesChartData.map(({ label, revenue }) => (
+                             <div key={label} className="flex flex-col items-center h-full justify-end" title={`${revenue.toLocaleString('fr-CM')} FCFA`}>
                                 <div className="w-8 bg-kmer-green rounded-t-md hover:bg-green-700" style={{ height: `${(revenue / Math.max(...analytics.salesChartData.map(d => d.revenue), 1)) * 100}%` }}></div>
-                                <p className="text-xs mt-1">{month}</p>
+                                <p className="text-xs mt-1">{label}</p>
                             </div>
                         ))}
                     </div>
@@ -203,7 +260,7 @@ const SellerAnalyticsDashboard: React.FC<{
                                     <span className="font-bold text-kmer-green">{product.revenue.toLocaleString('fr-CM')} FCFA</span>
                                 </li>
                             ))}
-                             {analytics.topProducts.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Aucune donnée de vente.</p>}
+                             {analytics.topProducts.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Aucune donnée de vente pour cette période.</p>}
                         </ul>
                     </div>
                      <div className="bg-orange-50 dark:bg-orange-900/50 rounded-lg shadow-sm p-6 border-l-4 border-orange-400">
@@ -590,7 +647,7 @@ export default function App() {
 
     const visibleProducts = useMemo(() => {
         const activeStoreNames = new Set(allStores.filter(s => s.status === 'active').map(s => s.name));
-        return allProducts.filter(p => activeStoreNames.has(p.vendor));
+        return allProducts.filter(p => activeStoreNames.has(p.vendor) && p.status === 'published');
     }, [allProducts, allStores]);
 
     useEffect(() => {
@@ -831,9 +888,24 @@ export default function App() {
         }
     }, [allProducts, setAllProducts, logActivity]);
     
-    const handleToggleStatus = useCallback((productId: string) => {
-        setAllProducts(prev => prev.map(p => p.id === productId ? {...p, status: p.status === 'published' ? 'draft' : 'published'} : p));
-    }, [setAllProducts]);
+    const handleUpdateProductStatus = useCallback((productId: string, status: Product['status']) => {
+        setAllProducts(prev => prev.map(p => p.id === productId ? { ...p, status } : p));
+        logActivity('Product Status Update', `Product ID ${productId} status updated to ${status}.`);
+    }, [setAllProducts, logActivity]);
+
+    const handleBulkUpdateProducts = useCallback((updatedProducts: Array<Pick<Product, 'id' | 'price' | 'stock'>>) => {
+        setAllProducts(prev => {
+            const updatedMap = new Map(updatedProducts.map(p => [p.id, p]));
+            return prev.map(p => {
+                if (updatedMap.has(p.id)) {
+                    const updates = updatedMap.get(p.id)!;
+                    return { ...p, price: updates.price, stock: updates.stock };
+                }
+                return p;
+            });
+        });
+        logActivity('Bulk Product Update', `${updatedProducts.length} products updated via bulk edit.`);
+    }, [setAllProducts, logActivity]);
 
     const handleSetPromotion = useCallback((productId: string, promoPrice: number, startDate?: string, endDate?: string) => {
         setAllProducts(prev => prev.map(p => {
@@ -1344,7 +1416,7 @@ export default function App() {
             case 'category':
                 return selectedCategoryId ? <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
             case 'seller-dashboard':
-                return sellerStore ? <SellerDashboard store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={handleDeleteProduct} onToggleStatus={handleToggleStatus} onNavigateToProfile={() => handleNavigate('seller-profile')} onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')} onSetPromotion={setPromotionModalProduct} onRemovePromotion={handleRemovePromotion} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderWithSeller} onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} payouts={payouts} onSellerDisputeMessage={handleSellerDisputeMessage} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+                return sellerStore ? <SellerDashboard store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={handleDeleteProduct} onUpdateProductStatus={handleUpdateProductStatus} onNavigateToProfile={() => handleNavigate('seller-profile')} onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')} onSetPromotion={setPromotionModalProduct} onRemovePromotion={handleRemovePromotion} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderWithSeller} onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} payouts={payouts} onSellerDisputeMessage={handleSellerDisputeMessage} onBulkUpdateProducts={handleBulkUpdateProducts} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
             case 'seller-analytics-dashboard':
                 return sellerStore ? <SellerAnalyticsDashboard onBack={() => handleNavigate('seller-dashboard')} sellerOrders={sellerOrders} sellerProducts={sellerProducts} flashSales={flashSales} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
             case 'vendor-page':
