@@ -611,7 +611,8 @@ const PromotionsPanel: React.FC<{
   products: Product[];
   onProposeForFlashSale: (flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => void;
   storeName: string;
-}> = ({ promoCodes, sellerId, onCreatePromoCode, onDeletePromoCode, flashSales, products, onProposeForFlashSale, storeName }) => {
+  sellerOrders: Order[];
+}> = ({ promoCodes, sellerId, onCreatePromoCode, onDeletePromoCode, flashSales, products, onProposeForFlashSale, storeName, sellerOrders }) => {
   const [showForm, setShowForm] = useState(false);
   const [proposalModalOpen, setProposalModalOpen] = useState<FlashSale | null>(null);
   const now = new Date();
@@ -633,6 +634,13 @@ const PromotionsPanel: React.FC<{
             return <span className="text-xs font-semibold text-yellow-600">En attente</span>;
     }
   };
+  
+  const getFinalPrice = (item: CartItem) => {
+    const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
+    if (flashPrice !== null) return flashPrice;
+    if (isPromotionActive(item)) return item.promotionPrice!;
+    return item.price;
+  }
 
   return (
     <div className="p-6">
@@ -652,16 +660,41 @@ const PromotionsPanel: React.FC<{
       </div>
       {showForm && <PromoCodeForm sellerId={sellerId} onCreatePromoCode={onCreatePromoCode} onCancel={() => setShowForm(false)} />}
       <div className="space-y-2 mt-4">
-          {promoCodes.map(pc => (
-              <div key={pc.code} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
-                  <div>
-                      <p className="font-mono text-lg font-bold text-kmer-green">{pc.code}</p>
-                      <p className="text-sm font-semibold">{pc.discountType === 'percentage' ? `${pc.discountValue}% de remise` : `${pc.discountValue.toLocaleString('fr-CM')} FCFA de remise`}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Utilisé {pc.uses} fois</p>
-                  </div>
-                  <button onClick={() => onDeletePromoCode(pc.code)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon className="w-5 h-5"/></button>
-              </div>
-          ))}
+          {promoCodes.map(pc => {
+              const generatedRevenue = sellerOrders
+                .filter(o => o.appliedPromoCode?.code === pc.code && o.status === 'delivered')
+                .reduce((sum, order) => {
+                    const sellerItemsTotal = order.items
+                        .filter(item => item.vendor === storeName)
+                        .reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
+                    return sum + sellerItemsTotal;
+                }, 0);
+
+              return (
+                <div key={pc.code} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex flex-col sm:flex-row justify-between items-center flex-wrap gap-4">
+                    <div>
+                        <p className="font-mono text-lg font-bold text-kmer-green">{pc.code}</p>
+                        <p className="text-sm font-semibold">{pc.discountType === 'percentage' ? `${pc.discountValue}% de remise` : `${pc.discountValue.toLocaleString('fr-CM')} FCFA de remise`}</p>
+                        <div className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                            {pc.minPurchase && <span>Achat min: {pc.minPurchase.toLocaleString('fr-CM')} FCFA</span>}
+                            {pc.minPurchase && pc.validUntil && <span> | </span>}
+                            {pc.validUntil && <span>Expire le: {new Date(pc.validUntil).toLocaleDateString()}</span>}
+                        </div>
+                    </div>
+                    <div className="flex gap-6 text-center">
+                        <div>
+                            <p className="font-bold text-lg">{pc.uses}</p>
+                            <p className="text-xs text-gray-500">Utilisations</p>
+                        </div>
+                        <div>
+                            <p className="font-bold text-lg">{generatedRevenue.toLocaleString('fr-CM')}</p>
+                            <p className="text-xs text-gray-500">Revenu (FCFA)</p>
+                        </div>
+                    </div>
+                    <button onClick={() => onDeletePromoCode(pc.code)} className="text-red-500 hover:text-red-700 p-2"><TrashIcon className="w-5 h-5"/></button>
+                </div>
+              );
+          })}
           {promoCodes.length === 0 && !showForm && <p className="text-sm text-gray-500 dark:text-gray-400">Vous n'avez aucun code promo actif.</p>}
       </div>
 
@@ -1217,7 +1250,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
             case 'orders-cancelled':
                 return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
             case 'promotions':
-                 return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode} flashSales={flashSales} products={products} onProposeForFlashSale={onProposeForFlashSale} storeName={store.name} />;
+                 return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode} flashSales={flashSales} products={products} onProposeForFlashSale={onProposeForFlashSale} storeName={store.name} sellerOrders={sellerOrders} />;
             case 'documents':
                  return <DocumentsPanel store={store} onUploadDocument={onUploadDocument} />;
             case 'finances':

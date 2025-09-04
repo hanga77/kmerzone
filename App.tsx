@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -80,17 +81,30 @@ const isPromotionActive = (product: Product): boolean => {
   return false; 
 };
 
-const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string }> = ({ icon, label, value, color }) => (
+const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string | number, color: string, change?: number | null }> = ({ icon, label, value, color, change }) => (
     <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4">
         <div className={`p-3 rounded-full ${color}`}>
             {icon}
         </div>
         <div>
-            <p className="text-2xl font-bold text-gray-800 dark:text-white">{value}</p>
+            <div className="flex items-baseline gap-2">
+                <p className="text-2xl font-bold text-gray-800 dark:text-white">{value}</p>
+                {change !== undefined && change !== null && (
+                     <span className={`text-sm font-semibold flex items-center ${change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {change >= 0 ? (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" /></svg>
+                        ) : (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="3"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg>
+                        )}
+                        {Math.abs(change).toFixed(1)}%
+                    </span>
+                )}
+            </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">{label}</p>
         </div>
     </div>
 );
+
 
 const SellerAnalyticsDashboard: React.FC<{
     onBack: () => void;
@@ -100,7 +114,7 @@ const SellerAnalyticsDashboard: React.FC<{
 }> = ({ onBack, sellerOrders, sellerProducts, flashSales }) => {
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'all'>('all');
     
-    const analytics = useMemo(() => {
+    const { analytics, comparisonAnalytics } = useMemo(() => {
         const getFinalPrice = (item: CartItem) => {
             const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
             if (flashPrice !== null) return flashPrice;
@@ -111,26 +125,57 @@ const SellerAnalyticsDashboard: React.FC<{
         const now = new Date();
         const deliveredOrders = sellerOrders.filter(o => o.status === 'delivered');
 
-        const filteredDeliveredOrders = deliveredOrders.filter(o => {
-            const orderDate = new Date(o.orderDate);
-            if (timeRange === 'all') return true;
-            const cutoffDate = new Date();
-            if (timeRange === 'week') cutoffDate.setDate(now.getDate() - 7);
-            if (timeRange === 'month') cutoffDate.setDate(now.getDate() - 30);
-            if (timeRange === 'quarter') cutoffDate.setDate(now.getDate() - 90);
-            return orderDate >= cutoffDate;
-        });
+        const filterOrdersByDate = (orders: Order[], range: 'current' | 'previous') => {
+            return orders.filter(o => {
+                const orderDate = new Date(o.orderDate);
+                if (timeRange === 'all') return range === 'current'; 
 
-        const totalRevenue = filteredDeliveredOrders.reduce((sum, order) => {
+                const cutoffDate = new Date();
+                const prevCutoffDate = new Date();
+                let periodDays = 0;
+
+                if (timeRange === 'week') periodDays = 7;
+                if (timeRange === 'month') periodDays = 30;
+                if (timeRange === 'quarter') periodDays = 90;
+
+                cutoffDate.setDate(now.getDate() - periodDays);
+                prevCutoffDate.setDate(now.getDate() - (periodDays * 2));
+
+                if (range === 'current') {
+                    return orderDate >= cutoffDate;
+                } else {
+                    return orderDate >= prevCutoffDate && orderDate < cutoffDate;
+                }
+            });
+        };
+        
+        const currentPeriodOrders = filterOrdersByDate(deliveredOrders, 'current');
+        const previousPeriodOrders = filterOrdersByDate(deliveredOrders, 'previous');
+
+        const calculateRevenue = (orders: Order[]) => orders.reduce((sum, order) => {
              const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
              return sum + sellerItemsTotal;
         }, 0);
+
+        const totalRevenue = calculateRevenue(currentPeriodOrders);
+        const previousTotalRevenue = calculateRevenue(previousPeriodOrders);
+
+        let revenueChangePercentage: number | null = null;
+        if (timeRange !== 'all') {
+            if (previousTotalRevenue > 0) {
+                revenueChangePercentage = ((totalRevenue - previousTotalRevenue) / previousTotalRevenue) * 100;
+            } else if (totalRevenue > 0) {
+                revenueChangePercentage = 100;
+            } else {
+                revenueChangePercentage = 0;
+            }
+        }
         
-        const totalDeliveredOrders = filteredDeliveredOrders.length;
-        const totalItemsSold = filteredDeliveredOrders.flatMap(o => o.items).reduce((sum, item) => sum + item.quantity, 0);
+        const totalDeliveredOrders = currentPeriodOrders.length;
+        const totalItemsSold = currentPeriodOrders.flatMap(o => o.items).reduce((sum, item) => sum + item.quantity, 0);
         const averageOrderValue = totalDeliveredOrders > 0 ? totalRevenue / totalDeliveredOrders : 0;
 
-        const topProducts = filteredDeliveredOrders
+        const topProducts = currentPeriodOrders
             .flatMap(o => o.items)
             .reduce((acc, item) => {
                 const existing = acc.find(p => p.id === item.id);
@@ -151,7 +196,7 @@ const SellerAnalyticsDashboard: React.FC<{
 
         if (timeRange === 'week') {
             const last7Days = Array.from({ length: 7 }, (_, i) => { const d = new Date(); d.setDate(d.getDate() - i); return d; });
-            const dailySales = filteredDeliveredOrders.reduce((acc, order) => {
+            const dailySales = currentPeriodOrders.reduce((acc, order) => {
                 const day = new Date(order.orderDate).toLocaleDateString('fr-CM', { day: '2-digit', month: '2-digit' });
                 acc[day] = (acc[day] || 0) + getOrderTotal(order);
                 return acc;
@@ -162,16 +207,16 @@ const SellerAnalyticsDashboard: React.FC<{
             }).reverse();
         } else if (timeRange === 'month') {
             const last4WeeksLabels = ['-3 sem.', '-2 sem.', '-1 sem.', 'Cette sem.'];
-            const weeklySales = filteredDeliveredOrders.reduce((acc, order) => {
+            const weeklySales = currentPeriodOrders.reduce((acc, order) => {
                 const weekIndex = Math.floor((now.getTime() - new Date(order.orderDate).getTime()) / (1000 * 60 * 60 * 24 * 7));
                 if (weekIndex < 4) acc[3 - weekIndex] = (acc[3 - weekIndex] || 0) + getOrderTotal(order);
                 return acc;
             }, [] as number[]);
             salesChartData = last4WeeksLabels.map((label, i) => ({ label, revenue: weeklySales[i] || 0 }));
         } else { // quarter or all
-            const numMonths = (timeRange === 'quarter') ? 3 : 6;
+            const numMonths = (timeRange === 'quarter') ? 3 : (timeRange === 'all' ? 6 : 0);
             const monthLabels = Array.from({ length: numMonths }, (_, i) => { const d = new Date(); d.setMonth(d.getMonth() - i); return d; }).reverse();
-            const monthlySales = filteredDeliveredOrders.reduce((acc, order) => {
+            const monthlySales = currentPeriodOrders.reduce((acc, order) => {
                 const month = new Date(order.orderDate).toLocaleString('fr-CM', { month: 'short', year: '2-digit' });
                 acc[month] = (acc[month] || 0) + getOrderTotal(order);
                 return acc;
@@ -183,12 +228,17 @@ const SellerAnalyticsDashboard: React.FC<{
         }
         
         return {
-            totalRevenue,
-            totalOrders: totalDeliveredOrders,
-            totalItemsSold,
-            averageOrderValue,
-            topProducts: sortedTopProducts,
-            salesChartData
+            analytics: {
+                totalRevenue,
+                totalOrders: totalDeliveredOrders,
+                totalItemsSold,
+                averageOrderValue,
+                topProducts: sortedTopProducts,
+                salesChartData
+            },
+            comparisonAnalytics: {
+                revenueChangePercentage,
+            }
         };
     }, [sellerOrders, flashSales, timeRange]);
 
@@ -229,7 +279,13 @@ const SellerAnalyticsDashboard: React.FC<{
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
+                <StatCard 
+                    icon={<CurrencyDollarIcon className="w-7 h-7"/>} 
+                    label={`Revenu Total (Livré)${timeRange !== 'all' ? ' - vs période précédente' : ''}`}
+                    value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} 
+                    color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300"
+                    change={comparisonAnalytics.revenueChangePercentage}
+                />
                 <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Commandes Livrées" value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
                 <StatCard icon={<ArchiveBoxIcon className="w-7 h-7"/>} label="Articles Vendus" value={analytics.totalItemsSold} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" />
                 <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Panier Moyen" value={`${analytics.averageOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
@@ -859,12 +915,23 @@ export default function App() {
             });
             return updatedProducts;
         });
+
+        if (orderData.appliedPromoCode) {
+            setAllPromoCodes(prevCodes =>
+                prevCodes.map(pc =>
+                    pc.code === orderData.appliedPromoCode!.code
+                        ? { ...pc, uses: pc.uses + 1 }
+                        : pc
+                )
+            );
+        }
+        
         setAllOrders(prevOrders => [...prevOrders, newOrder]);
         setSelectedOrder(newOrder);
         clearCart();
         onApplyPromoCode(null);
         handleNavigate('order-success');
-    }, [logActivity, setAllProducts, setAllOrders, clearCart, handleNavigate, onApplyPromoCode]);
+    }, [logActivity, setAllProducts, setAllOrders, clearCart, handleNavigate, onApplyPromoCode, setAllPromoCodes]);
     
     const handleAddProduct = useCallback((product: Product) => {
         setAllProducts(prev => {
