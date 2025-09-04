@@ -49,6 +49,41 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
         </div>
       )}
 
+      {store?.collections && store.collections.length > 0 && (
+        <section className="mb-12 space-y-10">
+          {store.collections.map(collection => {
+            const collectionProducts = collection.productIds
+              .map(id => allProducts.find(p => p.id === id))
+              .filter((p): p is Product => !!p);
+
+            if (collectionProducts.length === 0) return null;
+
+            return (
+              <div key={collection.id}>
+                <h2 className="text-2xl font-bold mb-2 dark:text-white">{collection.name}</h2>
+                {collection.description && <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-3xl">{collection.description}</p>}
+                <div className="-mx-4 sm:-mx-6 px-4 sm:px-6">
+                  <div className="flex overflow-x-auto space-x-6 pb-4">
+                    {collectionProducts.map(product => (
+                      <div key={product.id} className="w-72 flex-shrink-0">
+                        <ProductCard 
+                          product={product} 
+                          onProductClick={onProductClick} 
+                          onVendorClick={onVendorClick} 
+                          location={store?.location} 
+                          flashSales={flashSales} 
+                          isComparisonEnabled={isComparisonEnabled} 
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </section>
+      )}
+
        <div className="lg:flex lg:gap-8">
         <ProductFilters
           allProducts={productsFromVendor}

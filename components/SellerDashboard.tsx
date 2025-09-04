@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon } from './Icons';
+// FIX: Import missing icons
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
@@ -36,6 +37,9 @@ interface SellerDashboardProps {
   payouts: Payout[];
   onSellerDisputeMessage: (orderId: string, message: string) => void;
   onBulkUpdateProducts: (updates: Array<Pick<Product, 'id' | 'price' | 'stock'>>) => void;
+  onReplyToReview: (productId: string, reviewIdentifier: { author: string; date: string }, replyText: string) => void;
+  onCreateOrUpdateCollection: (storeId: string, collection: Omit<ProductCollection, 'id' | 'storeId'> | ProductCollection) => void;
+  onDeleteCollection: (storeId: string, collectionId: string) => void;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -1090,35 +1094,212 @@ const BulkEditPanel: React.FC<{
     );
 };
 
-export const SellerDashboard: React.FC<SellerDashboardProps> = ({
-  store,
-  products,
-  sellerOrders,
-  promoCodes,
-  onAddProduct,
-  onEditProduct,
-  onDeleteProduct,
-  onUpdateProductStatus,
-  onNavigateToProfile,
-  onNavigateToAnalytics,
-  onSetPromotion,
-  onRemovePromotion,
-  onUploadDocument,
-  onUpdateOrderStatus,
-  onCreatePromoCode,
-  onDeletePromoCode,
-  isChatEnabled,
-  onPayRent,
-  siteSettings,
-  onAddStory,
-  onDeleteStory,
-  flashSales,
-  onProposeForFlashSale,
-  payouts,
-  onSellerDisputeMessage,
-  onBulkUpdateProducts,
-}) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes'>('overview');
+// FIX: Define ReviewsPanel component
+const ReviewsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onReplyToReview'>> = ({ products, onReplyToReview }) => {
+    const [replyingTo, setReplyingTo] = useState<{ productId: string; reviewIdentifier: { author: string; date: string; } } | null>(null);
+    const [replyText, setReplyText] = useState('');
+
+    const allReviews = useMemo(() => {
+        return products.flatMap(p => 
+            p.reviews.map(r => ({ ...r, productId: p.id, productName: p.name }))
+        ).sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    }, [products]);
+
+    const handleReplySubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (replyingTo && replyText.trim()) {
+            onReplyToReview(replyingTo.productId, replyingTo.reviewIdentifier, replyText.trim());
+            setReplyingTo(null);
+            setReplyText('');
+        }
+    };
+    
+    const Rating: React.FC<{ rating: number }> = ({ rating }) => (
+        <div className="flex items-center">
+        {[...Array(5)].map((_, i) => (
+            <StarIcon 
+                key={i} 
+                className={`w-4 h-4 ${i < rating ? 'text-kmer-yellow' : 'text-gray-300'}`} 
+                filled={i < rating}
+            />
+        ))}
+        </div>
+    );
+
+    return (
+        <div className="p-6">
+            <h2 className="text-xl font-bold dark:text-white mb-4">Avis des Clients</h2>
+            <div className="space-y-4 max-h-[70vh] overflow-y-auto">
+                {allReviews.map((review, index) => (
+                    <div key={index} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                        <p className="text-sm font-semibold text-gray-500">Produit: <span className="text-kmer-green">{review.productName}</span></p>
+                        <div className="flex items-center gap-4 mt-1">
+                            <p className="font-bold">{review.author}</p>
+                            <Rating rating={review.rating} />
+                        </div>
+                        <p className="text-xs text-gray-400">{new Date(review.date).toLocaleDateString('fr-FR')}</p>
+                        <p className="italic mt-2">"{review.comment}"</p>
+                        {review.sellerReply ? (
+                            <div className="mt-2 ml-4 p-2 bg-green-50 dark:bg-green-900/50 border-l-2 border-green-500">
+                                <p className="font-semibold text-sm">Votre réponse:</p>
+                                <p className="italic text-sm">"{review.sellerReply.text}"</p>
+                            </div>
+                        ) : (
+                            replyingTo?.reviewIdentifier.date === review.date && replyingTo?.reviewIdentifier.author === review.author ? (
+                                <form onSubmit={handleReplySubmit} className="mt-2 ml-4">
+                                    <textarea
+                                        value={replyText}
+                                        onChange={e => setReplyText(e.target.value)}
+                                        rows={2}
+                                        placeholder="Votre réponse..."
+                                        className="w-full p-2 border rounded-md dark:bg-gray-700"
+                                    />
+                                    <div className="flex gap-2 justify-end mt-1">
+                                        <button type="button" onClick={() => setReplyingTo(null)} className="text-xs font-semibold">Annuler</button>
+                                        <button type="submit" className="text-xs font-semibold bg-blue-500 text-white px-2 py-1 rounded">Envoyer</button>
+                                    </div>
+                                </form>
+                            ) : (
+                                <button
+                                    onClick={() => setReplyingTo({ productId: review.productId, reviewIdentifier: { author: review.author, date: review.date } })}
+                                    className="text-sm font-semibold text-blue-500 hover:underline mt-2"
+                                >
+                                    Répondre
+                                </button>
+                            )
+                        )}
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+};
+
+// FIX: Define CollectionsPanel component and its helper CollectionForm
+const CollectionForm: React.FC<{
+    collection?: ProductCollection | null;
+    products: Product[];
+    onSave: (collection: Omit<ProductCollection, 'id' | 'storeId'> | ProductCollection) => void;
+    onCancel: () => void;
+}> = ({ collection, products, onSave, onCancel }) => {
+    const [name, setName] = useState(collection?.name || '');
+    const [description, setDescription] = useState(collection?.description || '');
+    const [selectedProducts, setSelectedProducts] = useState<string[]>(collection?.productIds || []);
+
+    const handleToggleProduct = (productId: string) => {
+        setSelectedProducts(prev => 
+            prev.includes(productId) 
+                ? prev.filter(id => id !== productId) 
+                : [...prev, productId]
+        );
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!name) {
+            alert("Le nom de la collection est obligatoire.");
+            return;
+        }
+        const collectionData = {
+            name,
+            description,
+            productIds: selectedProducts
+        };
+        if (collection?.id && collection?.storeId) {
+            onSave({ ...collectionData, id: collection.id, storeId: collection.storeId });
+        } else {
+            onSave(collectionData);
+        }
+    };
+    
+    return (
+        <form onSubmit={handleSubmit} className="p-4 my-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg border dark:border-gray-700 space-y-4">
+            <h3 className="font-semibold text-lg dark:text-white">{collection ? 'Modifier la collection' : 'Nouvelle collection'}</h3>
+            <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Nom de la collection (ex: Nouveautés Pagne)" className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" rows={2} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+            <div>
+                <h4 className="font-medium text-sm mb-2">Sélectionner les produits</h4>
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 max-h-60 overflow-y-auto p-2 border rounded-md">
+                    {products.map(p => (
+                        <label key={p.id} className="flex items-center gap-2 p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700/50 text-sm">
+                            <input type="checkbox" checked={selectedProducts.includes(p.id)} onChange={() => handleToggleProduct(p.id)} className="h-4 w-4 rounded border-gray-300 text-kmer-green focus:ring-kmer-green"/>
+                            <span>{p.name}</span>
+                        </label>
+                    ))}
+                </div>
+            </div>
+            <div className="flex justify-end gap-2">
+                <button type="button" onClick={onCancel} className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 py-2 rounded-md">Annuler</button>
+                <button type="submit" className="bg-kmer-green text-white font-semibold px-4 py-2 rounded-md">Enregistrer</button>
+            </div>
+        </form>
+    );
+};
+
+const CollectionsPanel: React.FC<Pick<SellerDashboardProps, 'store' | 'products' | 'onCreateOrUpdateCollection' | 'onDeleteCollection'>> = ({ store, products, onCreateOrUpdateCollection, onDeleteCollection }) => {
+    const [isFormVisible, setIsFormVisible] = useState(false);
+    const [editingCollection, setEditingCollection] = useState<ProductCollection | null>(null);
+
+    if (!store) return null;
+
+    const handleSave = (collectionData: Omit<ProductCollection, 'id' | 'storeId'> | ProductCollection) => {
+        onCreateOrUpdateCollection(store.id, collectionData);
+        setIsFormVisible(false);
+        setEditingCollection(null);
+    };
+
+    const handleEdit = (collection: ProductCollection) => {
+        setEditingCollection(collection);
+        setIsFormVisible(true);
+    };
+    
+    const handleCancel = () => {
+        setIsFormVisible(false);
+        setEditingCollection(null);
+    };
+
+    return (
+        <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold dark:text-white">Mes Collections</h2>
+                <button onClick={() => { setIsFormVisible(prev => !prev); setEditingCollection(null); }} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                    <PlusIcon className="w-5 h-5"/> {isFormVisible && !editingCollection ? 'Annuler' : 'Créer une collection'}
+                </button>
+            </div>
+
+            {isFormVisible && (
+                <CollectionForm 
+                    collection={editingCollection} 
+                    products={products}
+                    onSave={handleSave}
+                    onCancel={handleCancel}
+                />
+            )}
+            
+            <div className="space-y-3 mt-4">
+                {(store.collections || []).map(collection => (
+                    <div key={collection.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                        <div className="flex justify-between items-start">
+                            <div>
+                                <h3 className="font-semibold text-lg">{collection.name}</h3>
+                                <p className="text-sm text-gray-500">{collection.productIds.length} produit(s)</p>
+                            </div>
+                            <div className="flex gap-2">
+                                <button onClick={() => handleEdit(collection)} className="p-2 text-blue-500 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-full"><PencilSquareIcon className="w-5 h-5"/></button>
+                                <button onClick={() => onDeleteCollection(store.id, collection.id)} className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"><TrashIcon className="w-5 h-5"/></button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+                 {(store.collections || []).length === 0 && !isFormVisible && <p className="text-center text-gray-500 dark:text-gray-400 py-8">Vous n'avez aucune collection. Créez-en une pour organiser vos produits !</p>}
+            </div>
+        </div>
+    );
+};
+
+export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
+    const { store, products, sellerOrders, promoCodes, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, flashSales, onProposeForFlashSale, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection } = props;
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes' | 'reviews' | 'collections'>('overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
@@ -1237,29 +1418,19 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
 
     const renderContent = () => {
         switch(activeTab) {
-            case 'products':
-                return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onUpdateProductStatus={onUpdateProductStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
-            case 'bulk-edit':
-                return <BulkEditPanel products={products} onSave={onBulkUpdateProducts} />;
-            case 'stories':
-                return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
-            case 'orders-in-progress':
-                return <OrdersPanel title="Commandes en cours" orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
-            case 'orders-delivered':
-                return <OrdersPanel title="Commandes Livrées" orders={deliveredOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
-            case 'orders-cancelled':
-                return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
-            case 'promotions':
-                 return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode} flashSales={flashSales} products={products} onProposeForFlashSale={onProposeForFlashSale} storeName={store.name} sellerOrders={sellerOrders} />;
-            case 'documents':
-                 return <DocumentsPanel store={store} onUploadDocument={onUploadDocument} />;
-            case 'finances':
-                return <FinancePanel deliveredOrders={deliveredOrders} payouts={payouts.filter(p => p.storeId === store.id)} commissionRate={siteSettings.commissionRate} flashSales={flashSales} />;
-            case 'disputes':
-                return <DisputesPanel disputedOrders={disputedOrders} onSellerDisputeMessage={onSellerDisputeMessage} />;
-            case 'overview':
-            default:
-                return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} />;
+            case 'products': return <ProductsPanel {...props} />;
+            case 'bulk-edit': return <BulkEditPanel products={products} onSave={onBulkUpdateProducts} />;
+            case 'stories': return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
+            case 'orders-in-progress': return <OrdersPanel title="Commandes en cours" orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
+            case 'orders-delivered': return <OrdersPanel title="Commandes Livrées" orders={deliveredOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
+            case 'orders-cancelled': return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
+            case 'promotions': return <PromotionsPanel {...props} sellerId={user.id} storeName={store.name} />;
+            case 'documents': return <DocumentsPanel store={store} onUploadDocument={onUploadDocument} />;
+            case 'finances': return <FinancePanel deliveredOrders={deliveredOrders} payouts={payouts.filter(p => p.storeId === store.id)} commissionRate={siteSettings.commissionRate} flashSales={flashSales} />;
+            case 'disputes': return <DisputesPanel disputedOrders={disputedOrders} onSellerDisputeMessage={onSellerDisputeMessage} />;
+            case 'reviews': return <ReviewsPanel products={products} onReplyToReview={onReplyToReview} />;
+            case 'collections': return <CollectionsPanel store={store} products={products} onCreateOrUpdateCollection={onCreateOrUpdateCollection} onDeleteCollection={onDeleteCollection} />;
+            case 'overview': default: return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} />;
         }
     };
     
@@ -1323,6 +1494,8 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = ({
                            <TabButton icon={<PencilSquareIcon className="w-5 h-5"/>} label="Modif. Rapide" isActive={activeTab === 'bulk-edit'} onClick={() => setActiveTab('bulk-edit')} />
                            <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={['orders-in-progress', 'orders-delivered', 'orders-cancelled'].some(t => t === activeTab)} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
+                           <TabButton icon={<ChatBubbleLeftRightIcon className="w-5 h-5"/>} label="Avis Clients" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} />
+                           <TabButton icon={<BookmarkSquareIcon className="w-5 h-5"/>} label="Collections" isActive={activeTab === 'collections'} onClick={() => setActiveTab('collections')} />
                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
                            <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label="Finances" isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
                            <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} count={disputedOrders.length} />

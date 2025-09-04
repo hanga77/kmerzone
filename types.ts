@@ -4,6 +4,10 @@ export interface Review {
   comment: string;
   date: string;
   status: 'pending' | 'approved' | 'rejected';
+  sellerReply?: {
+    text: string;
+    date: string; // ISO string
+  };
 }
 
 export interface Variant {
@@ -34,6 +38,7 @@ export interface Product {
   status: 'published' | 'draft' | 'archived';
   additionalShippingFee?: number;
   sku?: string;
+  viewCount?: number;
   
   // Generic / Shared fields
   brand?: string;
@@ -128,6 +133,14 @@ export interface Story {
   createdAt: string; // ISO String
 }
 
+export interface ProductCollection {
+  id: string;
+  storeId: string;
+  name: string;
+  description?: string;
+  productIds: string[];
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -150,6 +163,8 @@ export interface Store {
   paymentHistory?: { date: string; amount: number }[];
   stories?: Story[];
   premiumStatus: 'standard' | 'premium';
+  visits?: number;
+  collections?: ProductCollection[];
 }
 
 export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent';

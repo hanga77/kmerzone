@@ -434,6 +434,12 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
                   </div>
                   <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">{new Date(review.date).toLocaleDateString('fr-FR')}</p>
                   <p className="text-gray-600 dark:text-gray-300 italic">"{review.comment}"</p>
+                  {review.sellerReply && (
+                      <div className="mt-4 ml-8 p-4 bg-gray-100 dark:bg-gray-700/50 rounded-lg border-l-4 border-kmer-green">
+                          <p className="font-bold text-sm text-gray-800 dark:text-gray-200">Réponse du vendeur</p>
+                          <p className="text-gray-600 dark:text-gray-300 italic">"{review.sellerReply.text}"</p>
+                      </div>
+                  )}
                 </div>
               ))}
             </div>
@@ -447,7 +453,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
       <RecommendedProducts 
         currentProduct={product} 
         allProducts={allProducts} 
-        stores={stores}
+        stores={stores} 
         flashSales={flashSales}
         onProductClick={onProductClick}
         onVendorClick={onVendorClick}

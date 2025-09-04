@@ -1,6 +1,7 @@
 
 
 
+
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -40,7 +41,7 @@ import ServerErrorPage from './components/ServerErrorPage';
 import AccountPage from './components/AccountPage';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
-import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod, Page, Notification } from './types';
+import type { Product, Category, Store, Review, Order, Address, OrderStatus, User, SiteActivityLog, FlashSale, DocumentStatus, PickupPoint, NewOrderData, TrackingEvent, PromoCode, Warning, SiteSettings, CartItem, UserRole, Payout, Advertisement, Discrepancy, Story, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod, Page, Notification, ProductCollection } from './types';
 import AddToCartModal from './components/AddToCartModal';
 import { useUI } from './contexts/UIContext';
 import StoryViewer from './components/StoryViewer';
@@ -482,7 +483,8 @@ const initialStores: Store[] = [
             { name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' },
             { name: "Registre de Commerce", status: 'uploaded', fileUrl: '...' },
         ],
-        stories: [{id: 's1', imageUrl: 'https://i.pinimg.com/564x/08/94/a3/0894a30e8a719c676767576f3f054812.jpg', createdAt: new Date().toISOString() }]
+        stories: [{id: 's1', imageUrl: 'https://i.pinimg.com/564x/08/94/a3/0894a30e8a719c676767576f3f054812.jpg', createdAt: new Date().toISOString() }],
+        collections: [{ id: 'coll1', storeId: 'store-1', name: 'Nouveautés Pagne', description: 'Nos dernières créations en tissu pagne, parfaites pour toutes les occasions.', productIds: ['2', '12', '10'] }]
     },
     { 
         id: 'store-2', name: 'Mama Africa', logoUrl: 'https://img.freepik.com/vecteurs-premium/modele-logo-cuisine-africaine_210834-31.jpg', 
@@ -490,7 +492,8 @@ const initialStores: Store[] = [
         category: 'Alimentation', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Jeanne', sellerLastName: 'Abena', sellerPhone: '677665544',
         physicalAddress: '12 Rue des Saveurs, Bastos', latitude: 3.8968, longitude: 11.5213, subscriptionStatus: 'overdue', subscriptionDueDate: '2024-07-10T00:00:00.000Z',
-        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'requested' }]
+        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'requested' }],
+        collections: []
     },
     { 
         id: 'store-3', name: 'Electro Plus', logoUrl: 'https://cdn.dribbble.com/users/188652/screenshots/1029415/electro-logo-2.jpg', 
@@ -498,7 +501,8 @@ const initialStores: Store[] = [
         category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Mokolo', sellerFirstName: 'Paul', sellerLastName: 'Kouam', sellerPhone: '655443322',
         physicalAddress: 'Grand Marché Mokolo, Stand 52', latitude: 3.8731, longitude: 11.5152, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-20T00:00:00.000Z',
-        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }]
+        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }],
+        collections: []
     },
     { 
         id: 'store-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', 
@@ -506,32 +510,37 @@ const initialStores: Store[] = [
         category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
         location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
         physicalAddress: 'Rue Njo-Njo, Bonapriso', latitude: 4.0321, longitude: 9.715, subscriptionStatus: 'inactive',
-        documents: [{ name: "Registre de Commerce", status: 'rejected', rejectionReason: 'Document illisible.' }]
+        documents: [{ name: "Registre de Commerce", status: 'rejected', rejectionReason: 'Document illisible.' }],
+        collections: []
     },
      { 
         id: 'store-5', name: 'Yaoundé Style', logoUrl: 'https://img.freepik.com/premium-vector/traditional-african-woman-head-wrap-turban-logo_103045-81.jpg', category: 'Mode et Vêtements', warnings: [], status: 'pending', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Mvog-Ada', sellerFirstName: 'Franck', sellerLastName: 'Essomba', sellerPhone: '698765432',
         physicalAddress: 'Avenue Kennedy', latitude: 3.8647, longitude: 11.521,
-        documents: []
+        documents: [],
+        collections: []
     },
     { 
         id: 'store-6', name: 'Bafoussam Brews', logoUrl: 'https://cdn.dribbble.com/users/1586931/screenshots/3443128/coffee-logo-design.png', category: 'Alimentation & Boissons', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Bafoussam', neighborhood: 'Centre Ville', sellerFirstName: 'Pierre', sellerLastName: 'Kamdem', sellerPhone: '696543210',
         physicalAddress: 'Marché Central, Bafoussam', latitude: 5.4744, longitude: 10.4193, subscriptionStatus: 'active', subscriptionDueDate: '2024-09-01T00:00:00.000Z',
-        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }]
+        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }],
+        collections: []
     },
     { 
         id: 'store-7', name: 'Limbe Arts & Crafts', logoUrl: 'https://i.pinimg.com/736x/8a/9e-12/8a9e-1261a8779728283575647585355e.jpg', category: 'Artisanat & Décoration', warnings: [], status: 'active', premiumStatus: 'premium',
         location: 'Limbe', neighborhood: 'Down Beach', sellerFirstName: 'Sarah', sellerLastName: 'Eko', sellerPhone: '678901234',
         physicalAddress: 'Bord de mer, Limbe', latitude: 4.0165, longitude: 9.2131, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-25T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }, { name: "Registre de Commerce", status: 'verified', fileUrl: '...' }],
-        stories: [{id: 's2', imageUrl: 'https://i.pinimg.com/564x/c7/2b/42/c72b429158221c97a552e67a145cb1d6.jpg', createdAt: new Date().toISOString() }]
+        stories: [{id: 's2', imageUrl: 'https://i.pinimg.com/564x/c7/2b/42/c72b429158221c97a552e67a145cb1d6.jpg', createdAt: new Date().toISOString() }],
+        collections: []
     },
     { 
         id: 'store-8', name: 'Kribi Digital', logoUrl: 'https://static.vecteezy.com/system/resources/previews/007/618/856/non_2x/kd-logo-k-d-design-white-kd-letter-kd-letter-logo-design-initial-letter-kd-linked-circle-uppercase-monogram-logo-vector.jpg', category: 'Électronique', warnings: [], status: 'pending', premiumStatus: 'standard',
         location: 'Kribi', neighborhood: 'Centre', sellerFirstName: 'David', sellerLastName: 'Lobe', sellerPhone: '654321098',
         physicalAddress: 'Avenue des Banques, Kribi', latitude: 2.9431, longitude: 9.9077,
-        documents: []
+        documents: [],
+        collections: []
     },
 ];
 
@@ -1092,9 +1101,26 @@ export default function App() {
         }));
     }, [setAllProducts, logActivity]);
     
+    const handleReplyToReview = useCallback((productId: string, reviewIdentifier: { author: string; date: string; }, replyText: string) => {
+        setAllProducts(prev => prev.map(p => {
+            if (p.id === productId) {
+                logActivity('Review Replied', `Seller replied to review from ${reviewIdentifier.author} on product ${p.name}.`);
+                return {
+                    ...p,
+                    reviews: p.reviews.map(r => 
+                        (r.author === reviewIdentifier.author && r.date === reviewIdentifier.date)
+                            ? { ...r, sellerReply: { text: replyText, date: new Date().toISOString() } }
+                            : r
+                    )
+                };
+            }
+            return p;
+        }));
+    }, [setAllProducts, logActivity]);
+
      const handleBecomeSeller = useCallback((shopName: string, location: string, neighborhood: string, sellerFirstName: string, sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string, latitude?: number, longitude?: number) => {
         if (!user) return;
-        const newStore: Store = { id: `store-${Date.now()}`, name: shopName, logoUrl, category: 'Divers', warnings: [], status: 'pending', premiumStatus: 'standard', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, latitude, longitude, documents: Object.entries(siteSettings.requiredSellerDocuments).filter(([, isRequired]) => isRequired).map(([name]): RequestedDocument => ({ name, status: 'requested' })) };
+        const newStore: Store = { id: `store-${Date.now()}`, name: shopName, logoUrl, category: 'Divers', warnings: [], status: 'pending', premiumStatus: 'standard', location, neighborhood, sellerFirstName, sellerLastName, sellerPhone, physicalAddress, latitude, longitude, documents: Object.entries(siteSettings.requiredSellerDocuments).filter(([, isRequired]) => isRequired).map(([name]): RequestedDocument => ({ name, status: 'requested' })), collections: [] };
         setAllStores(prev => [...prev, newStore]);
         authUpdateUser({ shopName });
         logActivity('Seller Application', `User "${user.name}" applied to become a seller with shop "${shopName}".`);
@@ -1451,6 +1477,36 @@ export default function App() {
         logActivity('Advertisement Deleted', `Advertisement ID ${adId} was deleted.`);
     }, [setAdvertisements, logActivity]);
 
+    const handleCreateOrUpdateCollection = useCallback((storeId: string, collection: Omit<ProductCollection, 'id' | 'storeId'> | ProductCollection) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                const collections = s.collections || [];
+                if ('id' in collection) { // Update
+                    logActivity('Collection Updated', `Collection "${collection.name}" was updated for store "${s.name}".`);
+                    return { ...s, collections: collections.map(c => c.id === collection.id ? collection : c) };
+                } else { // Create
+                    const newCollection: ProductCollection = { ...collection, id: `coll-${Date.now()}`, storeId };
+                    logActivity('Collection Created', `Collection "${newCollection.name}" was created for store "${s.name}".`);
+                    return { ...s, collections: [...collections, newCollection] };
+                }
+            }
+            return s;
+        }));
+    }, [setAllStores, logActivity]);
+
+    const handleDeleteCollection = useCallback((storeId: string, collectionId: string) => {
+        if (window.confirm("Êtes-vous sûr de vouloir supprimer cette collection ?")) {
+            setAllStores(prev => prev.map(s => {
+                if (s.id === storeId) {
+                    const collectionName = s.collections?.find(c => c.id === collectionId)?.name || 'Unknown Collection';
+                    logActivity('Collection Deleted', `Collection "${collectionName}" was deleted from store "${s.name}".`);
+                    return { ...s, collections: (s.collections || []).filter(c => c.id !== collectionId) };
+                }
+                return s;
+            }));
+        }
+    }, [setAllStores, logActivity]);
+
     // Filtered data for dashboards
     const sellerStore = user?.shopName ? allStores.find(s => s.name === user.shopName) : undefined;
     const sellerProducts = user?.shopName ? allProducts.filter(p => p.vendor === user.shopName) : [];
@@ -1483,7 +1539,7 @@ export default function App() {
             case 'category':
                 return selectedCategoryId ? <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
             case 'seller-dashboard':
-                return sellerStore ? <SellerDashboard store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={handleDeleteProduct} onUpdateProductStatus={handleUpdateProductStatus} onNavigateToProfile={() => handleNavigate('seller-profile')} onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')} onSetPromotion={setPromotionModalProduct} onRemovePromotion={handleRemovePromotion} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderWithSeller} onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} payouts={payouts} onSellerDisputeMessage={handleSellerDisputeMessage} onBulkUpdateProducts={handleBulkUpdateProducts} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+                return sellerStore ? <SellerDashboard store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={handleDeleteProduct} onUpdateProductStatus={handleUpdateProductStatus} onNavigateToProfile={() => handleNavigate('seller-profile')} onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')} onSetPromotion={setPromotionModalProduct} onRemovePromotion={handleRemovePromotion} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderWithSeller} onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} payouts={payouts} onSellerDisputeMessage={handleSellerDisputeMessage} onBulkUpdateProducts={handleBulkUpdateProducts} onReplyToReview={handleReplyToReview} onCreateOrUpdateCollection={handleCreateOrUpdateCollection} onDeleteCollection={handleDeleteCollection} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
             case 'seller-analytics-dashboard':
                 return sellerStore ? <SellerAnalyticsDashboard onBack={() => handleNavigate('seller-dashboard')} sellerOrders={sellerOrders} sellerProducts={sellerProducts} flashSales={flashSales} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
             case 'vendor-page':
