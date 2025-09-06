@@ -1,7 +1,4 @@
 
-
-
-
 import React from 'react';
 
 type IconProps = {
@@ -444,7 +441,6 @@ export const PaypalIcon: React.FC<IconProps> = (props) => (
   </svg>
 );
 
-// FIX: Add missing icons
 export const ChatBubbleLeftRightIcon: React.FC<IconProps> = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-3.72.372a3.523 3.523 0 0 1-1.04-.22l-1.044-.442a3.523 3.523 0 0 0-1.04-.22l-3.72.372c-1.133.093-1.98-.934-1.98-2.07v-4.286c0-.97.616-1.813 1.5-2.097m6.525 0V9" />

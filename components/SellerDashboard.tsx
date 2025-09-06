@@ -1,10 +1,10 @@
+
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review, Notification } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-// FIX: Import missing icons
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon, BellIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
@@ -40,6 +40,10 @@ interface SellerDashboardProps {
   onReplyToReview: (productId: string, reviewIdentifier: { author: string; date: string }, replyText: string) => void;
   onCreateOrUpdateCollection: (storeId: string, collection: Omit<ProductCollection, 'id' | 'storeId'> | ProductCollection) => void;
   onDeleteCollection: (storeId: string, collectionId: string) => void;
+  initialTab: string;
+  sellerNotifications: Notification[];
+  onMarkNotificationAsRead: (notificationId: string) => void;
+  onNavigateFromNotification: (link: Notification['link']) => void;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -103,6 +107,13 @@ const isPromotionActive = (product: Product): boolean => {
   if (endDate) return now <= endDate;
   
   return false; 
+};
+
+const getFinalPrice = (item: CartItem, flashSales: FlashSale[]): number => {
+    const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
+    if (flashPrice !== null) return flashPrice;
+    if (isPromotionActive(item)) return item.promotionPrice!;
+    return item.price;
 };
 
 
@@ -639,13 +650,6 @@ const PromotionsPanel: React.FC<{
     }
   };
   
-  const getFinalPrice = (item: CartItem) => {
-    const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
-    if (flashPrice !== null) return flashPrice;
-    if (isPromotionActive(item)) return item.promotionPrice!;
-    return item.price;
-  }
-
   return (
     <div className="p-6">
       {proposalModalOpen && (
@@ -670,7 +674,7 @@ const PromotionsPanel: React.FC<{
                 .reduce((sum, order) => {
                     const sellerItemsTotal = order.items
                         .filter(item => item.vendor === storeName)
-                        .reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
+                        .reduce((itemSum, item) => itemSum + getFinalPrice(item, flashSales) * item.quantity, 0);
                     return sum + sellerItemsTotal;
                 }, 0);
 
@@ -858,16 +862,9 @@ const FinancePanel: React.FC<{
     commissionRate: number;
     flashSales: FlashSale[];
 }> = ({ deliveredOrders, payouts, commissionRate, flashSales }) => {
-     const getFinalPrice = (item: CartItem) => {
-        const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
-        if (flashPrice !== null) return flashPrice;
-        if (isPromotionActive(item)) return item.promotionPrice!;
-        return item.price;
-     };
-
      const financials = useMemo(() => {
         const totalRevenue = deliveredOrders.reduce((sum, order) => {
-            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
+            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item, flashSales) * item.quantity, 0);
             return sum + sellerItemsTotal;
         }, 0);
 
@@ -1094,7 +1091,6 @@ const BulkEditPanel: React.FC<{
     );
 };
 
-// FIX: Define ReviewsPanel component
 const ReviewsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onReplyToReview'>> = ({ products, onReplyToReview }) => {
     const [replyingTo, setReplyingTo] = useState<{ productId: string; reviewIdentifier: { author: string; date: string; } } | null>(null);
     const [replyText, setReplyText] = useState('');
@@ -1175,7 +1171,6 @@ const ReviewsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onReplyToR
     );
 };
 
-// FIX: Define CollectionsPanel component and its helper CollectionForm
 const CollectionForm: React.FC<{
     collection?: ProductCollection | null;
     products: Product[];
@@ -1298,14 +1293,35 @@ const CollectionsPanel: React.FC<Pick<SellerDashboardProps, 'store' | 'products'
 };
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, products, sellerOrders, promoCodes, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, flashSales, onProposeForFlashSale, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection } = props;
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes' | 'reviews' | 'collections'>('overview');
+    const { store, products, sellerOrders, promoCodes, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, flashSales, onProposeForFlashSale, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection, initialTab, sellerNotifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes' | 'reviews' | 'collections'>(initialTab as any || 'overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
     const qrCodeRef = useRef<HTMLCanvasElement>(null);
     const [scanningOrder, setScanningOrder] = useState<Order | null>(null);
     const [scanResult, setScanResult] = useState<{ success: boolean, message: string } | null>(null);
+    const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+    const notificationsMenuRef = useRef<HTMLDivElement>(null);
+    const unreadNotificationsCount = sellerNotifications.filter(n => !n.isRead).length;
+    
+    useEffect(() => {
+        setActiveTab(initialTab as any || 'overview');
+    }, [initialTab]);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (notificationsMenuRef.current && !notificationsMenuRef.current.contains(event.target as Node)) {
+                setIsNotificationsOpen(false);
+            }
+        };
+        if (isNotificationsOpen) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [isNotificationsOpen]);
 
     useEffect(() => {
         if (!printingOrder) return;
@@ -1344,202 +1360,213 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             }, 300);
         });
 
-        return cleanup;
     }, [printingOrder]);
 
+    const handlePrintOrder = (order: Order) => {
+        setPrintingOrder(order);
+    };
+
+    const handleScanCheckIn = (order: Order) => {
+        setScanResult(null);
+        setScanningOrder(order);
+    };
+
     const handleScanSuccess = (decodedText: string) => {
-      if (!scanningOrder || scanResult) return;
-  
-      if (decodedText !== scanningOrder.trackingNumber) {
-        setScanResult({ success: false, message: "Le code scanné ne correspond pas à cette commande." });
-        return;
-      }
-      if (scanningOrder.status !== 'confirmed') {
-        setScanResult({ success: false, message: `Cette commande n'est pas en attente de préparation (Statut: ${statusTranslations[scanningOrder.status]})` });
-        return;
-      }
-  
-      onUpdateOrderStatus(scanningOrder.id, 'ready-for-pickup');
-      setScanResult({ success: true, message: `Commande ${scanningOrder.id} marquée comme "Prête pour enlèvement".` });
+        if(scanningOrder && scanningOrder.trackingNumber === decodedText) {
+            onUpdateOrderStatus(scanningOrder.id, 'ready-for-pickup');
+            setScanResult({ success: true, message: 'Colis prêt pour l\'enlèvement !' });
+        } else {
+             setScanResult({ success: false, message: 'Le code-barres ne correspond pas à cette commande.' });
+        }
+        setTimeout(() => {
+            setScanningOrder(null);
+            setScanResult(null);
+        }, 3000);
     };
 
-    const closeScanner = () => {
-      setScanningOrder(null);
-      setScanResult(null);
-    };
-
-    const inProgressOrders = useMemo(() => sellerOrders.filter(o => !['delivered', 'cancelled', 'refunded', 'refund-requested', 'returned', 'depot-issue', 'delivery-failed'].includes(o.status)), [sellerOrders]);
-    const deliveredOrders = useMemo(() => sellerOrders.filter(o => o.status === 'delivered'), [sellerOrders]);
-    const cancelledRefundedOrders = useMemo(() => sellerOrders.filter(o => ['cancelled', 'refunded', 'returned', 'depot-issue', 'delivery-failed'].includes(o.status)), [sellerOrders]);
-    const disputedOrders = useMemo(() => sellerOrders.filter(o => o.status === 'refund-requested' || (o.disputeLog && o.disputeLog.length > 0)), [sellerOrders]);
-    const lowStockProductsCount = useMemo(() => products.filter(p => p.stock < 5).length, [products]);
-
-    const getFinalPrice = (item: CartItem) => {
-        const flashPrice = getActiveFlashSalePrice(item.id, flashSales);
-        if (flashPrice !== null) return flashPrice;
-        if (isPromotionActive(item)) return item.promotionPrice!;
-        return item.price;
-     };
-
-    const analytics = useMemo(() => {
-        const totalRevenue = deliveredOrders.reduce((sum, order) => {
-            const sellerItemsTotal = order.items.reduce((itemSum, item) => itemSum + getFinalPrice(item) * item.quantity, 0);
-            return sum + sellerItemsTotal;
-        }, 0);
-
-        const allReviews = products.flatMap(p => p.reviews);
-        const avgRating = allReviews.length > 0
-            ? allReviews.reduce((sum, r) => sum + r.rating, 0) / allReviews.length
-            : 0;
-
-        return {
-            totalProducts: products.length,
-            openOrders: inProgressOrders.length,
-            totalRevenue,
-            avgRating: avgRating.toFixed(1),
-        };
-    }, [products, deliveredOrders, inProgressOrders, flashSales]);
-    
-    if (!user || user.role !== 'seller' || !store) {
+    if (!store) {
         return (
-            <div className="container mx-auto px-6 py-12 text-center">
-                <p className="text-xl dark:text-white">Chargement du tableau de bord...</p>
+            <div className="container mx-auto p-8 text-center">
+                <p>Informations sur la boutique non trouvées.</p>
             </div>
         );
     }
-
-    const storeStatusInfo = {
-        active: { text: "Actif", color: "text-green-500", icon: <CheckCircleIcon className="w-5 h-5"/> },
-        pending: { text: "En attente de validation", color: "text-yellow-500", icon: <ExclamationTriangleIcon className="w-5 h-5"/> },
-        suspended: { text: "Suspendu", color: "text-red-500", icon: <XCircleIcon className="w-5 h-5"/> },
-    };
     
-    const isRentDueSoon = store.subscriptionDueDate && (new Date(store.subscriptionDueDate).getTime() - Date.now()) < 7 * 24 * 60 * 60 * 1000;
+    const ordersInProgress = sellerOrders.filter(o => ['confirmed', 'ready-for-pickup'].includes(o.status));
+    const ordersDelivered = sellerOrders.filter(o => o.status === 'delivered');
+    const ordersCancelled = sellerOrders.filter(o => ['cancelled', 'refunded', 'returned'].includes(o.status));
+    const disputedOrders = sellerOrders.filter(o => ['refund-requested', 'depot-issue', 'delivery-failed'].includes(o.status));
+    const unreadDisputesCount = disputedOrders.filter(o => {
+        const lastMessage = o.disputeLog?.[o.disputeLog.length - 1];
+        return lastMessage && lastMessage.author !== 'seller'; // Simplistic unread logic
+    }).length;
+    
+    const unreadReviewsCount = products.flatMap(p => p.reviews.filter(r => r.status === 'approved' && !r.sellerReply)).length;
 
+    const deliveredOrdersForAnalytics = sellerOrders.filter(o => o.status === 'delivered');
+    
+    const analytics = useMemo(() => {
+        const totalRevenue = deliveredOrdersForAnalytics.reduce((sum, order) => {
+             const sellerItemsTotal = order.items
+                .filter(item => item.vendor === store.name)
+                .reduce((itemSum, item) => itemSum + getFinalPrice(item, flashSales) * item.quantity, 0);
+             return sum + sellerItemsTotal;
+        }, 0);
+
+        const avgRating = products.flatMap(p => p.reviews).reduce((sum, r, _, arr) => sum + r.rating / arr.length, 0);
+
+        return {
+            totalRevenue,
+            totalProducts: products.length,
+            openOrders: ordersInProgress.length,
+            avgRating: avgRating.toFixed(1)
+        };
+    }, [deliveredOrdersForAnalytics, products, ordersInProgress.length, store.name, flashSales]);
+
+    const lowStockProductsCount = useMemo(() => {
+        return products.filter(p => p.stock < 5).length;
+    }, [products]);
+    
     const renderContent = () => {
         switch(activeTab) {
-            case 'products': return <ProductsPanel {...props} />;
+            case 'overview': return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} />;
+            case 'products': return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onUpdateProductStatus={onUpdateProductStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
             case 'bulk-edit': return <BulkEditPanel products={products} onSave={onBulkUpdateProducts} />;
             case 'stories': return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
-            case 'orders-in-progress': return <OrdersPanel title="Commandes en cours" orders={inProgressOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
-            case 'orders-delivered': return <OrdersPanel title="Commandes Livrées" orders={deliveredOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
-            case 'orders-cancelled': return <OrdersPanel title="Commandes Annulées / Remboursées" orders={cancelledRefundedOrders} onUpdateOrderStatus={onUpdateOrderStatus} onScan={setScanningOrder} onPrint={setPrintingOrder} />;
-            case 'promotions': return <PromotionsPanel {...props} sellerId={user.id} storeName={store.name} />;
+            case 'orders-in-progress': return <OrdersPanel title="Commandes en cours" orders={ordersInProgress} onUpdateOrderStatus={onUpdateOrderStatus} onScan={handleScanCheckIn} onPrint={handlePrintOrder} />;
+            case 'orders-delivered': return <OrdersPanel title="Commandes livrées" orders={ordersDelivered} onUpdateOrderStatus={onUpdateOrderStatus} onScan={handleScanCheckIn} onPrint={handlePrintOrder} />;
+            case 'orders-cancelled': return <OrdersPanel title="Commandes annulées/retournées" orders={ordersCancelled} onUpdateOrderStatus={onUpdateOrderStatus} onScan={handleScanCheckIn} onPrint={handlePrintOrder} />;
+            case 'promotions': return <PromotionsPanel promoCodes={promoCodes} sellerId={user.id} onCreatePromoCode={onCreatePromoCode} onDeletePromoCode={onDeletePromoCode} flashSales={flashSales} products={products} onProposeForFlashSale={onProposeForFlashSale} storeName={store.name} sellerOrders={sellerOrders} />;
             case 'documents': return <DocumentsPanel store={store} onUploadDocument={onUploadDocument} />;
-            case 'finances': return <FinancePanel deliveredOrders={deliveredOrders} payouts={payouts.filter(p => p.storeId === store.id)} commissionRate={siteSettings.commissionRate} flashSales={flashSales} />;
+            case 'finances': return <FinancePanel deliveredOrders={deliveredOrdersForAnalytics} payouts={payouts} commissionRate={siteSettings.commissionRate} flashSales={flashSales} />;
             case 'disputes': return <DisputesPanel disputedOrders={disputedOrders} onSellerDisputeMessage={onSellerDisputeMessage} />;
             case 'reviews': return <ReviewsPanel products={products} onReplyToReview={onReplyToReview} />;
             case 'collections': return <CollectionsPanel store={store} products={products} onCreateOrUpdateCollection={onCreateOrUpdateCollection} onDeleteCollection={onDeleteCollection} />;
-            case 'overview': default: return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} />;
+            default: return null;
         }
     };
     
     return (
-      <>
-        {scanningOrder && (
-            <ScannerModal 
-                onClose={closeScanner}
-                onScanSuccess={handleScanSuccess}
-                scanResult={scanResult}
-            />
-        )}
-        {printingOrder && (
-            <div className="printable fixed -left-[9999px] top-0">
-                <div className="w-[105mm] h-[148mm] p-2 border-2 border-black flex flex-col justify-between font-sans text-xs bg-white text-black">
-                    <div>
-                        <h3 className="font-bold text-base">KMER ZONE - Commande #{printingOrder.id}</h3>
-                        <p><b>Date:</b> {new Date(printingOrder.orderDate).toLocaleDateString()}</p>
-                        <p><b>Destinataire:</b> {printingOrder.shippingAddress.fullName}</p>
-                        <p>{printingOrder.shippingAddress.address}, {printingOrder.shippingAddress.city}</p>
-                        <p><b>Tél:</b> {printingOrder.shippingAddress.phone}</p>
-                    </div>
-                    <div className="text-[10px] border-t border-gray-400 pt-1 mt-1">
-                        <b>Contenu:</b> {printingOrder.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}
-                    </div>
-                    <div className="text-center">
-                        <canvas ref={qrCodeRef}></canvas>
-                        <p className="font-mono">{printingOrder.trackingNumber}</p>
+        <>
+            {scanningOrder && <ScannerModal onClose={() => setScanningOrder(null)} onScanSuccess={handleScanSuccess} scanResult={scanResult} />}
+            {printingOrder && (
+                <div className="printable fixed -left-[9999px] top-0">
+                    <div className="w-[105mm] h-[148mm] p-2 border-2 border-black flex flex-col justify-between font-sans text-xs">
+                        <div>
+                            <h3 className="font-bold text-base">KMER ZONE - Commande #{printingOrder.id}</h3>
+                            <p><b>Date:</b> {new Date(printingOrder.orderDate).toLocaleDateString()}</p>
+                            <p><b>Destinataire:</b> {printingOrder.shippingAddress.fullName}</p>
+                            <p>{printingOrder.shippingAddress.address}, {printingOrder.shippingAddress.city}</p>
+                            <p><b>Tél:</b> {printingOrder.shippingAddress.phone}</p>
+                        </div>
+                        <div className="text-[10px] border-t border-gray-400 pt-1 mt-1">
+                            <b>Contenu:</b> {printingOrder.items.map(i => `${i.name} (x${i.quantity})`).join(', ')}
+                        </div>
+                        <div className="text-center">
+                            <canvas ref={qrCodeRef}></canvas>
+                            <p className="font-mono">{printingOrder.trackingNumber}</p>
+                        </div>
                     </div>
                 </div>
-            </div>
-        )}
-        <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
-            <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-                <div className="container mx-auto px-4 sm:px-6 py-4">
-                    <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-4">
-                            <img src={store.logoUrl} alt={store.name} className="h-12 w-12 object-contain rounded-md bg-gray-200 dark:bg-gray-700 p-1"/>
-                            <div>
-                                <h1 className="text-xl md:text-2xl font-bold text-gray-800 dark:text-white">{store.name}</h1>
-                                <div className={`flex items-center gap-1 text-sm font-semibold ${storeStatusInfo[store.status].color}`}>
-                                    {storeStatusInfo[store.status].icon} {storeStatusInfo[store.status].text}
-                                    {store.premiumStatus === 'premium' && (
-                                      <span className="flex items-center gap-1 text-kmer-yellow" title="Boutique Premium">
-                                        <StarIcon className="w-4 h-4" /> Premium
-                                      </span>
-                                    )}
+            )}
+            <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+                <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                    <div className="container mx-auto px-4 sm:px-6 py-4">
+                        <div className="flex justify-between items-center">
+                            <div className="flex items-center gap-3">
+                                <img src={store.logoUrl} alt={store.name} className="w-12 h-12 object-contain rounded-md" />
+                                <div>
+                                    <h1 className="text-2xl font-bold text-gray-800 dark:text-white">{store.name}</h1>
+                                    <div className="flex items-center gap-2">
+                                        <p className="text-sm text-gray-500 dark:text-gray-400">Tableau de bord Vendeur</p>
+                                        {store.premiumStatus === 'premium' && <span className="text-xs font-bold bg-kmer-yellow/20 text-kmer-yellow px-2 py-0.5 rounded-full flex items-center gap-1"><StarIcon className="w-3 h-3"/> Premium</span>}
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                        <div className="flex items-center gap-4">
-                           <button onClick={onNavigateToProfile} className="text-gray-500 dark:text-gray-400 p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700">
-                                <Cog8ToothIcon className="w-6 h-6"/>
-                            </button>
-                        </div>
-                    </div>
-                     <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
-                        <div className="flex space-x-1 overflow-x-auto">
-                           <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                           <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
-                           <TabButton icon={<PencilSquareIcon className="w-5 h-5"/>} label="Modif. Rapide" isActive={activeTab === 'bulk-edit'} onClick={() => setActiveTab('bulk-edit')} />
-                           <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
-                           <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={['orders-in-progress', 'orders-delivered', 'orders-cancelled'].some(t => t === activeTab)} onClick={() => setActiveTab('orders-in-progress')} count={inProgressOrders.length} />
-                           <TabButton icon={<ChatBubbleLeftRightIcon className="w-5 h-5"/>} label="Avis Clients" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} />
-                           <TabButton icon={<BookmarkSquareIcon className="w-5 h-5"/>} label="Collections" isActive={activeTab === 'collections'} onClick={() => setActiveTab('collections')} />
-                           <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
-                           <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label="Finances" isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
-                           <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} count={disputedOrders.length} />
-                           <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
-                           {isChatEnabled && <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label="Messages" isActive={false} onClick={() => setIsWidgetOpen(true)} count={totalUnreadCount} />}
-                        </div>
-                    </div>
-                </div>
-            </header>
-            <main className="container mx-auto px-4 sm:px-6 py-6">
-                 {store && siteSettings.isRentEnabled && store.subscriptionStatus !== 'inactive' && (
-                    <div className={`p-4 rounded-lg mb-6 flex flex-col sm:flex-row justify-between items-center gap-4 ${
-                        store.subscriptionStatus === 'overdue' ? 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300' 
-                        : isRentDueSoon ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300'
-                        : 'bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300'
-                    }`}>
-                        <div className="flex items-center gap-3">
-                           <ExclamationTriangleIcon className="w-6 h-6"/>
-                           <div>
-                                <h3 className="font-bold">Statut de votre abonnement</h3>
-                                {store.subscriptionStatus === 'overdue' ? (
-                                    <p className="text-sm">Votre loyer est en retard. Veuillez payer pour éviter la suspension de votre boutique.</p>
-                                ) : (
-                                    <p className="text-sm">Votre prochain paiement est prévu pour le {store.subscriptionDueDate ? new Date(store.subscriptionDueDate).toLocaleDateString('fr-FR') : 'N/A'}.</p>
+                            <div className="flex items-center gap-4">
+                               {isChatEnabled && (
+                                    <button onClick={() => setIsWidgetOpen(true)} className="relative p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <ChatBubbleBottomCenterTextIcon className="w-6 h-6"/>
+                                        {totalUnreadCount > 0 && <span className="absolute -top-1 -right-1 block h-5 w-5 rounded-full bg-kmer-red text-white text-xs flex items-center justify-center">{totalUnreadCount}</span>}
+                                    </button>
                                 )}
-                           </div>
+                                <div className="relative" ref={notificationsMenuRef}>
+                                    <button onClick={() => setIsNotificationsOpen(o => !o)} className="relative p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <BellIcon className="w-6 h-6"/>
+                                        {unreadNotificationsCount > 0 && <span className="absolute -top-1 -right-1 block h-5 w-5 rounded-full bg-kmer-red text-white text-xs flex items-center justify-center">{unreadNotificationsCount}</span>}
+                                    </button>
+                                    {isNotificationsOpen && (
+                                        <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 max-h-96 overflow-y-auto">
+                                           <div className="p-3 border-b dark:border-gray-700">
+                                            <h3 className="font-semibold text-gray-800 dark:text-white">Notifications</h3>
+                                           </div>
+                                           {sellerNotifications.length === 0 ? (
+                                               <p className="p-4 text-sm text-gray-500">Aucune notification.</p>
+                                           ) : (
+                                               sellerNotifications.map(notif => (
+                                                <button
+                                                    key={notif.id}
+                                                    onClick={() => {
+                                                        onMarkNotificationAsRead(notif.id);
+                                                        if (notif.link) onNavigateFromNotification(notif.link);
+                                                        setIsNotificationsOpen(false);
+                                                    }}
+                                                    className={`w-full text-left p-3 border-b dark:border-gray-700/50 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-700/50 ${!notif.isRead ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                                >
+                                                    <p className="text-sm text-gray-700 dark:text-gray-200">{notif.message}</p>
+                                                    <p className="text-xs text-gray-400 mt-1">{new Date(notif.timestamp).toLocaleString('fr-FR')}</p>
+                                                </button>
+                                               ))
+                                           )}
+                                        </div>
+                                    )}
+                                </div>
+                                <button onClick={onNavigateToProfile} className="p-2 rounded-full text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                    <Cog8ToothIcon className="w-6 h-6" />
+                                </button>
+                            </div>
                         </div>
-                        {store.subscriptionStatus === 'overdue' && (
-                            <button onClick={() => onPayRent(store.id)} className="bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600 flex-shrink-0">Payer {siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA</button>
+                        {store.status !== 'active' && (
+                            <div className={`mt-4 p-3 rounded-md text-sm font-semibold ${store.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'}`}>
+                               {store.status === 'pending' ? "Votre boutique est en attente d'approbation. Certaines fonctionnalités sont limitées." : "Votre boutique est suspendue. Veuillez contacter le support."}
+                            </div>
                         )}
-                    </div>
-                )}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                     {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
-                        <div className="p-2 border-b dark:border-gray-700 flex flex-wrap gap-1">
-                            <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({inProgressOrders.length})</button>
-                            <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livré ({deliveredOrders.length})</button>
-                            <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulé/Retourné ({cancelledRefundedOrders.length})</button>
+                         {store.subscriptionStatus === 'overdue' && (
+                            <div className="mt-4 p-3 rounded-md text-sm font-semibold bg-red-100 text-red-800 flex justify-between items-center">
+                               <span>Votre loyer est en retard. Votre boutique risque d'être suspendue.</span>
+                               <button onClick={() => onPayRent(store.id)} className="bg-red-500 text-white font-bold py-1 px-3 rounded-md hover:bg-red-600">Payer {siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA</button>
+                            </div>
+                        )}
+                        <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
+                            <div className="flex space-x-1 overflow-x-auto">
+                                <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                                <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
+                                <TabButton icon={<PencilSquareIcon className="w-5 h-5"/>} label="Modification Rapide" isActive={activeTab === 'bulk-edit'} onClick={() => setActiveTab('bulk-edit')} />
+                                <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
+                                <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab)} onClick={() => setActiveTab('orders-in-progress')} count={ordersInProgress.length} />
+                                <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
+                                <TabButton icon={<BookmarkSquareIcon className="w-5 h-5"/>} label="Collections" isActive={activeTab === 'collections'} onClick={() => setActiveTab('collections')} />
+                                <TabButton icon={<StarIcon className="w-5 h-5"/>} label="Avis" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} count={unreadReviewsCount} />
+                                <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} count={unreadDisputesCount} />
+                                <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
+                                <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Finances" isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
+                            </div>
                         </div>
-                    )}
-                    {renderContent()}
-                </div>
-            </main>
-        </div>
-      </>
+                    </div>
+                </header>
+                <main className="container mx-auto px-4 sm:px-6 py-6">
+                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                        {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
+                            <div className="p-4 border-b dark:border-gray-700 flex gap-2">
+                                <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({ordersInProgress.length})</button>
+                                <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livrées ({ordersDelivered.length})</button>
+                                <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulées ({ordersCancelled.length})</button>
+                            </div>
+                        )}
+                        {renderContent()}
+                    </div>
+                </main>
+            </div>
+        </>
     );
 };

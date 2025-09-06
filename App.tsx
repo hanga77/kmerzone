@@ -1,7 +1,3 @@
-
-
-
-
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
@@ -675,6 +671,7 @@ export default function App() {
   const [siteContent, setSiteContent] = usePersistentState<SiteContent[]>('siteContent', initialSiteContent);
   const [activeAccountTab, setActiveAccountTab] = useState('profile');
   const [recentlyViewedIds, setRecentlyViewedIds] = usePersistentState<string[]>('recentlyViewed', []);
+  const [initialSellerTab, setInitialSellerTab] = useState('overview');
 
   const [allProducts, setAllProducts] = usePersistentState<Product[]>('allProducts', initialProducts);
   const [allCategories, setAllCategories] = usePersistentState<Category[]>('allCategories', initialCategories);
@@ -761,6 +758,13 @@ export default function App() {
         };
         setSiteActivityLogs(prev => [newLog, ...prev].slice(0, 100));
     }, [user, setSiteActivityLogs]);
+    
+    const addNotification = useCallback((notification: Omit<Notification, 'id' | 'timestamp'>) => {
+        setAllNotifications(prev => [
+            { ...notification, id: `notif-${Date.now()}-${Math.random()}`, timestamp: new Date().toISOString() },
+            ...prev
+        ].slice(0, 200)); // Keep last 200 notifications
+    }, [setAllNotifications]);
 
     const handleMarkNotificationAsRead = useCallback((notificationId: string) => {
         setAllNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, isRead: true } : n));
@@ -785,6 +789,11 @@ export default function App() {
             if (orderToView) {
                 setSelectedOrder(orderToView);
             }
+        }
+        if (link.page === 'seller-dashboard' && link.params?.tab) {
+             setInitialSellerTab(link.params.tab);
+        } else {
+             setInitialSellerTab('overview'); // Reset if no tab specified
         }
         handleNavigate(link.page);
     }, [allOrders, handleNavigate]);
@@ -913,12 +922,38 @@ export default function App() {
     const handlePlaceOrder = useCallback(async (orderData: NewOrderData): Promise<void> => {
         logActivity('Order Placed', `New order created with total ${orderData.total.toLocaleString('fr-CM')} FCFA.`);
         const newOrder: Order = { ...orderData, id: `ORDER-${Date.now()}`, orderDate: new Date().toISOString(), status: 'confirmed', trackingNumber: `KZ${Date.now()}`, trackingHistory: [{ status: 'confirmed', date: new Date().toISOString(), location: 'System', details: 'Commande confirmée et en attente de préparation par le vendeur.' }], statusChangeLog: [{ status: 'confirmed', date: new Date().toISOString(), changedBy: 'Customer' }], };
+        
+        const sellersInOrder = [...new Set(newOrder.items.map(item => item.vendor))];
+        sellersInOrder.forEach(vendorName => {
+            const sellerUser = allUsers.find(u => u.role === 'seller' && u.shopName === vendorName);
+            if (sellerUser) {
+                addNotification({
+                    userId: sellerUser.id,
+                    message: `Nouvelle commande #${newOrder.id} reçue.`,
+                    link: { page: 'seller-dashboard', params: { tab: 'orders-in-progress' } },
+                    isRead: false
+                });
+            }
+        });
+
         setAllProducts(prevProducts => {
             const updatedProducts = [...prevProducts];
             newOrder.items.forEach(item => {
                 const productIndex = updatedProducts.findIndex(p => p.id === item.id);
                 if (productIndex !== -1) {
-                    const newStock = updatedProducts[productIndex].stock - item.quantity;
+                    const oldStock = updatedProducts[productIndex].stock;
+                    const newStock = oldStock - item.quantity;
+                    if (newStock < 5 && oldStock >= 5) {
+                        const sellerUser = allUsers.find(u => u.role === 'seller' && u.shopName === item.vendor);
+                        if (sellerUser) {
+                            addNotification({
+                                userId: sellerUser.id,
+                                message: `Stock faible pour ${item.name} (${newStock} restants).`,
+                                link: { page: 'seller-dashboard', params: { tab: 'products' } },
+                                isRead: false
+                            });
+                        }
+                    }
                     updatedProducts[productIndex] = { ...updatedProducts[productIndex], stock: Math.max(0, newStock) };
                 }
             });
@@ -940,7 +975,7 @@ export default function App() {
         clearCart();
         onApplyPromoCode(null);
         handleNavigate('order-success');
-    }, [logActivity, setAllProducts, setAllOrders, clearCart, handleNavigate, onApplyPromoCode, setAllPromoCodes]);
+    }, [logActivity, allUsers, allProducts, addNotification, setAllProducts, setAllOrders, clearCart, handleNavigate, onApplyPromoCode, setAllPromoCodes]);
     
     const handleAddProduct = useCallback((product: Product) => {
         setAllProducts(prev => {
@@ -1023,13 +1058,24 @@ export default function App() {
      const handleUpdateFlashSaleSubmissionStatus = useCallback((flashSaleId: string, productId: string, status: 'approved' | 'rejected') => {
         setFlashSales(prev => prev.map(fs => {
             if (fs.id === flashSaleId) {
-                const productName = allProducts.find(p => p.id === productId)?.name || `ID ${productId}`;
-                logActivity('Flash Sale Submission Reviewed', `Submission for "${productName}" in sale "${fs.name}" was ${status}.`);
+                const product = allProducts.find(p => p.id === productId);
+                 if (product) {
+                    const sellerUser = allUsers.find(u => u.role === 'seller' && u.shopName === product.vendor);
+                    if (sellerUser) {
+                         addNotification({
+                            userId: sellerUser.id,
+                            message: `Votre produit "${product.name}" pour la vente flash "${fs.name}" a été ${status === 'approved' ? 'approuvé' : 'rejeté'}.`,
+                            link: { page: 'seller-dashboard', params: { tab: 'promotions' } },
+                            isRead: false
+                        });
+                    }
+                }
+                logActivity('Flash Sale Submission Reviewed', `Submission for "${product?.name || `ID ${productId}`}" in sale "${fs.name}" was ${status}.`);
                 return { ...fs, products: fs.products.map(p => p.productId === productId ? { ...p, status } : p) };
             }
             return fs;
         }));
-    }, [allProducts, setFlashSales, logActivity]);
+    }, [allProducts, allUsers, setFlashSales, logActivity, addNotification]);
     
      const handleBatchUpdateFlashSaleStatus = useCallback((flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => {
         setFlashSales(prev => prev.map(fs => {
@@ -1066,11 +1112,20 @@ export default function App() {
         setAllStores(prev => prev.map(s => {
             if (s.id === store.id) {
                  logActivity('Document Reviewed', `Document "${documentName}" for store "${s.name}" was ${status}.`);
+                const sellerUser = allUsers.find(u => u.role === 'seller' && u.shopName === store.name);
+                if (sellerUser) {
+                    addNotification({
+                        userId: sellerUser.id,
+                        message: `Votre document "${documentName}" a été ${status === 'verified' ? 'approuvé' : 'rejeté'}.`,
+                        link: { page: 'seller-dashboard', params: { tab: 'documents' } },
+                        isRead: false
+                    });
+                }
                 return { ...s, documents: s.documents.map(d => d.name === documentName ? { ...d, status, rejectionReason: reason || undefined } : d) };
             }
             return s;
         }));
-    }, [setAllStores, logActivity]);
+    }, [setAllStores, logActivity, allUsers, addNotification]);
 
     const handleCreatePromoCode = useCallback((codeData: Omit<PromoCode, 'uses'>) => {
         if (allPromoCodes.some(pc => pc.code.toLowerCase() === codeData.code.toLowerCase())) { alert(`Le code promo "${codeData.code}" existe déjà.`); return; }
@@ -1087,9 +1142,23 @@ export default function App() {
     }, [setAllPromoCodes, logActivity]);
     
     const handleAddReview = useCallback((productId: string, review: Review) => {
-        setAllProducts(prev => prev.map(p => p.id === productId ? { ...p, reviews: [...p.reviews, review] } : p));
+        setAllProducts(prev => prev.map(p => {
+            if (p.id === productId) {
+                const sellerUser = allUsers.find(u => u.role === 'seller' && u.shopName === p.vendor);
+                if (sellerUser) {
+                    addNotification({
+                        userId: sellerUser.id,
+                        message: `Nouvel avis (${review.rating}★) sur "${p.name}".`,
+                        link: { page: 'seller-dashboard', params: { tab: 'reviews' } },
+                        isRead: false
+                    });
+                }
+                return { ...p, reviews: [...p.reviews, review] };
+            }
+            return p;
+        }));
          logActivity('Review Added', `New review for product ID ${productId} was submitted by ${review.author}.`);
-    }, [setAllProducts, logActivity]);
+    }, [setAllProducts, logActivity, allUsers, addNotification]);
 
     const handleReviewModeration = useCallback((productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => {
         setAllProducts(prev => prev.map(p => {
@@ -1219,11 +1288,22 @@ export default function App() {
         setAllOrders(prev => prev.map(o => {
             if (o.id === orderId) {
                 const newMsg: DisputeMessage = { author, message, date: new Date().toISOString() };
+                if (author === 'admin') {
+                    const sellerUser = allUsers.find(u => u.role === 'seller' && o.items.some(i => i.vendor === u.shopName));
+                    if(sellerUser) {
+                         addNotification({
+                            userId: sellerUser.id,
+                            message: `Admin a envoyé un message concernant la commande #${orderId}.`,
+                            link: { page: 'seller-dashboard', params: { tab: 'disputes' } },
+                            isRead: false
+                        });
+                    }
+                }
                 return { ...o, disputeLog: [...(o.disputeLog || []), newMsg] };
             }
             return o;
         }));
-    }, [setAllOrders]);
+    }, [setAllOrders, allUsers, addNotification]);
 
     const handleSellerDisputeMessage = useCallback((orderId: string, message: string) => {
         setAllOrders(prev => prev.map(o => {
@@ -1312,17 +1392,32 @@ export default function App() {
     }, [setAllTickets, logActivity]);
 
     const handleCreateOrUpdateAnnouncement = useCallback((announcement: Omit<Announcement, 'id'> | Announcement) => {
+        let newAnnouncement: Announcement | null = null;
         setAllAnnouncements(prev => {
             if ('id' in announcement) {
                 logActivity('Announcement Updated', `Announcement "${announcement.title}" was updated.`);
                 return prev.map(a => a.id === announcement.id ? announcement : a);
             } else {
-                const newAnnouncement = { ...announcement, id: `ANNC-${Date.now()}` };
+                newAnnouncement = { ...announcement, id: `ANNC-${Date.now()}` };
                 logActivity('Announcement Created', `Announcement "${newAnnouncement.title}" was created.`);
                 return [newAnnouncement, ...prev];
             }
         });
-    }, [setAllAnnouncements, logActivity]);
+
+        if (newAnnouncement && newAnnouncement.isActive) {
+             if (newAnnouncement.target === 'all' || newAnnouncement.target === 'sellers') {
+                 const sellerUsers = allUsers.filter(u => u.role === 'seller');
+                 sellerUsers.forEach(seller => {
+                     addNotification({
+                         userId: seller.id,
+                         message: `Nouvelle annonce: ${newAnnouncement!.title}`,
+                         link: { page: 'seller-dashboard' },
+                         isRead: false
+                     });
+                 });
+             }
+        }
+    }, [setAllAnnouncements, logActivity, allUsers, addNotification]);
 
     const handleDeleteAnnouncement = useCallback((id: string) => {
         if (window.confirm("Êtes-vous sûr de vouloir supprimer cette annonce ?")) {
@@ -1344,6 +1439,11 @@ export default function App() {
         if (!user) return [];
         if (user.role === 'superadmin') return allNotifications.slice(0, 10);
         return allNotifications.filter(n => n.userId === user.id).sort((a,b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+    }, [user, allNotifications]);
+
+    const sellerNotifications = useMemo(() => {
+        if (!user || user.role !== 'seller') return [];
+        return allNotifications.filter(n => n.userId === user.id);
     }, [user, allNotifications]);
 
     const userOrders = useMemo(() => {
@@ -1454,8 +1554,17 @@ export default function App() {
         if (amount <= 0) { alert("Le solde est nul ou négatif. Aucun paiement à effectuer."); return; }
         const newPayout: Payout = { storeId: store.id, amount, date: new Date().toISOString() };
         setPayouts(prev => [...prev, newPayout]);
+        const sellerUser = allUsers.find(u => u.role === 'seller' && u.shopName === store.name);
+        if (sellerUser) {
+            addNotification({
+                userId: sellerUser.id,
+                message: `Un paiement de ${amount.toLocaleString('fr-CM')} FCFA a été traité pour votre boutique.`,
+                link: { page: 'seller-dashboard', params: { tab: 'finances' } },
+                isRead: false
+            });
+        }
         logActivity('Seller Payout', `Paid ${amount} to store "${store.name}".`);
-    }, [setPayouts, logActivity]);
+    }, [setPayouts, logActivity, allUsers, addNotification]);
 
     const handleActivateSubscription = useCallback((store: Store) => {
         setAllStores(prev => prev.map(s => s.id === store.id ? {...s, subscriptionStatus: 'active', subscriptionDueDate: new Date(new Date().setMonth(new Date().getMonth() + 1)).toISOString() } : s));
@@ -1539,7 +1648,7 @@ export default function App() {
             case 'category':
                 return selectedCategoryId ? <CategoryPage categoryId={selectedCategoryId} allCategories={allCategories} allProducts={visibleProducts} allStores={allStores} flashSales={flashSales} onProductClick={handleProductClick} onBack={() => handleNavigate('home', resetSelections)} onVendorClick={handleVendorClick} isComparisonEnabled={isComparisonEnabled} /> : <NotFoundPage onNavigateHome={() => handleNavigate('home')} />;
             case 'seller-dashboard':
-                return sellerStore ? <SellerDashboard store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={handleDeleteProduct} onUpdateProductStatus={handleUpdateProductStatus} onNavigateToProfile={() => handleNavigate('seller-profile')} onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')} onSetPromotion={setPromotionModalProduct} onRemovePromotion={handleRemovePromotion} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderWithSeller} onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} payouts={payouts} onSellerDisputeMessage={handleSellerDisputeMessage} onBulkUpdateProducts={handleBulkUpdateProducts} onReplyToReview={handleReplyToReview} onCreateOrUpdateCollection={handleCreateOrUpdateCollection} onDeleteCollection={handleDeleteCollection} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
+                return sellerStore ? <SellerDashboard store={sellerStore} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={sellerPromoCodes} onBack={() => handleNavigate('home')} onAddProduct={() => { setProductToEdit(null); handleNavigate('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); handleNavigate('product-form'); }} onDeleteProduct={handleDeleteProduct} onUpdateProductStatus={handleUpdateProductStatus} onNavigateToProfile={() => handleNavigate('seller-profile')} onNavigateToAnalytics={() => handleNavigate('seller-analytics-dashboard')} onSetPromotion={setPromotionModalProduct} onRemovePromotion={handleRemovePromotion} onProposeForFlashSale={handleProposeForFlashSale} onUploadDocument={handleUploadDocument} onUpdateOrderStatus={handleUpdateOrderWithSeller} onCreatePromoCode={handleCreatePromoCode} onDeletePromoCode={handleDeletePromoCode} isChatEnabled={isChatEnabled} onPayRent={handlePayRent} siteSettings={siteSettings} onAddStory={handleAddStory} onDeleteStory={handleDeleteStory} payouts={payouts} onSellerDisputeMessage={handleSellerDisputeMessage} onBulkUpdateProducts={handleBulkUpdateProducts} onReplyToReview={handleReplyToReview} onCreateOrUpdateCollection={handleCreateOrUpdateCollection} onDeleteCollection={handleDeleteCollection} initialTab={initialSellerTab} sellerNotifications={sellerNotifications} onMarkNotificationAsRead={handleMarkNotificationAsRead} onNavigateFromNotification={handleNavigateFromNotification} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
             case 'seller-analytics-dashboard':
                 return sellerStore ? <SellerAnalyticsDashboard onBack={() => handleNavigate('seller-dashboard')} sellerOrders={sellerOrders} sellerProducts={sellerProducts} flashSales={flashSales} /> : <ForbiddenPage onNavigateHome={() => handleNavigate('home')} />;
             case 'vendor-page':
