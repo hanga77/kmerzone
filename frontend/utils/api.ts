@@ -1,8 +1,7 @@
-
-
 export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     const token = localStorage.getItem('token');
     const headers = new Headers(options.headers);
+    const API_BASE_URL = 'http://localhost:5000/api';
 
     if (!headers.has('Content-Type')) {
         headers.set('Content-Type', 'application/json');
@@ -13,7 +12,7 @@ export const apiFetch = async (endpoint: string, options: RequestInit = {}) => {
     }
 
     try {
-        const response = await fetch(`/api${endpoint}`, { ...options, headers });
+        const response = await fetch(`${API_BASE_URL}${endpoint}`, { ...options, headers });
 
         if (!response.ok) {
             const errorData = await response.json();

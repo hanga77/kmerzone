@@ -49,8 +49,12 @@ const importData = async () => {
         const userMap = new Map(createdUsers.map(u => [u.email, u._id]));
 
         // 2. Insert Categories and create a map
-        // We remove the temporary frontend 'id' before insertion
-        const categoriesToCreate = initialCategories.map(({ id, parentId, ...rest }) => rest);
+        // We remove the temporary frontend 'id' and add a placeholder imageUrl
+        const categoriesToCreate = initialCategories.map(({ id, parentId, name, ...rest }) => ({
+            ...rest,
+            name,
+            imageUrl: `https://picsum.photos/seed/${encodeURIComponent(name)}/400`,
+        }));
         const createdCategories = await Category.insertMany(categoriesToCreate);
         console.log(`${createdCategories.length} categories imported.`);
         
