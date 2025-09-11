@@ -1,3 +1,5 @@
+
+
 import React, { useState, useRef } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { ArrowLeftIcon, PencilSquareIcon, TrashIcon, PhotoIcon } from './Icons';
@@ -6,7 +8,7 @@ import type { Store } from '../types';
 interface SellerProfileProps {
   store: Store;
   onBack: () => void;
-  onUpdateProfile: (storeId: string, updatedData: Partial<Store>) => void;
+  onUpdateProfile: (updatedData: Partial<Store>) => void;
 }
 
 const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdateProfile }) => {
@@ -61,7 +63,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    onUpdateProfile(store.id, {
+    onUpdateProfile({
       name: formData.shopName,
       location: formData.location,
       logoUrl: logoPreview || store.logoUrl,

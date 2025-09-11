@@ -1,265 +1,180 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
-import type { User, UserRole, Address } from '../types';
+import type { User, Address } from '../types';
 import { usePersistentState } from '../hooks/usePersistentState';
+import { apiFetch } from '../utils/api';
 
 interface AuthContextType {
   user: User | null;
-  allUsers: User[];
-  login: (email: string, password?: string) => User | null;
+  login: (email: string, password?: string) => Promise<User | null>;
   logout: () => void;
-  register: (name: string, email: string, password?: string) => User | null;
-  updateUser: (updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => void;
-  resetPassword: (email: string, newPassword: string) => void;
-  updateUserInfo: (userId: string, updates: { name: string }) => void;
-  changePassword: (userId: string, oldPassword: string, newPassword: string) => boolean;
-  addAddress: (userId: string, address: Omit<Address, 'id' | 'isDefault'>) => void;
-  updateAddress: (userId: string, address: Address) => void;
-  deleteAddress: (userId: string, addressId: string) => void;
-  setDefaultAddress: (userId: string, addressId: string) => void;
-  toggleFollowStore: (storeId: string) => void;
+  register: (name: string, email: string, password?: string) => Promise<User | null>;
+  updateUser: (updates: Partial<Omit<User, 'id' | 'email' | 'role'>>) => Promise<void>;
+  resetPassword: (email: string, newPassword: string) => Promise<void>;
+  updateUserInfo: (userId: string, updates: { name: string }) => Promise<void>;
+  changePassword: (userId: string, oldPassword: string, newPassword: string) => Promise<boolean>;
+  addAddress: (userId: string, address: Omit<Address, 'id' | 'isDefault'>) => Promise<void>;
+  updateAddress: (userId: string, address: Address) => Promise<void>;
+  deleteAddress: (userId: string, addressId: string) => Promise<void>;
+  setDefaultAddress: (userId: string, addressId: string) => Promise<void>;
+  toggleFollowStore: (storeId: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const initialUsers: User[] = [
-    { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', password: 'password', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
-    { id: 'customer-1', name: 'Client Test', email: 'customer@example.com', password: 'password', role: 'customer', loyalty: { status: 'premium', orderCount: 12, totalSpent: 62000, premiumStatusMethod: 'loyalty' }, addresses: [
-        { id: 'addr1', isDefault: true, fullName: 'Client Test', phone: '690123456', address: '123 Rue de la Liberté', city: 'Douala' }
-    ], followedStores: ['store-1'] },
-    { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', password: 'password', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
-    { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', password: 'password', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
-    { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', password: 'password', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
-    { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', password: 'password', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
-    { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', password: 'password', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
-    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [] },
-    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [] },
-    { id: 'depot-agent-1', name: 'Agent Dépôt', email: 'depot@example.com', password: 'password', role: 'depot_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [] },
-];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [user, setUser] = usePersistentState<User | null>('currentUser', null);
-  const [allUsers, setAllUsers] = usePersistentState<User[]>('allUsers', initialUsers);
 
   useEffect(() => {
-    // Ensure all users have an addresses array and followedStores array
-    setAllUsers(prevUsers => {
-        let needsUpdate = false;
-        const updatedUsers = prevUsers.map(u => {
-            if (!u.addresses || !u.followedStores) {
-                needsUpdate = true;
-                return { ...u, addresses: u.addresses || [], followedStores: u.followedStores || [] };
-            }
-            return u;
-        });
-        return needsUpdate ? updatedUsers : prevUsers;
-    });
-  }, []);
-
-  useEffect(() => {
-    setUser(currentUser => {
-      if (!currentUser) {
-        return null;
-      }
-      
-      const updatedUserInList = allUsers.find(u => u.id === currentUser.id);
-
-      if (!updatedUserInList) {
-        return null;
-      }
-
-      if (JSON.stringify(currentUser) !== JSON.stringify(updatedUserInList)) {
-        return updatedUserInList;
-      }
-      
-      return currentUser;
-    });
-  }, [allUsers, setUser]);
-
-  const login = useCallback((email: string, password?: string): User | null => {
-    const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-    
-    if (foundUser) {
-        if (!password) { 
-          alert('Mot de passe requis.');
-          return null;
+    const autoLogin = async () => {
+      const token = localStorage.getItem('token');
+      if (token && !user) {
+        try {
+          const userData = await apiFetch('/auth/me');
+          setUser(userData);
+        } catch (error) {
+          console.error('Auto-login failed:', error);
+          localStorage.removeItem('token');
+          setUser(null);
         }
-        if (foundUser.password !== password) {
-            alert('Mot de passe incorrect.');
-            return null;
-        }
-        setUser(foundUser);
-        return foundUser;
-    }
-    
-    if (!email.includes('@')) {
-        alert("Email invalide");
-        return null;
-    }
-    if (!password) {
-        alert("Veuillez fournir un mot de passe pour créer un compte.");
-        return null;
-    }
-    const name = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-    const newUser: User = { 
-      id: new Date().getTime().toString(),
-      name: name.charAt(0).toUpperCase() + name.slice(1), 
-      email,
-      role: 'customer',
-      loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
-      password: password,
-      addresses: [],
-      followedStores: [],
+      }
     };
-    setAllUsers(prev => [...prev, newUser]);
-    setUser(newUser);
-    return newUser;
-  }, [allUsers, setAllUsers, setUser]);
+    autoLogin();
+  }, [setUser, user]);
 
-  const register = useCallback((name: string, email: string, password?: string): User | null => {
-      const existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      if (existingUser) {
-          alert("Un utilisateur avec cet email existe déjà.");
-          return null;
-      }
-      if (!password || password.length < 6) {
+  const login = useCallback(async (email: string, password?: string): Promise<User | null> => {
+    if (!password) {
+      alert('Mot de passe requis.');
+      return null;
+    }
+    try {
+      const data = await apiFetch('/auth/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password }),
+      });
+      localStorage.setItem('token', data.token);
+      const { token, ...userData } = data;
+      setUser(userData);
+      return userData;
+    } catch (error: any) {
+      alert(`Erreur de connexion: ${error.message}`);
+      return null;
+    }
+  }, [setUser]);
+
+  const register = useCallback(async (name: string, email: string, password?: string): Promise<User | null> => {
+     if (!password || password.length < 6) {
           alert("Le mot de passe est requis et doit contenir au moins 6 caractères.");
           return null;
       }
-
-      const newUser: User = {
-          id: new Date().getTime().toString(),
-          name,
-          email,
-          role: 'customer',
-          loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
-          password: password,
-          addresses: [],
-          followedStores: [],
-      };
-
-      setAllUsers(prev => [...prev, newUser]);
-      setUser(newUser);
-      return newUser;
-  }, [allUsers, setAllUsers, setUser]);
-
-  const updateUser = useCallback((updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => {
-    if (!user) return;
-    setAllUsers(prevUsers =>
-      prevUsers.map(u => {
-        if (u.id === user.id) {
-          return {
-            ...u,
-            ...updates,
-            role: updates.shopName ? ('seller' as const) : u.role,
-          };
-        }
-        return u;
-      })
-    );
-  }, [user, setAllUsers]);
+     try {
+        const data = await apiFetch('/auth/register', {
+            method: 'POST',
+            body: JSON.stringify({ name, email, password })
+        });
+        localStorage.setItem('token', data.token);
+        const { token, ...userData } = data;
+        setUser(userData);
+        return userData;
+     } catch (error: any) {
+        alert(`Erreur d'inscription: ${error.message}`);
+        return null;
+     }
+  }, [setUser]);
 
   const logout = useCallback(() => {
     setUser(null);
+    localStorage.removeItem('token');
   }, [setUser]);
 
-  const resetPassword = useCallback((email: string, newPassword: string) => {
-    setAllUsers(prevUsers => 
-        prevUsers.map(u => 
-            u.email.toLowerCase() === email.toLowerCase() ? { ...u, password: newPassword } : u
-        )
-    );
-    console.log(`Password for ${email} reset successfully.`);
-  }, [setAllUsers]);
-
-  const updateUserInfo = useCallback((userId: string, updates: { name: string }) => {
-    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
-  }, [setAllUsers]);
-
-  const changePassword = useCallback((userId: string, oldPassword: string, newPassword: string): boolean => {
-    const userToUpdate = allUsers.find(u => u.id === userId);
-    if (!userToUpdate || userToUpdate.password !== oldPassword) {
-      return false;
-    }
-    setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, password: newPassword } : u));
-    return true;
-  }, [allUsers, setAllUsers]);
-
-  const addAddress = useCallback((userId: string, address: Omit<Address, 'id'| 'isDefault'>) => {
-    setAllUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const addresses = u.addresses || [];
-        const newAddress: Address = {
-          ...address,
-          id: `addr_${Date.now()}`,
-          isDefault: addresses.length === 0, // Make first address default
-        };
-        return { ...u, addresses: [...addresses, newAddress] };
-      }
-      return u;
-    }));
-  }, [setAllUsers]);
-  
-  const updateAddress = useCallback((userId: string, updatedAddress: Address) => {
-    setAllUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const addresses = (u.addresses || []).map(addr =>
-          addr.id === updatedAddress.id ? updatedAddress : addr
-        );
-        return { ...u, addresses };
-      }
-      return u;
-    }));
-  }, [setAllUsers]);
-
-  const deleteAddress = useCallback((userId: string, addressId: string) => {
-    setAllUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const addresses = (u.addresses || []).filter(addr => addr.id !== addressId);
-        // If the deleted address was the default, make the first one default
-        if (addresses.length > 0 && !addresses.some(a => a.isDefault)) {
-            addresses[0].isDefault = true;
-        }
-        return { ...u, addresses };
-      }
-      return u;
-    }));
-  }, [setAllUsers]);
-
-  const setDefaultAddress = useCallback((userId: string, addressId: string) => {
-    setAllUsers(prev => prev.map(u => {
-      if (u.id === userId) {
-        const addresses = (u.addresses || []).map(addr => ({
-          ...addr,
-          isDefault: addr.id === addressId,
-        }));
-        return { ...u, addresses };
-      }
-      return u;
-    }));
-  }, [setAllUsers]);
-
-  const toggleFollowStore = useCallback((storeId: string) => {
+  const updateUser = useCallback(async (updates: Partial<Omit<User, 'id' | 'email' | 'role'>>) => {
     if (!user) return;
-    setAllUsers(prevUsers =>
-      prevUsers.map(u => {
-        if (u.id === user.id) {
-          const followed = u.followedStores || [];
-          const isFollowing = followed.includes(storeId);
-          return {
-            ...u,
-            followedStores: isFollowing
-              ? followed.filter(id => id !== storeId)
-              : [...followed, storeId],
-          };
-        }
-        return u;
-      })
-    );
-  }, [user, setAllUsers]);
+    try {
+        const updatedUserFromServer = await apiFetch('/users/profile', {
+            method: 'PUT',
+            body: JSON.stringify(updates),
+        });
+        setUser(prev => prev ? { ...prev, ...updates, ...updatedUserFromServer } : null);
+    } catch (error) {
+        console.error('Failed to update user on backend:', error);
+        alert("La mise à jour du profil a échoué.");
+    }
+  }, [user, setUser]);
+
+  const resetPassword = useCallback(async (email: string, newPassword: string) => {
+    // This is a simulation since backend doesn't have a reset token flow
+    console.log(`Password for ${email} reset to ${newPassword} (simulation).`);
+  }, []);
+
+  const updateUserInfo = useCallback(async (userId: string, updates: { name: string }) => {
+     try {
+        const updatedUser = await apiFetch('/users/profile', {
+            method: 'PUT',
+            body: JSON.stringify(updates),
+        });
+        setUser(prev => prev ? { ...prev, ...updatedUser } : null);
+    } catch (error) {
+        console.error('Failed to update user info', error);
+    }
+  }, [setUser]);
+
+  const changePassword = useCallback(async (userId: string, oldPassword: string, newPassword: string): Promise<boolean> => {
+    try {
+        await apiFetch('/users/profile/password', {
+            method: 'PUT',
+            body: JSON.stringify({ oldPassword, newPassword }),
+        });
+        return true;
+    } catch (error) {
+        console.error('Failed to change password', error);
+        return false;
+    }
+  }, []);
+
+  const addAddress = useCallback(async (userId: string, address: Omit<Address, 'id' | 'isDefault'>) => {
+    try {
+        const updatedAddresses = await apiFetch('/users/addresses', {
+            method: 'POST',
+            body: JSON.stringify(address),
+        });
+        setUser(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
+    } catch (error) { console.error('Failed to add address', error); }
+  }, [setUser]);
+  
+  const updateAddress = useCallback(async (userId: string, updatedAddress: Address) => {
+    try {
+        const updatedAddresses = await apiFetch(`/users/addresses/${updatedAddress.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(updatedAddress),
+        });
+        setUser(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
+    } catch (error) { console.error('Failed to update address', error); }
+  }, [setUser]);
+
+  const deleteAddress = useCallback(async (userId: string, addressId: string) => {
+    try {
+        const updatedAddresses = await apiFetch(`/users/addresses/${addressId}`, { method: 'DELETE' });
+        setUser(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
+    } catch (error) { console.error('Failed to delete address', error); }
+  }, [setUser]);
+
+  const setDefaultAddress = useCallback(async (userId: string, addressId: string) => {
+     try {
+        const updatedAddresses = await apiFetch(`/users/addresses/${addressId}/default`, { method: 'PUT' });
+        setUser(prev => prev ? { ...prev, addresses: updatedAddresses } : null);
+    } catch (error) { console.error('Failed to set default address', error); }
+  }, [setUser]);
+
+  const toggleFollowStore = useCallback(async (storeId: string) => {
+    if (!user) return;
+    try {
+        const updatedFollowedStores = await apiFetch(`/users/followed-stores/${storeId}`, { method: 'POST' });
+        setUser(prev => prev ? { ...prev, followedStores: updatedFollowedStores } : null);
+    } catch (error) { console.error('Failed to toggle follow store', error); }
+  }, [user, setUser]);
   
   const contextValue = useMemo(() => ({
     user,
-    allUsers,
     login,
     logout,
     register,
@@ -272,8 +187,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     deleteAddress,
     setDefaultAddress,
     toggleFollowStore,
-    setAllUsers
-  }), [user, allUsers, login, logout, register, updateUser, resetPassword, updateUserInfo, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress, toggleFollowStore, setAllUsers]);
+  }), [user, login, logout, register, updateUser, resetPassword, updateUserInfo, changePassword, addAddress, updateAddress, deleteAddress, setDefaultAddress, toggleFollowStore]);
 
   return (
     <AuthContext.Provider value={contextValue as any}>
@@ -287,5 +201,5 @@ export const useAuth = () => {
   if (context === undefined) {
     throw new Error('useAuth must be used within an AuthProvider');
   }
-  return context as AuthContextType & { setAllUsers: React.Dispatch<React.SetStateAction<User[]>> };
+  return context as AuthContextType;
 };

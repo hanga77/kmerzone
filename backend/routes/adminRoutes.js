@@ -1,10 +1,18 @@
+
 import express from 'express';
 import {
     getStores,
-    updateStore,
+    updateStoreStatus,
+    updateStorePremiumStatus,
+    rejectStore,
+    warnStore,
+    requestDocument,
+    verifyDocument,
+    activateSubscription,
     getUsers,
     updateUser,
     createUser,
+    sanctionUser,
     getOrders,
     updateOrder,
     assignAgentToOrder,
@@ -23,6 +31,7 @@ import {
     getPickupPoints,
     createOrUpdatePickupPoint,
     deletePickupPoint,
+    getPayouts,
     createPayout,
     getAdvertisements,
     createOrUpdateAdvertisement,
@@ -49,12 +58,20 @@ router.use(protect, authorize('superadmin'));
 
 // Store Management
 router.get('/stores', getStores);
-router.put('/stores/:id', updateStore);
+router.put('/stores/:id/status', updateStoreStatus);
+router.put('/stores/:id/premium-status', updateStorePremiumStatus);
+router.delete('/stores/:id', rejectStore);
+router.post('/stores/:id/warn', warnStore);
+router.post('/stores/:id/documents', requestDocument);
+router.put('/stores/:storeId/documents/:docName/verify', verifyDocument);
+router.post('/stores/:id/activate-subscription', activateSubscription);
+
 
 // User Management
 router.get('/users', getUsers);
 router.post('/users', createUser);
 router.put('/users/:id', updateUser);
+router.post('/users/:id/sanction', sanctionUser);
 
 // Order Management
 router.get('/orders', getOrders);
@@ -84,6 +101,7 @@ router.put('/pickup-points/:id', createOrUpdatePickupPoint);
 router.delete('/pickup-points/:id', deletePickupPoint);
 
 // Payout Management
+router.get('/payouts', getPayouts);
 router.post('/payouts', createPayout);
 
 // Advertisement Management

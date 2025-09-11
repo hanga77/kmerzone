@@ -21,7 +21,7 @@ import Announcement from '../models/announcementModel.js';
 import { initialUsers, initialCategories, initialProducts, initialStores } from './initialData.js';
 import connectDB from '../config/db.js';
 
-dotenv.config({ path: './backend/.env' });
+dotenv.config();
 
 connectDB();
 

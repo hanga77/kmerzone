@@ -1,4 +1,3 @@
-
 import React from 'react';
 
 type IconProps = {
@@ -134,6 +133,12 @@ export const ChatBubbleBottomCenterTextIcon: React.FC<IconProps> = (props) => (
     <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
       <path strokeLinecap="round" strokeLinejoin="round" d="M8.625 12a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H8.25m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0H12m4.125 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.76 9.76 0 01-2.555-.337A5.972 5.972 0 015.41 20.97a5.969 5.969 0 01-.474-.065 4.48 4.48 0 00.978-2.025c.09-.455.09-.934.09-1.423V12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25z" />
     </svg>
+);
+
+export const ChatBubbleLeftRightIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-3.72.372a3.527 3.527 0 0 1-3.72 0l-3.72-.372A2.122 2.122 0 0 1 3 14.894v-4.286c0-.97.616-1.813 1.5-2.097m16.5 0a2.121 2.121 0 0 0-1.5-2.097L16.5 6.25a3.527 3.527 0 0 0-3.72 0l-1.98.2a2.121 2.121 0 0 0-1.5 2.097M18 11.25a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 0 1.5h-.008a.75.75 0 0 1-.75-.75Zm-1.5 0a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 0 1.5h-.008a.75.75 0 0 1-.75-.75Zm-1.5 0a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 0 1.5h-.008a.75.75 0 0 1-.75-.75Zm-1.5 0a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 0 1.5h-.008a.75.75 0 0 1-.75-.75Z" />
+  </svg>
 );
 
 export const HeartIcon: React.FC<IconProps & { filled?: boolean }> = ({ className, filled }) => (
@@ -363,6 +368,12 @@ export const BanknotesIcon: React.FC<IconProps> = (props) => (
   </svg>
 );
 
+export const BookmarkSquareIcon: React.FC<IconProps> = (props) => (
+  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" />
+  </svg>
+);
+
 export const ArchiveBoxIcon: React.FC<IconProps> = (props) => (
   <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
     <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
@@ -429,7 +440,7 @@ export const MastercardIcon: React.FC<IconProps> = (props) => (
     <rect width="64" height="40" rx="4" fill="white" stroke="#E0E0E0"/>
     <circle cx="26" cy="20" r="8" fill="#EA001B"/>
     <circle cx="38" cy="20" r="8" fill="#F79E1B"/>
-    <path d="M32,20 a8,8 0 0,1 -6,-1.41a8,8 0 0,0 0,2.82a8,8 0 0,1 6,1.41a8,8 0 0,0 6,-1.41a8,8 0 0,1 0,-2.82A8,8 0 0,0 32,20Z" fill="#FF5F00" />
+    <path d="M32 20a8 8 0 0 1-6-1.41a8 8 0 0 0 0 2.82a8 8 0 0 1 6 1.41a8 8 0 0 0 6-1.41a8 8 0 0 1 0-2.82a8 8 0 0 0-6 1.41z" fill="#FF5F00" />
   </svg>
 );
 
@@ -438,18 +449,5 @@ export const PaypalIcon: React.FC<IconProps> = (props) => (
     <rect width="64" height="40" rx="4" fill="#003087"/>
     <path fill="white" d="M32.12,12.62c-2.28-.1-4.2,1.3-4.72,3.42-.64,2.58.74,4.52,2.7,5.2,2.16.76,4.48.3,5.92-1.32,1.26-1.42,1.68-3.32,1-5.12-1.02-3.1-3.6-4.5-5-4.2h.1Z"/>
     <path fill="#009cde" d="M29.1,19.2c-.52,2.12,1.02,4,2.94,4.54,2.14.6,4.5.1,5.9-1.52.92-1.04,1.2-2.38.74-3.6-.82-2.18-3-3.44-4.9-2.92h.22Z"/>
-  </svg>
-);
-
-export const ChatBubbleLeftRightIcon: React.FC<IconProps> = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 8.511c.884.284 1.5 1.128 1.5 2.097v4.286c0 1.136-.847 2.1-1.98 2.193l-3.72.372a3.523 3.523 0 0 1-1.04-.22l-1.044-.442a3.523 3.523 0 0 0-1.04-.22l-3.72.372c-1.133.093-1.98-.934-1.98-2.07v-4.286c0-.97.616-1.813 1.5-2.097m6.525 0V9" />
-    <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75c.884-.284 1.5-1.128 1.5-2.097v-4.286c0-1.136.847-2.1 1.98-2.193l3.72-.372a3.523 3.523 0 0 1 1.04.22l1.044.442a3.523 3.523 0 0 0 1.04.22l3.72-.372c1.133-.093 1.98.934 1.98 2.07v4.286c0 .97-.616 1.813-1.5 2.097m-9.525 0v.002" />
-  </svg>
-);
-
-export const BookmarkSquareIcon: React.FC<IconProps> = (props) => (
-  <svg {...props} xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 3.75V16.5L12 14.25 7.5 16.5V3.75m9 0H18A2.25 2.25 0 0 1 20.25 6v12A2.25 2.25 0 0 1 18 20.25H6A2.25 2.25 0 0 1 3.75 18V6A2.25 2.25 0 0 1 6 3.75h1.5m9 0h-9" />
   </svg>
 );

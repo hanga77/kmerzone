@@ -1,3 +1,5 @@
+
+
 import Store from '../models/storeModel.js';
 import User from '../models/userModel.js';
 import Order from '../models/orderModel.js';
@@ -9,7 +11,6 @@ import Payout from '../models/payoutModel.js';
 import Advertisement from '../models/advertisementModel.js';
 import Ticket from '../models/ticketModel.js';
 import Announcement from '../models/announcementModel.js';
-// Note: SiteContent and SiteSettings will be handled in-memory or via a simple model if needed.
 
 // --- Store Management ---
 export const getStores = async (req, res, next) => {
@@ -21,20 +22,81 @@ export const getStores = async (req, res, next) => {
   }
 };
 
-export const updateStore = async (req, res, next) => {
-  try {
-    const store = await Store.findByIdAndUpdate(req.params.id, req.body, { new: true });
-    if (!store) {
-      res.status(404); throw new Error('Store not found');
-    }
-    // If store is approved, update user role
-    if(req.body.status === 'active') {
-        await User.findByIdAndUpdate(store.userId, { role: 'seller' });
-    }
-    res.json(store);
-  } catch (error) {
-    next(error);
-  }
+export const updateStoreStatus = async (req, res, next) => {
+    const { status } = req.body;
+    try {
+        const store = await Store.findByIdAndUpdate(req.params.id, { status }, { new: true });
+        if (!store) { res.status(404); throw new Error('Store not found'); }
+        res.json(store);
+    } catch (error) { next(error); }
+};
+
+export const updateStorePremiumStatus = async (req, res, next) => {
+    const { premiumStatus } = req.body;
+    try {
+        const store = await Store.findByIdAndUpdate(req.params.id, { premiumStatus }, { new: true });
+        if (!store) { res.status(404); throw new Error('Store not found'); }
+        res.json(store);
+    } catch (error) { next(error); }
+};
+
+
+export const rejectStore = async (req, res, next) => {
+    try {
+        const store = await Store.findByIdAndDelete(req.params.id);
+        if (!store) { res.status(404); throw new Error('Store not found'); }
+        // Optionally, find the user and revert their role if needed
+        await User.findByIdAndUpdate(store.userId, { role: 'customer', shopName: null });
+        res.json({ message: 'Store rejected and deleted.' });
+    } catch (error) { next(error); }
+};
+
+export const warnStore = async (req, res, next) => {
+    const { reason } = req.body;
+    try {
+        const store = await Store.findById(req.params.id);
+        if (!store) { res.status(404); throw new Error('Store not found'); }
+        store.warnings.push({ reason, date: new Date() });
+        await store.save();
+        res.json(store);
+    } catch (error) { next(error); }
+};
+
+export const requestDocument = async (req, res, next) => {
+    const { name } = req.body;
+    try {
+        const store = await Store.findById(req.params.id);
+        if (!store) { res.status(404); throw new Error('Store not found'); }
+        store.documents.push({ name, status: 'requested' });
+        await store.save();
+        res.json(store);
+    } catch (error) { next(error); }
+};
+
+export const verifyDocument = async (req, res, next) => {
+    const { status, reason } = req.body;
+    const { storeId, docName } = req.params;
+    try {
+        const store = await Store.findById(storeId);
+        if (!store) { res.status(404); throw new Error('Store not found'); }
+        const doc = store.documents.find(d => d.name === docName);
+        if (!doc) { res.status(404); throw new Error('Document not found'); }
+        doc.status = status;
+        doc.rejectionReason = reason;
+        await store.save();
+        res.json(store);
+    } catch (error) { next(error); }
+};
+
+export const activateSubscription = async (req, res, next) => {
+    try {
+        const store = await Store.findById(req.params.id);
+        if (!store) { res.status(404); throw new Error('Store not found'); }
+        store.subscriptionStatus = 'active';
+        store.subscriptionDueDate = new Date(new Date().setMonth(new Date().getMonth() + 1));
+        await store.save();
+        res.json(store);
+    } catch (error) { next(error); }
 };
 
 // --- User Management ---
@@ -68,6 +130,17 @@ export const createUser = async (req, res, next) => {
     }
 };
 
+export const sanctionUser = async (req, res, next) => {
+    const { reason } = req.body;
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) { res.status(404); throw new Error('User not found'); }
+        user.warnings.push({ reason, date: new Date() });
+        await user.save();
+        res.json(user);
+    } catch (error) { next(error); }
+};
+
 // --- Order Management ---
 export const getOrders = async (req, res, next) => {
     try {
@@ -81,15 +154,12 @@ export const updateOrder = async (req, res, next) => {
         const order = await Order.findById(req.params.id);
         if(!order) { res.status(404); throw new Error('Order not found'); }
 
-        const { status, agentId } = req.body;
+        const { status } = req.body;
         if(status && status !== order.status) {
             order.status = status;
             order.statusChangeLog.push({ status, date: new Date(), changedBy: `Admin: ${req.user.name}` });
         }
-        if(agentId) {
-            order.agentId = agentId;
-        }
-
+        
         const updatedOrder = await order.save();
         res.json(updatedOrder);
     } catch(error) { next(error); }
@@ -240,6 +310,15 @@ export const deletePickupPoint = async (req, res, next) => {
 
 
 // --- Finance ---
+export const getPayouts = async (req, res, next) => {
+    try {
+        const payouts = await Payout.find({}).sort({ date: -1 });
+        res.json(payouts);
+    } catch (error) {
+        next(error);
+    }
+};
+
 export const createPayout = async (req, res, next) => {
     try {
         const payout = await Payout.create(req.body);

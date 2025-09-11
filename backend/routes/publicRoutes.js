@@ -6,7 +6,10 @@ import {
     getActiveFlashSales,
     getPickupPoints,
     getProducts,
-    getProductById
+    getProductById,
+    getAdvertisements,
+    getPaymentMethods,
+    getSiteContent
 } from '../controllers/publicController.js';
 
 const router = express.Router();
@@ -20,7 +23,8 @@ router.get('/stores', getActiveStores);
 router.get('/stores/:name', getStoreByName);
 router.get('/flash-sales', getActiveFlashSales);
 router.get('/pickup-points', getPickupPoints);
-
-// TODO: Add other public routes here (site-content, announcements, etc.)
+router.get('/advertisements', getAdvertisements);
+router.get('/payment-methods', getPaymentMethods);
+router.get('/site-content', getSiteContent);
 
 export default router;

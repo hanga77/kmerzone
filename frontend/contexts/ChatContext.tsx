@@ -1,9 +1,7 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect, useRef } from 'react';
 import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
-// FIX: The client-side socket.io library is 'socket.io-client'.
 import { io, Socket } from "socket.io-client";
-
 
 interface ChatContextType {
   chats: Chat[];
@@ -23,7 +21,6 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const initialChats: Chat[] = [];
 const initialMessages: { [chatId: string]: Message[] } = {};
 
-
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>(initialChats);
@@ -35,9 +32,8 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   useEffect(() => {
     if (user) {
-      // In this environment, the backend and frontend share an origin.
-      // For production, you might need something like: io(process.env.REACT_APP_API_URL);
-      socketRef.current = io();
+      // Connect to the backend server explicitly.
+      socketRef.current = io('http://localhost:5000');
 
       socketRef.current.on('connect', () => {
         console.log('Socket connected:', socketRef.current?.id);
@@ -46,13 +42,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       socketRef.current.on('newMessage', (newMessage: Message) => {
         setMessages(prev => {
           const chatMessages = prev[newMessage.chatId] || [];
-          // Avoid duplicating optimistic updates or existing messages
-          if (chatMessages.some(m => m.id === newMessage.id)) {
+          // FIX: Corrected logic to handle incoming messages with `_id` from the server.
+          // The check for duplicates now correctly uses `_id` and the new message's `id` is properly set.
+          if (chatMessages.some(m => m.id === (newMessage._id || newMessage.id) || m._id === newMessage._id)) {
             return prev;
           }
           return {
             ...prev,
-            [newMessage.chatId]: [...chatMessages, newMessage]
+            [newMessage.chatId]: [...chatMessages, { ...newMessage, id: newMessage._id || newMessage.id, _id: newMessage._id }]
           };
         });
         setChats(prev => prev.map(c => c.id === newMessage.chatId ? { ...c, lastMessageTimestamp: newMessage.timestamp } : c));
@@ -64,7 +61,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return {
                 ...prev,
                 [chatId]: chatMessages.map(msg => 
-                    msg.id === messageId ? { ...msg, text: msg.text + chunk } : msg
+                    (msg.id === messageId || msg._id === messageId) ? { ...msg, text: msg.text + chunk } : msg
                 )
             };
         });
@@ -135,7 +132,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setActiveChatId(chatId);
     setIsWidgetOpen(true);
     
-    // Add welcome message if it's a new chat and doesn't have messages yet
     if (isNewChat && (!messages[chatId!] || messages[chatId!].length === 0)) {
         const welcomeMessage: Message = {
             id: `msg_welcome_${Date.now()}`,

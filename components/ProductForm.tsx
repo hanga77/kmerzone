@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, Category, Variant, VariantDetail, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { PhotoIcon, XCircleIcon, TrashIcon, SparklesIcon } from './Icons';
-import { GoogleGenAI } from '@google/genai';
+import { apiFetch } from '../utils/api';
 
 interface ProductFormProps {
   onSave: (product: Product) => void;
@@ -197,7 +197,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [keywords, setKeywords] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
-  const ai = useMemo(() => new GoogleGenAI({ apiKey: process.env.API_KEY as string }), []);
   
   const categoryTree = useMemo(() => {
     const mainCategories = categories.filter(c => !c.parentId);
@@ -318,22 +317,17 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     setIsGenerating(true);
     try {
         const categoryName = categories.find(c => c.id === product.categoryId)?.name || 'générale';
-        const prompt = `En tant qu'expert en marketing pour un site e-commerce camerounais, rédige une description de produit attrayante et vendeuse en français. La description doit être bien structurée, mettre en avant les points forts et inciter à l'achat.
-
-        Informations sur le produit :
-        - Nom : ${product.name || 'Produit'}
-        - Catégorie : ${categoryName}
-        - Mots-clés fournis par le vendeur : ${keywords}
-
-        Génère uniquement la description du produit.`;
         
-        const response = await ai.models.generateContent({
-            model: 'gemini-2.5-flash',
-            contents: prompt
+        const response = await apiFetch('/ai/generate-description', {
+            method: 'POST',
+            body: JSON.stringify({
+                productName: product.name || 'Produit',
+                categoryName,
+                keywords,
+            }),
         });
-
-        const description = response.text;
-        setProduct(prev => ({ ...prev, description }));
+        
+        setProduct(prev => ({ ...prev, description: response.description }));
     } catch (error) {
         console.error("Error generating description:", error);
         alert("Une erreur est survenue lors de la génération de la description.");

@@ -21,11 +21,12 @@ import adminRoutes from './routes/adminRoutes.js';
 import deliveryRoutes from './routes/deliveryRoutes.js';
 import depotRoutes from './routes/depotRoutes.js';
 import chatRoutes from './routes/chatRoutes.js';
+import ticketRoutes from './routes/ticketRoutes.js';
 
 import { notFound, errorHandler } from './middleware/errorMiddleware.js';
 
 // Load env vars
-dotenv.config({ path: './backend/.env' });
+dotenv.config();
 
 
 // Connect to database
@@ -93,6 +94,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/delivery', deliveryRoutes);
 app.use('/api/depot', depotRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/tickets', ticketRoutes);
 
 
 // Error handling middleware

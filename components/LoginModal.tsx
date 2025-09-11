@@ -16,25 +16,25 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
   const [name, setName] = useState('');
   const { login, register } = useAuth();
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       alert("Veuillez entrer une adresse e-mail et un mot de passe.");
       return;
     }
-    const loggedInUser = login(email, password);
+    const loggedInUser = await login(email, password);
     if (loggedInUser) {
       onLoginSuccess(loggedInUser);
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
       alert("Veuillez remplir tous les champs.");
       return;
     }
-    const registeredUser = register(name, email, password);
+    const registeredUser = await register(name, email, password);
     if (registeredUser) {
        onLoginSuccess(registeredUser);
     }
