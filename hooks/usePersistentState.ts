@@ -6,7 +6,18 @@ export function usePersistentState<T,>(key: string, defaultValue: T): [T, React.
     const [state, setState] = useState<T>(() => {
         try {
             const storedValue = window.localStorage.getItem(key);
-            return storedValue ? JSON.parse(storedValue) : defaultValue;
+            if (storedValue) {
+                const parsed = JSON.parse(storedValue);
+                // Specific fix for siteSettings data migration from localStorage.
+                // If the stored settings object is missing the `seo` property,
+                // merge it with the default value to prevent a crash.
+                if (key === 'siteSettings' && (parsed.seo === undefined)) {
+                    const defaultSettings = defaultValue as object;
+                    return { ...defaultSettings, ...parsed };
+                }
+                return parsed;
+            }
+            return defaultValue;
         } catch (error) {
             console.error(`Error reading localStorage key “${key}”:`, error);
             return defaultValue;
