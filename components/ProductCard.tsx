@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { Product, FlashSale } from '../types';
+import type { Product, FlashSale, Store } from '../types';
 import { ShoppingCartIcon, HeartIcon, CalendarDaysIcon, MapPinIcon, BoltIcon, ScaleIcon, StarIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -45,9 +45,10 @@ interface ProductCardProps {
   flashSales: FlashSale[];
   isComparisonEnabled: boolean;
   isFlashSaleUpcoming?: boolean;
+  stores: Store[];
 }
 
-const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVendorClick, location, flashSales, isComparisonEnabled, isFlashSaleUpcoming }) => {
+const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVendorClick, location, flashSales, isComparisonEnabled, isFlashSaleUpcoming, stores }) => {
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isInComparison, toggleComparison } = useComparison();
@@ -55,6 +56,11 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
 
   const isSeller = user?.role === 'seller';
   const hasVariants = product.variants && product.variants.length > 0;
+  
+  const isPremiumVendor = useMemo(() => {
+      const store = stores.find(s => s.name === product.vendor);
+      return store?.premiumStatus === 'premium';
+  }, [stores, product.vendor]);
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); 
@@ -158,7 +164,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
       </div>
       <div className="p-4 flex-grow flex flex-col">
         <div className="flex justify-between items-center gap-2">
-          <button onClick={handleVendorClick} className="text-sm text-gray-500 dark:text-gray-400 mb-1 hover:text-kmer-green hover:underline text-left truncate">{product.vendor}</button>
+          <button onClick={handleVendorClick} className="text-sm text-gray-500 dark:text-gray-400 mb-1 hover:text-kmer-green hover:underline text-left truncate flex items-center gap-1.5">
+            {isPremiumVendor && <StarIcon className="w-4 h-4 text-kmer-yellow flex-shrink-0" title="Vendeur Premium" />}
+            <span>{product.vendor}</span>
+          </button>
           {location && (
               <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 flex-shrink-0">
                   <MapPinIcon className="w-3.5 h-3.5" />

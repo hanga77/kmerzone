@@ -35,6 +35,7 @@ const RecommendedProducts: React.FC<RecommendedProductsProps> = ({ currentProduc
                         location={findStoreLocation(product.vendor)}
                         flashSales={flashSales}
                         isComparisonEnabled={isComparisonEnabled}
+                        stores={stores}
                     />
                 ))}
             </div>

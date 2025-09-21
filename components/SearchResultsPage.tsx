@@ -29,7 +29,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ searchQuery, prod
     );
   }, [products, searchQuery]);
   
-  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(searchedProducts);
+  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(searchedProducts, stores);
 
   const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
 
@@ -60,7 +60,7 @@ const SearchResultsPage: React.FC<SearchResultsPageProps> = ({ searchQuery, prod
           {filteredAndSortedProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredAndSortedProducts.map(product => (
-                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />
+                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} stores={stores} />
               ))}
             </div>
           ) : (

@@ -322,8 +322,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
             <button onClick={onNavigateToPromotions} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><TagIcon className="w-5 h-5 text-kmer-red"/>{translations.promotions[language]}</button>
             <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>{translations.flashSales[language]}</button>
             <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">{translations.stores[language]}</button>
-            {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
-                <button onClick={onNavigateToBecomePremium} className="text-kmer-yellow hover:text-yellow-400 font-bold flex items-center gap-1">
+            {isPremiumProgramEnabled && (
+                <button onClick={user ? onNavigateToBecomePremium : onOpenLogin} className="text-kmer-yellow hover:text-yellow-400 font-bold flex items-center gap-1">
                     <StarIcon className="w-5 h-5"/>{translations.becomePremium[language]}
                 </button>
             )}
@@ -385,8 +385,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
                     )) : (
                       <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Connexion / Inscription</button>
                     )}
-                    {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
-                      <button onClick={() => {onNavigateToBecomePremium(); setIsMenuOpen(false);}} className="text-left font-bold text-kmer-yellow py-2">Devenir Premium</button>
+                    {isPremiumProgramEnabled && (
+                      <button onClick={() => { (user ? onNavigateToBecomePremium : onOpenLogin)(); setIsMenuOpen(false); }} className="text-left font-bold text-kmer-yellow py-2">Devenir Premium</button>
                     )}
                  </div>
               </div>

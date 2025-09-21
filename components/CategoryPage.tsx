@@ -41,7 +41,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryId, allCategories, 
     return { selectedCategory: selectedCat, productsInCategory: filteredProducts };
   }, [allProducts, categoryId, allCategories]);
   
-  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(productsInCategory);
+  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(productsInCategory, allStores);
 
   const findStoreLocation = (vendorName: string) => allStores.find(s => s.name === vendorName)?.location;
   
@@ -81,7 +81,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryId, allCategories, 
           {filteredAndSortedProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredAndSortedProducts.map(product => (
-                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />
+                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} stores={allStores} />
               ))}
             </div>
           ) : (

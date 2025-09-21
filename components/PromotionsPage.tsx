@@ -44,7 +44,7 @@ const isPromotionActive = (product: Product): boolean => {
 
 const PromotionsPage: React.FC<PromotionsPageProps> = ({ allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
   const promotionalProducts = useMemo(() => allProducts.filter(p => isPromotionActive(p)), [allProducts]);
-  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(promotionalProducts);
+  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(promotionalProducts, allStores);
   const findStoreLocation = (vendorName: string) => allStores.find(s => s.name === vendorName)?.location;
 
   return (
@@ -75,7 +75,7 @@ const PromotionsPage: React.FC<PromotionsPageProps> = ({ allProducts, allStores,
           {filteredAndSortedProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredAndSortedProducts.map(product => (
-                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />
+                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} stores={allStores} />
               ))}
             </div>
           ) : (

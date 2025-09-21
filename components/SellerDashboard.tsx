@@ -1,9 +1,10 @@
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review, Notification, Ticket } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review, Notification, Ticket, ShippingPartner, ShippingSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, ClockIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon, BellIcon, PaperclipIcon, UsersIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, ClockIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon, BellIcon, PaperclipIcon, UsersIcon, StarPlatinumIcon } from './Icons';
+import ShippingSettingsPanel from './ShippingSettingsPanel';
 
 declare const Html5Qrcode: any;
 
@@ -45,6 +46,8 @@ interface SellerDashboardProps {
   onMarkNotificationAsRead: (notificationId: string) => void;
   onNavigateFromNotification: (link: Notification['link']) => void;
   onCreateTicket: (subject: string, message: string, relatedOrderId?: string, type?: 'support' | 'service_request', attachmentUrls?: string[]) => void;
+  allShippingPartners: ShippingPartner[];
+  onUpdateShippingSettings: (storeId: string, settings: ShippingSettings) => void;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -284,9 +287,10 @@ const OverviewPanel: React.FC<{
     onNavigate: () => void; 
     lowStockProductsCount: number;
     store: Store;
-    onUpgradeRequest: () => void;
+    siteSettings: SiteSettings;
+    onUpgradeRequest: (type: 'premium' | 'super_premium') => void;
     upgradeRequestSent: boolean;
-}> = ({ analytics, onNavigate, lowStockProductsCount, store, onUpgradeRequest, upgradeRequestSent }) => (
+}> = ({ analytics, onNavigate, lowStockProductsCount, store, siteSettings, onUpgradeRequest, upgradeRequestSent }) => (
     <div className="p-6">
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold dark:text-white">Aperçu</h2>
@@ -297,7 +301,7 @@ const OverviewPanel: React.FC<{
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} />
             <StatCard icon={<TruckIcon className="w-7 h-7"/>} label="Commandes en attente" value={analytics.openOrders} />
-            <StatCard icon={<BarChartIcon className="w-7 h-7"/>} label="Visites de la boutique (jour)" value={store.visits || 0} />
+            <StatCard icon={<UsersIcon className="w-7 h-7"/>} label="Visites de la boutique (jour)" value={store.visits || 0} />
             {lowStockProductsCount > 0 ? (
                  <div className="p-4 bg-orange-100 dark:bg-orange-900/50 rounded-lg border-l-4 border-orange-500">
                     <div className="flex items-center gap-4">
@@ -338,12 +342,35 @@ const OverviewPanel: React.FC<{
                         Votre demande a été envoyée ! Nous vous contacterons bientôt.
                     </div>
                 ) : (
-                    <button onClick={onUpgradeRequest} className="mt-6 bg-white text-yellow-600 font-bold py-2 px-6 rounded-full hover:bg-gray-100 transition-transform transform hover:scale-105">
-                        Je veux devenir Premium
+                    <button onClick={() => onUpgradeRequest('premium')} className="mt-6 bg-white text-yellow-600 font-bold py-2 px-6 rounded-full hover:bg-gray-100 transition-transform transform hover:scale-105">
+                        Je veux devenir Premium ({siteSettings.premiumPlan.price.toLocaleString('fr-CM')} FCFA / {siteSettings.premiumPlan.durationDays} jrs)
                     </button>
                 )}
             </div>
         )}
+        
+        {store.premiumStatus === 'premium' && (
+            <div className="mt-8 p-6 bg-gradient-to-r from-red-500 via-red-600 to-red-700 text-white rounded-lg shadow-lg">
+                 <div className="flex items-center gap-4">
+                    <StarPlatinumIcon className="w-12 h-12 text-white flex-shrink-0" />
+                    <div>
+                        <h3 className="text-2xl font-bold">Devenez Super Premium pour une visibilité maximale !</h3>
+                        <p className="opacity-90">Dominez le marché avec le statut le plus élevé de notre plateforme.</p>
+                    </div>
+                </div>
+                {upgradeRequestSent ? (
+                     <div className="mt-6 text-center font-bold bg-white/20 p-3 rounded-md">
+                        <CheckCircleIcon className="w-6 h-6 mx-auto mb-1" />
+                        Votre demande a été envoyée ! Nous vous contacterons bientôt.
+                    </div>
+                ) : (
+                    <button onClick={() => onUpgradeRequest('super_premium')} className="mt-6 bg-white text-red-600 font-bold py-2 px-6 rounded-full hover:bg-gray-100 transition-transform transform hover:scale-105">
+                       Je veux devenir Super Premium ({siteSettings.superPremiumPlan.price.toLocaleString('fr-CM')} FCFA / {siteSettings.superPremiumPlan.durationDays} jrs)
+                    </button>
+                )}
+            </div>
+        )}
+
     </div>
 );
 
@@ -1446,8 +1473,8 @@ const PhotographyServicePanel: React.FC<{
 };
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, products, sellerOrders, promoCodes, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, flashSales, onProposeForFlashSale, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection, initialTab, sellerNotifications, onMarkNotificationAsRead, onNavigateFromNotification, onCreateTicket, allTickets } = props;
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes' | 'reviews' | 'collections' | 'services'>(initialTab as any || 'overview');
+    const { store, products, sellerOrders, promoCodes, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, flashSales, onProposeForFlashSale, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection, initialTab, sellerNotifications, onMarkNotificationAsRead, onNavigateFromNotification, onCreateTicket, allTickets, allShippingPartners, onUpdateShippingSettings } = props;
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes' | 'reviews' | 'collections' | 'services' | 'livraison'>(initialTab as any || 'overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
@@ -1459,13 +1486,14 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     const unreadNotificationsCount = sellerNotifications.filter(n => !n.isRead).length;
     const [upgradeRequestSent, setUpgradeRequestSent] = useState(false);
 
-    const handleUpgradeRequest = () => {
-        onCreateTicket(
-            "Demande de passage au statut Vendeur Premium",
-            "Bonjour, je suis intéressé(e) par les avantages du statut Vendeur Premium et souhaiterais mettre à niveau ma boutique. Pourriez-vous me donner plus d'informations sur la procédure ? Merci.",
-            undefined,
-            'support'
-        );
+    const handleUpgradeRequest = (type: 'premium' | 'super_premium') => {
+        const subject = type === 'premium' 
+            ? "Demande de passage au statut Vendeur Premium"
+            : "Demande de passage au statut Vendeur Super Premium";
+            
+        const message = `Bonjour, je suis intéressé(e) par les avantages du statut Vendeur ${type.charAt(0).toUpperCase() + type.slice(1)} et souhaiterais mettre à niveau ma boutique. Pourriez-vous me donner plus d'informations sur la procédure ? Merci.`;
+
+        onCreateTicket(subject, message, undefined, 'support');
         setUpgradeRequestSent(true);
     };
     
@@ -1601,7 +1629,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     
     const renderContent = () => {
         switch(activeTab) {
-            case 'overview': return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} store={store} onUpgradeRequest={handleUpgradeRequest} upgradeRequestSent={upgradeRequestSent} />;
+            case 'overview': return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} store={store} siteSettings={siteSettings} onUpgradeRequest={handleUpgradeRequest} upgradeRequestSent={upgradeRequestSent} />;
             case 'products': return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onUpdateProductStatus={onUpdateProductStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
             case 'bulk-edit': return <BulkEditPanel products={products} onSave={onBulkUpdateProducts} />;
             case 'stories': return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
@@ -1614,8 +1642,35 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'disputes': return <DisputesPanel disputedOrders={disputedOrders} onSellerDisputeMessage={onSellerDisputeMessage} />;
             case 'reviews': return <ReviewsPanel products={products} onReplyToReview={onReplyToReview} />;
             case 'collections': return <CollectionsPanel store={store} products={products} onCreateOrUpdateCollection={onCreateOrUpdateCollection} onDeleteCollection={onDeleteCollection} />;
+            case 'livraison':
+                if (store.premiumStatus === 'premium' || store.premiumStatus === 'super_premium') {
+                    return <ShippingSettingsPanel store={store} allShippingPartners={allShippingPartners} onUpdate={onUpdateShippingSettings} />;
+                } else {
+                    return (
+                        <div className="p-8 text-center bg-gray-50 dark:bg-gray-900/50 min-h-[50vh] flex items-center justify-center">
+                            <div className="max-w-2xl mx-auto">
+                                <TruckIcon className="w-16 h-16 mx-auto text-kmer-green mb-4" />
+                                <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Optimisez votre Logistique</h2>
+                                <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Définissez vos propres tarifs, choisissez vos transporteurs et offrez la livraison gratuite. Ce service est un avantage exclusif pour nos vendeurs Premium.</p>
+                                {upgradeRequestSent ? (
+                                    <div className="mt-8 p-4 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-lg flex items-center gap-3">
+                                        <CheckCircleIcon className="w-6 h-6 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="font-bold">Demande envoyée !</h4>
+                                            <p className="text-sm">Un ticket a été créé. Notre équipe vous contactera bientôt. Vous pouvez suivre la conversation via les notifications et le chat de support.</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={() => handleUpgradeRequest('premium')} className="mt-8 bg-kmer-yellow text-gray-900 font-bold py-3 px-8 rounded-lg text-lg hover:bg-yellow-300 transition-colors">
+                                        Demander le statut Premium
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    );
+                }
             case 'services':
-                if (store.premiumStatus === 'premium') {
+                if (store.premiumStatus === 'premium' || store.premiumStatus === 'super_premium') {
                     return <PhotographyServicePanel onCreateTicket={onCreateTicket} sellerServiceTickets={sellerServiceTickets} />;
                 } else {
                     return (
@@ -1634,7 +1689,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
                                         </div>
                                     </div>
                                 ) : (
-                                    <button onClick={handleUpgradeRequest} className="mt-8 bg-kmer-yellow text-gray-900 font-bold py-3 px-8 rounded-lg text-lg hover:bg-yellow-300 transition-colors">
+                                    <button onClick={() => handleUpgradeRequest('premium')} className="mt-8 bg-kmer-yellow text-gray-900 font-bold py-3 px-8 rounded-lg text-lg hover:bg-yellow-300 transition-colors">
                                         Demander le statut Premium
                                     </button>
                                 )}
@@ -1680,6 +1735,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
                                     <div className="flex items-center gap-2">
                                         <p className="text-sm text-gray-500 dark:text-gray-400">Tableau de bord Vendeur</p>
                                         {store.premiumStatus === 'premium' && <span className="text-xs font-bold bg-kmer-yellow/20 text-kmer-yellow px-2 py-0.5 rounded-full flex items-center gap-1"><StarIcon className="w-3 h-3"/> Premium</span>}
+                                        {store.premiumStatus === 'super_premium' && <span className="text-xs font-bold bg-kmer-red/20 text-kmer-red px-2 py-0.5 rounded-full flex items-center gap-1"><StarPlatinumIcon className="w-3 h-3"/> Super Premium</span>}
                                     </div>
                                 </div>
                             </div>
@@ -1753,6 +1809,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
                             <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} count={unreadDisputesCount} />
                             <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
                             <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Finances" isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
+                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Livraison" isActive={activeTab === 'livraison'} onClick={() => setActiveTab('livraison')} />
                             <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Services" isActive={activeTab === 'services'} onClick={() => setActiveTab('services')} />
                         </div>
                     </aside>

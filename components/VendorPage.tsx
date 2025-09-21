@@ -20,7 +20,7 @@ interface VendorPageProps {
 const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
   const { user, toggleFollowStore } = useAuth();
   const productsFromVendor = useMemo(() => allProducts.filter(p => p.vendor === vendorName), [allProducts, vendorName]);
-  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(productsFromVendor);
+  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(productsFromVendor, allStores);
   const store = allStores.find(s => s.name === vendorName);
   const isFollowing = user?.followedStores?.includes(store?.id || '');
 
@@ -73,6 +73,7 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
                           location={store?.location} 
                           flashSales={flashSales} 
                           isComparisonEnabled={isComparisonEnabled} 
+                          stores={allStores}
                         />
                       </div>
                     ))}
@@ -120,7 +121,7 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
           {filteredAndSortedProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {filteredAndSortedProducts.map(product => (
-                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={store?.location} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />
+                <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={store?.location} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} stores={allStores} />
               ))}
             </div>
           ) : (

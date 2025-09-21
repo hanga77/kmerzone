@@ -32,7 +32,7 @@ const getFinalPrice = (item: CartItem, flashSales: FlashSale[]) => {
         const variantDetail = item.variantDetails?.find(vd => {
             if (!item.selectedVariant) return false;
             const vdKeys = Object.keys(vd.options);
-            const selectedKeys = Object.keys(item.selectedVariant);
+            const selectedKeys = Object.keys(item.selectedVariant!);
             if (vdKeys.length !== selectedKeys.length) return false;
             return vdKeys.every(key => vd.options[key] === item.selectedVariant![key]);
         });
@@ -119,23 +119,58 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
     const selectedAddress = user?.addresses?.find(a => a.id === selectedAddressId);
     
     const deliveryFee = useMemo(() => {
-        if (!selectedAddress || deliveryMethod === 'pickup') return 0;
+        if (deliveryMethod === 'pickup' || !selectedAddress) return 0;
+
         const customerCity = selectedAddress.city;
-        const hasInterUrban = cart.some(item => {
-            const store = allStores.find(s => s.name === item.vendor);
-            return store && store.location !== customerCity;
-        });
-        const baseFee = hasInterUrban
-            ? siteSettings.deliverySettings.interUrbanBaseFee
-            : siteSettings.deliverySettings.intraUrbanBaseFee;
+
+        // Group items by vendor
+        const itemsByVendor: Record<string, CartItem[]> = cart.reduce((acc, item) => {
+            (acc[item.vendor] = acc[item.vendor] || []).push(item);
+            return acc;
+        }, {} as Record<string, CartItem[]>);
+
+        let totalFee = 0;
+
+        // Calculate fee for each vendor
+        for (const vendorName in itemsByVendor) {
+            const vendorItems = itemsByVendor[vendorName];
+            const store = allStores.find(s => s.name === vendorName);
+            if (!store) continue;
+
+            const vendorSubtotal = vendorItems.reduce((sum, item) => sum + getFinalPrice(item, flashSales) * item.quantity, 0);
+
+            // 1. Check for seller's custom shipping settings
+            if (store.shippingSettings) {
+                // Check free shipping threshold
+                if (store.shippingSettings.freeShippingThreshold !== null && vendorSubtotal >= store.shippingSettings.freeShippingThreshold) {
+                    continue; // Shipping is free for this vendor's items
+                }
+
+                // Check custom rates
+                const isLocal = store.location === customerCity;
+                const customRate = isLocal ? store.shippingSettings.customRates.local : store.shippingSettings.customRates.national;
+                if (customRate !== null) {
+                    totalFee += customRate;
+                    continue; // Custom rate applied, move to next vendor
+                }
+            }
+            
+            // 2. Fallback to platform's default calculation for this vendor
+            const isInterUrban = store.location !== customerCity;
+            const baseFee = isInterUrban
+                ? siteSettings.deliverySettings.interUrbanBaseFee
+                : siteSettings.deliverySettings.intraUrbanBaseFee;
+            totalFee += baseFee; 
+        }
         
+        // Apply global premium discount if applicable
         let discountPercentage = 0;
         if (siteSettings.deliverySettings.premiumDeliveryDiscountPercentage && (user?.loyalty.status === 'premium' || user?.loyalty.status === 'premium_plus')) {
             discountPercentage = siteSettings.deliverySettings.premiumDeliveryDiscountPercentage;
         }
 
-        return baseFee - (baseFee * discountPercentage / 100);
-    }, [selectedAddress, deliveryMethod, cart, allStores, siteSettings, user]);
+        return totalFee - (totalFee * discountPercentage / 100);
+    }, [selectedAddress, deliveryMethod, cart, allStores, siteSettings, user, flashSales]);
 
     const total = subtotalAfterDiscount + deliveryFee;
 

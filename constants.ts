@@ -1,6 +1,11 @@
 
 
-import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod } from './types';
+
+
+
+
+
+import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod, ShippingPartner } from './types';
 
 export const initialCategories: Category[] = [
     // Main Categories
@@ -160,6 +165,13 @@ export const sampleNewMissionOrder: Order = {
     statusChangeLog: []
 };
 
+export const initialShippingPartners: ShippingPartner[] = [
+  { id: 'sp1', name: 'Transporteur Standard A', isPremium: false },
+  { id: 'sp2', name: 'Transporteur Standard B', isPremium: false },
+  { id: 'sp3', name: 'KMER ZONE Express', isPremium: true },
+  { id: 'sp4', name: 'Livraison Prioritaire KMER', isPremium: true },
+];
+
 export const initialStores: Store[] = [
     { 
         id: 'store-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', 
@@ -173,7 +185,12 @@ export const initialStores: Store[] = [
         ],
         stories: [{id: 's1', imageUrl: 'https://i.pinimg.com/564x/08/94/a3/0894a30e8a719c676767576f3f054812.jpg', createdAt: new Date().toISOString() }],
         visits: 258,
-        collections: [{ id: 'coll1', storeId: 'store-1', name: 'Nouveautés Pagne', description: 'Nos dernières créations en tissu pagne, parfaites pour toutes les occasions.', productIds: ['2', '12', '10'] }]
+        collections: [{ id: 'coll1', storeId: 'store-1', name: 'Nouveautés Pagne', description: 'Nos dernières créations en tissu pagne, parfaites pour toutes les occasions.', productIds: ['2', '12', '10'] }],
+        shippingSettings: {
+            enabledPartners: ['sp1', 'sp3'],
+            customRates: { local: 500, national: 1500 },
+            freeShippingThreshold: 20000,
+        },
     },
     { 
         id: 'store-2', name: 'Mama Africa', logoUrl: 'https://img.freepik.com/vecteurs-premium/modele-logo-cuisine-africaine_210834-31.jpg', 
@@ -188,7 +205,7 @@ export const initialStores: Store[] = [
     { 
         id: 'store-3', name: 'Electro Plus', logoUrl: 'https://cdn.dribbble.com/users/188652/screenshots/1029415/electro-logo-2.jpg', 
         bannerUrl: 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=2069&auto=format&fit=crop',
-        category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'standard',
+        category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'super_premium',
         location: 'Yaoundé', neighborhood: 'Mokolo', sellerFirstName: 'Paul', sellerLastName: 'Kouam', sellerPhone: '655443322',
         physicalAddress: 'Grand Marché Mokolo, Stand 52', latitude: 3.8731, longitude: 11.5152, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-20T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }],
@@ -228,7 +245,12 @@ export const initialStores: Store[] = [
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }, { name: "Registre de Commerce", status: 'verified', fileUrl: '...' }],
         stories: [{id: 's2', imageUrl: 'https://i.pinimg.com/564x/c7/2b/42/c72b429158221c97a552e67a145cb1d6.jpg', createdAt: new Date().toISOString() }],
         visits: 159,
-        collections: []
+        collections: [],
+        shippingSettings: {
+            enabledPartners: ['sp1', 'sp2', 'sp3', 'sp4'],
+            customRates: { local: null, national: null },
+            freeShippingThreshold: null,
+        },
     },
     { 
         id: 'store-8', name: 'Kribi Digital', logoUrl: 'https://static.vecteezy.com/system/resources/previews/007/618/856/non_2x/kd-logo-k-d-design-white-kd-letter-kd-letter-logo-design-initial-letter-kd-linked-circle-uppercase-monogram-logo-vector.jpg', category: 'Électronique', warnings: [], status: 'pending', premiumStatus: 'standard',
@@ -279,6 +301,14 @@ export const initialSiteSettings: SiteSettings = {
   rentAmount: 5000,
   canSellersCreateCategories: true,
   commissionRate: 10,
+  premiumPlan: {
+      price: 50000,
+      durationDays: 45,
+  },
+  superPremiumPlan: {
+      price: 150000,
+      durationDays: 30,
+  },
   deliverySettings: {
     intraUrbanBaseFee: 1000, // Example value for same-city delivery
     interUrbanBaseFee: 2500, // Example value for different-city delivery

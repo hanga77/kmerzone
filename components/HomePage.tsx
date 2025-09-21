@@ -187,6 +187,7 @@ const RecommendedForYou: React.FC<Omit<HomePageProps, 'advertisements' | 'isStor
                             location={findStoreLocation(product.vendor)} 
                             flashSales={flashSales} 
                             isComparisonEnabled={isComparisonEnabled} 
+                            stores={stores}
                         />
                     ))}
                 </div>
@@ -213,6 +214,17 @@ const HomePage: React.FC<HomePageProps> = (props) => {
         const productMap = new Map(products.map(p => [p.id, p]));
         return recentlyViewedIds.map(id => productMap.get(id)).filter((p): p is Product => !!p);
     }, [recentlyViewedIds, products]);
+    
+    const sortedStores = useMemo(() => {
+        return [...stores]
+            .filter(s => s.status === 'active')
+            .sort((a, b) => {
+                if (a.premiumStatus === 'premium' && b.premiumStatus !== 'premium') return -1;
+                if (a.premiumStatus !== 'premium' && b.premiumStatus === 'premium') return 1;
+                return 0; 
+            });
+    }, [stores]);
+
 
     const handleScrollToProducts = () => {
         popularProductsRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -255,7 +267,7 @@ const HomePage: React.FC<HomePageProps> = (props) => {
                     <h2 className="text-3xl font-bold text-center dark:text-white">Promotions du moment</h2>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {products.filter(p => p.promotionPrice).slice(0, 4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                  {products.filter(p => p.promotionPrice).slice(0, 4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} stores={stores} />)}
                 </div>
               </div>
             </section>
@@ -275,7 +287,7 @@ const HomePage: React.FC<HomePageProps> = (props) => {
               <div className="container mx-auto px-6">
                 <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Nos produits populaires</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {products.slice(0, 4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                  {products.slice(0, 4).map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} stores={stores} />)}
                 </div>
               </div>
             </section>
@@ -289,7 +301,7 @@ const HomePage: React.FC<HomePageProps> = (props) => {
                 </div>
                 <p className="text-center text-gray-600 dark:text-gray-300 mb-12 max-w-3xl mx-auto">Découvrez des produits authentiques, fabriqués avec passion par nos artisans et producteurs locaux. Chaque achat est un soutien à notre économie.</p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                  {madeInCameroonProducts.map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                  {madeInCameroonProducts.map(product => <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} stores={stores} />)}
                 </div>
               </div>
             </section>
@@ -309,6 +321,7 @@ const HomePage: React.FC<HomePageProps> = (props) => {
                                     location={findStoreLocation(product.vendor)} 
                                     flashSales={flashSales} 
                                     isComparisonEnabled={isComparisonEnabled} 
+                                    stores={stores}
                                 />
                             ))}
                         </div>
@@ -359,7 +372,7 @@ const HomePage: React.FC<HomePageProps> = (props) => {
               <div className="container mx-auto px-6">
                 <h2 className="text-3xl font-bold text-center mb-10 dark:text-white">Nos boutiques partenaires</h2>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-                  {stores.map(store => <StoreCard key={store.id} store={store} onVisitStore={onVisitStore} />)}
+                  {sortedStores.map(store => <StoreCard key={store.id} store={store} onVisitStore={onVisitStore} />)}
                 </div>
               </div>
             </section>

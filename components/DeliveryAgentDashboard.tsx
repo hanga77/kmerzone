@@ -60,7 +60,6 @@ const ScannerModal: React.FC<{
             try {
                 const cameras = await Html5Qrcode.getCameras();
                 if (cameras && cameras.length) {
-                    // FIX: Check if scanner is already scanning
                     if (!html5QrCodeRef.current?.isScanning) {
                         setScannerError(null);
                         await html5QrCode.start(
@@ -91,7 +90,6 @@ const ScannerModal: React.FC<{
         };
     }, [onClose, onScanSuccess]);
 
-    // FIX: Added missing return statement with JSX for the component
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
             <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full text-white">
@@ -104,14 +102,13 @@ const ScannerModal: React.FC<{
     );
 };
 
-// FIX: Added missing DeliveryAgentDashboard component and exported it
 export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrder, onLogout, onUpdateUserAvailability }) => {
     const { user } = useAuth();
     const [view, setView] = useState<'list' | 'map'>('list');
     
     const missions = useMemo(() => {
         if (!user) return [];
-        return allOrders.filter(o => o.agentId === user.id && ['picked-up', 'at-depot', 'out-for-delivery'].includes(o.status));
+        return allOrders.filter(o => o.agentId === user.id && ['picked-up', 'at-depot', 'out-for-delivery', 'ready-for-pickup'].includes(o.status));
     }, [allOrders, user]);
 
     const handleUpdateStatus = (orderId: string, status: OrderStatus) => {
@@ -141,11 +138,8 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
                             <p>Commande: {order.id}</p>
                             <p>Client: {order.shippingAddress.fullName}</p>
                             <p>Adresse: {order.shippingAddress.address}, {order.shippingAddress.city}</p>
-                            <p>Status: {statusTranslations[order.status]}</p>
-                            <button onClick={() => handleUpdateStatus(order.id, 'delivered')} className="text-sm bg-green-500 text-white font-semibold px-3 py-1 rounded-md mt-2">Marquer comme livré</button>
                         </div>
                     ))}
-                    {missions.length === 0 && <p className="text-center text-gray-500 py-8">Aucune mission en cours.</p>}
                 </div>
             </main>
         </div>

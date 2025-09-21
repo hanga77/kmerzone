@@ -2,6 +2,9 @@
 
 
 
+
+
+
 export interface Review {
   author: string;
   rating: number;
@@ -145,6 +148,23 @@ export interface ProductCollection {
   productIds: string[];
 }
 
+export interface ShippingPartner {
+  id: string;
+  name: string;
+  isPremium: boolean;
+}
+
+export interface CustomShippingRate {
+  local: number | null; // same city
+  national: number | null; // different city
+}
+
+export interface ShippingSettings {
+  enabledPartners: string[]; // array of ShippingPartner ids
+  customRates: CustomShippingRate;
+  freeShippingThreshold: number | null; // amount from which shipping is free
+}
+
 export interface Store {
   id: string;
   name: string;
@@ -166,9 +186,10 @@ export interface Store {
   subscriptionDueDate?: string; // ISO String
   paymentHistory?: { date: string; amount: number }[];
   stories?: Story[];
-  premiumStatus: 'standard' | 'premium';
+  premiumStatus: 'standard' | 'premium' | 'super_premium';
   visits?: number;
   collections?: ProductCollection[];
+  shippingSettings?: ShippingSettings;
 }
 
 export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent';
@@ -353,6 +374,14 @@ export interface SiteSettings {
   rentAmount: number;
   canSellersCreateCategories: boolean;
   commissionRate: number;
+  premiumPlan: {
+      price: number;
+      durationDays: number;
+  };
+  superPremiumPlan: {
+      price: number;
+      durationDays: number;
+  };
   deliverySettings: {
     intraUrbanBaseFee: number;
     interUrbanBaseFee: number;

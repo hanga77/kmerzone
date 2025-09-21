@@ -85,7 +85,7 @@ const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores,
     return allProducts.filter(p => approvedProductIdsInVisibleSales.has(p.id));
   }, [visibleSales, allProducts]);
 
-  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(allFlashSaleProducts);
+  const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(allFlashSaleProducts, allStores);
   
   const findStoreLocation = (vendorName: string) => allStores.find(s => s.name === vendorName)?.location;
   
@@ -136,7 +136,7 @@ const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores,
                 {filteredAndSortedProducts.map(product => {
                     const saleForProduct = visibleSales.find(s => s.products.some(p => p.productId === product.id));
                     const isUpcoming = saleForProduct && new Date(saleForProduct.startDate) > now;
-                    return product && <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} isFlashSaleUpcoming={isUpcoming} />
+                    return product && <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} isFlashSaleUpcoming={isUpcoming} stores={allStores} />
                 })}
               </div>
             ) : (

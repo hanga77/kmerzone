@@ -41,6 +41,7 @@ const WishlistPage: React.FC<WishlistPageProps> = ({ allProducts, allStores, fla
               location={findStoreLocation(product.vendor)} 
               flashSales={flashSales} 
               isComparisonEnabled={isComparisonEnabled}
+              stores={allStores}
             />
           ))}
         </div>

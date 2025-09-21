@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import type { Product, ProductFiltersState } from '../types';
+import type { Product, ProductFiltersState, Store } from '../types';
 
 const getActiveFlashSalePrice = (productId: string, flashSales: any[]): number | null => {
     const now = new Date();
@@ -54,7 +54,7 @@ const initialFilters: ProductFiltersState = {
   minRating: 0,
 };
 
-export const useProductFiltering = (products: Product[]) => {
+export const useProductFiltering = (products: Product[], allStores: Store[]) => {
   const [filters, setFilters] = useState<ProductFiltersState>({
       ...initialFilters,
       key: Date.now() // Force reset when component mounts
@@ -92,29 +92,41 @@ export const useProductFiltering = (products: Product[]) => {
       filtered = filtered.filter(p => getAverageRating(p) >= filters.minRating);
     }
 
+    // Create a set of premium vendors for quick lookup
+    const premiumVendors = new Set(allStores.filter(s => s.premiumStatus === 'premium').map(s => s.name));
+
+    // A reusable sort function that prioritizes premium
+    const premiumSort = (a: Product, b: Product): number => {
+        const aIsPremium = premiumVendors.has(a.vendor);
+        const bIsPremium = premiumVendors.has(b.vendor);
+        if (aIsPremium && !bIsPremium) return -1;
+        if (!aIsPremium && bIsPremium) return 1;
+        return 0;
+    };
+
     // Sort
     switch (filters.sort) {
       case 'price-asc':
-        filtered.sort((a, b) => getFinalPrice(a) - getFinalPrice(b));
+        filtered.sort((a, b) => premiumSort(a, b) || getFinalPrice(a) - getFinalPrice(b));
         break;
       case 'price-desc':
-        filtered.sort((a, b) => getFinalPrice(b) - getFinalPrice(a));
+        filtered.sort((a, b) => premiumSort(a, b) || getFinalPrice(b) - getFinalPrice(a));
         break;
       case 'rating-desc':
-        filtered.sort((a, b) => getAverageRating(b) - getAverageRating(a));
+        filtered.sort((a, b) => premiumSort(a, b) || getAverageRating(b) - getAverageRating(a));
         break;
       case 'newest-desc':
         // Assuming newer products have higher IDs. In a real app, you'd use a creation date.
-        filtered.sort((a, b) => parseInt(b.id) - parseInt(a.id));
+        filtered.sort((a, b) => premiumSort(a, b) || parseInt(b.id) - parseInt(a.id));
         break;
       case 'relevance':
       default:
-        // Default order is relevance, which we assume is the initial order.
+        filtered.sort(premiumSort);
         break;
     }
 
     return filtered;
-  }, [products, filters]);
+  }, [products, filters, allStores]);
 
   return {
     filteredAndSortedProducts,

@@ -23,12 +23,19 @@ const StoresPage: React.FC<StoresPageProps> = ({ stores, onBack, onVisitStore, o
   const storeCategories = useMemo(() => [...new Set(stores.map(s => s.category))], [stores]);
 
   const filteredStores = useMemo(() => {
-    return stores.filter(store => {
+    const filtered = stores.filter(store => {
       const searchMatch = store.name.toLowerCase().includes(filters.search.toLowerCase());
       const cityMatch = !filters.city || store.location === filters.city;
       const categoryMatch = !filters.category || store.category === filters.category;
       const premiumMatch = !filters.premium || store.premiumStatus === 'premium';
       return searchMatch && cityMatch && categoryMatch && premiumMatch;
+    });
+
+    // Sort premium stores to the top
+    return filtered.sort((a, b) => {
+        if (a.premiumStatus === 'premium' && b.premiumStatus !== 'premium') return -1;
+        if (a.premiumStatus !== 'premium' && b.premiumStatus === 'premium') return 1;
+        return a.name.localeCompare(b.name); // Secondary sort by name
     });
   }, [stores, filters]);
 
