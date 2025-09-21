@@ -4,6 +4,7 @@ import ProductCard from './ProductCard';
 import { ArrowLeftIcon, BoltIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
+import { useAuth } from '../contexts/AuthContext';
 
 
 interface FlashSalesPageProps {
@@ -16,9 +17,9 @@ interface FlashSalesPageProps {
   isComparisonEnabled: boolean;
 }
 
-const CountdownTimer: React.FC<{ endDate: string }> = ({ endDate }) => {
+const CountdownTimer: React.FC<{ targetDate: string }> = ({ targetDate }) => {
   const calculateTimeLeft = () => {
-    const difference = +new Date(endDate) - +new Date();
+    const difference = +new Date(targetDate) - +new Date();
     let timeLeft: Record<string, number> = {};
     if (difference > 0) {
       timeLeft = {
@@ -48,25 +49,54 @@ const CountdownTimer: React.FC<{ endDate: string }> = ({ endDate }) => {
           <div className="text-xs uppercase text-gray-500 dark:text-gray-400">{unit}</div>
         </div>
       ))}
+      {Object.keys(timeLeft).length === 0 && <p className="text-lg font-semibold text-red-400">Cette vente est terminée !</p>}
     </div>
   );
 };
 
 const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
+  const { user } = useAuth();
   const now = new Date();
-  const activeSales = useMemo(() => flashSales.filter(sale => new Date(sale.startDate) <= now && new Date(sale.endDate) >= now), [flashSales, now]);
   
-  const allFlashSaleProducts = useMemo(() => activeSales.flatMap(sale =>
-    sale.products
-      .filter(fp => fp.status === 'approved')
-      .map(fp => allProducts.find(p => p.id === fp.productId))
-  ).filter((p): p is Product => !!p), [activeSales, allProducts]);
+  const visibleSales = useMemo(() => {
+    const isPremium = user?.loyalty?.status === 'premium' || user?.loyalty?.status === 'premium_plus';
+    const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+    
+    return flashSales.filter(sale => {
+        const startDate = new Date(sale.startDate);
+        const endDate = new Date(sale.endDate);
+        if (endDate < now) return false; // Sale is over
+        if (isPremium) {
+            return startDate <= twentyFourHoursFromNow; // Premium users see sales starting within 24h
+        } else {
+            return startDate <= now; // Others see only currently active sales
+        }
+    });
+  }, [flashSales, user, now]);
+
+  const allFlashSaleProducts = useMemo(() => {
+    const approvedProductIdsInVisibleSales = new Set(
+      visibleSales.flatMap(sale => 
+        sale.products
+          .filter(fp => fp.status === 'approved')
+          .map(fp => fp.productId)
+      )
+    );
+    return allProducts.filter(p => approvedProductIdsInVisibleSales.has(p.id));
+  }, [visibleSales, allProducts]);
 
   const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(allFlashSaleProducts);
   
   const findStoreLocation = (vendorName: string) => allStores.find(s => s.name === vendorName)?.location;
   
-  const earliestEndingSale = activeSales.sort((a,b) => +new Date(a.endDate) - +new Date(b.endDate))[0];
+  const saleForCountdown = useMemo(() => {
+      const upcoming = visibleSales.filter(s => new Date(s.startDate) > now).sort((a,b) => +new Date(a.startDate) - +new Date(b.startDate));
+      if (upcoming.length > 0) return upcoming[0];
+      const active = visibleSales.filter(s => new Date(s.startDate) <= now).sort((a,b) => +new Date(a.endDate) - +new Date(b.endDate));
+      return active[0];
+  }, [visibleSales, now]);
+  
+  const isCountdownForUpcoming = saleForCountdown && new Date(saleForCountdown.startDate) > now;
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-[80vh]">
@@ -80,10 +110,15 @@ const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores,
                 <BoltIcon className="w-10 h-10 text-yellow-300" />
                 <h1 className="text-4xl font-bold">Ventes Flash</h1>
             </div>
-            {earliestEndingSale ? (
+            {saleForCountdown ? (
                 <>
-                    <p className="text-lg text-gray-300 mb-6">Ne manquez pas nos offres exclusives ! Fin de la vente <span className="font-bold text-yellow-300">{earliestEndingSale.name}</span> dans :</p>
-                    <CountdownTimer endDate={earliestEndingSale.endDate} />
+                    <p className="text-lg text-gray-300 mb-6">
+                        {isCountdownForUpcoming 
+                            ? `La vente flash "${saleForCountdown.name}" commence dans :` 
+                            : `La vente flash "${saleForCountdown.name}" se termine dans :`
+                        }
+                    </p>
+                    <CountdownTimer targetDate={isCountdownForUpcoming ? saleForCountdown.startDate : saleForCountdown.endDate} />
                 </>
             ) : null}
         </div>
@@ -98,7 +133,11 @@ const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores,
           <main className="flex-grow">
             {filteredAndSortedProducts.length > 0 ? (
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredAndSortedProducts.map(product => product && <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} />)}
+                {filteredAndSortedProducts.map(product => {
+                    const saleForProduct = visibleSales.find(s => s.products.some(p => p.productId === product.id));
+                    const isUpcoming = saleForProduct && new Date(saleForProduct.startDate) > now;
+                    return product && <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} isFlashSaleUpcoming={isUpcoming} />
+                })}
               </div>
             ) : (
               <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md h-full flex flex-col justify-center">

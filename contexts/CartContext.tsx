@@ -38,6 +38,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     }
     
     let itemAdded = false;
+    let addedItem: CartItem | null = null;
     setCart(prevCart => {
       const existingItem = prevCart.find(item => item.id === product.id && areVariantsEqual(item.selectedVariant, selectedVariant));
       
@@ -60,11 +61,14 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             return prevCart;
         }
         itemAdded = true;
-        return prevCart.map(item =>
-          (item.id === product.id && areVariantsEqual(item.selectedVariant, selectedVariant))
-            ? { ...item, quantity: newQuantity }
-            : item
-        );
+        return prevCart.map(item => {
+          if (item.id === product.id && areVariantsEqual(item.selectedVariant, selectedVariant)) {
+            const updatedItem = { ...item, quantity: newQuantity };
+            addedItem = updatedItem;
+            return updatedItem;
+          }
+          return item;
+        });
       } else {
         if (quantity > stock) {
             alert(`Stock insuffisant. Vous ne pouvez pas commander plus de ${stock} unités de cette variante.`);
@@ -76,12 +80,13 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           newItem.price = variantDetail.price;
           newItem.promotionPrice = undefined; // Variant price overrides promotion
         }
+        addedItem = newItem;
         return [...prevCart, newItem];
       }
     });
 
-    if (itemAdded && !selectedVariant && !options?.suppressModal) {
-      openModal(product);
+    if (itemAdded && addedItem && !options?.suppressModal) {
+      openModal(addedItem);
     }
   }, [user, openModal, setCart]);
 

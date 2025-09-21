@@ -1,9 +1,8 @@
-
-
 import React, { useState, useEffect, useRef } from 'react';
-import QRCode from 'qrcode';
-import type { Order, OrderStatus, PickupPoint, TrackingEvent, DisputeMessage, User } from '../types';
-import { ArrowLeftIcon, CheckIcon, TruckIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, XIcon, ClockIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
+import type { Order, OrderStatus, PickupPoint, DisputeMessage, User } from '../types';
+import { ArrowLeftIcon, CheckIcon, TruckIcon, ExclamationTriangleIcon, XIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
+
+declare const QRCode: any;
 
 interface OrderDetailPageProps {
   order: Order;
@@ -129,7 +128,7 @@ const statusTranslations: Record<OrderStatus, { title: string, description: stri
 };
 
 
-export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
+const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
   const currentStatusIndex = statusSteps.indexOf(order.status);
@@ -141,8 +140,8 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack,
   const canRequestRefund = order.status === 'delivered';
 
   useEffect(() => {
-    if (qrCodeRef.current && order.trackingNumber) {
-      QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 128 }, (error) => {
+    if (qrCodeRef.current && order.trackingNumber && typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 128 }, (error: any) => {
         if (error) console.error(error);
       });
     }
@@ -176,7 +175,7 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack,
     {isRefundModalOpen && <RefundRequestModal onClose={() => setIsRefundModalOpen(false)} onSubmit={handleRefundSubmit} />}
     <div className="bg-gray-100 dark:bg-gray-950 min-h-[80vh] py-12">
       <div className="container mx-auto px-4 sm:px-6">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 no-print">
             <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold">
               <ArrowLeftIcon className="w-5 h-5" />
               Retour à l'historique
@@ -245,7 +244,7 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack,
                 <h3 className="font-semibold mb-4 dark:text-white">Historique des statuts</h3>
                 <div className="border dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800/50 max-h-48 overflow-y-auto">
                     <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                        {order.statusChangeLog?.map((log, index) => (
+                        {(order.statusChangeLog || []).map((log, index) => (
                             <li key={index}>
                                 <span className="font-semibold">{new Date(log.date).toLocaleString('fr-FR')}:</span> {statusTranslations[log.status].title} <span className="text-xs text-gray-400">(par {log.changedBy})</span>
                             </li>
@@ -344,7 +343,7 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack,
             </div>
           </div>
           
-           <div className="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-4">
+           <div className="mt-8 pt-6 border-t dark:border-gray-700 flex flex-col sm:flex-row gap-4 no-print">
               {canRequestRefund && (
                  <button onClick={() => setIsRefundModalOpen(true)} className="flex-1 w-full bg-yellow-500 text-white font-bold py-3 rounded-lg hover:bg-yellow-600 flex items-center justify-center gap-2">
                      <ExclamationTriangleIcon className="w-5 h-5"/> Demander un remboursement
@@ -363,3 +362,5 @@ export const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack,
     </>
   );
 };
+
+export default OrderDetailPage;

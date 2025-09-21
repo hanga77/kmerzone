@@ -1,7 +1,7 @@
-import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect, useRef } from 'react';
+import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
-import { io, Socket } from "socket.io-client";
+// L'importation statique a été supprimée pour éviter les erreurs de plantage dans les environnements de navigateur.
 
 interface ChatContextType {
   chats: Chat[];
@@ -21,6 +21,37 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 const initialChats: Chat[] = [];
 const initialMessages: { [chatId: string]: Message[] } = {};
 
+// Regex for phone numbers (Cameroon and general international)
+const phoneRegex = /\b(\+?237\s*)?([6-9])([\s.-]*\d){8}\b|\b(?:\+\d{1,3}\s*)?(?:\d[\s-]*){8,}\d\b/g;
+// Regex for email addresses
+const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+
+const censorText = (text: string, storeInfo?: Chat['sellerStoreInfo']): string => {
+    let censoredText = text.replace(phoneRegex, '***');
+    censoredText = censoredText.replace(emailRegex, '***');
+
+    if (storeInfo) {
+      // Create a set of unique keywords from the store's location, including neighborhood
+      const locationKeywords = new Set([
+        ...storeInfo.physicalAddress.toLowerCase().split(/[\s,.-]+/),
+        ...(storeInfo.neighborhood ? storeInfo.neighborhood.toLowerCase().split(/[\s,.-]+/) : []),
+        ...storeInfo.location.toLowerCase().split(/[\s,.-]+/) // city
+      ]);
+      
+      // Filter out small or common words to avoid false positives
+      const commonWords = ['rue', 'de', 'la', 'le', 'et', 'au', 'a', 'des', 'du', 'en', 'face', 'près', 'derrière', 'devant', 'carrefour', 'akwa', 'yaounde', 'douala'];
+      const significantKeywords = [...locationKeywords].filter(kw => kw.length > 3 && !commonWords.includes(kw));
+
+      if (significantKeywords.length > 0) {
+        // Create a regex to find any of these keywords, case-insensitively
+        const regex = new RegExp(`\\b(${significantKeywords.join('|')})\\b`, 'gi');
+        censoredText = censoredText.replace(regex, '***');
+      }
+    }
+
+    return censoredText;
+};
+
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
   const [chats, setChats] = useState<Chat[]>(initialChats);
@@ -28,58 +59,28 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isWidgetOpen, setIsWidgetOpen] = useState(false);
   const [isTyping, setIsTyping] = useState<Record<string, boolean>>({});
-  const socketRef = useRef<Socket | null>(null);
+  const [ai, setAi] = useState<any | null>(null);
 
   useEffect(() => {
-    if (user) {
-      // Connect to the backend server explicitly.
-      socketRef.current = io('http://localhost:5000');
-
-      socketRef.current.on('connect', () => {
-        console.log('Socket connected:', socketRef.current?.id);
+    // Importer et initialiser dynamiquement le module GenAI
+    // Cela empêche les plantages dans les environnements où `process` n'est pas défini (comme les déploiements statiques de Vercel)
+    if (typeof process !== 'undefined' && process.env && process.env.API_KEY) {
+      import('@google/genai').then(({ GoogleGenAI }) => {
+        try {
+          const genAI = new GoogleGenAI({ apiKey: process.env.API_KEY });
+          setAi(genAI);
+        } catch (error) {
+          console.error('Error initializing Google GenAI:', error);
+          setAi(null);
+        }
+      }).catch(error => {
+        console.error('Failed to load @google/genai module:', error);
+        setAi(null);
       });
-
-      socketRef.current.on('newMessage', (newMessage: Message) => {
-        setMessages(prev => {
-          const chatMessages = prev[newMessage.chatId] || [];
-          // FIX: Corrected logic to handle incoming messages with `_id` from the server.
-          // The check for duplicates now correctly uses `_id` and the new message's `id` is properly set.
-          if (chatMessages.some(m => m.id === (newMessage._id || newMessage.id) || m._id === newMessage._id)) {
-            return prev;
-          }
-          return {
-            ...prev,
-            [newMessage.chatId]: [...chatMessages, { ...newMessage, id: newMessage._id || newMessage.id, _id: newMessage._id }]
-          };
-        });
-        setChats(prev => prev.map(c => c.id === newMessage.chatId ? { ...c, lastMessageTimestamp: newMessage.timestamp } : c));
-      });
-
-      socketRef.current.on('messageChunk', ({ messageId, chunk, chatId }) => {
-        setMessages(prev => {
-            const chatMessages = prev[chatId] || [];
-            return {
-                ...prev,
-                [chatId]: chatMessages.map(msg => 
-                    (msg.id === messageId || msg._id === messageId) ? { ...msg, text: msg.text + chunk } : msg
-                )
-            };
-        });
-      });
-      
-      socketRef.current.on('typingUpdate', ({ chatId, isTyping: typingStatus }) => {
-          setIsTyping(prev => ({ ...prev, [chatId]: typingStatus }));
-      });
-      
-      socketRef.current.on('chatError', (error) => {
-          console.error('Chat Error from server:', error.message);
-      });
-
-      return () => {
-        socketRef.current?.disconnect();
-      };
+    } else {
+        console.warn('Google GenAI API key not found. Chat feature will be disabled.');
     }
-  }, [user]);
+  }, []); // Exécuter une seule fois au montage du composant
 
   const startChat = useCallback((seller: User, store: Store, product?: Product) => {
     if (!user) {
@@ -103,7 +104,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
     if (!existingChat) {
       isNewChat = true;
-      const newChatId = `chat_local_${Date.now()}`;
+      const newChatId = `chat_${Date.now()}`;
       chatId = newChatId;
       existingChat = {
         id: newChatId,
@@ -132,6 +133,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     setActiveChatId(chatId);
     setIsWidgetOpen(true);
     
+    // Add welcome message if it's a new chat and doesn't have messages yet
     if (isNewChat && (!messages[chatId!] || messages[chatId!].length === 0)) {
         const welcomeMessage: Message = {
             id: `msg_welcome_${Date.now()}`,
@@ -150,32 +152,145 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   }, [user, chats, messages]);
 
-  const sendMessage = useCallback((chatId: string, text: string, allProducts: Product[], allCategories: Category[]) => {
-    if (!user || !socketRef.current) return;
-
+  const sendMessage = useCallback(async (chatId: string, text: string, allProducts: Product[], allCategories: Category[]) => {
+    if (!user) return;
+    
+    // Add user message immediately
     const userMessage: Message = {
-      id: `msg_local_${Date.now()}`,
+      id: `msg_${Date.now()}`,
       chatId,
       senderId: user.id,
       text: text,
       timestamp: new Date().toISOString(),
-      isRead: true,
+      isRead: false,
     };
-    
     setMessages(prev => ({
         ...prev,
         [chatId]: [...(prev[chatId] || []), userMessage]
     }));
     setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: userMessage.timestamp } : c));
 
-    socketRef.current.emit('sendMessage', {
-      chatId,
-      senderId: user.id,
-      text,
-      allProducts, 
-      allCategories,
-    });
-  }, [user]);
+    if (!ai) {
+        const errorMessage: Message = {
+            id: `msg_error_${Date.now()}`,
+            chatId,
+            senderId: 'assistant-id',
+            text: "Désolé, la fonction de chat n'est pas disponible pour le moment en raison d'un problème de configuration.",
+            timestamp: new Date().toISOString(),
+            isRead: false,
+        };
+        setMessages(prev => ({
+            ...prev,
+            [chatId]: [...(prev[chatId] || []), errorMessage]
+        }));
+        return;
+    }
+
+    // Set typing indicator
+    setIsTyping(prev => ({ ...prev, [chatId]: true }));
+    
+    // AI Logic with Streaming
+    try {
+        const chat = chats.find(c => c.id === chatId);
+        if (!chat) throw new Error("Chat not found");
+
+        const chatHistory = messages[chatId] || [];
+        const formattedHistory = chatHistory.map(msg => `${msg.senderId === user.id ? 'Customer' : 'Assistant'}: ${msg.text}`).join('\n');
+
+        const getCategoryName = (categoryId: string) => allCategories.find(c => c.id === categoryId)?.name || 'Unknown';
+
+        const simplifiedProducts = allProducts.map(p => ({
+            id: p.id,
+            name: p.name,
+            price: p.promotionPrice ?? p.price,
+            vendor: p.vendor,
+            category: getCategoryName(p.categoryId),
+            description: p.description.substring(0, 150) + '...',
+        }));
+
+        const productContext = chat.productContext ? `The user is asking about this product: ${JSON.stringify(chat.productContext)}.` : '';
+
+        const prompt = `
+You are a friendly and helpful shopping assistant for KMER ZONE, an e-commerce marketplace in Cameroon.
+Your goal is to help customers find products and answer their questions about the platform.
+Provide concise, helpful answers in French.
+When recommending products, list their name, price, and vendor.
+Your knowledge is limited to the product data provided. Do not invent products or information.
+For your safety, never ask for or provide personal contact information like phone numbers or email addresses. Keep all communication on the platform.
+
+Here is the product catalog for KMER ZONE:
+${JSON.stringify(simplifiedProducts)}
+
+${productContext}
+
+Here is the chat history so far:
+${formattedHistory}
+
+The customer just said: "${text}"
+
+Please provide a helpful response as the KMER ZONE assistant.
+        `;
+        
+        // Create an initial empty assistant message
+        const assistantMessageId = `msg_assistant_${Date.now()}`;
+        const initialAssistantMessage: Message = {
+            id: assistantMessageId,
+            chatId,
+            senderId: 'assistant-id',
+            text: '', // Start with empty text
+            timestamp: new Date().toISOString(),
+            isRead: false,
+        };
+        setMessages(prev => ({
+            ...prev,
+            [chatId]: [...(prev[chatId] || []), initialAssistantMessage]
+        }));
+        
+        const response = await ai.models.generateContentStream({
+            model: 'gemini-2.5-flash',
+            contents: prompt,
+        });
+
+        let fullText = '';
+        for await (const chunk of response) {
+            const chunkText = chunk.text;
+            if (chunkText) {
+                fullText += chunkText;
+                // Update the existing message with the new text chunk
+                setMessages(prev => ({
+                    ...prev,
+                    [chatId]: prev[chatId].map(msg => 
+                        msg.id === assistantMessageId 
+                            ? { ...msg, text: fullText } 
+                            : msg
+                    )
+                }));
+            }
+        }
+        
+        // Final update to timestamp on chat object after the whole message is received
+        setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: new Date().toISOString() } : c));
+
+    } catch (error) {
+        console.error("Gemini API call failed or timed out:", error);
+        const errorMessage: Message = {
+             id: `msg_error_${Date.now()}`,
+             chatId,
+             senderId: 'assistant-id',
+             text: "Désolé, je n'arrive pas à répondre pour le moment. Veuillez réessayer plus tard.",
+             timestamp: new Date().toISOString(),
+             isRead: false,
+        };
+        setMessages(prev => ({
+            ...prev,
+            [chatId]: [...(prev[chatId] || []), errorMessage]
+        }));
+    } finally {
+        // Remove typing indicator
+        setIsTyping(prev => ({ ...prev, [chatId]: false }));
+    }
+
+  }, [user, chats, messages, ai]);
 
   const handleSetActiveChat = useCallback((chatId: string | null) => {
      setActiveChatId(chatId);

@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import type { Product } from '../types';
 import { XIcon, TagIcon } from './Icons';

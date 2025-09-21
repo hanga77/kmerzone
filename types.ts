@@ -1,3 +1,7 @@
+
+
+
+
 export interface Review {
   author: string;
   rating: number;
@@ -192,11 +196,22 @@ export interface User {
     depotId?: string;
     addresses?: Address[];
     followedStores?: string[];
+    // New fields
+    profilePictureUrl?: string;
+    phone?: string;
+    birthDate?: string; // ISO string for date
+    gender?: 'Homme' | 'Femme' | 'Autre' | 'Préfère ne pas répondre';
+    notificationPreferences?: {
+        promotions: boolean;
+        orderUpdates: boolean;
+        newsletters: boolean;
+    };
 }
 
 export interface Address {
     id?: string;
     isDefault?: boolean;
+    label?: string; // "Maison", "Bureau", etc.
     fullName: string;
     phone: string;
     address: string;
@@ -342,11 +357,17 @@ export interface SiteSettings {
     intraUrbanBaseFee: number;
     interUrbanBaseFee: number;
     costPerKg: number;
+    premiumDeliveryDiscountPercentage?: number;
   };
   maintenanceMode: {
     isEnabled: boolean;
     message: string;
     reopenDate: string; // ISO String
+  };
+  seo: {
+    metaTitle: string;
+    metaDescription: string;
+    ogImageUrl: string;
   };
 }
 
@@ -376,7 +397,6 @@ export interface ProductFiltersState {
 
 export interface Message {
   id: string;
-  _id?: string;
   chatId: string;
   senderId: string;
   text: string; // The original, uncensored text
@@ -416,6 +436,7 @@ export interface TicketMessage {
   authorName: string;
   message: string;
   date: string; // ISO string
+  attachmentUrls?: string[]; // URLs of attached files
 }
 
 export type TicketStatus = 'Ouvert' | 'En cours' | 'Résolu';
@@ -432,6 +453,7 @@ export interface Ticket {
   createdAt: string; // ISO string
   updatedAt: string; // ISO string
   messages: TicketMessage[];
+  type?: 'support' | 'service_request';
 }
 
 export interface Announcement {

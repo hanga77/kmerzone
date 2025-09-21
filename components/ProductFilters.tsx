@@ -1,15 +1,11 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, ProductFiltersState, ProductSortOption } from '../types';
-import { StarIcon, ArrowPathIcon, FilterIcon, XIcon, ChevronDownIcon } from './Icons';
+import { StarIcon, ArrowPathIcon, FilterIcon, XIcon } from './Icons';
 
-interface ProductFiltersProps {
-  allProducts: Product[];
-  filters: ProductFiltersState;
-  setFilters: React.Dispatch<React.SetStateAction<ProductFiltersState>>;
-  resetFilters: () => void;
-}
-
-const getPrice = (product: Product) => product.promotionPrice ?? product.price;
+const getFinalPrice = (product: Product) => {
+    // This is a simplified version. A more complete one would check flash sales too.
+    return product.promotionPrice ?? product.price;
+};
 
 const SortOptions: Record<ProductSortOption, string> = {
     'relevance': 'Pertinence',
@@ -18,6 +14,13 @@ const SortOptions: Record<ProductSortOption, string> = {
     'rating-desc': 'Mieux notés',
     'newest-desc': 'Plus récents',
 };
+
+interface ProductFiltersProps {
+  allProducts: Product[];
+  filters: ProductFiltersState;
+  setFilters: React.Dispatch<React.SetStateAction<ProductFiltersState>>;
+  resetFilters: () => void;
+}
 
 const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, setFilters, resetFilters }) => {
     const [isFilterOpen, setIsFilterOpen] = useState(false);
@@ -37,7 +40,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
 
     const priceRange = useMemo(() => {
         if (allProducts.length === 0) return { min: 0, max: 100000 };
-        const prices = allProducts.map(getPrice);
+        const prices = allProducts.map(getFinalPrice);
         return {
             min: Math.floor(Math.min(...prices) / 1000) * 1000,
             max: Math.ceil(Math.max(...prices) / 1000) * 1000
@@ -47,12 +50,13 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
     const activeFilterCount = useMemo(() => {
         const { priceMin, priceMax, vendors, brands, minRating } = filters;
         let count = 0;
-        if (priceMin !== undefined || priceMax !== undefined) count++;
+        if (priceMin !== undefined && priceMin !== priceRange.min) count++;
+        if (priceMax !== undefined && priceMax !== priceRange.max) count++;
         if (vendors.length > 0) count++;
         if (brands.length > 0) count++;
         if (minRating > 0) count++;
         return count;
-    }, [filters]);
+    }, [filters, priceRange]);
 
     const handleApplyFilters = () => {
         setFilters(localFilters);
@@ -90,7 +94,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
                     <input
                         type="number"
                         placeholder={`Min (${priceRange.min})`}
-                        value={localFilters.priceMin || ''}
+                        value={localFilters.priceMin ?? ''}
                         onChange={e => setLocalFilters(f => ({ ...f, priceMin: e.target.value ? parseInt(e.target.value) : undefined }))}
                         className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 text-sm"
                     />
@@ -98,7 +102,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
                      <input
                         type="number"
                         placeholder={`Max (${priceRange.max})`}
-                        value={localFilters.priceMax || ''}
+                        value={localFilters.priceMax ?? ''}
                         onChange={e => setLocalFilters(f => ({ ...f, priceMax: e.target.value ? parseInt(e.target.value) : undefined }))}
                         className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 text-sm"
                     />
@@ -142,7 +146,7 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
                 <h3 className="font-semibold mb-2 dark:text-gray-200">Note minimale</h3>
                 <div className="flex justify-around">
                     {[4, 3, 2, 1].map(rating => (
-                        <button key={rating} onClick={() => setLocalFilters(f => ({ ...f, minRating: rating }))}
+                        <button key={rating} onClick={() => setLocalFilters(f => ({ ...f, minRating: f.minRating === rating ? 0 : rating }))}
                             className={`flex items-center gap-1 p-2 rounded-md transition-colors ${localFilters.minRating === rating ? 'bg-kmer-yellow/20 text-kmer-yellow' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}
                         >
                             <StarIcon className="w-4 h-4 text-kmer-yellow" />
@@ -177,8 +181,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
                     onChange={(e) => setFilters(f => ({ ...f, sort: e.target.value as ProductSortOption }))}
                     className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 text-sm font-semibold"
                 >
-                   {Object.entries(SortOptions).map(([key, value]) => (
-                        <option key={key} value={key}>{value}</option>
+                   {(Object.keys(SortOptions) as Array<keyof typeof SortOptions>).map((key) => (
+                        <option key={key} value={key}>{SortOptions[key]}</option>
                     ))}
                 </select>
             </div>
@@ -207,8 +211,8 @@ const ProductFilters: React.FC<ProductFiltersProps> = ({ allProducts, filters, s
                             onChange={(e) => setFilters(f => ({ ...f, sort: e.target.value as ProductSortOption }))}
                             className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 font-semibold focus:ring-1 focus:ring-kmer-green"
                         >
-                           {Object.entries(SortOptions).map(([key, value]) => (
-                                <option key={key} value={key}>{value}</option>
+                           {(Object.keys(SortOptions) as Array<keyof typeof SortOptions>).map((key) => (
+                                <option key={key} value={key}>{SortOptions[key]}</option>
                             ))}
                         </select>
                      </div>

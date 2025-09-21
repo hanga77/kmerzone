@@ -1,16 +1,14 @@
-
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
 import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, FlashSaleProduct, RequestedDocument, PickupPoint, User, Warning, SiteSettings, Payout, Advertisement, UserAvailabilityStatus, CartItem, DisputeMessage, SiteContent, Review, Ticket, TicketStatus, TicketPriority, Announcement, PaymentMethod } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon, ShieldCheckIcon, MegaphoneIcon, BanknotesIcon, BarChartIcon } from './Icons';
+import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, ExclamationTriangleIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, CheckCircleIcon, XCircleIcon, XIcon, DocumentTextIcon, MapPinIcon, PencilSquareIcon, TrashIcon, ChartPieIcon, CurrencyDollarIcon, UserGroupIcon, Cog8ToothIcon, ChatBubbleLeftRightIcon, ScaleIcon, StarIcon, StarPlatinumIcon, PlusIcon, SearchIcon, TruckIcon, PrinterIcon, ChevronLeftIcon, ChevronRightIcon, PaperAirplaneIcon, ShieldCheckIcon, MegaphoneIcon, BanknotesIcon, BarChartIcon, PaperclipIcon } from './Icons';
 import FlashSaleForm from './FlashSaleForm';
 import ReviewModerationPanel from './ReviewModerationPanel';
 
 declare const L: any;
 
-const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
+const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 017.5 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
 
 interface SuperAdminDashboardProps {
     allUsers: User[];
@@ -62,7 +60,7 @@ interface SuperAdminDashboardProps {
     onUpdateSiteContent: (newContent: SiteContent[]) => void;
     allTickets: Ticket[];
     allAnnouncements: Announcement[];
-    onAdminReplyToTicket: (ticketId: string, message: string) => void;
+    onAdminReplyToTicket: (ticketId: string, message: string, attachmentUrls?: string[]) => void;
     onAdminUpdateTicketStatus: (ticketId: string, status: TicketStatus, priority: TicketPriority) => void;
     onCreateOrUpdateAnnouncement: (announcement: Omit<Announcement, 'id'> | Announcement) => void;
     onDeleteAnnouncement: (id: string) => void;
@@ -152,16 +150,16 @@ const AssignAgentModal: React.FC<{
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
     <button
         onClick={onClick}
-        className={`relative flex items-center gap-2 px-3 py-3 text-sm font-semibold rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${
+        className={`relative flex items-center gap-3 w-full text-left px-3 py-3 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
             isActive
-                ? 'text-kmer-green border-kmer-green'
-                : 'text-gray-500 border-transparent hover:text-kmer-green hover:border-kmer-green/50 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'bg-kmer-green/10 text-kmer-green'
+                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400'
         }`}
     >
         {icon}
-        <span className="hidden sm:inline">{label}</span>
-         {count !== undefined && count > 0 && (
-            <span className="ml-1 text-xs bg-kmer-red text-white rounded-full px-1.5 py-0.5">{count}</span>
+        <span>{label}</span>
+        {count !== undefined && count > 0 && (
+            <span className="ml-auto text-xs bg-kmer-red text-white rounded-full px-1.5 py-0.5">{count}</span>
         )}
     </button>
 );
@@ -1166,64 +1164,106 @@ const PayoutsPanel: React.FC<Pick<SuperAdminDashboardProps, 'payouts' | 'allStor
     return (
         <div className="p-6">
              <h2 className="text-xl font-bold mb-4">Paiements aux Vendeurs</h2>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                        <tr>
-                            <th className="p-2">Boutique</th>
-                            <th className="p-2">Revenu Total (Livré)</th>
-                            <th className="p-2">Commission KMER ZONE ({siteSettings.commissionRate}%)</th>
-                            <th className="p-2">Déjà Payé</th>
-                            <th className="p-2">Solde Actuel</th>
-                            <th className="p-2">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {storeBalances.map(({ store, balance, totalRevenue, totalPaidOut, commission }) => (
-                            <tr key={store.id} className="border-b dark:border-gray-700">
-                                <td className="p-2 font-semibold">{store.name}</td>
-                                <td className="p-2">{totalRevenue.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="p-2 text-red-600">-{commission.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="p-2">{totalPaidOut.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="p-2 font-bold">{balance.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="p-2">
-                                    <button onClick={() => onPayoutSeller(store, balance)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 disabled:bg-gray-400" disabled={balance <=0}>Payer le solde</button>
-                                </td>
+            <div>
+                {/* Mobile View */}
+                <div className="space-y-4 md:hidden">
+                    {storeBalances.map(({ store, balance, totalRevenue, totalPaidOut, commission }) => (
+                        <div key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm">
+                            <h4 className="font-bold text-lg dark:text-white">{store.name}</h4>
+                            <div className="mt-2 space-y-1 text-sm border-t dark:border-gray-700 pt-2">
+                                <div className="flex justify-between"><span>Revenu Total:</span> <span className="font-semibold">{totalRevenue.toLocaleString('fr-CM')} FCFA</span></div>
+                                <div className="flex justify-between"><span>Commission:</span> <span className="text-red-600 font-semibold">-{commission.toLocaleString('fr-CM')} FCFA</span></div>
+                                <div className="flex justify-between"><span>Déjà Payé:</span> <span className="font-semibold">{totalPaidOut.toLocaleString('fr-CM')} FCFA</span></div>
+                                <div className="flex justify-between font-bold text-base mt-2 pt-2 border-t dark:border-gray-700"><span>Solde Actuel:</span> <span className="text-kmer-green">{balance.toLocaleString('fr-CM')} FCFA</span></div>
+                            </div>
+                            <button onClick={() => onPayoutSeller(store, balance)} className="mt-4 w-full text-sm bg-green-500 text-white px-3 py-2 rounded-md hover:bg-green-600 disabled:bg-gray-400" disabled={balance <=0}>
+                                Payer le solde
+                            </button>
+                        </div>
+                    ))}
+                </div>
+
+                {/* Desktop View */}
+                <div className="hidden md:block overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-100 dark:bg-gray-700">
+                            <tr>
+                                <th className="p-2">Boutique</th>
+                                <th className="p-2">Revenu Total (Livré)</th>
+                                <th className="p-2">Commission KMER ZONE ({siteSettings.commissionRate}%)</th>
+                                <th className="p-2">Déjà Payé</th>
+                                <th className="p-2">Solde Actuel</th>
+                                <th className="p-2">Action</th>
                             </tr>
-                        ))}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {storeBalances.map(({ store, balance, totalRevenue, totalPaidOut, commission }) => (
+                                <tr key={store.id} className="border-b dark:border-gray-700">
+                                    <td className="p-2 font-semibold">{store.name}</td>
+                                    <td className="p-2">{totalRevenue.toLocaleString('fr-CM')} FCFA</td>
+                                    <td className="p-2 text-red-600">-{commission.toLocaleString('fr-CM')} FCFA</td>
+                                    <td className="p-2">{totalPaidOut.toLocaleString('fr-CM')} FCFA</td>
+                                    <td className="p-2 font-bold">{balance.toLocaleString('fr-CM')} FCFA</td>
+                                    <td className="p-2">
+                                        <button onClick={() => onPayoutSeller(store, balance)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 disabled:bg-gray-400" disabled={balance <=0}>Payer le solde</button>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
+
             <h3 className="text-lg font-bold mt-8 mb-4">Historique Détaillé des Paiements</h3>
-            <div className="overflow-x-auto max-h-80">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                        <tr>
-                            <th className="p-2">Date</th>
-                            <th className="p-2">Boutique</th>
-                            <th className="p-2">Montant</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {payouts.length > 0 ? (
-                            payouts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => {
-                                 const store = allStores.find(s => s.id === payout.storeId);
-                                 return (
-                                    <tr key={index} className="border-b dark:border-gray-700">
-                                        <td className="p-2">{new Date(payout.date).toLocaleDateString('fr-FR')}</td>
-                                        <td className="p-2 font-semibold">{store?.name || 'Boutique Inconnue'}</td>
-                                        <td className="p-2">{payout.amount.toLocaleString('fr-CM')} FCFA</td>
-                                    </tr>
-                                );
-                            })
-                        ) : (
+            <div className="max-h-80 overflow-y-auto">
+                {/* Mobile View */}
+                <div className="space-y-3 md:hidden">
+                    {payouts.length > 0 ? (
+                        payouts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => {
+                            const store = allStores.find(s => s.id === payout.storeId);
+                            return (
+                                <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
+                                    <span className="font-semibold">{store?.name || 'Boutique Inconnue'}</span>
+                                    <span className="font-semibold text-gray-800 dark:text-white">{payout.amount.toLocaleString('fr-CM')} FCFA</span>
+                                </div>
+                            );
+                        })
+                    ) : (
+                        <p className="p-4 text-center text-gray-500">Aucun paiement enregistré.</p>
+                    )}
+                </div>
+                
+                {/* Desktop View */}
+                <div className="hidden md:block">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
                             <tr>
-                                <td colSpan={3} className="p-4 text-center text-gray-500">Aucun paiement enregistré.</td>
+                                <th className="p-2">Date</th>
+                                <th className="p-2">Boutique</th>
+                                <th className="p-2">Montant</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {payouts.length > 0 ? (
+                                payouts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => {
+                                     const store = allStores.find(s => s.id === payout.storeId);
+                                     return (
+                                        <tr key={index} className="border-b dark:border-gray-700">
+                                            <td className="p-2">{new Date(payout.date).toLocaleDateString('fr-FR')}</td>
+                                            <td className="p-2 font-semibold">{store?.name || 'Boutique Inconnue'}</td>
+                                            <td className="p-2">{payout.amount.toLocaleString('fr-CM')} FCFA</td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan={3} className="p-4 text-center text-gray-500">Aucun paiement enregistré.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
@@ -1562,385 +1602,279 @@ const AvailabilityPanel: React.FC<{
     deliveryAgents: User[];
 }> = ({ deliveryAgents }) => {
     return (
-        <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4 dark:text-white">Disponibilité des Livreurs</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Consultez ici le statut des livreurs. Seuls les livreurs peuvent changer leur propre statut depuis leur tableau de bord.</p>
-            <div className="space-y-3">
+        <div className="p-6">
+            <h2 className="text-xl font-bold dark:text-white mb-4">Disponibilité des Agents de Livraison</h2>
+            <div className="space-y-2">
                 {deliveryAgents.map(agent => (
-                    <div key={agent.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg flex justify-between items-center">
-                        <div>
-                            <p className="font-semibold dark:text-white">{agent.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{agent.email}</p>
-                        </div>
-                        <div className={`flex items-center gap-2 px-3 py-1 rounded-full text-sm font-bold ${
-                            agent.availabilityStatus === 'available'
-                                ? 'bg-green-100 dark:bg-green-900/50 text-green-700 dark:text-green-300'
-                                : 'bg-red-100 dark:bg-red-900/50 text-red-700 dark:text-red-300'
-                        }`}>
-                            <div className={`w-3 h-3 rounded-full ${agent.availabilityStatus === 'available' ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                            {agent.availabilityStatus === 'available' ? 'Disponible' : 'Indisponible'}
-                        </div>
+                    <div key={agent.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex justify-between items-center">
+                        <p className="font-semibold">{agent.name}</p>
+                        <span className="text-sm font-semibold text-green-600 dark:text-green-400">Disponible</span>
                     </div>
                 ))}
+                {deliveryAgents.length === 0 && <p className="text-gray-500">Aucun agent disponible pour le moment.</p>}
             </div>
         </div>
     );
 };
 
-const DeliveryTrackingPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders' | 'allUsers' | 'onSanctionAgent'>> = ({ allOrders, allUsers, onSanctionAgent }) => {
-    const lateDeliveries = useMemo(() => {
-        return allOrders
-            .map(o => {
-                if (o.status !== 'delivered' || !o.agentId) return null;
-                const confirmedEvent = o.trackingHistory.find(e => e.status === 'confirmed');
-                const deliveredEvent = o.trackingHistory.find(e => e.status === 'delivered');
-                if (!confirmedEvent || !deliveredEvent) return null;
-                
-                const deliveryTime = new Date(deliveredEvent.date).getTime() - new Date(confirmedEvent.date).getTime();
-                const deliveryDays = deliveryTime / (1000 * 60 * 60 * 24);
-                
-                if (deliveryDays > 5) {
-                    const agent = allUsers.find(u => u.id === o.agentId);
-                    return { order: o, agent, deliveryDays: Math.round(deliveryDays) };
-                }
-                return null;
-            })
-            .filter((item): item is { order: Order; agent: User | undefined; deliveryDays: number; } => item !== null);
-    }, [allOrders, allUsers]);
+const SupportPanel: React.FC<Pick<SuperAdminDashboardProps, 'allTickets' | 'onAdminReplyToTicket' | 'onAdminUpdateTicketStatus'>> = ({ allTickets, onAdminReplyToTicket, onAdminUpdateTicketStatus }) => {
+    const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+    const [reply, setReply] = useState('');
+    const [attachments, setAttachments] = useState<string[]>([]);
+    const [status, setStatus] = useState<TicketStatus>('Ouvert');
+    const [priority, setPriority] = useState<TicketPriority>('Moyenne');
 
-    const handleSanction = (agent: User | undefined) => {
-        if (!agent) {
-            alert("Impossible de trouver les informations du livreur.");
-            return;
+    useEffect(() => {
+        if (selectedTicket) {
+            setStatus(selectedTicket.status);
+            setPriority(selectedTicket.priority);
         }
-        const reason = window.prompt(`Motif de la sanction pour ${agent.name} (retard de livraison) :`);
-        if (reason) {
-            onSanctionAgent(agent.id, `Retard de livraison : ${reason}`);
+    }, [selectedTicket]);
+
+    const handleStatusUpdate = () => {
+        if (selectedTicket) {
+            onAdminUpdateTicketStatus(selectedTicket.id, status, priority);
+            setSelectedTicket(prev => prev ? {...prev, status, priority} : null);
         }
     };
 
-    return (
-        <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4 dark:text-white">Suivi des Retards de Livraison</h2>
-            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">Cette section affiche les commandes livrées avec plus de 5 jours de retard.</p>
-            {lateDeliveries.length > 0 ? (
-                <div className="space-y-3">
-                    {lateDeliveries.map(({ order, agent, deliveryDays }) => (
-                        <div key={order.id} className="p-4 bg-red-50 dark:bg-red-900/50 rounded-lg flex flex-col sm:flex-row justify-between items-center">
-                            <div>
-                                <p className="font-bold text-red-800 dark:text-red-200">Commande {order.id}</p>
-                                <p className="text-sm text-red-700 dark:text-red-300">
-                                    Livrée en <strong>{deliveryDays} jours</strong>
-                                </p>
-                                <p className="text-sm mt-1">Livreur: {agent ? agent.name : 'Inconnu'}</p>
-                            </div>
-                            <button
-                                onClick={() => handleSanction(agent)}
-                                className="mt-2 sm:mt-0 bg-red-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-red-600"
-                            >
-                                Sanctionner le livreur
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            ) : (
-                <div className="text-center py-12 text-gray-500 dark:text-gray-400">
-                    <CheckCircleIcon className="w-12 h-12 mx-auto text-green-500 mb-4"/>
-                    <p className="font-semibold">Félicitations !</p>
-                    <p>Aucun retard de livraison significatif n'a été détecté.</p>
-                </div>
-            )}
-        </div>
-    );
-};
-
-const SiteContentPanel: React.FC<Pick<SuperAdminDashboardProps, 'siteContent' | 'onUpdateSiteContent'>> = ({ siteContent, onUpdateSiteContent }) => {
-    const [editingContent, setEditingContent] = useState<SiteContent | null>(null);
-
-    const handleSave = () => {
-        if (editingContent) {
-            const newContentArray = siteContent.map(c => c.slug === editingContent.slug ? editingContent : c);
-            onUpdateSiteContent(newContentArray);
-            setEditingContent(null);
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => setAttachments(prev => [...prev, reader.result as string]);
+                reader.readAsDataURL(file);
+            });
         }
     };
-
-    return (
-        <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4 dark:text-white">Gestion du Contenu du Site</h2>
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-3">
-                    {siteContent.map(page => (
-                        <button 
-                            key={page.slug}
-                            onClick={() => setEditingContent(JSON.parse(JSON.stringify(page)))}
-                            className={`w-full text-left p-3 rounded-md font-semibold transition-colors ${editingContent?.slug === page.slug ? 'bg-kmer-green/20 text-kmer-green' : 'bg-gray-100 dark:bg-gray-700 hover:bg-gray-200'}`}
-                        >
-                            {page.title}
-                        </button>
-                    ))}
+    
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index));
+    };
+    
+    const AttachmentPreview: React.FC<{ attachments: string[], onRemove: (index: number) => void }> = ({ attachments, onRemove }) => (
+        <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
+            {attachments.map((url, i) => (
+                <div key={i} className="relative group">
+                    <img src={url} alt={`Aperçu ${i}`} className="h-20 w-full object-cover rounded-md"/>
+                    <button type="button" onClick={() => onRemove(i)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <TrashIcon className="w-4 h-4" />
+                    </button>
                 </div>
-                <div>
-                    {editingContent ? (
-                        <div className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                            <h3 className="font-bold text-lg mb-2">{editingContent.title}</h3>
-                            <textarea
-                                value={editingContent.content}
-                                onChange={e => setEditingContent(c => c ? { ...c, content: e.target.value } : null)}
-                                rows={10}
-                                className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                            />
-                            <div className="flex justify-end gap-2 mt-2">
-                                <button onClick={() => setEditingContent(null)} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-md">Annuler</button>
-                                <button onClick={handleSave} className="bg-blue-500 text-white px-4 py-2 rounded-md">Sauvegarder</button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div className="p-8 text-center text-gray-500 border-2 border-dashed rounded-lg h-full flex items-center justify-center">
-                            Sélectionnez une page à modifier.
-                        </div>
-                    )}
-                </div>
-            </div>
+            ))}
         </div>
     );
-};
 
-const AnalyticsPanel: React.FC<Pick<SuperAdminDashboardProps, 'allOrders'| 'allProducts'| 'allStores'| 'allUsers'| 'allCategories'| 'flashSales'>> = (props) => {
-    const { allOrders, allProducts, allStores, allUsers, allCategories, flashSales } = props;
-    const [timeRange, setTimeRange] = useState<'all' | 'week' | 'month'>('all');
+    const MessageAttachments: React.FC<{ urls: string[] }> = ({ urls }) => (
+        <div className="mt-2 flex flex-wrap gap-2">
+            {urls.map((url, i) => {
+                const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(url) || url.startsWith('data:image');
+                if (isImage) {
+                    return <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block"><img src={url} alt={`Pièce jointe ${i+1}`} className="h-24 w-auto rounded-md object-contain border dark:border-gray-600"/></a>
+                }
+                return <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline text-sm flex items-center gap-1 p-2 bg-blue-50 dark:bg-blue-900/50 rounded-md"><PaperclipIcon className="w-4 h-4"/>Pièce jointe {i+1}</a>
+            })}
+        </div>
+    );
+    
+    const Section: React.FC<{ title: string; children: React.ReactNode; className?: string }> = ({ title, children, className = '' }) => (
+        <div className={className}>
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">{title}</h2>
+            {children}
+        </div>
+    );
 
-    const analytics = useMemo(() => {
-        const now = new Date();
-        const filteredOrders = allOrders.filter(order => {
-            const orderDate = new Date(order.orderDate);
-            if (timeRange === 'week') return orderDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            if (timeRange === 'month') return orderDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            return true; // for 'all'
-        });
-
-        const deliveredOrders = filteredOrders.filter(o => o.status === 'delivered');
-        const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
+    const TicketDetailView: React.FC<{ ticket: Ticket, onReply: (id: string, msg: string, attachments?: string[]) => void, onBack: () => void }> = ({ ticket, onReply, onBack }) => {
+        const { user } = useAuth();
         
-        const topSellingProducts = deliveredOrders
-            .flatMap(o => o.items)
-            .reduce((acc, item) => {
-                const existing = acc.find(p => p.id === item.id);
-                const revenue = getFinalPriceForPayout(item, flashSales) * item.quantity;
-                if (existing) {
-                    existing.revenue += revenue;
-                    existing.quantitySold += item.quantity;
-                } else {
-                    acc.push({ id: item.id, name: item.name, revenue, quantitySold: item.quantity });
-                }
-                return acc;
-            }, [] as { id: string; name: string; revenue: number; quantitySold: number }[])
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 5);
-
-        const topCategories = deliveredOrders
-            .flatMap(o => o.items)
-            .reduce((acc, item) => {
-                const category = allCategories.find(c => c.id === item.categoryId);
-                if (!category) return acc;
-                const parentCat = category.parentId ? allCategories.find(c => c.id === category.parentId) : category;
-                if (!parentCat) return acc;
-
-                const existing = acc.find(c => c.id === parentCat.id);
-                const revenue = getFinalPriceForPayout(item, flashSales) * item.quantity;
-                if (existing) {
-                    existing.revenue += revenue;
-                } else {
-                    acc.push({ id: parentCat.id, name: parentCat.name, revenue });
-                }
-                return acc;
-            }, [] as { id: string; name: string; revenue: number }[])
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 5);
-
-        const topSellers = deliveredOrders
-            .flatMap(o => o.items)
-            .reduce((acc, item) => {
-                const store = allStores.find(s => s.name === item.vendor);
-                if (!store) return acc;
-                const existing = acc.find(s => s.id === store.id);
-                const revenue = getFinalPriceForPayout(item, flashSales) * item.quantity;
-                if (existing) {
-                    existing.revenue += revenue;
-                } else {
-                    acc.push({ id: store.id, name: store.name, revenue });
-                }
-                return acc;
-            }, [] as { id: string; name: string; revenue: number }[])
-            .sort((a, b) => b.revenue - a.revenue)
-            .slice(0, 5);
-        
-        const newUsers = allUsers.filter(u => {
-            const joinDate = new Date(); // Placeholder - user object doesn't have a join date
-            if (timeRange === 'week') return joinDate >= new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-            if (timeRange === 'month') return joinDate >= new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-            return true;
-        });
-
-        return {
-            totalRevenue,
-            totalOrders: filteredOrders.length,
-            newUsers: newUsers.length,
-            avgOrderValue: totalRevenue / deliveredOrders.length || 0,
-            topSellingProducts,
-            topCategories,
-            topSellers
+        // FIX: Defined missing handleSubmit function
+        const handleSubmit = (e: React.FormEvent) => {
+            e.preventDefault();
+            if (selectedTicket) {
+                onAdminReplyToTicket(selectedTicket.id, reply, attachments);
+                setReply('');
+                setAttachments([]);
+            }
         };
-    }, [allOrders, allProducts, allStores, allUsers, allCategories, flashSales, timeRange]);
+
+        return (
+            <Section title={ticket.subject}>
+                 <button onClick={onBack} className="text-sm font-semibold text-kmer-green mb-4"> &lt; Retour à la liste</button>
+                {/* FIX: Added status update controls for admin */}
+                <div className="flex flex-col sm:flex-row gap-4 items-center mb-4 p-3 bg-gray-100 dark:bg-gray-900/50 rounded-lg">
+                    <div className="flex-1 w-full">
+                        <label className="text-xs font-medium">Statut</label>
+                        <select value={status} onChange={e => setStatus(e.target.value as TicketStatus)} className="w-full p-2 border rounded-md dark:bg-gray-700">
+                            <option value="Ouvert">Ouvert</option>
+                            <option value="En cours">En cours</option>
+                            <option value="Résolu">Résolu</option>
+                        </select>
+                    </div>
+                    <div className="flex-1 w-full">
+                        <label className="text-xs font-medium">Priorité</label>
+                        <select value={priority} onChange={e => setPriority(e.target.value as TicketPriority)} className="w-full p-2 border rounded-md dark:bg-gray-700">
+                            <option value="Basse">Basse</option>
+                            <option value="Moyenne">Moyenne</option>
+                            <option value="Haute">Haute</option>
+                        </select>
+                    </div>
+                    <button onClick={handleStatusUpdate} className="bg-blue-500 text-white px-4 py-2 rounded-md self-end">Mettre à jour</button>
+                </div>
+                <div className="border rounded-lg p-4 h-96 overflow-y-auto bg-gray-50 mb-4 space-y-4">
+                  {ticket.messages.map((msg, i) => {
+                      const isMe = msg.authorId === user?.id;
+                      return (
+                        <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
+                          <div className={`p-3 rounded-lg max-w-sm ${isMe ? 'bg-kmer-green text-white' : 'bg-white'}`}>
+                            <p className="font-bold text-sm">{msg.authorName}</p>
+                            <p className="whitespace-pre-wrap">{msg.message}</p>
+                            {msg.attachmentUrls && <MessageAttachments urls={msg.attachmentUrls} />}
+                          </div>
+                        </div>
+                      );
+                  })}
+                </div>
+                <form onSubmit={handleSubmit}>
+                    <textarea value={reply} onChange={e => setReply(e.target.value)} rows={3} placeholder="Votre réponse..." className="w-full p-2 border rounded-md"></textarea>
+                    <div className="mt-2">
+                        <label htmlFor="attachments-upload-reply" className="cursor-pointer text-sm font-semibold text-blue-500 flex items-center gap-2"><PaperclipIcon className="w-4 h-4" /> Joindre des fichiers</label>
+                        <input id="attachments-upload-reply" type="file" multiple onChange={handleFileChange} className="hidden" />
+                        {attachments.length > 0 && <AttachmentPreview attachments={attachments} onRemove={removeAttachment} />}
+                    </div>
+                    <button type="submit" className="mt-2 bg-kmer-green text-white font-bold py-2 px-4 rounded-lg">Envoyer</button>
+                </form>
+            </Section>
+        );
+    };
+
+    // FIX: Added main return logic for the SupportPanel component
+    if (selectedTicket) {
+        return (
+            <div className="p-4 sm:p-6">
+                <TicketDetailView ticket={selectedTicket} onReply={onAdminReplyToTicket} onBack={() => setSelectedTicket(null)} />
+            </div>
+        );
+    }
 
     return (
-        <div className="p-4 sm:p-6 bg-gray-50 dark:bg-gray-900/50">
-            <div className="flex flex-col sm:flex-row justify-between items-center mb-6 gap-4">
-                <h2 className="text-xl font-bold dark:text-white flex items-center gap-2"><BarChartIcon className="w-6 h-6"/> Analyse Approfondie</h2>
-                <div className="flex items-center gap-1 p-1 bg-gray-200 dark:bg-gray-700 rounded-lg">
-                    {(['all', 'month', 'week'] as const).map(range => (
-                        <button 
-                            key={range} 
-                            onClick={() => setTimeRange(range)}
-                            className={`px-3 py-1 text-sm font-semibold rounded-md transition-colors ${timeRange === range ? 'bg-white dark:bg-gray-800 text-kmer-green shadow-sm' : 'text-gray-600 dark:text-gray-300 hover:bg-white/50'}`}
-                        >
-                            {range === 'all' ? 'Tout' : (range === 'month' ? '30 jours' : '7 jours')}
+        <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="md:col-span-1">
+                <h2 className="text-xl font-bold mb-4">Tickets de Support ({allTickets.length})</h2>
+                <div className="space-y-2 max-h-[70vh] overflow-y-auto">
+                    {allTickets.sort((a,b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()).map(ticket => (
+                        <button key={ticket.id} onClick={() => setSelectedTicket(ticket)} className={`w-full text-left p-3 border rounded-lg ${selectedTicket?.id === ticket.id ? 'bg-kmer-green/10 border-kmer-green' : 'hover:bg-gray-50 dark:hover:bg-gray-700/50'}`}>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-semibold">{ticket.subject}</p>
+                                    <p className="text-xs text-gray-500">Par: {ticket.userName} | MàJ: {new Date(ticket.updatedAt).toLocaleDateString('fr-FR')}</p>
+                                </div>
+                                <div className="flex flex-col items-end gap-1 text-xs font-semibold">
+                                    <span className={`px-2 py-0.5 rounded-full ${ticket.status === 'Résolu' ? 'bg-green-100 text-green-800' : ticket.status === 'En cours' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>{ticket.status}</span>
+                                    <span className={`px-2 py-0.5 rounded-full ${ticket.priority === 'Haute' ? 'bg-red-100 text-red-800' : ticket.priority === 'Moyenne' ? 'bg-orange-100 text-orange-800' : 'bg-gray-100 text-gray-800'}`}>{ticket.priority}</span>
+                                </div>
+                            </div>
                         </button>
                     ))}
                 </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
-                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Total Commandes" value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
-                <StatCard icon={<UserGroupIcon className="w-7 h-7"/>} label="Nouveaux Utilisateurs" value={analytics.newUsers} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" />
-                <StatCard icon={<ChartPieIcon className="w-7 h-7"/>} label="Panier Moyen" value={`${analytics.avgOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
-            </div>
-
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-4">
-                    <h3 className="font-bold mb-3">Top 5 Produits (par revenu)</h3>
-                    <ul className="space-y-2 text-sm">
-                        {analytics.topSellingProducts.map(p => (
-                            <li key={p.id} className="flex justify-between items-center">
-                                <div>
-                                    <p className="font-medium dark:text-gray-200 truncate max-w-[150px]">{p.name}</p>
-                                    <p className="text-xs text-gray-500">{p.quantitySold} vendus</p>
-                                </div>
-                                <span className="font-semibold text-kmer-green">{p.revenue.toLocaleString('fr-CM')} FCFA</span>
-                            </li>
-                        ))}
-                        {analytics.topSellingProducts.length === 0 && <p className="text-gray-500 text-xs">Aucune donnée.</p>}
-                    </ul>
-                </div>
-                <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-4">
-                     <h3 className="font-bold mb-3">Top 5 Catégories (par revenu)</h3>
-                     <ul className="space-y-2 text-sm">
-                         {analytics.topCategories.map(c => (
-                            <li key={c.id} className="flex justify-between items-center">
-                                <p className="font-medium dark:text-gray-200">{c.name}</p>
-                                <span className="font-semibold text-kmer-green">{c.revenue.toLocaleString('fr-CM')} FCFA</span>
-                            </li>
-                         ))}
-                         {analytics.topCategories.length === 0 && <p className="text-gray-500 text-xs">Aucune donnée.</p>}
-                     </ul>
-                </div>
-                 <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-4">
-                     <h3 className="font-bold mb-3">Top 5 Vendeurs (par revenu)</h3>
-                     <ul className="space-y-2 text-sm">
-                         {analytics.topSellers.map(s => (
-                            <li key={s.id} className="flex justify-between items-center">
-                                <p className="font-medium dark:text-gray-200">{s.name}</p>
-                                <span className="font-semibold text-kmer-green">{s.revenue.toLocaleString('fr-CM')} FCFA</span>
-                            </li>
-                         ))}
-                         {analytics.topSellers.length === 0 && <p className="text-gray-500 text-xs">Aucune donnée.</p>}
-                     </ul>
+            <div className="md:col-span-2">
+                <div className="flex items-center justify-center h-full text-gray-500 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
+                    <p>Sélectionnez un ticket pour voir les détails.</p>
                 </div>
             </div>
         </div>
     );
 };
 
-export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
-    const { allOrders, allStores, allProducts, onUpdateOrderStatus, onApproveStore, onRejectStore, onSaveFlashSale, flashSales, onUpdateFlashSaleSubmissionStatus, onBatchUpdateFlashSaleStatus, onPayoutSeller, onActivateSubscription, advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement, onSanctionAgent, onResolveRefund, siteContent, onUpdateSiteContent, allTickets, allAnnouncements, onAdminReplyToTicket, onAdminUpdateTicketStatus, onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onReviewModeration, paymentMethods, onUpdatePaymentMethods } = props;
-    const { user } = useAuth();
+const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ allUsers, allOrders, allCategories, allStores, allProducts, siteActivityLogs, onUpdateOrderStatus, onUpdateCategoryImage, onWarnStore, onToggleStoreStatus, onToggleStorePremiumStatus, onApproveStore, onRejectStore, onSaveFlashSale, flashSales, onUpdateFlashSaleSubmissionStatus, onBatchUpdateFlashSaleStatus, onRequestDocument, onVerifyDocumentStatus, allPickupPoints, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint, onAssignAgent, isChatEnabled, isComparisonEnabled, onToggleChatFeature, onToggleComparisonFeature, siteSettings, onUpdateSiteSettings, onAdminAddCategory, onAdminDeleteCategory, onUpdateUser, payouts, onPayoutSeller, onActivateSubscription, advertisements, onAddAdvertisement, onUpdateAdvertisement, onDeleteAdvertisement, onCreateUserByAdmin, onSanctionAgent, onResolveRefund, onAdminStoreMessage, onAdminCustomerMessage, siteContent, onUpdateSiteContent, allTickets, allAnnouncements, onAdminReplyToTicket, onAdminUpdateTicketStatus, onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onReviewModeration, paymentMethods, onUpdatePaymentMethods }) => {
     const [activeTab, setActiveTab] = useState('overview');
     const [assigningOrder, setAssigningOrder] = useState<string | null>(null);
-    const availableAgents = useMemo(() => props.allUsers.filter(u => u.role === 'delivery_agent' && u.availabilityStatus === 'available'), [props.allUsers]);
+    const { user } = useAuth();
+    
+    const deliveryAgents = useMemo(() => allUsers.filter(u => u.role === 'delivery_agent' && u.availabilityStatus === 'available'), [allUsers]);
+    const pendingStoresCount = allStores.filter(s => s.status === 'pending').length;
+    const pendingReviewsCount = allProducts.flatMap(p => p.reviews).filter(r => r.status === 'pending').length;
+    const openTicketsCount = allTickets.filter(t => t.status !== 'Résolu').length;
 
-    const pendingReviewsCount = useMemo(() => {
-        return allProducts.flatMap(p => p.reviews.filter(r => r.status === 'pending')).length;
-    }, [allProducts]);
-
-    const renderContent = () => {
-        switch(activeTab) {
-            case 'overview': return <DashboardOverviewPanel {...props} />;
-            case 'orders': return <OrderManagementPanel {...props} onOpenAssignModal={setAssigningOrder} />;
-            case 'stores': return <StoreManagementPanel {...props} />;
-            case 'users': return <UserManagementPanel {...props} />;
-            case 'categories': return <CategoryManagementPanel {...props} />;
-            case 'review-moderation': return <ReviewModerationPanel allProducts={allProducts} onReviewModeration={onReviewModeration} />;
-            case 'flash-sales': return <FlashSaleManagementPanel flashSales={flashSales} onSaveFlashSale={onSaveFlashSale} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={onUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={onBatchUpdateFlashSaleStatus} />;
-            case 'advertisements': return <AdvertisementsManagementPanel advertisements={advertisements} onAddAdvertisement={onAddAdvertisement} onUpdateAdvertisement={onUpdateAdvertisement} onDeleteAdvertisement={onDeleteAdvertisement} />;
-            case 'pickup-points': return <PickupPointManagementPanel {...props} />;
-            case 'payouts': return <PayoutsPanel {...props} />;
-            case 'agent-availability': return <AvailabilityPanel deliveryAgents={props.allUsers.filter(u => u.role === 'delivery_agent')} />;
-            case 'delivery-tracking': return <DeliveryTrackingPanel allOrders={allOrders} allUsers={props.allUsers} onSanctionAgent={onSanctionAgent} />;
-            case 'site-content': return <SiteContentPanel siteContent={siteContent} onUpdateSiteContent={onUpdateSiteContent} />;
-            case 'settings': return <SiteSettingsPanel {...props} />;
-            case 'analytics': return <AnalyticsPanel {...props} />;
-            case 'logs': return <LogsPanel {...props} />;
-            default: return <div>Contenu à venir...</div>;
-        }
+    const handleAssign = (orderId: string, agentId: string) => {
+        onAssignAgent(orderId, agentId);
+        setAssigningOrder(null);
     };
 
+    const renderContent = () => {
+        switch (activeTab) {
+            case 'overview':
+                return <DashboardOverviewPanel allOrders={allOrders} allStores={allStores} allUsers={allUsers} siteActivityLogs={siteActivityLogs} />;
+            case 'orders':
+                return <OrderManagementPanel allOrders={allOrders} allUsers={allUsers} onUpdateOrderStatus={onUpdateOrderStatus} onAssignAgent={onAssignAgent} onOpenAssignModal={setAssigningOrder} onResolveRefund={onResolveRefund} onAdminStoreMessage={onAdminStoreMessage} onAdminCustomerMessage={onAdminCustomerMessage} />;
+            case 'stores':
+                return <StoreManagementPanel allStores={allStores} allUsers={allUsers} onApproveStore={onApproveStore} onRejectStore={onRejectStore} onToggleStoreStatus={onToggleStoreStatus} onToggleStorePremiumStatus={onToggleStorePremiumStatus} onWarnStore={onWarnStore} onRequestDocument={onRequestDocument} onVerifyDocumentStatus={onVerifyDocumentStatus} siteSettings={siteSettings} onActivateSubscription={onActivateSubscription} />;
+            case 'users':
+                return <UserManagementPanel allUsers={allUsers} onUpdateUser={onUpdateUser} onCreateUserByAdmin={onCreateUserByAdmin} allPickupPoints={allPickupPoints} allStores={allStores} />;
+            case 'categories':
+                return <CategoryManagementPanel allCategories={allCategories} onUpdateCategoryImage={onUpdateCategoryImage} onAdminAddCategory={onAdminAddCategory} onAdminDeleteCategory={onAdminDeleteCategory} />;
+            case 'flash-sales':
+                return <FlashSaleManagementPanel flashSales={flashSales} onSaveFlashSale={onSaveFlashSale} allProducts={allProducts} onUpdateFlashSaleSubmissionStatus={onUpdateFlashSaleSubmissionStatus} onBatchUpdateFlashSaleStatus={onBatchUpdateFlashSaleStatus} />;
+            case 'pickup-points':
+                return <PickupPointManagementPanel allPickupPoints={allPickupPoints} onAddPickupPoint={onAddPickupPoint} onUpdatePickupPoint={onUpdatePickupPoint} onDeletePickupPoint={onDeletePickupPoint} allUsers={allUsers}/>;
+            case 'payouts':
+                return <PayoutsPanel payouts={payouts} allStores={allStores} allOrders={allOrders} onPayoutSeller={onPayoutSeller} flashSales={flashSales} siteSettings={siteSettings} />;
+            case 'ads':
+                return <AdvertisementsManagementPanel advertisements={advertisements} onAddAdvertisement={onAddAdvertisement} onUpdateAdvertisement={onUpdateAdvertisement} onDeleteAdvertisement={onDeleteAdvertisement} />;
+            case 'logs':
+                return <LogsPanel siteActivityLogs={siteActivityLogs} />;
+            case 'support':
+                return <SupportPanel allTickets={allTickets} onAdminReplyToTicket={onAdminReplyToTicket} onAdminUpdateTicketStatus={onAdminUpdateTicketStatus} />;
+            case 'reviews':
+                return <ReviewModerationPanel allProducts={allProducts} onReviewModeration={onReviewModeration} />;
+            case 'settings':
+                return <SiteSettingsPanel siteSettings={siteSettings} onUpdateSiteSettings={onUpdateSiteSettings} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={onToggleChatFeature} onToggleComparisonFeature={onToggleComparisonFeature} paymentMethods={paymentMethods} onUpdatePaymentMethods={onUpdatePaymentMethods} />;
+            default: return null;
+        }
+    }
+    
     return (
         <>
-            {assigningOrder && <AssignAgentModal orderId={assigningOrder} deliveryAgents={availableAgents} onClose={() => setAssigningOrder(null)} onAssign={(orderId, agentId) => { props.onAssignAgent(orderId, agentId); setAssigningOrder(null); }} />}
-            <div className="bg-gray-100 dark:bg-gray-900 min-h-screen">
+            {assigningOrder && <AssignAgentModal orderId={assigningOrder} deliveryAgents={deliveryAgents} onClose={() => setAssigningOrder(null)} onAssign={handleAssign} />}
+            <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
                 <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-                    <div className="container mx-auto px-4 sm:px-6 py-4">
+                    <div className="container mx-auto px-4 sm:px-6 py-3">
                         <div className="flex justify-between items-center">
-                            <div className="flex items-center gap-3">
-                                <AcademicCapIcon className="h-8 w-8 text-kmer-green"/>
-                                <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Tableau de bord Super Admin</h1>
-                            </div>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">Connecté en tant que {user?.name}</p>
-                        </div>
-                        <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
-                            <div className="flex space-x-1 overflow-x-auto">
-                               <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                               <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} count={allOrders.filter(o => o.status === 'confirmed').length} />
-                               <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} count={allStores.filter(s => s.status === 'pending').length}/>
-                               <TabButton icon={<UserGroupIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-                               <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
-                               <TabButton icon={<ShieldCheckIcon className="w-5 h-5"/>} label="Modération Avis" isActive={activeTab === 'review-moderation'} onClick={() => setActiveTab('review-moderation')} count={pendingReviewsCount} />
-                               <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
-                               <TabButton icon={<MegaphoneIcon className="w-5 h-5"/>} label="Publicités" isActive={activeTab === 'advertisements'} onClick={() => setActiveTab('advertisements')} />
-                               <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup-points'} onClick={() => setActiveTab('pickup-points')} />
-                               <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
-                               <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Livreurs" isActive={['agent-availability', 'delivery-tracking'].includes(activeTab)} onClick={() => setActiveTab('agent-availability')} />
-                               <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Contenu Site" isActive={activeTab === 'site-content'} onClick={() => setActiveTab('site-content')} />
-                               <TabButton icon={<BarChartIcon className="w-5 h-5"/>} label="Analyses" isActive={activeTab === 'analytics'} onClick={() => setActiveTab('analytics')} />
-                               <TabButton icon={<ClockIcon className="w-5 h-5"/>} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
-                               <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                            <div>
+                                <h1 className="text-xl font-bold text-gray-800 dark:text-white flex items-center gap-2"><AcademicCapIcon className="w-6 h-6"/> Tableau de bord Super Admin</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Connecté en tant que {user?.name}</p>
                             </div>
                         </div>
                     </div>
                 </header>
-                <main className="container mx-auto px-4 sm:px-6 py-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                        {['agent-availability', 'delivery-tracking'].includes(activeTab) && (
-                            <div className="p-4 border-b dark:border-gray-700 flex gap-2">
-                                <button onClick={() => setActiveTab('agent-availability')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'agent-availability' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Disponibilité</button>
-                                <button onClick={() => setActiveTab('delivery-tracking')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'delivery-tracking' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Suivi des Retards</button>
-                            </div>
-                        )}
-                        {renderContent()}
-                    </div>
-                </main>
+                 <div className="container mx-auto px-4 sm:px-6 py-6 flex flex-col md:flex-row gap-8">
+                    <aside className="md:w-64 flex-shrink-0">
+                         <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md space-y-1 sticky top-24">
+                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
+                            <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} count={pendingStoresCount} />
+                            <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
+                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catégories" isActive={activeTab === 'categories'} onClick={() => setActiveTab('categories')} />
+                            <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Ventes Flash" isActive={activeTab === 'flash-sales'} onClick={() => setActiveTab('flash-sales')} />
+                            <TabButton icon={<StarIcon className="w-5 h-5"/>} label="Avis" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} count={pendingReviewsCount}/>
+                            <TabButton icon={<MapPinIcon className="w-5 h-5"/>} label="Points Relais" isActive={activeTab === 'pickup-points'} onClick={() => setActiveTab('pickup-points')} />
+                            <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
+                            <TabButton icon={<MegaphoneIcon className="w-5 h-5"/>} label="Publicités" isActive={activeTab === 'ads'} onClick={() => setActiveTab('ads')} />
+                            <TabButton icon={<ChatBubbleLeftRightIcon className="w-5 h-5"/>} label="Support" isActive={activeTab === 'support'} onClick={() => setActiveTab('support')} count={openTicketsCount} />
+                            <TabButton icon={<ClockIcon className="w-5 h-5"/>} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
+                            <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                        </div>
+                    </aside>
+                    <main className="flex-grow">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md min-h-full">
+                           {renderContent()}
+                        </div>
+                    </main>
+                </div>
             </div>
         </>
     );
 };
+
+export default SuperAdminDashboard;

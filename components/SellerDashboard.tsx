@@ -1,10 +1,9 @@
-
 import React, { useState, useMemo, useRef, useEffect } from 'react';
 import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review, Notification } from '../types';
+import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review, Notification, Ticket } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon, BellIcon } from './Icons';
+import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, ClockIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, XIcon as XIconSmall, PrinterIcon, SparklesIcon, QrCodeIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon, BellIcon, PaperclipIcon, UsersIcon } from './Icons';
 
 declare const Html5Qrcode: any;
 
@@ -15,6 +14,7 @@ interface SellerDashboardProps {
   flashSales: FlashSale[];
   sellerOrders: Order[];
   promoCodes: PromoCode[];
+  allTickets: Ticket[];
   onBack: () => void;
   onAddProduct: () => void;
   onEditProduct: (product: Product) => void;
@@ -44,6 +44,7 @@ interface SellerDashboardProps {
   sellerNotifications: Notification[];
   onMarkNotificationAsRead: (notificationId: string) => void;
   onNavigateFromNotification: (link: Notification['link']) => void;
+  onCreateTicket: (subject: string, message: string, relatedOrderId?: string, type?: 'support' | 'service_request', attachmentUrls?: string[]) => void;
 }
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
@@ -120,14 +121,14 @@ const getFinalPrice = (item: CartItem, flashSales: FlashSale[]): number => {
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
     <button
         onClick={onClick}
-        className={`relative flex items-center gap-2 px-3 py-3 text-sm font-semibold rounded-t-lg border-b-2 transition-colors whitespace-nowrap ${
+        className={`relative flex items-center gap-3 w-full text-left px-3 py-3 text-sm font-semibold rounded-lg transition-colors ${
             isActive
-                ? 'text-kmer-green border-kmer-green'
-                : 'text-gray-500 border-transparent hover:text-kmer-green hover:border-kmer-green/50 dark:text-gray-400 dark:hover:text-gray-200'
+                ? 'bg-kmer-green/10 text-kmer-green'
+                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400'
         }`}
     >
         {icon}
-        <span className="hidden sm:inline">{label}</span>
+        <span className="flex-grow">{label}</span>
         {count !== undefined && count > 0 && (
             <span className="ml-1 text-xs bg-kmer-red text-white rounded-full px-1.5 py-0.5">{count}</span>
         )}
@@ -278,7 +279,14 @@ const OrderCard: React.FC<{order: Order, onUpdateOrderStatus: (orderId: string, 
     );
 };
 
-const OverviewPanel: React.FC<{ analytics: any; onNavigate: () => void; lowStockProductsCount: number }> = ({ analytics, onNavigate, lowStockProductsCount }) => (
+const OverviewPanel: React.FC<{ 
+    analytics: any; 
+    onNavigate: () => void; 
+    lowStockProductsCount: number;
+    store: Store;
+    onUpgradeRequest: () => void;
+    upgradeRequestSent: boolean;
+}> = ({ analytics, onNavigate, lowStockProductsCount, store, onUpgradeRequest, upgradeRequestSent }) => (
     <div className="p-6">
         <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-bold dark:text-white">Aperçu</h2>
@@ -288,8 +296,8 @@ const OverviewPanel: React.FC<{ analytics: any; onNavigate: () => void; lowStock
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total (Livré)" value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} />
-            <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Produits" value={analytics.totalProducts} />
             <StatCard icon={<TruckIcon className="w-7 h-7"/>} label="Commandes en attente" value={analytics.openOrders} />
+            <StatCard icon={<BarChartIcon className="w-7 h-7"/>} label="Visites de la boutique (jour)" value={store.visits || 0} />
             {lowStockProductsCount > 0 ? (
                  <div className="p-4 bg-orange-100 dark:bg-orange-900/50 rounded-lg border-l-4 border-orange-500">
                     <div className="flex items-center gap-4">
@@ -301,9 +309,41 @@ const OverviewPanel: React.FC<{ analytics: any; onNavigate: () => void; lowStock
                     </div>
                 </div>
             ) : (
-                <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Note Moyenne" value={analytics.avgRating} />
+                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Produits" value={analytics.totalProducts} />
             )}
         </div>
+
+        {store.premiumStatus === 'standard' && (
+            <div className="mt-8 p-6 bg-gradient-to-r from-yellow-400 via-yellow-500 to-orange-500 text-white rounded-lg shadow-lg">
+                <div className="flex items-center gap-4">
+                    <StarIcon className="w-12 h-12 text-white flex-shrink-0" />
+                    <div>
+                        <h3 className="text-2xl font-bold">Passez au niveau supérieur avec le statut Premium !</h3>
+                        <p className="opacity-90">Débloquez des avantages exclusifs pour booster votre visibilité et vos ventes.</p>
+                    </div>
+                </div>
+                <ul className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-2 text-sm">
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Support technique prioritaire</li>
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Mise en avant sur le site</li>
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Frais de service réduits</li>
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Tarifs logistiques préférentiels</li>
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Résolution de litiges accélérée</li>
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Meilleure visibilité (Réseaux sociaux)</li>
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Service de photographie professionnelle</li>
+                    <li className="flex items-center gap-2"><CheckCircleIcon className="w-5 h-5"/> Outils de catalogue avancés</li>
+                </ul>
+                {upgradeRequestSent ? (
+                     <div className="mt-6 text-center font-bold bg-white/20 p-3 rounded-md">
+                        <CheckCircleIcon className="w-6 h-6 mx-auto mb-1" />
+                        Votre demande a été envoyée ! Nous vous contacterons bientôt.
+                    </div>
+                ) : (
+                    <button onClick={onUpgradeRequest} className="mt-6 bg-white text-yellow-600 font-bold py-2 px-6 rounded-full hover:bg-gray-100 transition-transform transform hover:scale-105">
+                        Je veux devenir Premium
+                    </button>
+                )}
+            </div>
+        )}
     </div>
 );
 
@@ -354,111 +394,53 @@ const ProductsPanel: React.FC<Pick<SellerDashboardProps, 'products' | 'onAddProd
             </div>
         );
     };
-
-    const handleImportClick = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleImportProducts = (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            alert(`Fichier "${e.target.files[0].name}" sélectionné. L'importation de produits est en cours de développement. Dans une version future, les produits de ce fichier seront ajoutés en tant que brouillons.`);
-        }
-    };
-
-    const escapeCsvCell = (cell: any): string => {
-        if (cell === null || cell === undefined) {
-            return '';
-        }
-        const str = String(cell);
-        if (str.includes(',') || str.includes('"') || str.includes('\n')) {
-            const escapedStr = str.replace(/"/g, '""');
-            return `"${escapedStr}"`;
-        }
-        return str;
-    };
-
-    const handleExportProducts = () => {
-        const headers: (keyof Product)[] = [ 'id', 'name', 'price', 'promotionPrice', 'stock', 'categoryId', 'status', 'description', 'imageUrls', 'brand', 'weight', 'dimensions', 'material', 'gender', 'color', 'modelNumber', 'warranty', 'operatingSystem', 'accessories', 'additionalShippingFee', 'promotionStartDate', 'promotionEndDate', 'serialNumber', 'productionDate', 'expirationDate', 'ingredients', 'allergens', 'storageInstructions', 'origin', 'assemblyInstructions', 'productType', 'volume', 'skinType', 'author', 'publisher', 'publicationYear', 'isbn' ];
-        const csvRows = [headers.join(',')];
-        
-        products.forEach(product => {
-            const row = headers.map(header => {
-                let value = product[header];
-                if (header === 'imageUrls' && Array.isArray(value)) {
-                    value = value.join(';');
-                }
-                return escapeCsvCell(value);
-            });
-            csvRows.push(row.join(','));
-        });
-        
-        const csvString = csvRows.join('\n');
-        const blob = new Blob([csvString], { type: 'text/csv;charset=utf-8;' });
-        const link = document.createElement('a');
-        const url = URL.createObjectURL(blob);
-        link.setAttribute('href', url);
-        link.setAttribute('download', 'mes_produits_kmer_zone.csv');
-        link.style.visibility = 'hidden';
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-    };
     
     return (
-      <div className="p-6">
-        <input type="file" ref={fileInputRef} onChange={handleImportProducts} style={{ display: 'none' }} accept=".csv" />
-        <div className="flex flex-wrap gap-2 justify-between items-center mb-4">
-          <h2 className="text-xl font-bold dark:text-white">Mes Produits</h2>
-          <div className="flex gap-2 flex-wrap">
-            <button onClick={handleImportClick} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-600">Importer</button>
-            <button onClick={handleExportProducts} className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-gray-700">Exporter</button>
-            <button onClick={onAddProduct} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">Ajouter un produit</button>
-          </div>
-        </div>
-         <div className="flex gap-2 border-b dark:border-gray-700 mb-4">
-            <button onClick={() => setStatusFilter('active')} className={`py-2 px-4 text-sm font-semibold border-b-2 ${statusFilter === 'active' ? 'border-kmer-green text-kmer-green' : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-500'}`}>Actifs ({products.filter(p => p.status !== 'archived').length})</button>
-            <button onClick={() => setStatusFilter('archived')} className={`py-2 px-4 text-sm font-semibold border-b-2 ${statusFilter === 'archived' ? 'border-kmer-green text-kmer-green' : 'border-transparent text-gray-500 hover:border-gray-300 dark:hover:border-gray-500'}`}>Archivés ({products.filter(p => p.status === 'archived').length})</button>
-        </div>
-        <div className="space-y-2 min-h-[350px]">
-          {paginatedProducts.length > 0 ? paginatedProducts.map((p: Product) => {
-             const isLowStock = p.stock < 5;
-             return (
-                <div key={p.id} className={`p-3 rounded-md flex justify-between items-center ${isLowStock ? 'bg-orange-50 dark:bg-orange-900/30 border-l-4 border-orange-400' : 'bg-gray-50 dark:bg-gray-900/50'}`}>
-                    <div className="flex items-center gap-3">
-                        <img src={p.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={p.name} className="w-12 h-12 object-cover rounded-md" />
-                        <div>
-                            <p className="font-semibold dark:text-gray-200">{p.name}</p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
-                                {p.price.toLocaleString('fr-CM')} FCFA - {p.stock} en stock
-                                {isLowStock && <span className="ml-2 text-xs font-bold text-orange-600 dark:text-orange-400">(Stock Faible)</span>}
-                            </p>
+        <div className="p-6">
+            <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-4 mb-4">
+                 <div className="flex items-center gap-2">
+                    <button onClick={() => setStatusFilter('active')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${statusFilter === 'active' ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>Actifs & Brouillons</button>
+                    <button onClick={() => setStatusFilter('archived')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${statusFilter === 'archived' ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-600'}`}>Archivés</button>
+                </div>
+                <div className="flex gap-2 w-full sm:w-auto">
+                    <button onClick={onAddProduct} className="flex-1 sm:flex-none bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 flex items-center justify-center gap-2">
+                        <PlusIcon className="w-5 h-5"/> Ajouter un produit
+                    </button>
+                </div>
+            </div>
+
+            <div className="space-y-3">
+                {paginatedProducts.map(product => (
+                    <div key={product.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex flex-col sm:flex-row gap-4">
+                        <img src={product.imageUrls[0] || PLACEHOLDER_IMAGE_URL} alt={product.name} className="w-full sm:w-24 h-24 object-cover rounded-md flex-shrink-0" />
+                        <div className="flex-grow">
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="font-bold dark:text-white">{product.name}</p>
+                                    <p className="text-sm text-gray-500 dark:text-gray-400">Stock: {product.stock} | Prix: {product.price.toLocaleString('fr-CM')} FCFA</p>
+                                </div>
+                                <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${
+                                    product.status === 'published' ? 'bg-green-100 text-green-800' :
+                                    product.status === 'draft' ? 'bg-yellow-100 text-yellow-800' :
+                                    'bg-gray-200 text-gray-700'
+                                }`}>{product.status}</span>
+                            </div>
+                             <div className="flex flex-wrap gap-2 mt-2">
+                                <button onClick={() => onEditProduct(product)} className="text-xs flex items-center gap-1 bg-blue-100 text-blue-800 font-semibold px-3 py-1 rounded-md hover:bg-blue-200"><PencilSquareIcon className="w-4 h-4"/> Modifier</button>
+                                <button onClick={() => onSetPromotion(product)} className="text-xs flex items-center gap-1 bg-yellow-100 text-yellow-800 font-semibold px-3 py-1 rounded-md hover:bg-yellow-200"><TagIcon className="w-4 h-4"/> Promo</button>
+                                {product.status === 'published' ? (
+                                    <button onClick={() => onUpdateProductStatus(product.id, 'draft')} className="text-xs flex items-center gap-1 bg-gray-200 text-gray-800 font-semibold px-3 py-1 rounded-md hover:bg-gray-300">Dépublier</button>
+                                ) : (
+                                     <button onClick={() => onUpdateProductStatus(product.id, 'published')} className="text-xs flex items-center gap-1 bg-green-100 text-green-800 font-semibold px-3 py-1 rounded-md hover:bg-green-200">Publier</button>
+                                )}
+                                <button onClick={() => onDeleteProduct(product.id)} className="text-xs flex items-center gap-1 bg-red-100 text-red-800 font-semibold px-3 py-1 rounded-md hover:bg-red-200"><TrashIcon className="w-4 h-4"/> Supprimer</button>
+                            </div>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                         <select
-                            value={p.status}
-                            onChange={(e) => onUpdateProductStatus(p.id, e.target.value as Product['status'])}
-                            className={`text-xs p-1 rounded-md border bg-transparent dark:bg-gray-800 focus:ring-1 focus:ring-kmer-green
-                                ${p.status === 'published' ? 'border-green-500 text-green-600' : p.status === 'draft' ? 'border-gray-400 text-gray-500' : 'border-red-500 text-red-500'}`}
-                        >
-                          <option value="published">Publié</option>
-                          <option value="draft">Brouillon</option>
-                          <option value="archived">Archivé</option>
-                        </select>
-                        <button onClick={() => onSetPromotion(p)} className="p-2 text-gray-500 hover:text-kmer-red" title="Mettre en promotion"><TagIcon className="w-5 h-5"/></button>
-                        <button onClick={() => onEditProduct(p)} className="p-2 text-gray-500 hover:text-blue-500" title="Modifier"><PencilSquareIcon className="w-5 h-5"/></button>
-                        <button onClick={() => onDeleteProduct(p.id)} className="p-2 text-gray-500 hover:text-red-600" title="Supprimer"><TrashIcon className="w-5 h-5"/></button>
-                    </div>
-                </div>
-            );
-          }) : (
-            <div className="text-center py-10 text-gray-500 dark:text-gray-400">
-                <p>Aucun produit trouvé dans cette catégorie.</p>
+                ))}
             </div>
-          )}
+            <PaginationControls />
         </div>
-        <PaginationControls />
-      </div>
     );
 };
 
@@ -894,29 +876,46 @@ const FinancePanel: React.FC<{
             </div>
 
             <h3 className="text-lg font-bold mt-8 mb-4 dark:text-white">Historique des Paiements (Payouts)</h3>
-            <div className="overflow-x-auto max-h-80">
-                <table className="w-full text-sm text-left">
-                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                        <tr>
-                            <th className="p-2">Date</th>
-                            <th className="p-2">Montant</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {payouts.length > 0 ? (
-                            payouts.sort((a,b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => (
-                                <tr key={index} className="border-b dark:border-gray-700">
-                                    <td className="p-2">{new Date(payout.date).toLocaleDateString('fr-FR')}</td>
-                                    <td className="p-2 font-semibold">{payout.amount.toLocaleString('fr-CM')} FCFA</td>
-                                </tr>
-                            ))
-                        ) : (
-                             <tr>
-                                <td colSpan={2} className="p-4 text-center text-gray-500">Aucun paiement enregistré.</td>
+             <div className="max-h-80 overflow-y-auto">
+                {/* Mobile View */}
+                <div className="space-y-3 md:hidden">
+                    {payouts.length > 0 ? (
+                        payouts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => (
+                            <div key={index} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
+                                <span className="text-sm text-gray-600 dark:text-gray-300">{new Date(payout.date).toLocaleDateString('fr-FR')}</span>
+                                <span className="font-semibold text-gray-800 dark:text-white">{payout.amount.toLocaleString('fr-CM')} FCFA</span>
+                            </div>
+                        ))
+                    ) : (
+                        <p className="p-4 text-center text-gray-500">Aucun paiement enregistré.</p>
+                    )}
+                </div>
+
+                {/* Desktop View */}
+                <div className="hidden md:block">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                            <tr>
+                                <th className="p-2">Date</th>
+                                <th className="p-2">Montant</th>
                             </tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            {payouts.length > 0 ? (
+                                payouts.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map((payout, index) => (
+                                    <tr key={index} className="border-b dark:border-gray-700">
+                                        <td className="p-2">{new Date(payout.date).toLocaleDateString('fr-FR')}</td>
+                                        <td className="p-2 font-semibold">{payout.amount.toLocaleString('fr-CM')} FCFA</td>
+                                    </tr>
+                                ))
+                            ) : (
+                                <tr>
+                                    <td colSpan={2} className="p-4 text-center text-gray-500">Aucun paiement enregistré.</td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </div>
     );
@@ -1292,9 +1291,163 @@ const CollectionsPanel: React.FC<Pick<SellerDashboardProps, 'store' | 'products'
     );
 };
 
+const PhotographyServicePanel: React.FC<{
+  onCreateTicket: (subject: string, message: string, relatedOrderId?: string, type?: 'support' | 'service_request', attachmentUrls?: string[]) => void;
+  sellerServiceTickets: Ticket[];
+}> = ({ onCreateTicket, sellerServiceTickets }) => {
+    const [specifications, setSpecifications] = useState('');
+    const [attachments, setAttachments] = useState<string[]>([]);
+    const [requestSent, setRequestSent] = useState(false);
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files) {
+            const files = Array.from(e.target.files);
+            if (attachments.length + files.length > 5) {
+                alert("Vous pouvez joindre jusqu'à 5 fichiers.");
+                return;
+            }
+            files.forEach(file => {
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setAttachments(prev => [...prev, reader.result as string]);
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+    };
+
+    const removeAttachment = (index: number) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!specifications.trim() && attachments.length === 0) {
+            alert("Veuillez fournir des instructions ou joindre des images.");
+            return;
+        }
+        setIsSubmitting(true);
+        const subject = "Nouvelle demande - Service Photographie";
+        const message = specifications || "Veuillez vous référer aux images jointes pour la demande de photographie.";
+        
+        onCreateTicket(subject, message, undefined, 'service_request', attachments);
+        
+        setSpecifications('');
+        setAttachments([]);
+        setIsSubmitting(false);
+        setRequestSent(true);
+        
+        setTimeout(() => setRequestSent(false), 5000);
+    };
+
+    return (
+        <div className="p-6">
+            <div className="flex items-center gap-3 mb-6">
+                <SparklesIcon className="w-8 h-8 text-kmer-yellow" />
+                <h2 className="text-2xl font-bold text-gray-800 dark:text-white">Service de Photographie Professionnelle</h2>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                    <h3 className="text-xl font-semibold mb-4">Nouvelle demande</h3>
+                    {requestSent ? (
+                        <div className="p-4 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-lg flex items-center gap-3">
+                            <CheckCircleIcon className="w-6 h-6 flex-shrink-0" />
+                            <div>
+                                <h4 className="font-bold">Demande envoyée !</h4>
+                                <p className="text-sm">Un ticket a été créé. Notre équipe vous contactera bientôt. Vous pouvez suivre la conversation dans votre historique.</p>
+                            </div>
+                        </div>
+                    ) : (
+                        <form onSubmit={handleSubmit} className="space-y-4">
+                            <div>
+                                <label htmlFor="specifications" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Instructions et Spécifications</label>
+                                <textarea
+                                    id="specifications"
+                                    value={specifications}
+                                    onChange={e => setSpecifications(e.target.value)}
+                                    rows={5}
+                                    className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                    placeholder="Décrivez vos besoins : type de fond, angles de vue, retouches souhaitées, etc."
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Joindre des images de référence (max 5)</label>
+                                <label htmlFor="photo-upload" className="mt-1 cursor-pointer flex items-center gap-2 text-blue-600 dark:text-blue-400 font-semibold">
+                                    <PaperclipIcon className="w-5 h-5"/>
+                                    Choisir des fichiers
+                                </label>
+                                <input id="photo-upload" type="file" multiple onChange={handleFileChange} className="hidden" accept="image/*" />
+                                {attachments.length > 0 && (
+                                    <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
+                                        {attachments.map((url, i) => (
+                                            <div key={i} className="relative group">
+                                                <img src={url} alt={`Aperçu ${i}`} className="h-20 w-full object-cover rounded-md"/>
+                                                <button type="button" onClick={() => removeAttachment(i)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                    <TrashIcon className="w-4 h-4" />
+                                                </button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <button type="submit" disabled={isSubmitting} className="w-full bg-kmer-green text-white font-bold py-3 px-6 rounded-lg flex items-center justify-center gap-3 hover:bg-green-700 transition-colors disabled:bg-gray-400">
+                                <PaperAirplaneIcon className="w-5 h-5"/>
+                                {isSubmitting ? 'Envoi...' : 'Envoyer la demande'}
+                            </button>
+                        </form>
+                    )}
+                </div>
+
+                <div className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md">
+                    <h3 className="text-xl font-semibold mb-4">Historique des demandes</h3>
+                    {sellerServiceTickets.length > 0 ? (
+                        <div className="space-y-3 max-h-96 overflow-y-auto">
+                            {sellerServiceTickets.map(ticket => (
+                                <div key={ticket.id} className="p-3 border rounded-md dark:border-gray-700">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-semibold">{ticket.subject}</p>
+                                            <p className="text-xs text-gray-500">
+                                                Créé le: {new Date(ticket.createdAt).toLocaleDateString('fr-FR')}
+                                            </p>
+                                        </div>
+                                        <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${ticket.status === 'Résolu' ? 'bg-green-100 text-green-800' : ticket.status === 'En cours' ? 'bg-blue-100 text-blue-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                                            {ticket.status}
+                                        </span>
+                                    </div>
+                                    <details className="mt-2 text-sm">
+                                        <summary className="cursor-pointer font-medium text-blue-600 dark:text-blue-400">Voir les détails</summary>
+                                        <div className="mt-2 space-y-2 pt-2 border-t dark:border-gray-600">
+                                            {ticket.messages.map((msg, i) => (
+                                                <div key={i}>
+                                                    <p className="font-bold text-xs">{msg.authorName}:</p>
+                                                    <p className="whitespace-pre-wrap pl-2">{msg.message}</p>
+                                                    {msg.attachmentUrls && msg.attachmentUrls.length > 0 && (
+                                                        <div className="flex flex-wrap gap-2 mt-1 pl-2">
+                                                            {msg.attachmentUrls.map((url, j) => <a href={url} target="_blank" rel="noopener noreferrer" key={j}><img src={url} alt={`Pièce jointe ${j+1}`} className="h-16 w-16 rounded object-cover border"/></a>)}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    </details>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <p className="text-center text-gray-500 py-8">Aucune demande de service pour le moment.</p>
+                    )}
+                </div>
+            </div>
+        </div>
+    );
+};
+
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, products, sellerOrders, promoCodes, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, flashSales, onProposeForFlashSale, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection, initialTab, sellerNotifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
-    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes' | 'reviews' | 'collections'>(initialTab as any || 'overview');
+    const { store, products, sellerOrders, promoCodes, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, flashSales, onProposeForFlashSale, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection, initialTab, sellerNotifications, onMarkNotificationAsRead, onNavigateFromNotification, onCreateTicket, allTickets } = props;
+    const [activeTab, setActiveTab] = useState<'overview' | 'products' | 'bulk-edit' | 'stories' | 'orders-in-progress' | 'orders-delivered' | 'orders-cancelled' | 'promotions' | 'documents' | 'finances' | 'disputes' | 'reviews' | 'collections' | 'services'>(initialTab as any || 'overview');
     const { user } = useAuth();
     const { totalUnreadCount, setIsWidgetOpen } = useChatContext();
     const [printingOrder, setPrintingOrder] = useState<Order | null>(null);
@@ -1304,6 +1457,17 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
     const notificationsMenuRef = useRef<HTMLDivElement>(null);
     const unreadNotificationsCount = sellerNotifications.filter(n => !n.isRead).length;
+    const [upgradeRequestSent, setUpgradeRequestSent] = useState(false);
+
+    const handleUpgradeRequest = () => {
+        onCreateTicket(
+            "Demande de passage au statut Vendeur Premium",
+            "Bonjour, je suis intéressé(e) par les avantages du statut Vendeur Premium et souhaiterais mettre à niveau ma boutique. Pourriez-vous me donner plus d'informations sur la procédure ? Merci.",
+            undefined,
+            'support'
+        );
+        setUpgradeRequestSent(true);
+    };
     
     useEffect(() => {
         setActiveTab(initialTab as any || 'overview');
@@ -1412,24 +1576,32 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
                 .reduce((itemSum, item) => itemSum + getFinalPrice(item, flashSales) * item.quantity, 0);
              return sum + sellerItemsTotal;
         }, 0);
-
-        const avgRating = products.flatMap(p => p.reviews).reduce((sum, r, _, arr) => sum + r.rating / arr.length, 0);
+        
+        const approvedReviews = products.flatMap(p => p.reviews).filter(r => r.status === 'approved');
+        const avgRatingValue = approvedReviews.length > 0 ? approvedReviews.reduce((sum, r) => sum + r.rating, 0) / approvedReviews.length : 0;
 
         return {
             totalRevenue,
             totalProducts: products.length,
             openOrders: ordersInProgress.length,
-            avgRating: avgRating.toFixed(1)
+            avgRating: approvedReviews.length > 0 ? avgRatingValue.toFixed(1) : "N/A"
         };
     }, [deliveredOrdersForAnalytics, products, ordersInProgress.length, store.name, flashSales]);
 
     const lowStockProductsCount = useMemo(() => {
         return products.filter(p => p.stock < 5).length;
     }, [products]);
+
+    const sellerServiceTickets = useMemo(() => {
+        if (!user) return [];
+        return allTickets
+            .filter(t => t.userId === user.id && t.type === 'service_request')
+            .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    }, [allTickets, user]);
     
     const renderContent = () => {
         switch(activeTab) {
-            case 'overview': return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} />;
+            case 'overview': return <OverviewPanel analytics={analytics} onNavigate={onNavigateToAnalytics} lowStockProductsCount={lowStockProductsCount} store={store} onUpgradeRequest={handleUpgradeRequest} upgradeRequestSent={upgradeRequestSent} />;
             case 'products': return <ProductsPanel products={products} onAddProduct={onAddProduct} onEditProduct={onEditProduct} onDeleteProduct={onDeleteProduct} onUpdateProductStatus={onUpdateProductStatus} onSetPromotion={onSetPromotion} onRemovePromotion={onRemovePromotion} />;
             case 'bulk-edit': return <BulkEditPanel products={products} onSave={onBulkUpdateProducts} />;
             case 'stories': return <StoriesPanel store={store} onAddStory={onAddStory} onDeleteStory={onDeleteStory} />;
@@ -1442,6 +1614,34 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'disputes': return <DisputesPanel disputedOrders={disputedOrders} onSellerDisputeMessage={onSellerDisputeMessage} />;
             case 'reviews': return <ReviewsPanel products={products} onReplyToReview={onReplyToReview} />;
             case 'collections': return <CollectionsPanel store={store} products={products} onCreateOrUpdateCollection={onCreateOrUpdateCollection} onDeleteCollection={onDeleteCollection} />;
+            case 'services':
+                if (store.premiumStatus === 'premium') {
+                    return <PhotographyServicePanel onCreateTicket={onCreateTicket} sellerServiceTickets={sellerServiceTickets} />;
+                } else {
+                    return (
+                        <div className="p-8 text-center bg-gray-50 dark:bg-gray-900/50 min-h-[50vh] flex items-center justify-center">
+                            <div className="max-w-2xl mx-auto">
+                                <StarIcon className="w-16 h-16 mx-auto text-kmer-yellow mb-4" />
+                                <h2 className="text-3xl font-bold text-gray-800 dark:text-white">Accès Exclusif aux Vendeurs Premium</h2>
+                                <p className="mt-4 text-lg text-gray-600 dark:text-gray-400">Le Service de Photographie Professionnelle est un avantage réservé à nos vendeurs Premium pour garantir des images de la plus haute qualité.</p>
+                                <p className="mt-4 text-gray-600 dark:text-gray-400">Passez au statut Premium pour bénéficier de ce service et de bien d'autres avantages exclusifs qui boosteront vos ventes.</p>
+                                {upgradeRequestSent ? (
+                                    <div className="mt-8 p-4 bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200 rounded-lg flex items-center gap-3">
+                                        <CheckCircleIcon className="w-6 h-6 flex-shrink-0" />
+                                        <div>
+                                            <h4 className="font-bold">Demande envoyée !</h4>
+                                            <p className="text-sm">Un ticket a été créé. Notre équipe vous contactera bientôt. Vous pouvez suivre la conversation via les notifications et le chat de support.</p>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <button onClick={handleUpgradeRequest} className="mt-8 bg-kmer-yellow text-gray-900 font-bold py-3 px-8 rounded-lg text-lg hover:bg-yellow-300 transition-colors">
+                                        Demander le statut Premium
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+                    );
+                }
             default: return null;
         }
     };
@@ -1537,35 +1737,38 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
                                <button onClick={() => onPayRent(store.id)} className="bg-red-500 text-white font-bold py-1 px-3 rounded-md hover:bg-red-600">Payer {siteSettings.rentAmount.toLocaleString('fr-CM')} FCFA</button>
                             </div>
                         )}
-                        <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-2 -mb-5">
-                            <div className="flex space-x-1 overflow-x-auto">
-                                <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                                <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
-                                <TabButton icon={<PencilSquareIcon className="w-5 h-5"/>} label="Modification Rapide" isActive={activeTab === 'bulk-edit'} onClick={() => setActiveTab('bulk-edit')} />
-                                <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
-                                <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab)} onClick={() => setActiveTab('orders-in-progress')} count={ordersInProgress.length} />
-                                <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
-                                <TabButton icon={<BookmarkSquareIcon className="w-5 h-5"/>} label="Collections" isActive={activeTab === 'collections'} onClick={() => setActiveTab('collections')} />
-                                <TabButton icon={<StarIcon className="w-5 h-5"/>} label="Avis" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} count={unreadReviewsCount} />
-                                <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} count={unreadDisputesCount} />
-                                <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
-                                <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Finances" isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
-                            </div>
-                        </div>
                     </div>
                 </header>
-                <main className="container mx-auto px-4 sm:px-6 py-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                        {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
-                            <div className="p-4 border-b dark:border-gray-700 flex gap-2">
-                                <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({ordersInProgress.length})</button>
-                                <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livrées ({ordersDelivered.length})</button>
-                                <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulées ({ordersCancelled.length})</button>
-                            </div>
-                        )}
-                        {renderContent()}
-                    </div>
-                </main>
+                <div className="container mx-auto px-4 sm:px-6 py-6 flex flex-col md:flex-row gap-8">
+                    <aside className="md:w-1/4 lg:w-1/5 flex-shrink-0">
+                        <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md space-y-2 sticky top-24">
+                            <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                            <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Produits" isActive={activeTab === 'products'} onClick={() => setActiveTab('products')} />
+                            <TabButton icon={<PencilSquareIcon className="w-5 h-5"/>} label="Modification Rapide" isActive={activeTab === 'bulk-edit'} onClick={() => setActiveTab('bulk-edit')} />
+                            <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Stories" isActive={activeTab === 'stories'} onClick={() => setActiveTab('stories')} />
+                            <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Commandes" isActive={['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab)} onClick={() => setActiveTab('orders-in-progress')} count={ordersInProgress.length} />
+                            <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Promotions" isActive={activeTab === 'promotions'} onClick={() => setActiveTab('promotions')} />
+                            <TabButton icon={<BookmarkSquareIcon className="w-5 h-5"/>} label="Collections" isActive={activeTab === 'collections'} onClick={() => setActiveTab('collections')} />
+                            <TabButton icon={<StarIcon className="w-5 h-5"/>} label="Avis" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} count={unreadReviewsCount} />
+                            <TabButton icon={<ExclamationTriangleIcon className="w-5 h-5"/>} label="Litiges" isActive={activeTab === 'disputes'} onClick={() => setActiveTab('disputes')} count={unreadDisputesCount} />
+                            <TabButton icon={<DocumentTextIcon className="w-5 h-5"/>} label="Documents" isActive={activeTab === 'documents'} onClick={() => setActiveTab('documents')} />
+                            <TabButton icon={<CurrencyDollarIcon className="w-5 h-5"/>} label="Finances" isActive={activeTab === 'finances'} onClick={() => setActiveTab('finances')} />
+                            <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label="Services" isActive={activeTab === 'services'} onClick={() => setActiveTab('services')} />
+                        </div>
+                    </aside>
+                    <main className="flex-grow">
+                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md min-h-full">
+                           {['orders-in-progress', 'orders-delivered', 'orders-cancelled'].includes(activeTab) && (
+                                <div className="p-4 border-b dark:border-gray-700 flex flex-wrap gap-2">
+                                    <button onClick={() => setActiveTab('orders-in-progress')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-in-progress' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>En cours ({ordersInProgress.length})</button>
+                                    <button onClick={() => setActiveTab('orders-delivered')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-delivered' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Livrées ({ordersDelivered.length})</button>
+                                    <button onClick={() => setActiveTab('orders-cancelled')} className={`px-3 py-1.5 text-sm font-semibold rounded-md ${activeTab === 'orders-cancelled' ? 'bg-kmer-green/20 text-kmer-green' : 'hover:bg-gray-100 dark:hover:bg-gray-700'}`}>Annulées ({ordersCancelled.length})</button>
+                                </div>
+                            )}
+                            {renderContent()}
+                        </div>
+                    </main>
+                </div>
             </div>
         </>
     );

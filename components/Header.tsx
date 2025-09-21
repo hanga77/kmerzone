@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BarChartIcon, ShieldCheckIcon, BellIcon, PhotoIcon } from './Icons';
+import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BellIcon, PhotoIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
 import { useAuth } from '../contexts/AuthContext';
 import { useTheme } from '../contexts/ThemeContext';
@@ -38,7 +38,7 @@ interface HeaderProps {
   onNavigateFromNotification: (link: Notification['link']) => void;
 }
 
-const Header: React.FC<HeaderProps> = (props) => {
+export const Header: React.FC<HeaderProps> = (props) => {
   const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onNavigateToVisualSearch, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, onLoginSuccess, notifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
@@ -181,6 +181,11 @@ const Header: React.FC<HeaderProps> = (props) => {
           </div>
 
           <div className="hidden lg:flex items-center space-x-2">
+            {(!user || user.role === 'customer') && (
+                <button onClick={onNavigateToBecomeSeller} className="text-sm font-semibold text-kmer-green border-2 border-kmer-green rounded-full px-4 py-1.5 hover:bg-kmer-green/10 transition-colors">
+                    {translations.becomeSeller[language]}
+                </button>
+            )}
             {user ? (
               <>
               <div className="relative" ref={userMenuRef}>
@@ -191,7 +196,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                         <StarIcon filled className="absolute -bottom-1 -right-1 w-4 h-4 text-kmer-yellow bg-white dark:bg-gray-800 rounded-full p-0.5" />
                     )}
                      {user.loyalty?.status === 'premium_plus' && (
-                        <StarPlatinumIcon className="absolute -bottom-1 -right-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full p-0.5" />
+                        <StarPlatinumIcon className="absolute -bottom-1 -right-1 w-4 h-4 bg-white dark:bg-gray-800 rounded-full p-0.5 text-kmer-red" />
                     )}
                   </div>
                   <span className="text-xs font-medium mt-1 truncate max-w-[80px]">{user.name}</span>
@@ -287,35 +292,36 @@ const Header: React.FC<HeaderProps> = (props) => {
                 <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform ${isCategoryMenuOpen ? 'rotate-180' : ''}`} />
               </button>
               {isCategoryMenuOpen && (
-                <div className="absolute left-0 mt-2 w-max bg-white dark:bg-gray-800 rounded-md shadow-xl z-50 flex gap-4 p-4">
-                  {categoryTree.map((mainCat) => (
-                    <div key={mainCat.id} className="min-w-[180px]">
-                      <button 
-                        onClick={() => { onNavigateToCategory(mainCat.id); setIsCategoryMenuOpen(false); }}
-                        className="font-bold text-md text-gray-800 dark:text-gray-100 hover:text-kmer-green mb-2 w-full text-left"
-                      >
-                          {mainCat.name}
-                      </button>
-                      <div className="space-y-1">
-                        {mainCat.subCategories.map(subCat => (
-                          <button
-                            key={subCat.id}
-                            onClick={() => { onNavigateToCategory(subCat.id); setIsCategoryMenuOpen(false); }}
-                            className="w-full text-left block text-sm text-gray-600 dark:text-gray-300 hover:text-kmer-green"
-                          >
-                            {subCat.name}
-                          </button>
+                <div className="absolute left-0 mt-2 w-[840px] max-w-[calc(100vw-2rem)] bg-white dark:bg-gray-800 rounded-md shadow-xl z-50 p-6">
+                    <div className="flex flex-row flex-wrap gap-x-6 gap-y-4">
+                        {categoryTree.map((mainCat) => (
+                            <div key={mainCat.id} className="w-44">
+                                <button 
+                                    onClick={() => { onNavigateToCategory(mainCat.id); setIsCategoryMenuOpen(false); }}
+                                    className="font-bold text-md text-gray-800 dark:text-gray-100 hover:text-kmer-green mb-2 w-full text-left"
+                                >
+                                    {mainCat.name}
+                                </button>
+                                <div className="space-y-1">
+                                    {mainCat.subCategories.map(subCat => (
+                                    <button
+                                        key={subCat.id}
+                                        onClick={() => { onNavigateToCategory(subCat.id); setIsCategoryMenuOpen(false); }}
+                                        className="w-full text-left block text-sm text-gray-600 dark:text-gray-300 hover:text-kmer-green"
+                                    >
+                                        {subCat.name}
+                                    </button>
+                                    ))}
+                                </div>
+                            </div>
                         ))}
-                      </div>
                     </div>
-                  ))}
                 </div>
               )}
             </div>
             <button onClick={onNavigateToPromotions} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><TagIcon className="w-5 h-5 text-kmer-red"/>{translations.promotions[language]}</button>
             <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>{translations.flashSales[language]}</button>
             <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">{translations.stores[language]}</button>
-            {(!user || user.role === 'customer') && <button onClick={onNavigateToBecomeSeller} className="text-kmer-green hover:underline font-bold">{translations.becomeSeller[language]}</button>}
             {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
                 <button onClick={onNavigateToBecomePremium} className="text-kmer-yellow hover:text-yellow-400 font-bold flex items-center gap-1">
                     <StarIcon className="w-5 h-5"/>{translations.becomePremium[language]}
@@ -351,6 +357,7 @@ const Header: React.FC<HeaderProps> = (props) => {
                   <button onClick={() => {onNavigateToPromotions(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Promotions</button>
                   <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Ventes Flash</button>
                   <button onClick={() => {onNavigateToStores(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Boutiques</button>
+                  {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="text-left text-kmer-green font-bold py-2">{translations.becomeSeller[language]}</button>}
                   
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
                      <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Catégories</h3>
@@ -381,7 +388,6 @@ const Header: React.FC<HeaderProps> = (props) => {
                     {(!user || (user.role === 'customer' && user.loyalty.status === 'standard')) && isPremiumProgramEnabled && (
                       <button onClick={() => {onNavigateToBecomePremium(); setIsMenuOpen(false);}} className="text-left font-bold text-kmer-yellow py-2">Devenir Premium</button>
                     )}
-                    {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="text-left text-kmer-green font-bold py-2">Devenir vendeur</button>}
                  </div>
               </div>
             </nav>
@@ -399,5 +405,3 @@ const Header: React.FC<HeaderProps> = (props) => {
     </header>
   );
 };
-
-export default Header;

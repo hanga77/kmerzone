@@ -1,7 +1,8 @@
 import React, { useEffect, useRef } from 'react';
-import QRCode from 'qrcode';
 import type { Order } from '../types';
 import { CheckIcon, QrCodeIcon, PrinterIcon } from './Icons';
+
+declare const QRCode: any;
 
 interface OrderSuccessProps {
   order: Order;
@@ -13,19 +14,14 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ order, onNavigateHome, onNa
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
-    if (qrCodeRef.current && order.trackingNumber) {
-      QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 160 }, (error) => {
+    if (qrCodeRef.current && order.trackingNumber && typeof QRCode !== 'undefined') {
+      QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 160 }, (error: any) => {
         if (error) console.error(error);
       });
     }
   }, [order.trackingNumber]);
   
   const handlePrint = () => {
-    const handleAfterPrint = () => {
-      // Nothing to reset here, but keeps printing logic consistent
-      window.removeEventListener('afterprint', handleAfterPrint);
-    };
-    window.addEventListener('afterprint', handleAfterPrint);
     window.print();
   }
 
@@ -63,7 +59,7 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ order, onNavigateHome, onNa
             </div>
         </div>
         
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex flex-col sm:flex-row gap-4 justify-center no-print">
           <button
             onClick={onNavigateToOrders}
             className="w-full sm:w-auto bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 font-bold py-3 px-6 rounded-full hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
@@ -77,7 +73,7 @@ const OrderSuccess: React.FC<OrderSuccessProps> = ({ order, onNavigateHome, onNa
             Continuer mes achats
           </button>
         </div>
-         <button onClick={handlePrint} className="mt-6 text-sm text-gray-500 dark:text-gray-400 hover:underline flex items-center justify-center gap-2 mx-auto">
+         <button onClick={handlePrint} className="mt-6 text-sm text-gray-500 dark:text-gray-400 hover:underline flex items-center justify-center gap-2 mx-auto no-print">
             <PrinterIcon className="w-4 h-4" />
             Imprimer le reçu
         </button>

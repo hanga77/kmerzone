@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import { ArrowLeftIcon, StarIcon, CheckCircleIcon, CurrencyDollarIcon, StarPlatinumIcon } from './Icons';
 import type { SiteSettings } from '../types';
+import { ArrowLeftIcon, StarIcon, StarPlatinumIcon, ShieldCheckIcon, CheckCircleIcon } from './Icons';
 
 interface BecomePremiumPageProps {
   siteSettings: SiteSettings;
@@ -10,127 +10,135 @@ interface BecomePremiumPageProps {
   onUpgradeToPremiumPlus: () => void;
 }
 
+const ProgressBar: React.FC<{ value: number; max: number; label: string }> = ({ value, max, label }) => {
+  const percentage = Math.min((value / max) * 100, 100);
+  return (
+    <div>
+      <div className="flex justify-between items-center mb-1">
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{label}</span>
+        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">{value.toLocaleString('fr-CM')} / {max.toLocaleString('fr-CM')}</span>
+      </div>
+      <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+        <div className="bg-kmer-green h-2.5 rounded-full" style={{ width: `${percentage}%` }}></div>
+      </div>
+    </div>
+  );
+};
+
 const BecomePremiumPage: React.FC<BecomePremiumPageProps> = ({ siteSettings, onBack, onBecomePremiumByCaution, onUpgradeToPremiumPlus }) => {
   const { user } = useAuth();
+  if (!user) return null;
+
+  const loyalty = user.loyalty;
+  const premiumThresholds = siteSettings.premiumThresholds;
   
-  if (!user) {
-    return <div className="p-8 text-center">Veuillez vous connecter pour voir cette page.</div>;
-  }
-  
-  const { isPremiumProgramEnabled, premiumThresholds, premiumCautionAmount, isPremiumPlusEnabled, premiumPlusAnnualFee } = siteSettings;
+  const benefits = {
+    premium: [
+      "Badge de confiance sur votre profil",
+      "Support client prioritaire",
+      "Accès exclusif aux ventes privées",
+      "Accès aux ventes flash 24h en avance",
+      "Remises sur les frais de livraison",
+    ],
+    premiumPlus: [
+      "Tous les avantages Premium",
+      "Livraison gratuite sur les articles éligibles",
+      "Offres et promotions personnalisées",
+      "Retour de produits facilité",
+    ],
+  };
 
-  if (!isPremiumProgramEnabled) {
-    return (
-      <div className="container mx-auto px-6 py-12 text-center">
-        <h1 className="text-2xl font-bold mb-4">Programme Premium</h1>
-        <p className="text-gray-600 dark:text-gray-400">Le programme de fidélité n'est pas actif pour le moment. Revenez plus tard !</p>
-        <button onClick={onBack} className="mt-6 bg-kmer-green text-white font-bold py-2 px-6 rounded-full">
-          Retour à l'accueil
-        </button>
-      </div>
-    );
-  }
-
-  const orderProgress = user.loyalty.orderCount;
-  const spendingProgress = user.loyalty.totalSpent;
-  const orderProgressPercent = Math.min((orderProgress / premiumThresholds.orders) * 100, 100);
-  const spendingProgressPercent = Math.min((spendingProgress / premiumThresholds.spending) * 100, 100);
-
-  const advantages = [
-    "Badge Exclusif KMER Premium",
-    "10% de réduction sur toutes les livraisons",
-    "Accès anticipé aux ventes flash (bientôt !)",
-    "Offres exclusives réservées aux membres",
-    "Support client prioritaire"
-  ];
+  const BenefitItem: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <li className="flex items-start gap-2">
+      <CheckCircleIcon className="w-5 h-5 text-green-500 flex-shrink-0 mt-0.5" />
+      <span>{children}</span>
+    </li>
+  );
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-[80vh]">
-      <div className="container mx-auto px-6 py-12">
+    <div className="bg-gray-50 dark:bg-gray-900 py-12">
+      <div className="container mx-auto px-4 sm:px-6">
         <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
           <ArrowLeftIcon className="w-5 h-5" />
           Retour
         </button>
 
-        <div className="text-center">
-            <StarIcon filled className="w-16 h-16 text-kmer-yellow mx-auto mb-4"/>
-            <h1 className="text-4xl font-bold text-gray-800 dark:text-white">Devenez un Membre <span className="text-kmer-yellow">KMER Premium</span></h1>
-            <p className="text-lg text-gray-600 dark:text-gray-400 mt-2 max-w-2xl mx-auto">Rejoignez notre programme de fidélité exclusif et profitez d'avantages uniques sur toute la plateforme.</p>
+        <div className="text-center max-w-3xl mx-auto">
+          <h1 className="text-4xl font-extrabold text-gray-800 dark:text-white mb-4">Débloquez des Avantages Exclusifs</h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">Passez au niveau supérieur avec nos statuts Premium et Premium+ pour une expérience d'achat inégalée.</p>
         </div>
 
-        <div className="grid lg:grid-cols-2 gap-10 mt-12 max-w-5xl mx-auto">
-            {/* Advantages */}
-            <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
-                <h2 className="text-2xl font-bold mb-6 text-gray-800 dark:text-white">Vos Avantages Premium</h2>
-                <ul className="space-y-4">
-                    {advantages.map((adv, i) => (
-                        <li key={i} className="flex items-start gap-3">
-                            <CheckCircleIcon className="w-6 h-6 text-kmer-green flex-shrink-0 mt-0.5" />
-                            <span className="text-gray-700 dark:text-gray-300">{adv}</span>
-                        </li>
-                    ))}
-                </ul>
+        <div className="max-w-xl mx-auto my-12 p-6 bg-white dark:bg-gray-800 rounded-2xl shadow-lg border dark:border-gray-700">
+          <h2 className="text-xl font-bold mb-4">Votre Statut Actuel : <span className="capitalize text-kmer-green">{loyalty.status.replace('_', '+')}</span></h2>
+          {loyalty.status === 'standard' && (
+            <div className="space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Atteignez le statut Premium en réalisant l'un des objectifs suivants :</p>
+              <ProgressBar value={loyalty.orderCount} max={premiumThresholds.orders} label="Commandes passées" />
+              <ProgressBar value={loyalty.totalSpent} max={premiumThresholds.spending} label="Total dépensé (FCFA)" />
             </div>
+          )}
+           {loyalty.status === 'premium' && <p className="text-gray-600 dark:text-gray-300">Félicitations ! Vous profitez déjà des avantages Premium.</p>}
+           {loyalty.status === 'premium_plus' && <p className="text-gray-600 dark:text-gray-300">Merci d'être un membre Premium+ ! Vous bénéficiez de nos meilleurs avantages.</p>}
+        </div>
 
-            {/* How to become premium */}
-            <div className="space-y-8">
-                {/* Method 1: Loyalty */}
-                <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
-                    <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Option 1 : Par la fidélité</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">Devenez membre Premium automatiquement et gratuitement en atteignant les objectifs suivants :</p>
-                    <div className="space-y-4">
-                        <div>
-                            <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
-                                <span>Commandes passées</span>
-                                <span>{orderProgress} / {premiumThresholds.orders}</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-1">
-                                <div className="bg-kmer-green h-2.5 rounded-full" style={{ width: `${orderProgressPercent}%` }}></div>
-                            </div>
-                        </div>
-                        <div>
-                             <div className="flex justify-between text-sm font-medium text-gray-700 dark:text-gray-300">
-                                <span>Total dépensé</span>
-                                <span>{spendingProgress.toLocaleString('fr-CM')} / {premiumThresholds.spending.toLocaleString('fr-CM')} FCFA</span>
-                            </div>
-                            <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 mt-1">
-                                <div className="bg-kmer-green h-2.5 rounded-full" style={{ width: `${spendingProgressPercent}%` }}></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
-                {/* Method 2: Deposit */}
-                 <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
-                    <h3 className="text-xl font-bold mb-4 text-gray-800 dark:text-white">Option 2 : Accès Immédiat</h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400 mb-6">Ne patientez plus ! Obtenez le statut Premium instantanément en versant une caution unique.</p>
-                     <button onClick={onBecomePremiumByCaution} className="w-full bg-kmer-yellow text-gray-900 font-bold py-3 rounded-lg text-lg flex items-center justify-center gap-3 hover:bg-yellow-400 transition-colors">
-                        <CurrencyDollarIcon className="w-6 h-6" />
-                        Payer la caution de {premiumCautionAmount.toLocaleString('fr-CM')} FCFA
-                     </button>
-                </div>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 max-w-5xl mx-auto">
+          
+          <div className={`p-8 rounded-2xl shadow-lg flex flex-col ${loyalty.status === 'premium' || loyalty.status === 'premium_plus' ? 'bg-green-50 dark:bg-green-900/20 border-2 border-kmer-green' : 'bg-white dark:bg-gray-800'}`}>
+            <div className="flex items-center gap-3 mb-4">
+              <StarIcon className="w-8 h-8 text-kmer-yellow" />
+              <h3 className="text-2xl font-bold">Premium</h3>
             </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-6 flex-grow">Idéal pour les acheteurs réguliers qui veulent plus d'avantages.</p>
+            <ul className="space-y-3 mb-8">
+              {benefits.premium.map((b, i) => <BenefitItem key={i}>{b}</BenefitItem>)}
+            </ul>
+            <div className="mt-auto">
+              {loyalty.status === 'standard' && (
+                <button onClick={onBecomePremiumByCaution} className="w-full bg-kmer-yellow text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-300 transition-colors">
+                  Devenir Premium maintenant
+                  <span className="block text-xs font-normal">Caution de {siteSettings.premiumCautionAmount.toLocaleString('fr-CM')} FCFA</span>
+                </button>
+              )}
+              {loyalty.status === 'premium' && (
+                <div className="text-center font-bold text-kmer-green p-3 rounded-lg bg-kmer-green/10">
+                  <CheckCircleIcon className="w-6 h-6 mx-auto mb-2" />
+                  Vous êtes déjà Premium
+                </div>
+              )}
+               {loyalty.status === 'premium_plus' && (
+                <div className="text-center font-bold text-gray-500 p-3">
+                    Statut déjà atteint
+                </div>
+              )}
+            </div>
+          </div>
+          
+          <div className="p-8 rounded-2xl shadow-lg flex flex-col bg-gray-900 text-white border-2 border-kmer-red">
+             <div className="flex items-center gap-3 mb-4">
+              <StarPlatinumIcon className="w-8 h-8 text-kmer-red" />
+              <h3 className="text-2xl font-bold">Premium+</h3>
+            </div>
+            <p className="text-gray-300 mb-6 flex-grow">L'expérience ultime pour nos clients les plus fidèles.</p>
+            <ul className="space-y-3 mb-8">
+              {benefits.premiumPlus.map((b, i) => <BenefitItem key={i}>{b}</BenefitItem>)}
+            </ul>
+            <div className="mt-auto">
+              {loyalty.status !== 'premium_plus' && (
+                 <button onClick={onUpgradeToPremiumPlus} className="w-full bg-kmer-red text-white font-bold py-3 rounded-lg hover:bg-red-600 transition-colors">
+                  {loyalty.status === 'premium' ? 'Passer à Premium+' : 'Devenir Premium+'}
+                  <span className="block text-xs font-normal">{siteSettings.premiumPlusAnnualFee.toLocaleString('fr-CM')} FCFA / an</span>
+                </button>
+              )}
+               {loyalty.status === 'premium_plus' && (
+                <div className="text-center font-bold text-kmer-red p-3 rounded-lg bg-kmer-red/10">
+                   <CheckCircleIcon className="w-6 h-6 mx-auto mb-2" />
+                  Vous êtes un membre Premium+
+                </div>
+              )}
+            </div>
+          </div>
 
-            {isPremiumPlusEnabled && (
-              <div className="bg-gradient-to-br from-gray-700 to-gray-900 text-white p-8 rounded-lg shadow-lg lg:col-span-2">
-                  <div className="flex items-center gap-4">
-                      <StarPlatinumIcon className="w-10 h-10 text-gray-300"/>
-                      <div>
-                          <h3 className="text-2xl font-bold">Passez au niveau supérieur : <span className="text-gray-200">Premium+</span></h3>
-                          <p className="text-sm text-gray-400">Pour les clients les plus exigeants.</p>
-                      </div>
-                  </div>
-                  <ul className="my-6 space-y-3 text-gray-300">
-                      <li className="flex items-start gap-3"><CheckCircleIcon className="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" /><span>Tous les avantages Premium</span></li>
-                      <li className="flex items-start gap-3"><CheckCircleIcon className="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" /><span>Livraison <strong>GRATUITE</strong> sur toutes les commandes</span></li>
-                      <li className="flex items-start gap-3"><CheckCircleIcon className="w-5 h-5 text-gray-300 flex-shrink-0 mt-0.5" /><span>Promotions exclusives supplémentaires</span></li>
-                  </ul>
-                  <button onClick={onUpgradeToPremiumPlus} className="w-full bg-gray-200 text-gray-900 font-bold py-3 rounded-lg text-lg flex items-center justify-center gap-3 hover:bg-white transition-colors">
-                      <StarPlatinumIcon className="w-6 h-6" />
-                      Souscrire pour {premiumPlusAnnualFee.toLocaleString('fr-CM')} FCFA/an
-                  </button>
-              </div>
-            )}
         </div>
       </div>
     </div>

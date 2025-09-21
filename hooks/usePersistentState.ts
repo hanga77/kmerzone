@@ -1,25 +1,36 @@
-import { useState, useEffect } from 'react';
 
-export const usePersistentState = <T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] => {
-  const [state, setState] = useState<T>(() => {
-    try {
-      const storedValue = localStorage.getItem(key);
-      if (storedValue) {
-        return JSON.parse(storedValue);
-      }
-    } catch (error) {
-      console.error(`Error reading localStorage key "${key}":`, error);
-    }
-    return defaultValue;
-  });
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(state));
-    } catch (error) {
-      console.error(`Error setting localStorage key "${key}":`, error);
-    }
-  }, [key, state]);
+import { useState, useCallback } from 'react';
 
-  return [state, setState];
-};
+export function usePersistentState<T,>(key: string, defaultValue: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+    const [state, setState] = useState<T>(() => {
+        try {
+            const storedValue = window.localStorage.getItem(key);
+            return storedValue ? JSON.parse(storedValue) : defaultValue;
+        } catch (error) {
+            console.error(`Error reading localStorage key “${key}”:`, error);
+            return defaultValue;
+        }
+    });
+
+    const setPersistentState = useCallback(
+        (newValue: React.SetStateAction<T>) => {
+            setState(prevState => {
+                const resolvedValue = typeof newValue === 'function' 
+                    ? (newValue as (prevState: T) => T)(prevState) 
+                    : newValue;
+                
+                try {
+                    window.localStorage.setItem(key, JSON.stringify(resolvedValue));
+                } catch (error) {
+                    console.error(`Error setting localStorage key “${key}”:`, error);
+                }
+                
+                return resolvedValue;
+            });
+        },
+        [key]
+    );
+
+    return [state, setPersistentState];
+}

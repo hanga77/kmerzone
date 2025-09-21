@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
+import { GoogleGenAI } from '@google/genai';
 import { PhotoIcon, SparklesIcon, XIcon } from './Icons';
-import { apiFetch } from '../utils/api';
 
 interface VisualSearchPageProps {
   onSearch: (query: string) => void;
@@ -11,6 +11,10 @@ const VisualSearchPage: React.FC<VisualSearchPageProps> = ({ onSearch }) => {
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const ai = useMemo(() => {
+    // Assumer que process.env.API_KEY est disponible dans le contexte d'exécution
+    return new GoogleGenAI({ apiKey: process.env.API_KEY as string });
+  }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -25,13 +29,15 @@ const VisualSearchPage: React.FC<VisualSearchPageProps> = ({ onSearch }) => {
     }
   };
 
-  const fileToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
+  const fileToGenerativePart = async (file: File) => {
+    const base64EncodedDataPromise = new Promise<string>((resolve) => {
       const reader = new FileReader();
+      reader.onloadend = () => resolve((reader.result as string).split(',')[1]);
       reader.readAsDataURL(file);
-      reader.onload = () => resolve((reader.result as string).split(',')[1]);
-      reader.onerror = error => reject(error);
     });
+    return {
+      inlineData: { data: await base64EncodedDataPromise, mimeType: file.type },
+    };
   };
 
   const handleSearchClick = async () => {
@@ -43,24 +49,23 @@ const VisualSearchPage: React.FC<VisualSearchPageProps> = ({ onSearch }) => {
     setError(null);
 
     try {
-      const image_base64 = await fileToBase64(image);
-      const response = await apiFetch('/ai/visual-search', {
-        method: 'POST',
-        body: JSON.stringify({
-          image_base64,
-          mime_type: image.type,
-        }),
+      const imagePart = await fileToGenerativePart(image);
+      const prompt = "Décris cet objet en 3 à 5 mots-clés pertinents pour une recherche e-commerce. Sépare les mots-clés par des virgules. Ne retourne que les mots-clés. Exemple : robe, pagne, élégante, soirée, coton";
+      
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash',
+        contents: { parts: [imagePart, { text: prompt }] },
       });
 
-      const keywords = response.keywords;
+      const keywords = response.text.trim();
       if (keywords) {
         onSearch(keywords);
       } else {
         setError("L'IA n'a pas pu identifier d'objets dans l'image. Essayez une autre photo.");
       }
-    } catch (err: any) {
-      console.error("Visual search error:", err);
-      setError(`Une erreur est survenue lors de l'analyse de l'image. (${err.message})`);
+    } catch (err) {
+      console.error("Gemini API error:", err);
+      setError("Une erreur est survenue lors de l'analyse de l'image. Veuillez réessayer.");
     } finally {
       setIsLoading(false);
     }

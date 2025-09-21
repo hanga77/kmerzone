@@ -1,47 +1,32 @@
-import React, { useEffect } from 'react';
+import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App';
-import { CartProvider } from './contexts/CartContext';
 import { AuthProvider } from './contexts/AuthContext';
-import { WishlistProvider } from './contexts/WishlistContext';
-import { UIProvider } from './contexts/UIContext';
-import { ThemeProvider } from './contexts/ThemeContext';
 import { ComparisonProvider } from './contexts/ComparisonContext';
+import { UIProvider } from './contexts/UIContext';
+import { CartProvider } from './contexts/CartContext';
+import { WishlistProvider } from './contexts/WishlistContext';
+import { ThemeProvider } from './contexts/ThemeContext';
 import { ChatProvider } from './contexts/ChatContext';
 
-const Main = () => {
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./service-worker.js').then(registration => {
-          console.log('ServiceWorker registration successful with scope: ', registration.scope);
-        }, err => {
-          console.log('ServiceWorker registration failed: ', err);
-        });
-      });
-    }
-  }, []);
-
-  return (
-    <React.StrictMode>
-      <ThemeProvider>
-        <AuthProvider>
-          <WishlistProvider>
+const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <AuthProvider>
+        <ThemeProvider>
             <UIProvider>
-              <ComparisonProvider>
                 <CartProvider>
-                  <ChatProvider>
-                    <App />
-                  </ChatProvider>
+                    <WishlistProvider>
+                        <ComparisonProvider>
+                            <ChatProvider>
+                                {children}
+                            </ChatProvider>
+                        </ComparisonProvider>
+                    </WishlistProvider>
                 </CartProvider>
-              </ComparisonProvider>
             </UIProvider>
-          </WishlistProvider>
-        </AuthProvider>
-      </ThemeProvider>
-    </React.StrictMode>
-  );
-};
+        </ThemeProvider>
+    </AuthProvider>
+);
+
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
@@ -49,4 +34,8 @@ if (!rootElement) {
 }
 
 const root = ReactDOM.createRoot(rootElement);
-root.render(<Main />);
+root.render(
+  <AppProviders>
+    <App />
+  </AppProviders>
+);

@@ -1,10 +1,10 @@
 import React from 'react';
 import { useCart } from '../contexts/CartContext';
-import type { Product } from '../types';
+import type { Product, CartItem } from '../types';
 import { CheckCircleIcon, XIcon } from './Icons';
 
 interface AddToCartModalProps {
-  product: Product;
+  product: CartItem;
   onClose: () => void;
   onNavigateToCart: () => void;
 }
@@ -19,21 +19,21 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ product, onClose, onNav
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-lg shadow-2xl p-6 max-w-lg w-full relative transform transition-all animate-in fade-in-0 zoom-in-95">
-        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-lg w-full relative transform transition-all animate-in fade-in-0 zoom-in-95">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
           <XIcon className="h-6 w-6" />
         </button>
         
-        <div className="flex items-center gap-3 text-lg font-semibold text-green-700 mb-4">
+        <div className="flex items-center gap-3 text-lg font-semibold text-green-700 dark:text-green-300 mb-4">
           <CheckCircleIcon className="w-7 h-7" />
           Produit ajouté au panier !
         </div>
 
-        <div className="flex gap-4 border-t border-b py-4">
+        <div className="flex gap-4 border-t border-b dark:border-gray-700 py-4">
             <img src={displayImage} alt={product.name} className="w-24 h-24 object-cover rounded-md"/>
             <div>
-                <h3 className="font-semibold">{product.name}</h3>
-                <p className="text-gray-500 text-sm">{product.vendor}</p>
+                <h3 className="font-semibold dark:text-white">{product.name}</h3>
+                <p className="text-gray-500 dark:text-gray-400 text-sm">{product.vendor}</p>
                 <p className="text-kmer-green font-bold mt-1">
                     {(product.promotionPrice ?? product.price).toLocaleString('fr-CM')} FCFA
                 </p>
@@ -42,14 +42,14 @@ const AddToCartModal: React.FC<AddToCartModalProps> = ({ product, onClose, onNav
 
         <div className="py-4 space-y-2">
             <div className="flex justify-between">
-                <span>Panier ({totalItems} articles)</span>
-                <span className="font-semibold">{subtotal.toLocaleString('fr-CM')} FCFA</span>
+                <span className="dark:text-gray-300">Panier ({totalItems} articles)</span>
+                <span className="font-semibold dark:text-white">{subtotal.toLocaleString('fr-CM')} FCFA</span>
             </div>
-             <p className="text-sm text-gray-500">Frais de livraison calculés à l'étape suivante.</p>
+             <p className="text-sm text-gray-500 dark:text-gray-400">Frais de livraison calculés à l'étape suivante.</p>
         </div>
 
         <div className="mt-4 flex flex-col sm:flex-row gap-3">
-          <button onClick={onClose} className="w-full bg-white border border-gray-300 text-gray-800 font-bold py-2 px-4 rounded-lg hover:bg-gray-50 transition-colors">
+          <button onClick={onClose} className="w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 text-gray-800 dark:text-gray-200 font-bold py-2 px-4 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors">
             Continuer mes achats
           </button>
           <button onClick={onNavigateToCart} className="w-full bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 transition-colors">

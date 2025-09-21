@@ -1,8 +1,7 @@
 {
-  "name": "KMER ZONE - Le Marketplace Camerounais",
-  "description": "La première plateforme e-commerce camerounaise permettant aux commerçants locaux de vendre directement aux consommateurs, éliminant les intermédiaires et démocratisant l'accès au commerce en ligne.",
+  "name": "Copy of KMER ZONE - E-commerce Platform 23",
+  "description": "A comprehensive e-commerce platform for Cameroonian merchants, featuring seller dashboards, product management, order tracking, and advanced analytics to connect local sellers with customers.",
   "requestFramePermissions": [
     "camera"
-  ],
-  "prompt": ""
+  ]
 }

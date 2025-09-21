@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { XIcon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 import type { User } from '../types';
@@ -14,29 +14,38 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [error, setError] = useState<string | null>(null);
   const { login, register } = useAuth();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  useEffect(() => {
+    setError(null);
+  }, [email, password, name, view]);
+
+  const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
-      alert("Veuillez entrer une adresse e-mail et un mot de passe.");
+      setError("Veuillez entrer une adresse e-mail et un mot de passe.");
       return;
     }
-    const loggedInUser = await login(email, password);
+    const loggedInUser = login(email, password);
     if (loggedInUser) {
       onLoginSuccess(loggedInUser);
+    } else {
+      setError("Email ou mot de passe incorrect.");
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !password) {
-      alert("Veuillez remplir tous les champs.");
+      setError("Veuillez remplir tous les champs.");
       return;
     }
-    const registeredUser = await register(name, email, password);
+    const registeredUser = register(name, email, password);
     if (registeredUser) {
        onLoginSuccess(registeredUser);
+    } else {
+        setError("Un compte avec cet email existe déjà.");
     }
   };
 
@@ -75,7 +84,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                   </button>
                 </div>
                 <input
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green"
                   id="login-password"
                   type="password"
                   placeholder="******************"
@@ -84,6 +93,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                   required
                 />
               </div>
+               {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
               <div className="flex flex-col items-center justify-between">
                 <button
                   className="bg-kmer-green hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline w-full"
@@ -147,12 +157,12 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                   required
                 />
               </div>
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-password">
                   Mot de passe
                 </label>
                 <input
-                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 mb-3 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green"
+                  className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green"
                   id="register-password"
                   type="password"
                   placeholder="******************"
@@ -161,6 +171,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                   required
                 />
               </div>
+              {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
               <div className="flex flex-col items-center justify-between">
                 <button
                   className="bg-kmer-green hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline w-full"

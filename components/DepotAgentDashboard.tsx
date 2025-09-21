@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus, User } from '../types';
 import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ChartPieIcon, BuildingStorefrontIcon, TruckIcon, SearchIcon, PrinterIcon, DocumentTextIcon, CalendarDaysIcon, MapPinIcon, PaperAirplaneIcon } from './Icons';
 
@@ -38,43 +38,58 @@ const ScannerModal: React.FC<{
     onScanSuccess: (decodedText: string) => void;
 }> = ({ title, onClose, onScanSuccess }) => {
     const html5QrCodeRef = useRef<any>(null);
-    const [error, setError] = useState('');
+    const [scannerError, setScannerError] = useState<string | null>(null);
 
     useEffect(() => {
-        if (!Html5Qrcode) return;
+        if (typeof Html5Qrcode === 'undefined') {
+            setScannerError("La bibliothèque de scan n'a pas pu être chargée.");
+            return;
+        }
+
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCodeRef.current = html5QrCode;
+        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
 
         const startScanner = async () => {
             try {
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    (decodedText: string) => {
-                        onScanSuccess(decodedText);
-                        html5QrCode.stop().catch(() => {});
-                    },
-                    () => {}
-                );
+                const cameras = await Html5Qrcode.getCameras();
+                if (cameras && cameras.length) {
+                    if (!html5QrCodeRef.current?.isScanning) {
+                        setScannerError(null);
+                        await html5QrCode.start(
+                            { facingMode: "environment" },
+                            config,
+                            (decodedText: string) => {
+                               onScanSuccess(decodedText);
+                            },
+                            () => {}
+                        );
+                    }
+                } else {
+                     setScannerError("Aucune caméra trouvée.");
+                }
             } catch (err) {
-                setError("Impossible de démarrer la caméra. Vérifiez les permissions.");
+                console.error("Failed to start scanner", err);
+                setScannerError("Impossible d'activer la caméra. Veuillez vérifier les permissions.");
             }
         };
-        startScanner();
+
+        const timer = setTimeout(startScanner, 100);
 
         return () => {
+            clearTimeout(timer);
             if (html5QrCodeRef.current?.isScanning) {
-                html5QrCodeRef.current.stop().catch(() => {});
+                html5QrCodeRef.current.stop().catch((err: any) => console.error("Error stopping scanner", err));
             }
         };
-    }, [onScanSuccess]);
+    }, [onClose, onScanSuccess]);
 
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
             <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full text-white">
                 <h3 className="text-xl font-bold mb-4">{title}</h3>
                 <div id="reader" className="w-full h-64 bg-gray-900 rounded-md"></div>
-                {error && <p className="text-red-400 mt-2">{error}</p>}
+                {scannerError && <p className="text-red-400 mt-2">{scannerError}</p>}
                 <button onClick={onClose} className="mt-4 w-full bg-gray-600 py-2 rounded-md">Annuler</button>
             </div>
         </div>
@@ -94,15 +109,34 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
         return { inboundOrders: inbound, ordersInDepot: inDepot };
     }, [allOrders, user.depotId]);
 
-    const handleScanSuccess = (decodedText: string) => {
+    const allOrdersRef = useRef(allOrders);
+    allOrdersRef.current = allOrders;
+
+    const onCheckInRef = useRef(onCheckIn);
+    onCheckInRef.current = onCheckIn;
+
+    const onProcessDepartureRef = useRef(onProcessDeparture);
+    onProcessDepartureRef.current = onProcessDeparture;
+    
+    const scanModeRef = useRef(scanMode);
+    scanModeRef.current = scanMode;
+
+    const handleCloseScanner = useCallback(() => setScanMode(null), []);
+
+    const handleScanSuccess = useCallback((decodedText: string) => {
+        const currentScanMode = scanModeRef.current;
+        const currentAllOrders = allOrdersRef.current;
+        const currentOnCheckIn = onCheckInRef.current;
+        const currentOnProcessDeparture = onProcessDepartureRef.current;
+        
         setScanMode(null);
-        const order = allOrders.find(o => o.trackingNumber === decodedText);
+        const order = currentAllOrders.find(o => o.trackingNumber === decodedText);
         if (!order) {
             alert('Commande non trouvée.');
             return;
         }
 
-        if (scanMode === 'checkin') {
+        if (currentScanMode === 'checkin') {
             if (order.status !== 'picked-up') {
                 alert(`Impossible d'enregistrer. Statut actuel: ${statusTranslations[order.status]}.`);
                 return;
@@ -110,12 +144,12 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
             const location = prompt("Entrez l'emplacement de stockage (ex: A1, B5):")?.toUpperCase();
             if (location && STORAGE_LOCATIONS.includes(location)) {
                 const notes = prompt("Ajouter des notes ou signaler une anomalie (laisser vide si OK):") || undefined;
-                onCheckIn(order.id, location, notes);
+                currentOnCheckIn(order.id, location, notes);
                 alert(`Commande ${order.id} enregistrée à l'emplacement ${location}.`);
             } else if (location !== null) {
                 alert("Emplacement invalide.");
             }
-        } else if (scanMode === 'checkout') {
+        } else if (currentScanMode === 'checkout') {
             if (order.status !== 'at-depot') {
                 alert(`Impossible de sortir le colis. Statut actuel: ${statusTranslations[order.status]}.`);
                 return;
@@ -125,17 +159,17 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                 const name = prompt("Nom du client qui récupère:");
                 const idNumber = prompt("Numéro de CNI du client:");
                 if (name && idNumber) {
-                    onProcessDeparture(order.id, { name, idNumber });
+                    currentOnProcessDeparture(order.id, { name, idNumber });
                     alert(`Commande ${order.id} remise au client.`);
                 } else {
                     alert("Informations du client requises.");
                 }
             } else {
-                onProcessDeparture(order.id);
+                currentOnProcessDeparture(order.id);
                 alert(`Commande ${order.id} remise au livreur.`);
             }
         }
-    };
+    }, []);
     
     const handleManualCheckin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -197,7 +231,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                     </div>
                     <div className="lg:col-span-2">
                         <h4 className="font-semibold mb-2">Plan de l'entrepôt</h4>
-                        <div className="grid grid-cols-10 gap-1 p-2 bg-gray-200 dark:bg-gray-900 rounded-md">
+                        <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-1 p-2 bg-gray-200 dark:bg-gray-900 rounded-md">
                             {STORAGE_LOCATIONS.map(loc => {
                                 const order = storageMap.get(loc);
                                 const hasIssue = order?.status === 'depot-issue';
@@ -342,7 +376,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
 
     return (
         <>
-            {scanMode && <ScannerModal title={scanMode === 'checkin' ? 'Enregistrer un colis' : 'Sortir un colis'} onClose={() => setScanMode(null)} onScanSuccess={handleScanSuccess} />}
+            {scanMode && <ScannerModal title={scanMode === 'checkin' ? 'Enregistrer un colis' : 'Sortir un colis'} onClose={handleCloseScanner} onScanSuccess={handleScanSuccess} />}
             <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
                  <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
                     <div className="container mx-auto px-4 sm:px-6 py-3">

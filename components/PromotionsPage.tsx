@@ -24,7 +24,8 @@ const isPromotionActive = (product: Product): boolean => {
   const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
 
   if (!startDate && !endDate) {
-    return false;
+    // If a promo price is set but no dates, we consider it active.
+    return true; 
   }
 
   if (startDate && endDate) {
@@ -80,7 +81,7 @@ const PromotionsPage: React.FC<PromotionsPageProps> = ({ allProducts, allStores,
           ) : (
              <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md h-full flex flex-col justify-center">
                 <h2 className="text-2xl font-semibold mb-2 dark:text-white">Aucune promotion pour le moment.</h2>
-                <p className="text-gray-400">Revenez bientôt pour découvrir nos offres !</p>
+                <p className="text-gray-600 dark:text-gray-400">Revenez bientôt pour découvrir nos offres !</p>
             </div>
           )}
         </main>

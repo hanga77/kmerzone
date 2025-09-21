@@ -9,59 +9,25 @@ interface AutoComparisonProps {
 }
 
 const AutoComparison: React.FC<AutoComparisonProps> = ({ currentProduct, otherOffers, stores, onProductClick }) => {
-  const allOffers = [currentProduct, ...otherOffers];
-  
-  const getPrice = (p: Product) => p.promotionPrice ?? p.price;
-
-  const bestPrice = Math.min(...allOffers.map(getPrice));
-
-  const findStoreLogo = (vendorName: string) => {
-    return stores.find(s => s.name === vendorName)?.logoUrl || 'https://picsum.photos/seed/defaultlogo/200/100';
-  }
-
-  return (
-    <div className="my-6 p-4 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700 rounded-lg">
-      <h3 className="font-bold text-lg mb-4 text-gray-800 dark:text-white">Comparer les offres pour ce produit</h3>
-      <div className="space-y-3">
-        {allOffers.sort((a,b) => getPrice(a) - getPrice(b)).map(offer => {
-            const price = getPrice(offer);
-            const isCurrent = offer.id === currentProduct.id;
-            const isBestPrice = price === bestPrice;
-
-            return (
-              <div key={offer.id} className={`p-3 border rounded-lg flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 transition-all ${isCurrent ? 'bg-kmer-green/10 border-kmer-green' : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'}`}>
-                <div className="flex items-center gap-4 w-full sm:w-auto">
-                    <img src={findStoreLogo(offer.vendor)} alt={offer.vendor} className="w-16 h-10 object-contain flex-shrink-0" />
-                    <div className="flex-grow">
-                        <p className="font-semibold">{offer.vendor}</p>
-                        {isBestPrice && !isCurrent && <span className="text-xs font-bold text-kmer-red">Meilleur prix</span>}
-                        {isCurrent && <span className="text-xs font-bold text-kmer-green">Vous êtes ici</span>}
-                    </div>
-                </div>
-
-                <div className="flex w-full sm:w-auto items-center justify-between sm:justify-end sm:gap-4">
-                  <div className="text-left sm:text-right">
-                       <p className={`font-bold text-base sm:text-lg ${isBestPrice ? 'text-kmer-red' : 'text-gray-800 dark:text-white'}`}>
-                          {price.toLocaleString('fr-CM')} FCFA
-                       </p>
-                       <p className={`text-xs ${offer.stock > 0 ? 'text-gray-500 dark:text-gray-400' : 'text-red-500'}`}>
-                           {offer.stock > 0 ? `${offer.stock} en stock` : 'Épuisé'}
-                       </p>
-                  </div>
-                  <div className="flex-shrink-0">
-                      {!isCurrent && offer.stock > 0 && (
-                          <button onClick={() => onProductClick(offer)} className="bg-kmer-yellow text-sm text-gray-900 font-bold py-2 px-3 rounded-md hover:bg-yellow-300 transition-colors">
-                              Voir l'offre
-                          </button>
-                      )}
-                  </div>
-                </div>
+    const allItems = [currentProduct, ...otherOffers];
+    return (
+        <div className="mt-16 bg-gray-100 dark:bg-gray-800/50 p-6 rounded-lg">
+            <h2 className="text-2xl font-bold mb-4">Comparer les offres</h2>
+            <p className="text-gray-600 dark:text-gray-400 mb-6">Ce produit est disponible chez plusieurs vendeurs. Comparez les options ci-dessous.</p>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {allItems.map(product => {
+                    const store = stores.find(s => s.name === product.vendor);
+                    return (
+                        <button key={product.id} onClick={() => onProductClick(product)} className="p-4 border dark:border-gray-700 rounded-lg text-left hover:bg-white dark:hover:bg-gray-700 transition-colors">
+                            <p className="font-bold">{product.vendor}</p>
+                            <p className="text-lg text-kmer-green font-semibold">{product.price.toLocaleString('fr-CM')} FCFA</p>
+                            <p className="text-sm">Vendu depuis: {store?.location}</p>
+                        </button>
+                    );
+                })}
             </div>
-            )
-        })}
-      </div>
-    </div>
-  );
+        </div>
+    );
 };
 
 export default AutoComparison;

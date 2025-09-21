@@ -1,5 +1,5 @@
 {
-  "name": "kmer-zone---le-marketplace-camerounais",
+  "name": "copy-of-kmer-zone---e-commerce-platform-23",
   "private": true,
   "version": "0.0.0",
   "type": "module",
@@ -9,30 +9,14 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "react": "^19.1.1",
-    "react-dom": "^19.1.1",
-    "qrcode": "1.5.3",
-    "socket.io-client": "4.7.5",
-    "http": "^0.0.1-security",
-    "socket.io": "^4.8.1",
-    "express": "^5.1.0",
-    "dotenv": "^17.2.2",
-    "cors": "^2.8.5",
-    "morgan": "^1.10.1",
-    "helmet": "^8.1.0",
-    "express-rate-limit": "^8.1.0",
-    "mongoose": "^8.18.1",
-    "bcryptjs": "^3.0.2",
-    "jsonwebtoken": "^9.0.2",
-    "cloudinary": "^2.7.0",
-    "multer": "^2.0.2",
-    "multer-storage-cloudinary": "^4.0.0",
+    "react": "18.2.0",
+    "react-dom": "18.2.0",
     "@google/genai": "^1.19.0",
-    "express-validator": "^7.2.1",
-    "vite": "^7.1.5"
+    "qrcode": "^1.5.4"
   },
   "devDependencies": {
     "@types/node": "^22.14.0",
+    "@vitejs/plugin-react": "^5.0.0",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
   }
