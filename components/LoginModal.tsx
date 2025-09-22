@@ -14,6 +14,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
+  const [accountType, setAccountType] = useState<'customer' | 'seller'>('customer');
   const [error, setError] = useState<string | null>(null);
   const { login, register } = useAuth();
 
@@ -41,7 +42,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
       setError("Veuillez remplir tous les champs.");
       return;
     }
-    const registeredUser = register(name, email, password);
+    const registeredUser = register(name, email, password, accountType);
     if (registeredUser) {
        onLoginSuccess(registeredUser);
     } else {
@@ -129,6 +130,13 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
           <>
             <h2 className="text-2xl font-bold text-center mb-6 dark:text-white">Créer un compte</h2>
             <form onSubmit={handleRegister}>
+              <div className="mb-4">
+                  <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2">Je suis un</label>
+                  <div className="flex rounded-md shadow-sm">
+                      <button type="button" onClick={() => setAccountType('customer')} className={`px-4 py-2 block w-full text-sm font-medium rounded-l-md ${accountType === 'customer' ? 'bg-kmer-green text-white z-10 ring-2 ring-kmer-green' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50'}`}>Client</button>
+                      <button type="button" onClick={() => setAccountType('seller')} className={`px-4 py-2 block w-full text-sm font-medium rounded-r-md -ml-px ${accountType === 'seller' ? 'bg-kmer-green text-white z-10 ring-2 ring-kmer-green' : 'bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50'}`}>Vendeur</button>
+                  </div>
+              </div>
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-name">
                   Nom complet

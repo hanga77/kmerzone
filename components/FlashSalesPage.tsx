@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { Product, Store, FlashSale } from '../types';
 import ProductCard from './ProductCard';
 import { ArrowLeftIcon, BoltIcon } from './Icons';
@@ -18,28 +18,34 @@ interface FlashSalesPageProps {
 }
 
 const CountdownTimer: React.FC<{ targetDate: string }> = ({ targetDate }) => {
-  const calculateTimeLeft = () => {
-    const difference = +new Date(targetDate) - +new Date();
-    let timeLeft: Record<string, number> = {};
-    if (difference > 0) {
-      timeLeft = {
-        jours: Math.floor(difference / (1000 * 60 * 60 * 24)),
-        heures: Math.floor((difference / (1000 * 60 * 60)) % 24),
-        minutes: Math.floor((difference / 1000 / 60) % 60),
-        secondes: Math.floor((difference / 1000) % 60),
-      };
-    }
-    return timeLeft;
-  };
+    const calculateTimeLeft = useCallback(() => {
+        const difference = +new Date(targetDate) - +new Date();
+        let timeLeft: Record<string, number> = {};
+        if (difference > 0) {
+            timeLeft = {
+                jours: Math.floor(difference / (1000 * 60 * 60 * 24)),
+                heures: Math.floor((difference / (1000 * 60 * 60)) % 24),
+                minutes: Math.floor((difference / 1000 / 60) % 60),
+                secondes: Math.floor((difference / 1000) % 60),
+            };
+        }
+        return timeLeft;
+    }, [targetDate]);
 
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
+    const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
 
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setTimeLeft(calculateTimeLeft());
-    }, 1000);
-    return () => clearTimeout(timer);
-  });
+    useEffect(() => {
+        const timerId = setInterval(() => {
+            const newTimeLeft = calculateTimeLeft();
+            setTimeLeft(newTimeLeft);
+            if (Object.keys(newTimeLeft).length === 0) {
+                clearInterval(timerId);
+            }
+        }, 1000);
+
+        return () => clearInterval(timerId);
+    }, [calculateTimeLeft]);
+
 
   return (
     <div className="flex justify-center items-center gap-4 text-center">
@@ -56,13 +62,13 @@ const CountdownTimer: React.FC<{ targetDate: string }> = ({ targetDate }) => {
 
 const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
   const { user } = useAuth();
-  const now = new Date();
   
-  const visibleSales = useMemo(() => {
+  const { visibleSales, saleForCountdown, isCountdownForUpcoming } = useMemo(() => {
+    const now = new Date();
     const isPremium = user?.loyalty?.status === 'premium' || user?.loyalty?.status === 'premium_plus';
     const twentyFourHoursFromNow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
     
-    return flashSales.filter(sale => {
+    const _visibleSales = flashSales.filter(sale => {
         const startDate = new Date(sale.startDate);
         const endDate = new Date(sale.endDate);
         if (endDate < now) return false; // Sale is over
@@ -72,7 +78,18 @@ const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores,
             return startDate <= now; // Others see only currently active sales
         }
     });
-  }, [flashSales, user, now]);
+    
+    const _saleForCountdown = (() => {
+        const upcoming = _visibleSales.filter(s => new Date(s.startDate) > now).sort((a,b) => +new Date(a.startDate) - +new Date(b.startDate));
+        if (upcoming.length > 0) return upcoming[0];
+        const active = _visibleSales.filter(s => new Date(s.startDate) <= now).sort((a,b) => +new Date(a.endDate) - +new Date(b.endDate));
+        return active[0];
+    })();
+  
+    const _isCountdownForUpcoming = _saleForCountdown && new Date(_saleForCountdown.startDate) > now;
+
+    return { visibleSales: _visibleSales, saleForCountdown: _saleForCountdown, isCountdownForUpcoming: _isCountdownForUpcoming };
+  }, [flashSales, user]);
 
   const allFlashSaleProducts = useMemo(() => {
     const approvedProductIdsInVisibleSales = new Set(
@@ -89,15 +106,6 @@ const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores,
   
   const findStoreLocation = (vendorName: string) => allStores.find(s => s.name === vendorName)?.location;
   
-  const saleForCountdown = useMemo(() => {
-      const upcoming = visibleSales.filter(s => new Date(s.startDate) > now).sort((a,b) => +new Date(a.startDate) - +new Date(b.startDate));
-      if (upcoming.length > 0) return upcoming[0];
-      const active = visibleSales.filter(s => new Date(s.startDate) <= now).sort((a,b) => +new Date(a.endDate) - +new Date(b.endDate));
-      return active[0];
-  }, [visibleSales, now]);
-  
-  const isCountdownForUpcoming = saleForCountdown && new Date(saleForCountdown.startDate) > now;
-
   return (
     <div className="bg-gray-50 dark:bg-gray-900 min-h-[80vh]">
       <div className="container mx-auto px-4 sm:px-6 py-12">
@@ -135,7 +143,7 @@ const FlashSalesPage: React.FC<FlashSalesPageProps> = ({ allProducts, allStores,
               <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                 {filteredAndSortedProducts.map(product => {
                     const saleForProduct = visibleSales.find(s => s.products.some(p => p.productId === product.id));
-                    const isUpcoming = saleForProduct && new Date(saleForProduct.startDate) > now;
+                    const isUpcoming = saleForProduct && new Date(saleForProduct.startDate) > new Date();
                     return product && <ProductCard key={product.id} product={product} onProductClick={onProductClick} onVendorClick={onVendorClick} location={findStoreLocation(product.vendor)} flashSales={flashSales} isComparisonEnabled={isComparisonEnabled} isFlashSaleUpcoming={isUpcoming} stores={allStores} />
                 })}
               </div>

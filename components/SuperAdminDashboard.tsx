@@ -546,120 +546,129 @@ const StoreManagementPanel: React.FC<Pick<SuperAdminDashboardProps, 'allStores' 
                 </div>
                 
                 <div className="space-y-4">
-                    {allStores.map(store => (
-                        <details key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group" open={store.status === 'pending'}>
-                            <summary className="font-semibold cursor-pointer dark:text-white flex justify-between items-center">
-                                <span className="flex items-center gap-2">
-                                  {store.name}
-                                  {store.premiumStatus === 'premium' && <StarIcon className="w-5 h-5 text-kmer-yellow" title="Boutique Premium" />}
-                                </span>
-                                <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${
-                                    store.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
-                                    store.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
-                                    'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
-                                }`}>{store.status}</span>
-                            </summary>
-                            <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-4">
-                                <div>
-                                    <h4 className="font-semibold mb-2 dark:text-white text-sm">Actions Rapides</h4>
-                                    <div className="flex flex-wrap gap-2">
-                                        {store.status === 'pending' && <>
-                                            <button onClick={() => onApproveStore(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Approuver</button>
-                                            <button onClick={() => onRejectStore(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Rejeter</button>
-                                        </>}
-                                        {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
-                                        {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
-                                        {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors">Avertir</button>}
-                                        {store.status === 'active' && (
-                                            <button onClick={() => onToggleStorePremiumStatus(store)} className={`text-sm text-white px-3 py-1.5 rounded-md transition-colors ${store.premiumStatus === 'premium' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-kmer-yellow hover:bg-yellow-500'}`}>
-                                                {store.premiumStatus === 'premium' ? 'Retirer Premium' : 'Promouvoir en Premium'}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                                
-                                {siteSettings.isRentEnabled && (
+                    {allStores.map(store => {
+                        const hasPremiumRequest = store.status === 'pending' && (store.premiumStatus === 'premium' || store.premiumStatus === 'super_premium');
+                        return (
+                            <details key={store.id} className="p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg shadow-sm group" open={store.status === 'pending'}>
+                                <summary className="font-semibold cursor-pointer dark:text-white flex justify-between items-center">
+                                    <span className="flex items-center gap-2">
+                                      {store.name}
+                                      {store.premiumStatus === 'premium' && store.status === 'active' && <StarIcon className="w-5 h-5 text-kmer-yellow" title="Boutique Premium" />}
+                                      {store.premiumStatus === 'super_premium' && store.status === 'active' && <StarPlatinumIcon className="w-5 h-5 text-kmer-red" title="Boutique Super Premium" />}
+                                      {hasPremiumRequest && (
+                                          <span className="text-xs font-bold bg-kmer-yellow/20 text-kmer-yellow px-2 py-0.5 rounded-full flex items-center gap-1 animate-pulse">
+                                            <StarIcon className="w-3 h-3"/> Demande {store.premiumStatus.replace('_', ' ')}
+                                          </span>
+                                      )}
+                                    </span>
+                                    <span className={`px-2 py-1 text-xs font-semibold rounded-full capitalize ${
+                                        store.status === 'active' ? 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300' :
+                                        store.status === 'pending' ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300' :
+                                        'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300'
+                                    }`}>{store.status}</span>
+                                </summary>
+                                <div className="mt-4 pt-4 border-t dark:border-gray-700 space-y-4">
                                     <div>
-                                        <h4 className="font-semibold mb-2 dark:text-white text-sm">Abonnement</h4>
-                                        <div className="flex items-center gap-4 p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700">
-                                            <p className="text-sm flex-grow">
-                                                Statut : <span className="font-bold">{store.subscriptionStatus || 'inactif'}</span>
-                                                {store.subscriptionDueDate && ` (Échéance : ${new Date(store.subscriptionDueDate).toLocaleDateString('fr-FR')})`}
-                                            </p>
-                                            {store.status === 'active' && store.subscriptionStatus !== 'active' && (
-                                                <button
-                                                    onClick={() => onActivateSubscription(store)}
-                                                    className="text-sm bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600"
-                                                >
-                                                    Activer l'abonnement
+                                        <h4 className="font-semibold mb-2 dark:text-white text-sm">Actions Rapides</h4>
+                                        <div className="flex flex-wrap gap-2">
+                                            {store.status === 'pending' && <>
+                                                <button onClick={() => onApproveStore(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Approuver</button>
+                                                <button onClick={() => onRejectStore(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Rejeter</button>
+                                            </>}
+                                            {store.status === 'active' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors">Suspendre</button>}
+                                            {store.status === 'suspended' && <button onClick={() => onToggleStoreStatus(store)} className="text-sm bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors">Réactiver</button>}
+                                            {store.status === 'active' && <button onClick={() => setWarningStore(store)} className="text-sm bg-yellow-500 text-white px-3 py-1.5 rounded-md hover:bg-yellow-600 transition-colors">Avertir</button>}
+                                            {store.status === 'active' && (
+                                                <button onClick={() => onToggleStorePremiumStatus(store)} className={`text-sm text-white px-3 py-1.5 rounded-md transition-colors ${store.premiumStatus === 'premium' ? 'bg-gray-500 hover:bg-gray-600' : 'bg-kmer-yellow hover:bg-yellow-500'}`}>
+                                                    {store.premiumStatus === 'premium' ? 'Retirer Premium' : 'Promouvoir en Premium'}
                                                 </button>
                                             )}
                                         </div>
                                     </div>
-                                )}
-                                
-                                <div>
-                                    <h4 className="font-semibold mb-2 dark:text-white text-sm">Gestion des Documents</h4>
-                                    <div className="space-y-2">
-                                        {store.documents.map(doc => (
-                                            <div key={doc.name} className="flex flex-col sm:flex-row justify-between sm:items-center p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700">
-                                                <div>
-                                                    <p className="font-medium text-gray-800 dark:text-gray-200">{doc.name}</p>
-                                                    <span className={`px-2 py-0.5 mt-1 inline-block rounded-full text-xs font-medium ${getDocStatusClass(doc.status)}`}>{doc.status}</span>
-                                                    {doc.status === 'rejected' && doc.rejectionReason && <p className="text-xs text-red-500 mt-1">Motif: {doc.rejectionReason}</p>}
-                                                </div>
-                                                <div className="flex gap-2 mt-2 sm:mt-0 items-center">
-                                                    {doc.fileUrl && ['uploaded', 'verified'].includes(doc.status) && (
-                                                        <a 
-                                                            href={doc.fileUrl} 
-                                                            target="_blank" 
-                                                            rel="noopener noreferrer" 
-                                                            className="text-xs bg-gray-500 text-white px-3 py-1.5 rounded-md hover:bg-gray-600 transition-colors"
-                                                        >
-                                                            Voir le document
-                                                        </a>
-                                                    )}
-                                                    {doc.status === 'uploaded' && (
-                                                        <>
-                                                            <button 
-                                                                onClick={() => {
-                                                                    const reason = window.prompt('Motif du rejet (optionnel) :');
-                                                                    if (reason !== null) {
-                                                                        onVerifyDocumentStatus(store, doc.name, 'rejected', reason || 'Non spécifié');
-                                                                    }
-                                                                }} 
-                                                                className="text-xs bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors"
-                                                            >
-                                                                Rejeter
-                                                            </button>
-                                                            <button 
-                                                                onClick={() => onVerifyDocumentStatus(store, doc.name, 'verified')} 
-                                                                className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors"
-                                                            >
-                                                                Approuver
-                                                            </button>
-                                                        </>
-                                                    )}
-                                                </div>
+                                    
+                                    {siteSettings.isRentEnabled && (
+                                        <div>
+                                            <h4 className="font-semibold mb-2 dark:text-white text-sm">Abonnement</h4>
+                                            <div className="flex items-center gap-4 p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700">
+                                                <p className="text-sm flex-grow">
+                                                    Statut : <span className="font-bold">{store.subscriptionStatus || 'inactif'}</span>
+                                                    {store.subscriptionDueDate && ` (Échéance : ${new Date(store.subscriptionDueDate).toLocaleDateString('fr-FR')})`}
+                                                </p>
+                                                {store.status === 'active' && store.subscriptionStatus !== 'active' && (
+                                                    <button
+                                                        onClick={() => onActivateSubscription(store)}
+                                                        className="text-sm bg-blue-500 text-white px-3 py-1.5 rounded-md hover:bg-blue-600"
+                                                    >
+                                                        Activer l'abonnement
+                                                    </button>
+                                                )}
                                             </div>
-                                        ))}
-                                    </div>
-                                     <form onSubmit={(e) => handleRequestNewDoc(e, store.id)} className="mt-3">
-                                        <div className="flex gap-2">
-                                            <input name="docName" type="text" placeholder="Demander un nouveau document (ex: Patente)" className="flex-grow p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600"/>
-                                            <button type="submit" className="text-xs bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600">Demander</button>
                                         </div>
-                                    </form>
-                                </div>
-                                 <div>
-                                    <h4 className="font-semibold mb-2 dark:text-white text-sm">Personnel Assigné</h4>
-                                    <div className="text-sm bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700 p-2">
-                                        {(allUsers.filter(u => u.role === 'depot_agent' && u.depotId === store.id).map(agent => agent.name).join(', ') || <span className="text-gray-500 italic">Aucun agent assigné</span>)}
+                                    )}
+                                    
+                                    <div>
+                                        <h4 className="font-semibold mb-2 dark:text-white text-sm">Gestion des Documents</h4>
+                                        <div className="space-y-2">
+                                            {store.documents.map(doc => (
+                                                <div key={doc.name} className="flex flex-col sm:flex-row justify-between sm:items-center p-2 bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700">
+                                                    <div>
+                                                        <p className="font-medium text-gray-800 dark:text-gray-200">{doc.name}</p>
+                                                        <span className={`px-2 py-0.5 mt-1 inline-block rounded-full text-xs font-medium ${getDocStatusClass(doc.status)}`}>{doc.status}</span>
+                                                        {doc.status === 'rejected' && doc.rejectionReason && <p className="text-xs text-red-500 mt-1">Motif: {doc.rejectionReason}</p>}
+                                                    </div>
+                                                    <div className="flex gap-2 mt-2 sm:mt-0 items-center">
+                                                        {doc.fileUrl && ['uploaded', 'verified'].includes(doc.status) && (
+                                                            <a 
+                                                                href={doc.fileUrl} 
+                                                                target="_blank" 
+                                                                rel="noopener noreferrer" 
+                                                                className="text-xs bg-gray-500 text-white px-3 py-1.5 rounded-md hover:bg-gray-600 transition-colors"
+                                                            >
+                                                                Voir le document
+                                                            </a>
+                                                        )}
+                                                        {doc.status === 'uploaded' && (
+                                                            <>
+                                                                <button 
+                                                                    onClick={() => {
+                                                                        const reason = window.prompt('Motif du rejet (optionnel) :');
+                                                                        if (reason !== null) {
+                                                                            onVerifyDocumentStatus(store, doc.name, 'rejected', reason || 'Non spécifié');
+                                                                        }
+                                                                    }} 
+                                                                    className="text-xs bg-red-500 text-white px-3 py-1.5 rounded-md hover:bg-red-600 transition-colors"
+                                                                >
+                                                                    Rejeter
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => onVerifyDocumentStatus(store, doc.name, 'verified')} 
+                                                                    className="text-xs bg-green-500 text-white px-3 py-1.5 rounded-md hover:bg-green-600 transition-colors"
+                                                                >
+                                                                    Approuver
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                         <form onSubmit={(e) => handleRequestNewDoc(e, store.id)} className="mt-3">
+                                            <div className="flex gap-2">
+                                                <input name="docName" type="text" placeholder="Demander un nouveau document (ex: Patente)" className="flex-grow p-1 border rounded text-sm dark:bg-gray-700 dark:border-gray-600"/>
+                                                <button type="submit" className="text-xs bg-blue-500 text-white px-3 py-1 rounded-md hover:bg-blue-600">Demander</button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                     <div>
+                                        <h4 className="font-semibold mb-2 dark:text-white text-sm">Personnel Assigné</h4>
+                                        <div className="text-sm bg-white dark:bg-gray-800 rounded-md border dark:border-gray-700 p-2">
+                                            {(allUsers.filter(u => u.role === 'depot_agent' && u.depotId === store.id).map(agent => agent.name).join(', ') || <span className="text-gray-500 italic">Aucun agent assigné</span>)}
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </details>
-                    ))}
+                            </details>
+                        )
+                    })}
                 </div>
             </div>
         </>

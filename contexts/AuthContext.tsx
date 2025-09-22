@@ -7,7 +7,7 @@ interface AuthContextType {
   allUsers: User[];
   login: (email: string, password?: string) => User | null;
   logout: () => void;
-  register: (name: string, email: string, password?: string) => User | null;
+  register: (name: string, email: string, password?: string, accountType?: 'customer' | 'seller') => User | null;
   updateUser: (updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => void;
   resetPassword: (email: string, newPassword: string) => void;
   updateUserInfo: (userId: string, updates: Partial<User>) => void;
@@ -99,32 +99,11 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         return foundUser;
     }
     
-    if (!email.includes('@')) {
-        alert("Email invalide");
-        return null;
-    }
-    if (!password) {
-        alert("Veuillez fournir un mot de passe pour créer un compte.");
-        return null;
-    }
-    const name = email.split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-    const newUser: User = { 
-      id: new Date().getTime().toString(),
-      name: name.charAt(0).toUpperCase() + name.slice(1), 
-      email,
-      role: 'customer',
-      loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
-      password: password,
-      addresses: [],
-      followedStores: [],
-      notificationPreferences: defaultNotificationPrefs,
-    };
-    setAllUsers(prev => [...prev, newUser]);
-    setLoggedInUserId(newUser.id);
-    return newUser;
-  }, [allUsers, setAllUsers, setLoggedInUserId]);
+    alert("Aucun compte trouvé avec cet email. Veuillez vous inscrire.");
+    return null;
+  }, [allUsers, setLoggedInUserId]);
 
-  const register = useCallback((name: string, email: string, password?: string): User | null => {
+  const register = useCallback((name: string, email: string, password?: string, accountType: 'customer' | 'seller' = 'customer'): User | null => {
       const existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser) {
           alert("Un utilisateur avec cet email existe déjà.");
@@ -139,7 +118,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: new Date().getTime().toString(),
           name,
           email,
-          role: 'customer',
+          role: accountType,
           loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
           password: password,
           addresses: [],

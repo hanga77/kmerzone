@@ -5,6 +5,7 @@
 
 
 
+
 export interface Review {
   author: string;
   rating: number;
@@ -192,7 +193,7 @@ export interface Store {
   shippingSettings?: ShippingSettings;
 }
 
-export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent';
+export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent' | 'enterprise';
 
 export interface UserLoyalty {
   status: 'standard' | 'premium' | 'premium_plus';
@@ -507,4 +508,4 @@ export interface Notification {
   timestamp: string; // ISO string
 }
 
-export type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard' | 'visual-search';
+export type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard' | 'visual-search' | 'seller-subscription';
