@@ -253,7 +253,8 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
         return;
       }
       
-      files.forEach(file => {
+      // FIX: Explicitly type `file` as Blob to satisfy `readAsDataURL`.
+      files.forEach((file: Blob) => {
           const reader = new FileReader();
           reader.onloadend = () => {
             const result = reader.result as string;

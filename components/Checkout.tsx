@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
-import type { NewOrderData, PickupPoint, SiteSettings, Address, PaymentMethod, CartItem, Store, PromoCode, Product, FlashSale } from '../types';
+import type { NewOrderData, PickupPoint, SiteSettings, Address, PaymentMethod, CartItem, Store, PromoCode, Product, FlashSale, PaymentRequest } from '../types';
 import { ArrowLeftIcon, BuildingStorefrontIcon, CheckCircleIcon, CreditCardIcon, MapPinIcon, PlusIcon, ShoppingBagIcon, TruckIcon, XIcon } from './Icons';
 
 // Helper functions for price calculation
@@ -193,10 +193,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
             alert("Veuillez sélectionner un point de retrait.");
             return;
         }
-        if (!selectedPaymentMethodId) {
-            alert("Veuillez sélectionner un moyen de paiement.");
-            return;
-        }
+        
         const orderData: NewOrderData = {
             userId: user.id,
             items: cart,
@@ -267,19 +264,6 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                                     {allPickupPoints.map(p => <option key={p.id} value={p.id}>{p.name} - {p.neighborhood}, {p.city}</option>)}
                                 </select>
                             )}
-                        </div>
-
-                        {/* Payment Method */}
-                        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-bold mb-4 dark:text-white">3. Moyen de paiement</h2>
-                             <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                                {paymentMethods.map(method => (
-                                    <button key={method.id} onClick={() => setSelectedPaymentMethodId(method.id)} className={`p-4 border-2 rounded-lg flex flex-col items-center justify-center gap-2 ${selectedPaymentMethodId === method.id ? 'border-kmer-green' : 'dark:border-gray-700'}`}>
-                                        <img src={method.imageUrl} alt={method.name} className="h-8"/>
-                                        <span className="text-xs font-semibold">{method.name}</span>
-                                    </button>
-                                ))}
-                            </div>
                         </div>
                     </div>
                     {/* Order Summary */}

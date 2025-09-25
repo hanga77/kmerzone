@@ -96,7 +96,7 @@ const BecomePremiumPage: React.FC<BecomePremiumPageProps> = ({ siteSettings, onB
             <div className="mt-auto">
               {loyalty.status === 'standard' && (
                 <button onClick={onBecomePremiumByCaution} className="w-full bg-kmer-yellow text-gray-900 font-bold py-3 rounded-lg hover:bg-yellow-300 transition-colors">
-                  Devenir Premium maintenant
+                  Payer la caution pour devenir Premium
                   <span className="block text-xs font-normal">Caution de {siteSettings.premiumCautionAmount.toLocaleString('fr-CM')} FCFA</span>
                 </button>
               )}
@@ -126,7 +126,7 @@ const BecomePremiumPage: React.FC<BecomePremiumPageProps> = ({ siteSettings, onB
             <div className="mt-auto">
               {loyalty.status !== 'premium_plus' && (
                  <button onClick={onUpgradeToPremiumPlus} className="w-full bg-kmer-red text-white font-bold py-3 rounded-lg hover:bg-red-600 transition-colors">
-                  {loyalty.status === 'premium' ? 'Passer à Premium+' : 'Devenir Premium+'}
+                  {loyalty.status === 'premium' ? 'Payer pour passer à Premium+' : 'Payer pour devenir Premium+'}
                   <span className="block text-xs font-normal">{siteSettings.premiumPlusAnnualFee.toLocaleString('fr-CM')} FCFA / an</span>
                 </button>
               )}

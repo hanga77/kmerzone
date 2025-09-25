@@ -168,6 +168,7 @@ export interface ShippingSettings {
 
 export interface Store {
   id: string;
+  sellerId: string;
   name: string;
   logoUrl: string;
   bannerUrl?: string;
@@ -255,6 +256,11 @@ export interface PromoCode {
   uses: number; // To track how many times it has been used
 }
 
+export interface PaymentDetails {
+  methodId: string;
+  transactionId: string;
+  phoneNumber: string;
+}
 
 export interface NewOrderData {
     userId: string;
@@ -324,6 +330,7 @@ export interface Order extends NewOrderData {
     pickupRecipientId?: string;
     proofOfDeliveryUrl?: string;
     signatureUrl?: string;
+    paymentDetails?: PaymentDetails;
 }
 
 export interface Payout {
@@ -506,6 +513,12 @@ export interface Notification {
   };
   isRead: boolean;
   timestamp: string; // ISO string
+}
+
+export interface PaymentRequest {
+  amount: number;
+  reason: string;
+  onSuccess: (details: PaymentDetails) => void;
 }
 
 export type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard' | 'visual-search' | 'seller-subscription';

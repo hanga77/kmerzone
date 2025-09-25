@@ -1,10 +1,4 @@
 
-
-
-
-
-
-
 import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod, ShippingPartner } from './types';
 
 export const initialCategories: Category[] = [
@@ -174,7 +168,7 @@ export const initialShippingPartners: ShippingPartner[] = [
 
 export const initialStores: Store[] = [
     { 
-        id: 'store-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', 
+        id: 'store-1', sellerId: 'seller-1', name: 'Kmer Fashion', logoUrl: 'https://d1csarkz8obe9u.cloudfront.net/posterpreviews/fashion-brand-logo-design-template-5355651c6b65163155af4e2c246f5647_screen.jpg?ts=1675753069', 
         bannerUrl: 'https://images.unsplash.com/photo-1555529669-e69e70197a29?q=80&w=2070&auto=format&fit=crop',
         category: 'Mode et Vêtements', warnings: [], status: 'active', premiumStatus: 'premium',
         location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Aïcha', sellerLastName: 'Bakari', sellerPhone: '699887766',
@@ -193,7 +187,7 @@ export const initialStores: Store[] = [
         },
     },
     { 
-        id: 'store-2', name: 'Mama Africa', logoUrl: 'https://img.freepik.com/vecteurs-premium/modele-logo-cuisine-africaine_210834-31.jpg', 
+        id: 'store-2', sellerId: 'seller-2', name: 'Mama Africa', logoUrl: 'https://img.freepik.com/vecteurs-premium/modele-logo-cuisine-africaine_210834-31.jpg', 
         bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop',
         category: 'Alimentation', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Bastos', sellerFirstName: 'Jeanne', sellerLastName: 'Abena', sellerPhone: '677665544',
@@ -203,7 +197,7 @@ export const initialStores: Store[] = [
         collections: []
     },
     { 
-        id: 'store-3', name: 'Electro Plus', logoUrl: 'https://cdn.dribbble.com/users/188652/screenshots/1029415/electro-logo-2.jpg', 
+        id: 'store-3', sellerId: 'seller-3', name: 'Electro Plus', logoUrl: 'https://cdn.dribbble.com/users/188652/screenshots/1029415/electro-logo-2.jpg', 
         bannerUrl: 'https://images.unsplash.com/photo-1593642702821-c8da6771f0c6?q=80&w=2069&auto=format&fit=crop',
         category: 'Électronique', warnings: [], status: 'active', premiumStatus: 'super_premium',
         location: 'Yaoundé', neighborhood: 'Mokolo', sellerFirstName: 'Paul', sellerLastName: 'Kouam', sellerPhone: '655443322',
@@ -213,7 +207,7 @@ export const initialStores: Store[] = [
         collections: []
     },
     { 
-        id: 'store-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', 
+        id: 'store-4', sellerId: 'seller-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', 
         bannerUrl: 'https://images.unsplash.com/photo-1583947581920-8025819a58a7?q=80&w=2071&auto=format&fit=crop',
         category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
         location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
@@ -223,7 +217,7 @@ export const initialStores: Store[] = [
         collections: []
     },
      { 
-        id: 'store-5', name: 'Yaoundé Style', logoUrl: 'https://img.freepik.com/premium-vector/traditional-african-woman-head-wrap-turban-logo_103045-81.jpg', category: 'Mode et Vêtements', warnings: [], status: 'pending', premiumStatus: 'standard',
+        id: 'store-5', sellerId: 'seller-5', name: 'Yaoundé Style', logoUrl: 'https://img.freepik.com/premium-vector/traditional-african-woman-head-wrap-turban-logo_103045-81.jpg', category: 'Mode et Vêtements', warnings: [], status: 'pending', premiumStatus: 'standard',
         location: 'Yaoundé', neighborhood: 'Mvog-Ada', sellerFirstName: 'Franck', sellerLastName: 'Essomba', sellerPhone: '698765432',
         physicalAddress: 'Avenue Kennedy', latitude: 3.8647, longitude: 11.521,
         documents: [],
@@ -231,7 +225,7 @@ export const initialStores: Store[] = [
         collections: []
     },
     { 
-        id: 'store-6', name: 'Bafoussam Brews', logoUrl: 'https://cdn.dribbble.com/users/1586931/screenshots/3443128/coffee-logo-design.png', category: 'Alimentation & Boissons', warnings: [], status: 'active', premiumStatus: 'standard',
+        id: 'store-6', sellerId: 'seller-6', name: 'Bafoussam Brews', logoUrl: 'https://cdn.dribbble.com/users/1586931/screenshots/3443128/coffee-logo-design.png', category: 'Alimentation & Boissons', warnings: [], status: 'active', premiumStatus: 'standard',
         location: 'Bafoussam', neighborhood: 'Centre Ville', sellerFirstName: 'Pierre', sellerLastName: 'Kamdem', sellerPhone: '696543210',
         physicalAddress: 'Marché Central, Bafoussam', latitude: 5.4744, longitude: 10.4193, subscriptionStatus: 'active', subscriptionDueDate: '2024-09-01T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }],
@@ -239,7 +233,7 @@ export const initialStores: Store[] = [
         collections: []
     },
     { 
-        id: 'store-7', name: 'Limbe Arts & Crafts', logoUrl: 'https://i.pinimg.com/736x/8a/9e-12/8a9e-1261a8779728283575647585355e.jpg', category: 'Artisanat & Décoration', warnings: [], status: 'active', premiumStatus: 'premium',
+        id: 'store-7', sellerId: 'seller-7', name: 'Limbe Arts & Crafts', logoUrl: 'https://i.pinimg.com/736x/8a/9e-12/8a9e-1261a8779728283575647585355e.jpg', category: 'Artisanat & Décoration', warnings: [], status: 'active', premiumStatus: 'premium',
         location: 'Limbe', neighborhood: 'Down Beach', sellerFirstName: 'Sarah', sellerLastName: 'Eko', sellerPhone: '678901234',
         physicalAddress: 'Bord de mer, Limbe', latitude: 4.0165, longitude: 9.2131, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-25T00:00:00.000Z',
         documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }, { name: "Registre de Commerce", status: 'verified', fileUrl: '...' }],
@@ -253,7 +247,7 @@ export const initialStores: Store[] = [
         },
     },
     { 
-        id: 'store-8', name: 'Kribi Digital', logoUrl: 'https://static.vecteezy.com/system/resources/previews/007/618/856/non_2x/kd-logo-k-d-design-white-kd-letter-kd-letter-logo-design-initial-letter-kd-linked-circle-uppercase-monogram-logo-vector.jpg', category: 'Électronique', warnings: [], status: 'pending', premiumStatus: 'standard',
+        id: 'store-8', sellerId: 'seller-8', name: 'Kribi Digital', logoUrl: 'https://static.vecteezy.com/system/resources/previews/007/618/856/non_2x/kd-logo-k-d-design-white-kd-letter-kd-letter-logo-design-initial-letter-kd-linked-circle-uppercase-monogram-logo-vector.jpg', category: 'Électronique', warnings: [], status: 'pending', premiumStatus: 'standard',
         location: 'Kribi', neighborhood: 'Centre', sellerFirstName: 'David', sellerLastName: 'Lobe', sellerPhone: '654321098',
         physicalAddress: 'Avenue des Banques, Kribi', latitude: 2.9431, longitude: 9.9077,
         documents: [],

@@ -372,7 +372,8 @@ const NewTicketForm: React.FC<{ userOrders: Order[], onCreate: (s: string, m: st
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
+// FIX: Explicitly type `file` as Blob to satisfy `readAsDataURL`.
+            files.forEach((file: Blob) => {
                 const reader = new FileReader();
                 reader.onloadend = () => setAttachments(prev => [...prev, reader.result as string]);
                 reader.readAsDataURL(file);
@@ -445,7 +446,8 @@ const TicketDetailView: React.FC<{ ticket: Ticket, onReply: (id: string, msg: st
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files) {
             const files = Array.from(e.target.files);
-            files.forEach(file => {
+// FIX: Explicitly type `file` as Blob to satisfy `readAsDataURL`.
+            files.forEach((file: Blob) => {
                 const reader = new FileReader();
                 reader.onloadend = () => setAttachments(prev => [...prev, reader.result as string]);
                 reader.readAsDataURL(file);

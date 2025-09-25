@@ -11,7 +11,7 @@ import { useUI } from './contexts/UIContext';
 import { useCart } from './contexts/CartContext';
 import { useWishlist } from './contexts/WishlistContext';
 import { initialCategories, initialProducts, sampleDeliveredOrder, sampleDeliveredOrder2, sampleDeliveredOrder3, initialStores, initialFlashSales, initialPickupPoints, initialSiteSettings, initialSiteContent, initialAdvertisements, initialPaymentMethods, sampleNewMissionOrder, initialShippingPartners } from './constants';
-import type { Product, Category, Store, Review, Order, OrderStatus, User, SiteActivityLog, FlashSale, PickupPoint, NewOrderData, PromoCode, Warning, SiteSettings, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod, Page, Notification, ProductCollection, Payout, Advertisement, Story, CartItem, ShippingPartner, ShippingSettings, UserRole } from './types';
+import type { Product, Category, Store, Review, Order, OrderStatus, User, SiteActivityLog, FlashSale, PickupPoint, NewOrderData, PromoCode, Warning, SiteSettings, UserAvailabilityStatus, DisputeMessage, StatusChangeLogEntry, FlashSaleProduct, RequestedDocument, SiteContent, Ticket, TicketMessage, TicketStatus, TicketPriority, Announcement, PaymentMethod, Page, Notification, ProductCollection, Payout, Advertisement, Story, CartItem, ShippingPartner, ShippingSettings, UserRole, PaymentRequest, PaymentDetails } from './types';
 import { Header } from './components/Header';
 import SuperAdminDashboard from './components/SuperAdminDashboard';
 import Footer from './components/Footer';
@@ -46,6 +46,7 @@ import BecomePremiumPage from './components/BecomePremiumPage';
 import Checkout from './components/Checkout';
 import SearchResultsPage from './components/SearchResultsPage';
 import SellerSubscriptionPage from './components/SellerSubscriptionPage';
+import PaymentModal from './components/PaymentModal';
 import {
     ComparisonPage, ComparisonBar, InfoPage,
     StoryViewer,
@@ -112,6 +113,8 @@ export default function App() {
   const [dismissedAnnouncements, setDismissedAnnouncements] = usePersistentState<string[]>('dismissedAnnouncements', []);
   const [paymentMethods, setPaymentMethods] = usePersistentState<PaymentMethod[]>('paymentMethods', initialPaymentMethods);
   const [allShippingPartners, setAllShippingPartners] = usePersistentState<ShippingPartner[]>('allShippingPartners', initialShippingPartners);
+  
+  const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
 
   const { user, logout: authLogout, allUsers, setAllUsers, updateUser, resetPassword, login, register } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
@@ -225,11 +228,27 @@ export default function App() {
   const handleSearch = (query: string) => { setSearchQuery(query); setPage('search-results'); };
 
   const handleCreateOrder = (orderData: NewOrderData) => {
-    const newOrder: Order = { ...orderData, id: `ORDER-${Date.now()}`, status: 'confirmed', orderDate: new Date().toISOString(), trackingNumber: `KZ${Date.now()}`, trackingHistory: [{ status: 'confirmed', date: new Date().toISOString(), location: 'Système', details: 'Commande confirmée' }]};
-    setAllOrders(prev => [newOrder, ...prev]);
-    setSelectedOrder(newOrder);
-    clearCart();
-    setPage('order-success');
+    const paymentRequest: PaymentRequest = {
+      amount: orderData.total,
+      reason: `Paiement pour votre commande de ${orderData.items.length} article(s).`,
+      onSuccess: (paymentDetails) => {
+        const newOrder: Order = {
+          ...orderData,
+          id: `ORDER-${Date.now()}`,
+          status: 'confirmed',
+          orderDate: new Date().toISOString(),
+          trackingNumber: `KZ${Date.now()}`,
+          trackingHistory: [{ status: 'confirmed', date: new Date().toISOString(), location: 'Système', details: 'Commande confirmée' }],
+          paymentDetails,
+        };
+        setAllOrders(prev => [newOrder, ...prev]);
+        setSelectedOrder(newOrder);
+        clearCart();
+        setPage('order-success');
+        setPaymentRequest(null);
+      }
+    };
+    setPaymentRequest(paymentRequest);
   };
   
   const handleSaveProduct = (productData: Product) => {
@@ -259,16 +278,32 @@ export default function App() {
 
   const handleBecomePremiumByCaution = () => {
     if (!user) return;
-    setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, loyalty: { ...u.loyalty, status: 'premium', premiumStatusMethod: 'deposit' } } : u));
-    logActivity('User Upgraded', `User ${user.name} became Premium via caution.`);
-    handleOpenAccountPage('dashboard');
+    const request: PaymentRequest = {
+        amount: siteSettings.premiumCautionAmount,
+        reason: "Paiement de la caution pour le statut Client Premium",
+        onSuccess: (paymentDetails) => {
+            setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, loyalty: { ...u.loyalty, status: 'premium', premiumStatusMethod: 'deposit' } } : u));
+            logActivity('User Upgraded', `User ${user.name} became Premium via caution.`);
+            handleOpenAccountPage('dashboard');
+            setPaymentRequest(null);
+        }
+    };
+    setPaymentRequest(request);
   };
 
   const handleUpgradeToPremiumPlus = () => {
     if (!user) return;
-    setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, loyalty: { ...u.loyalty, status: 'premium_plus', premiumStatusMethod: 'subscription' } } : u));
-    logActivity('User Upgraded', `User ${user.name} upgraded to Premium Plus.`);
-    handleOpenAccountPage('dashboard');
+     const request: PaymentRequest = {
+        amount: siteSettings.premiumPlusAnnualFee,
+        reason: "Paiement de l'abonnement annuel Client Premium+",
+        onSuccess: (paymentDetails) => {
+            setAllUsers(prev => prev.map(u => u.id === user.id ? { ...u, loyalty: { ...u.loyalty, status: 'premium_plus', premiumStatusMethod: 'subscription' } } : u));
+            logActivity('User Upgraded', `User ${user.name} upgraded to Premium Plus.`);
+            handleOpenAccountPage('dashboard');
+            setPaymentRequest(null);
+        }
+    };
+    setPaymentRequest(request);
   };
 
   const handleCheckIn = (orderId: string, storageLocationId: string, notes?: string) => {
@@ -332,9 +367,11 @@ export default function App() {
   };
   
   const handleSelectSubscription = (status: 'standard' | 'premium' | 'super_premium') => {
-    if (!user || !user.shopName) return;
-    const storeToUpdate = allStores.find(s => s.name === user.shopName);
-    if (storeToUpdate) {
+    if (!user) return;
+    const storeToUpdate = allStores.find(s => s.sellerId === user.id);
+    if (!storeToUpdate) return;
+
+    const completeSubscription = (paymentDetails?: PaymentDetails) => {
         const requiresValidation = status === 'premium' || status === 'super_premium';
         setAllStores(prevStores => 
             prevStores.map(store => 
@@ -345,24 +382,91 @@ export default function App() {
                 } : store
             )
         );
-        logActivity('Seller Subscription Choice', `Seller ${user.name} chose ${status}.`);
+        logActivity('Seller Subscription Choice', `Seller ${user.name} chose ${status}. Payment: ${paymentDetails ? 'Success' : 'N/A'}`);
         
         if (requiresValidation) {
             const admin = allUsers.find(u => u.role === 'superadmin');
             if (admin) {
                 addNotification({
                     userId: admin.id,
-                    message: `La boutique "${storeToUpdate.name}" a demandé un abonnement ${status} et attend votre validation.`,
+                    message: `La boutique "${storeToUpdate.name}" a payé un abonnement ${status} et attend votre validation.`,
                     link: { page: 'superadmin-dashboard' },
                     isRead: false
                 });
             }
-            alert("Votre demande d'abonnement a été envoyée. Un administrateur la validera bientôt. Votre boutique reste en attente d'approbation.");
+            alert("Votre paiement a été reçu. Un administrateur validera bientôt votre boutique. Merci !");
         } else {
             alert("Félicitations ! Votre boutique est maintenant active avec le plan Standard.");
         }
         setPage('seller-dashboard');
+        setPaymentRequest(null);
+    };
+
+    if (status === 'standard') {
+        completeSubscription();
+    } else {
+        const plan = status === 'premium' ? siteSettings.premiumPlan : siteSettings.superPremiumPlan;
+        const request: PaymentRequest = {
+            amount: plan.price,
+            reason: `Abonnement Vendeur ${status.replace('_', ' ')}`,
+            onSuccess: (paymentDetails) => completeSubscription(paymentDetails)
+        };
+        setPaymentRequest(request);
     }
+  };
+
+  const handleRequestPremiumUpgrade = (storeId: string, level: 'premium' | 'super_premium') => {
+    const plan = level === 'premium' ? siteSettings.premiumPlan : siteSettings.superPremiumPlan;
+    const request: PaymentRequest = {
+      amount: plan.price,
+      reason: `Mise à niveau vers le statut ${level.replace('_', ' ')}`,
+      onSuccess: (paymentDetails) => {
+        setAllStores(prev => prev.map(s => {
+          if (s.id === storeId) {
+            addNotification({
+              userId: s.sellerId,
+              message: `Félicitations ! Votre boutique "${s.name}" a été mise à niveau vers ${level.replace('_', ' ')}.`,
+              link: { page: 'seller-dashboard', params: { tab: 'overview' } },
+              isRead: false,
+            });
+            return { ...s, premiumStatus: level };
+          }
+          return s;
+        }));
+        setPaymentRequest(null);
+      }
+    };
+    setPaymentRequest(request);
+  };
+
+  const handleApproveStore = (storeToApprove: Store) => {
+    setAllStores(prevStores =>
+        prevStores.map(s =>
+            s.id === storeToApprove.id ? { ...s, status: 'active' } : s
+        )
+    );
+    addNotification({
+        userId: storeToApprove.sellerId,
+        message: `Félicitations ! Votre boutique "${storeToApprove.name}" a été approuvée et est maintenant en ligne.`,
+        link: { page: 'seller-dashboard' },
+        isRead: false
+    });
+    logActivity('Store Approved', `Store "${storeToApprove.name}" has been approved.`);
+  };
+
+  const handleRejectStore = (storeToReject: Store) => {
+      const reason = prompt(`Veuillez fournir un motif pour le rejet de la boutique "${storeToReject.name}":`);
+      if (reason) {
+          // In a real app, you might just mark it as rejected instead of removing it
+          setAllStores(prevStores => prevStores.filter(s => s.id !== storeToReject.id));
+          
+          addNotification({
+              userId: storeToReject.sellerId,
+              message: `Votre demande d'inscription pour la boutique "${storeToReject.name}" a été rejetée. Motif : ${reason}`,
+              isRead: false
+          });
+          logActivity('Store Rejected', `Store "${storeToReject.name}" was rejected. Reason: ${reason}`);
+      }
   };
 
   const renderPage = () => {
@@ -391,14 +495,14 @@ export default function App() {
       case 'order-success': return selectedOrder ? <OrderSuccess order={selectedOrder} onNavigateHome={handleNavigateHome} onNavigateToOrders={() => setPage('order-history')} /> : <HomePage products={visibleProducts} categories={allCategories} stores={allStores} flashSales={flashSales} advertisements={advertisements} onProductClick={handleProductClick} onCategoryClick={handleCategoryClick} onVendorClick={handleVendorClick} onVisitStore={handleVendorClick} onViewStories={(s) => setViewingStoriesOfStore(s)} isComparisonEnabled={isComparisonEnabled} isStoriesEnabled={siteSettings.isStoriesEnabled} recentlyViewedIds={recentlyViewedIds} userOrders={userOrders} wishlist={wishlist}/>;
       case 'order-history': return <OrderHistoryPage userOrders={userOrders} onBack={handleNavigateHome} onSelectOrder={(order) => { setSelectedOrder(order); setPage('order-detail'); }} onRepeatOrder={(order) => order.items.forEach(item => addToCart(item, item.quantity, item.selectedVariant, {suppressModal: true}))} />;
       case 'order-detail': return selectedOrder ? <OrderDetailPage order={selectedOrder} onBack={() => setPage('order-history')} allPickupPoints={allPickupPoints} allUsers={allUsers} onCancelOrder={(orderId) => setAllOrders(os => os.map(o => o.id === orderId ? {...o, status: 'cancelled'} : o))} onRequestRefund={(orderId, reason, evidence) => setAllOrders(os => os.map(o => o.id === orderId ? {...o, status: 'refund-requested', refundReason: reason, refundEvidenceUrls: evidence} : o))} onCustomerDisputeMessage={(oId, msg) => {}} /> : <NotFoundPage onNavigateHome={handleNavigateHome} />;
-      case 'become-seller': return <BecomeSeller onBack={handleNavigateHome} onBecomeSeller={(...args) => { const newStore = { id: `store-${Date.now()}`, name: args[0], logoUrl: args[7], category: 'Non catégorisé', warnings: [], status: 'pending' as const, location: args[1], neighborhood: args[2], sellerFirstName: args[3], sellerLastName: args[4], sellerPhone: args[5], physicalAddress: args[6], documents: [], latitude: args[8], longitude: args[9], premiumStatus: 'standard' as const}; setAllStores(s => [...s, newStore]); updateUser({shopName: args[0]}); }} onRegistrationSuccess={() => { logActivity('New Seller Registration', 'A new seller has registered.'); setPage('seller-subscription'); }} siteSettings={siteSettings} />;
+      case 'become-seller': return <BecomeSeller onBack={handleNavigateHome} onBecomeSeller={(...args) => { const newStore: Store = { id: `store-${Date.now()}`, sellerId: user!.id, name: args[0], logoUrl: args[7], category: 'Non catégorisé', warnings: [], status: 'pending' as const, location: args[1], neighborhood: args[2], sellerFirstName: args[3], sellerLastName: args[4], sellerPhone: args[5], physicalAddress: args[6], documents: [], latitude: args[8], longitude: args[9], premiumStatus: 'standard' as const}; setAllStores(s => [...s, newStore]); updateUser({shopName: args[0]}); }} onRegistrationSuccess={() => { logActivity('New Seller Registration', 'A new seller has registered.'); setPage('seller-subscription'); }} siteSettings={siteSettings} />;
       case 'become-premium': return user ? <BecomePremiumPage siteSettings={siteSettings} onBack={handleNavigateHome} onBecomePremiumByCaution={handleBecomePremiumByCaution} onUpgradeToPremiumPlus={handleUpgradeToPremiumPlus} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
       case 'seller-subscription': return <SellerSubscriptionPage siteSettings={siteSettings} onSelectSubscription={handleSelectSubscription} />;
-      case 'seller-dashboard': return user?.role === 'seller' ? <SellerDashboard store={store} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={allPromoCodes.filter(pc => pc.sellerId === user?.id)} allTickets={allTickets} onBack={handleNavigateHome} onAddProduct={() => { setProductToEdit(null); setPage('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); setPage('product-form'); }} onDeleteProduct={(pId) => setAllProducts(ps => ps.filter(p => p.id !== pId))} onUpdateProductStatus={(pId, status) => setAllProducts(ps => ps.map(p => p.id === pId ? {...p, status} : p))} onNavigateToProfile={() => setPage('seller-profile')} onNavigateToAnalytics={() => setPage('seller-analytics-dashboard')} onSetPromotion={(p) => setPromotionModalProduct(p)} onRemovePromotion={(pId) => setAllProducts(ps => ps.map(p => p.id === pId ? {...p, promotionPrice: undefined} : p))} onProposeForFlashSale={(fsId, pId, fPrice, sName) => setFlashSales(fss => fss.map(fs => fs.id === fsId ? {...fs, products: [...fs.products, {productId: pId, flashPrice: fPrice, sellerShopName: sName, status: 'pending'}]} : fs))} onUploadDocument={(sId, docName, fileUrl) => setAllStores(ss => ss.map(s => s.id === sId ? {...s, documents: s.documents.map(d => d.name === docName ? {...d, status: 'uploaded', fileUrl} : d)} : s))} onUpdateOrderStatus={handleUpdateOrderStatus} onCreatePromoCode={(code) => setAllPromoCodes(pcs => [...pcs, {...code, uses: 0}])} onDeletePromoCode={(code) => setAllPromoCodes(pcs => pcs.filter(pc => pc.code !== code))} isChatEnabled={isChatEnabled} onPayRent={()=>{}} siteSettings={siteSettings} onAddStory={(sId, img) => setAllStores(ss => ss.map(s => s.id === sId ? {...s, stories: [...(s.stories || []), {id: `story-${Date.now()}`, imageUrl: img, createdAt: new Date().toISOString()}]} : s))} onDeleteStory={(sId, storyId) => setAllStores(ss => ss.map(s => s.id === sId ? {...s, stories: s.stories?.filter(st => st.id !== storyId)} : s))} payouts={payouts.filter(p => p.storeId === store?.id)} onSellerDisputeMessage={() => {}} onBulkUpdateProducts={() => {}} onReplyToReview={()=>{}} onCreateOrUpdateCollection={()=>{}} onDeleteCollection={()=>{}} initialTab={initialSellerTab} sellerNotifications={allNotifications.filter(n => n.userId === user.id)} onMarkNotificationAsRead={(id) => setAllNotifications(ns => ns.map(n => n.id === id ? {...n, isRead: true} : n))} onNavigateFromNotification={(link) => {if(link?.page) { setPage(link.page); if (link.page === 'order-detail') setSelectedOrder(allOrders.find(o => o.id === link.params?.orderId) || null); if (link.page === 'seller-dashboard') setInitialSellerTab(link.params?.tab || 'overview');}}} onCreateTicket={() => {}} allShippingPartners={allShippingPartners} onUpdateShippingSettings={handleUpdateShippingSettings} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
+      case 'seller-dashboard': return user?.role === 'seller' ? <SellerDashboard store={store} products={sellerProducts} categories={allCategories} flashSales={flashSales} sellerOrders={sellerOrders} promoCodes={allPromoCodes.filter(pc => pc.sellerId === user?.id)} allTickets={allTickets} onBack={handleNavigateHome} onAddProduct={() => { setProductToEdit(null); setPage('product-form'); }} onEditProduct={(p) => { setProductToEdit(p); setPage('product-form'); }} onDeleteProduct={(pId) => setAllProducts(ps => ps.filter(p => p.id !== pId))} onUpdateProductStatus={(pId, status) => setAllProducts(ps => ps.map(p => p.id === pId ? {...p, status} : p))} onNavigateToProfile={() => setPage('seller-profile')} onNavigateToAnalytics={() => setPage('seller-analytics-dashboard')} onSetPromotion={(p) => setPromotionModalProduct(p)} onRemovePromotion={(pId) => setAllProducts(ps => ps.map(p => p.id === pId ? {...p, promotionPrice: undefined} : p))} onProposeForFlashSale={(fsId, pId, fPrice, sName) => setFlashSales(fss => fss.map(fs => fs.id === fsId ? {...fs, products: [...fs.products, {productId: pId, flashPrice: fPrice, sellerShopName: sName, status: 'pending'}]} : fs))} onUploadDocument={(sId, docName, fileUrl) => setAllStores(ss => ss.map(s => s.id === sId ? {...s, documents: s.documents.map(d => d.name === docName ? {...d, status: 'uploaded', fileUrl} : d)} : s))} onUpdateOrderStatus={handleUpdateOrderStatus} onCreatePromoCode={(code) => setAllPromoCodes(pcs => [...pcs, {...code, uses: 0}])} onDeletePromoCode={(code) => setAllPromoCodes(pcs => pcs.filter(pc => pc.code !== code))} isChatEnabled={isChatEnabled} onPayRent={()=>{}} siteSettings={siteSettings} onAddStory={(sId, img) => setAllStores(ss => ss.map(s => s.id === sId ? {...s, stories: [...(s.stories || []), {id: `story-${Date.now()}`, imageUrl: img, createdAt: new Date().toISOString()}]} : s))} onDeleteStory={(sId, storyId) => setAllStores(ss => ss.map(s => s.id === sId ? {...s, stories: s.stories?.filter(st => st.id !== storyId)} : s))} payouts={payouts.filter(p => p.storeId === store?.id)} onSellerDisputeMessage={() => {}} onBulkUpdateProducts={() => {}} onReplyToReview={()=>{}} onCreateOrUpdateCollection={()=>{}} onDeleteCollection={()=>{}} initialTab={initialSellerTab} sellerNotifications={allNotifications.filter(n => n.userId === user.id)} onMarkNotificationAsRead={(id) => setAllNotifications(ns => ns.map(n => n.id === id ? {...n, isRead: true} : n))} onNavigateFromNotification={(link) => {if(link?.page) { setPage(link.page); if (link.page === 'order-detail') setSelectedOrder(allOrders.find(o => o.id === link.params?.orderId) || null); if (link.page === 'seller-dashboard') setInitialSellerTab(link.params?.tab || 'overview');}}} onCreateTicket={() => {}} allShippingPartners={allShippingPartners} onUpdateShippingSettings={handleUpdateShippingSettings} onRequestUpgrade={handleRequestPremiumUpgrade} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
       case 'seller-profile': return store ? <SellerProfile store={store} onBack={() => setPage('seller-dashboard')} onUpdateProfile={(sId, data) => setAllStores(ss => ss.map(s => s.id === sId ? {...s, ...data} : s))} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
       case 'product-form': return <ProductForm onSave={handleSaveProduct} onCancel={() => setPage('seller-dashboard')} productToEdit={productToEdit} categories={allCategories} onAddCategory={(name) => { const newCat = {id: `cat-${Date.now()}`, name, imageUrl: ''}; setAllCategories(c => [...c, newCat]); return newCat; }} siteSettings={siteSettings}/>;
       case 'seller-analytics-dashboard': return user?.role === 'seller' ? <SellerAnalyticsDashboard onBack={() => setPage('seller-dashboard')} sellerOrders={sellerOrders} sellerProducts={sellerProducts} flashSales={flashSales} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
-      case 'superadmin-dashboard': return user?.role === 'superadmin' ? <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} allProducts={allProducts} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={(order, status) => {}} onUpdateCategoryImage={() => {}} onWarnStore={() => {}} onToggleStoreStatus={() => {}} onToggleStorePremiumStatus={() => {}} onApproveStore={() => {}} onRejectStore={() => {}} onSaveFlashSale={() => {}} flashSales={flashSales} onUpdateFlashSaleSubmissionStatus={() => {}} onBatchUpdateFlashSaleStatus={() => {}} onRequestDocument={() => {}} onVerifyDocumentStatus={() => {}} allPickupPoints={allPickupPoints} onAddPickupPoint={() => {}} onUpdatePickupPoint={() => {}} onDeletePickupPoint={() => {}} onAssignAgent={() => {}} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(prev => !prev)} onToggleComparisonFeature={() => setIsComparisonEnabled(prev => !prev)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={() => {}} onAdminDeleteCategory={() => {}} onUpdateUser={(userId, updates) => setAllUsers(users => users.map(u => u.id === userId ? {...u, ...updates} : u))} payouts={payouts} onPayoutSeller={() => {}} onActivateSubscription={() => {}} advertisements={advertisements} onAddAdvertisement={() => {}} onUpdateAdvertisement={() => {}} onDeleteAdvertisement={() => {}} onCreateUserByAdmin={() => {}} onSanctionAgent={() => {}} onResolveRefund={() => {}} onAdminStoreMessage={() => {}} onAdminCustomerMessage={() => {}} siteContent={siteContent} onUpdateSiteContent={setSiteContent} allTickets={allTickets} allAnnouncements={allAnnouncements} onAdminReplyToTicket={() => {}} onAdminUpdateTicketStatus={() => {}} onCreateOrUpdateAnnouncement={() => {}} onDeleteAnnouncement={() => {}} onReviewModeration={() => {}} paymentMethods={paymentMethods} onUpdatePaymentMethods={setPaymentMethods} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
+      case 'superadmin-dashboard': return user?.role === 'superadmin' ? <SuperAdminDashboard allUsers={allUsers} allOrders={allOrders} allCategories={allCategories} allStores={allStores} allProducts={allProducts} siteActivityLogs={siteActivityLogs} onUpdateOrderStatus={(order, status) => {}} onUpdateCategoryImage={() => {}} onWarnStore={() => {}} onToggleStoreStatus={() => {}} onApproveStore={handleApproveStore} onRejectStore={handleRejectStore} onSaveFlashSale={() => {}} flashSales={flashSales} onUpdateFlashSaleSubmissionStatus={() => {}} onBatchUpdateFlashSaleStatus={() => {}} onRequestDocument={() => {}} onVerifyDocumentStatus={() => {}} allPickupPoints={allPickupPoints} onAddPickupPoint={() => {}} onUpdatePickupPoint={() => {}} onDeletePickupPoint={() => {}} onAssignAgent={() => {}} isChatEnabled={isChatEnabled} isComparisonEnabled={isComparisonEnabled} onToggleChatFeature={() => setIsChatEnabled(prev => !prev)} onToggleComparisonFeature={() => setIsComparisonEnabled(prev => !prev)} siteSettings={siteSettings} onUpdateSiteSettings={setSiteSettings} onAdminAddCategory={() => {}} onAdminDeleteCategory={() => {}} onUpdateUser={(userId, updates) => setAllUsers(users => users.map(u => u.id === userId ? {...u, ...updates} : u))} payouts={payouts} onPayoutSeller={() => {}} advertisements={advertisements} onAddAdvertisement={() => {}} onUpdateAdvertisement={() => {}} onDeleteAdvertisement={() => {}} onCreateUserByAdmin={() => {}} onSanctionAgent={() => {}} onResolveRefund={() => {}} onAdminStoreMessage={() => {}} onAdminCustomerMessage={() => {}} siteContent={siteContent} onUpdateSiteContent={setSiteContent} allTickets={allTickets} allAnnouncements={allAnnouncements} onAdminReplyToTicket={() => {}} onAdminUpdateTicketStatus={() => {}} onCreateOrUpdateAnnouncement={() => {}} onDeleteAnnouncement={() => {}} onReviewModeration={() => {}} paymentMethods={paymentMethods} onUpdatePaymentMethods={setPaymentMethods} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
       case 'delivery-agent-dashboard': return user?.role === 'delivery_agent' ? <DeliveryAgentDashboard allOrders={allOrders} allStores={allStores} allPickupPoints={allPickupPoints} onUpdateOrder={(oId, updates) => setAllOrders(os => os.map(o => o.id === oId ? {...o, ...updates} : o))} onLogout={authLogout} onUpdateUserAvailability={(uId, status) => setAllUsers(us => us.map(u => u.id === uId ? {...u, availabilityStatus: status} : u))} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
       case 'depot-agent-dashboard': return user?.role === 'depot_agent' ? <DepotAgentDashboard user={user} allUsers={allUsers} allOrders={allOrders} onCheckIn={handleCheckIn} onReportDiscrepancy={handleReportDiscrepancy} onLogout={authLogout} onProcessDeparture={handleProcessDeparture}/> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
       case 'account': return user ? <AccountPage onBack={handleNavigateHome} initialTab={activeAccountTab} allStores={allStores} userOrders={userOrders} allTickets={allTickets} onSelectOrder={(o) => {setSelectedOrder(o); setPage('order-detail');}} onRepeatOrder={(order) => order.items.forEach(item => addToCart(item, item.quantity, item.selectedVariant, {suppressModal: true}))} onVendorClick={handleVendorClick} onCreateTicket={()=>{}} onUserReplyToTicket={()=>{}} /> : <ForbiddenPage onNavigateHome={handleNavigateHome} />;
@@ -430,6 +534,7 @@ export default function App() {
 
         const newStore: Store = {
             id: `store-${Date.now()}`,
+            sellerId: loggedInUser.id,
             name: newStoreName,
             logoUrl: '',
             category: 'Non catégorisé',
@@ -507,6 +612,8 @@ export default function App() {
       {isForgotPasswordModalOpen && <ForgotPasswordModal onClose={() => setIsForgotPasswordModalOpen(false)} onEmailSubmit={(email) => { setEmailForPasswordReset(email); setPage('reset-password'); setIsForgotPasswordModalOpen(false); }} />}
 
       {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={uiCloseModal} onNavigateToCart={() => { uiCloseModal(); setPage('cart'); }} />}
+      
+      {paymentRequest && <PaymentModal paymentRequest={paymentRequest} paymentMethods={paymentMethods} onClose={() => setPaymentRequest(null)} />}
 
       {promotionModalProduct && <PromotionModal product={promotionModalProduct} onClose={() => setPromotionModalProduct(null)} onSave={handlePromotionSave} />}
       
