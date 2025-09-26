@@ -5,6 +5,10 @@
 
 
 
+
+
+
+
 export interface Review {
   author: string;
   rating: number;
@@ -193,7 +197,7 @@ export interface Store {
   shippingSettings?: ShippingSettings;
 }
 
-export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent' | 'enterprise';
+export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent' | 'depot_manager' | 'enterprise';
 
 export interface UserLoyalty {
   status: 'standard' | 'premium' | 'premium_plus';
@@ -353,6 +357,7 @@ export interface PickupPoint {
   neighborhood: string;
   latitude?: number;
   longitude?: number;
+  managerId?: string;
 }
 
 
@@ -422,6 +427,7 @@ export interface SiteSettings {
     instagram: string;
   };
   emailTemplates?: EmailTemplate[];
+  companyName: string;
 }
 
 export interface SiteActivityLog {

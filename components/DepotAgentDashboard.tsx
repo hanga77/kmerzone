@@ -1,389 +1,178 @@
-import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
-import type { Order, OrderStatus, User } from '../types';
-import { QrCodeIcon, XIcon, ExclamationTriangleIcon, CheckIcon, ArchiveBoxIcon, ShoppingBagIcon, ChartPieIcon, BuildingStorefrontIcon, TruckIcon, SearchIcon, PrinterIcon, DocumentTextIcon, CalendarDaysIcon, MapPinIcon, PaperAirplaneIcon } from './Icons';
-
-declare const Html5Qrcode: any;
+import React, { useState, useMemo, FC } from 'react';
+import type { Order, OrderStatus, User, CartItem } from '../types';
+// FIX: Import DocumentTextIcon from ./Icons
+import { ArchiveBoxIcon, ShoppingBagIcon, ChartPieIcon, BuildingStorefrontIcon, TruckIcon, UserGroupIcon, ExclamationTriangleIcon, XIcon, CheckIcon, DocumentTextIcon } from './Icons';
 
 interface DepotAgentDashboardProps {
   user: User;
   allUsers: User[];
   allOrders: Order[];
-  onCheckIn: (orderId: string, storageLocationId: string, notes?: string) => void;
-  onReportDiscrepancy: (orderId: string, reason: string) => void;
   onLogout: () => void;
-  onProcessDeparture: (orderId: string, recipientInfo?: { name: string; idNumber: string }) => void;
+  onAssignAgentToOrder: (orderId: string, agentId: string) => void;
 }
 
-const STORAGE_LOCATIONS = Array.from({ length: 5 }, (_, i) => String.fromCharCode(65 + i)) // A-E
-    .flatMap(row => Array.from({ length: 10 }, (_, j) => `${row}${j + 1}`)); // 1-10
-
-const statusTranslations: {[key in OrderStatus]: string} = {
-  confirmed: 'Confirmée',
-  'ready-for-pickup': 'Prêt pour enlèvement',
-  'picked-up': 'Pris en charge',
-  'at-depot': 'Au dépôt',
-  'out-for-delivery': 'En livraison',
-  delivered: 'Livré',
-  cancelled: 'Annulé',
-  'refund-requested': 'Remboursement demandé',
-  refunded: 'Remboursé',
-  returned: 'Retourné',
-  'depot-issue': 'Problème au dépôt',
-  'delivery-failed': 'Échec de livraison',
+const statusTranslations: { [key in OrderStatus]: string } = {
+    confirmed: 'Confirmée', 'ready-for-pickup': 'Prêt pour enlèvement', 'picked-up': 'Pris en charge',
+    'at-depot': 'Au dépôt', 'out-for-delivery': 'En livraison', delivered: 'Livré',
+    cancelled: 'Annulé', 'refund-requested': 'Remboursement demandé', refunded: 'Remboursé',
+    returned: 'Retourné', 'depot-issue': 'Problème au dépôt', 'delivery-failed': 'Échec de livraison'
 };
 
-const ScannerModal: React.FC<{
-    title: string;
-    onClose: () => void;
-    onScanSuccess: (decodedText: string) => void;
-}> = ({ title, onClose, onScanSuccess }) => {
-    const html5QrCodeRef = useRef<any>(null);
-    const [scannerError, setScannerError] = useState<string | null>(null);
-
-    useEffect(() => {
-        if (typeof Html5Qrcode === 'undefined') {
-            setScannerError("La bibliothèque de scan n'a pas pu être chargée.");
-            return;
-        }
-
-        const html5QrCode = new Html5Qrcode("reader");
-        html5QrCodeRef.current = html5QrCode;
-        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
-
-        const startScanner = async () => {
-            try {
-                const cameras = await Html5Qrcode.getCameras();
-                if (cameras && cameras.length) {
-                    if (!html5QrCodeRef.current?.isScanning) {
-                        setScannerError(null);
-                        await html5QrCode.start(
-                            { facingMode: "environment" },
-                            config,
-                            (decodedText: string) => {
-                               onScanSuccess(decodedText);
-                            },
-                            () => {}
-                        );
-                    }
-                } else {
-                     setScannerError("Aucune caméra trouvée.");
-                }
-            } catch (err) {
-                console.error("Failed to start scanner", err);
-                setScannerError("Impossible d'activer la caméra. Veuillez vérifier les permissions.");
-            }
-        };
-
-        const timer = setTimeout(startScanner, 100);
-
-        return () => {
-            clearTimeout(timer);
-            if (html5QrCodeRef.current?.isScanning) {
-                html5QrCodeRef.current.stop().catch((err: any) => console.error("Error stopping scanner", err));
-            }
-        };
-    }, [onClose, onScanSuccess]);
+const AssignModal: FC<{ order: Order; agents: User[]; onAssign: (orderId: string, agentId: string) => void; onCancel: () => void }> = ({ order, agents, onAssign, onCancel }) => {
+    const [selectedAgentId, setSelectedAgentId] = useState('');
+    const availableAgents = agents.filter(a => a.availabilityStatus === 'available');
 
     return (
-        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
-            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full text-white">
-                <h3 className="text-xl font-bold mb-4">{title}</h3>
-                <div id="reader" className="w-full h-64 bg-gray-900 rounded-md"></div>
-                {scannerError && <p className="text-red-400 mt-2">{scannerError}</p>}
-                <button onClick={onClose} className="mt-4 w-full bg-gray-600 py-2 rounded-md">Annuler</button>
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-lg font-bold mb-4">Affecter un livreur</h3>
+                <p className="text-sm mb-4">Commande: <span className="font-mono">{order.id}</span></p>
+                <select value={selectedAgentId} onChange={e => setSelectedAgentId(e.target.value)} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                    <option value="">-- Choisir un livreur disponible --</option>
+                    {availableAgents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
+                </select>
+                <div className="flex justify-end gap-2 mt-4">
+                    <button onClick={onCancel} className="bg-gray-200 px-4 py-2 rounded-lg">Annuler</button>
+                    <button onClick={() => onAssign(order.id, selectedAgentId)} disabled={!selectedAgentId} className="bg-blue-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-400">Affecter</button>
+                </div>
             </div>
         </div>
     );
 };
 
-export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, onCheckIn, onReportDiscrepancy, onLogout, onProcessDeparture }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'checkin' | 'inventory' | 'reports'>('overview');
-    const [scanMode, setScanMode] = useState<'checkin' | 'checkout' | null>(null);
-    const [showManualForm, setShowManualForm] = useState(false);
-    const [manualFormData, setManualFormData] = useState({ trackingNumber: '', storageLocation: '', notes: '' });
+export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, onLogout, onAssignAgentToOrder }) => {
+    const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'agents' | 'reports'>('overview');
+    const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
 
-    const { inboundOrders, ordersInDepot } = useMemo(() => {
-        const depotId = user.depotId;
-        const inbound = allOrders.filter(o => o.status === 'picked-up' && (o.pickupPointId === depotId || o.deliveryMethod === 'home-delivery'));
-        const inDepot = allOrders.filter(o => o.status === 'at-depot' && o.storageLocationId && (o.pickupPointId === depotId || o.deliveryMethod === 'home-delivery'));
-        return { inboundOrders: inbound, ordersInDepot: inDepot };
-    }, [allOrders, user.depotId]);
+    const { ordersToAssign, ordersInDelivery, ordersWithIssues, depotInventory, deliveryAgents } = useMemo(() => {
+        const _ordersToAssign = allOrders.filter(o => o.status === 'at-depot' && o.deliveryMethod === 'home-delivery');
+        const _ordersInDelivery = allOrders.filter(o => o.status === 'out-for-delivery');
+        const _ordersWithIssues = allOrders.filter(o => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status));
 
-    const allOrdersRef = useRef(allOrders);
-    allOrdersRef.current = allOrders;
+        const _depotInventory = allOrders
+            .filter(o => o.status === 'at-depot')
+            .flatMap(o => o.items)
+            .reduce((acc, item) => {
+                const existing = acc.get(item.id);
+                if (existing) { existing.quantity += item.quantity; } 
+                else { acc.set(item.id, { ...item }); }
+                return acc;
+            }, new Map<string, CartItem>());
 
-    const onCheckInRef = useRef(onCheckIn);
-    onCheckInRef.current = onCheckIn;
-
-    const onProcessDepartureRef = useRef(onProcessDeparture);
-    onProcessDepartureRef.current = onProcessDeparture;
-    
-    const scanModeRef = useRef(scanMode);
-    scanModeRef.current = scanMode;
-
-    const handleCloseScanner = useCallback(() => setScanMode(null), []);
-
-    const handleScanSuccess = useCallback((decodedText: string) => {
-        const currentScanMode = scanModeRef.current;
-        const currentAllOrders = allOrdersRef.current;
-        const currentOnCheckIn = onCheckInRef.current;
-        const currentOnProcessDeparture = onProcessDepartureRef.current;
+        const _deliveryAgents = allUsers.filter(u => u.role === 'delivery_agent');
         
-        setScanMode(null);
-        const order = currentAllOrders.find(o => o.trackingNumber === decodedText);
-        if (!order) {
-            alert('Commande non trouvée.');
-            return;
-        }
+        const agentsWithPerf = _deliveryAgents.map(agent => {
+            const agentOrders = allOrders.filter(o => o.agentId === agent.id);
+            const deliveredCount = agentOrders.filter(o => o.status === 'delivered').length;
+            const successRate = agentOrders.length > 0 ? (deliveredCount / agentOrders.length) * 100 : 0;
+            return { ...agent, deliveredCount, successRate, totalMissions: agentOrders.length };
+        });
 
-        if (currentScanMode === 'checkin') {
-            if (order.status !== 'picked-up') {
-                alert(`Impossible d'enregistrer. Statut actuel: ${statusTranslations[order.status]}.`);
-                return;
-            }
-            const location = prompt("Entrez l'emplacement de stockage (ex: A1, B5):")?.toUpperCase();
-            if (location && STORAGE_LOCATIONS.includes(location)) {
-                const notes = prompt("Ajouter des notes ou signaler une anomalie (laisser vide si OK):") || undefined;
-                currentOnCheckIn(order.id, location, notes);
-                alert(`Commande ${order.id} enregistrée à l'emplacement ${location}.`);
-            } else if (location !== null) {
-                alert("Emplacement invalide.");
-            }
-        } else if (currentScanMode === 'checkout') {
-            if (order.status !== 'at-depot') {
-                alert(`Impossible de sortir le colis. Statut actuel: ${statusTranslations[order.status]}.`);
-                return;
-            }
-            
-            if (order.deliveryMethod === 'pickup') {
-                const name = prompt("Nom du client qui récupère:");
-                const idNumber = prompt("Numéro de CNI du client:");
-                if (name && idNumber) {
-                    currentOnProcessDeparture(order.id, { name, idNumber });
-                    alert(`Commande ${order.id} remise au client.`);
-                } else {
-                    alert("Informations du client requises.");
-                }
-            } else {
-                currentOnProcessDeparture(order.id);
-                alert(`Commande ${order.id} remise au livreur.`);
-            }
-        }
-    }, []);
-    
-    const handleManualCheckin = (e: React.FormEvent) => {
-        e.preventDefault();
-        const { trackingNumber, storageLocation, notes } = manualFormData;
-        const order = allOrders.find(o => o.trackingNumber === trackingNumber);
-        if(!order) {
-            alert("Aucune commande trouvée avec ce numéro de suivi.");
-            return;
-        }
-        if(!STORAGE_LOCATIONS.includes(storageLocation.toUpperCase())) {
-            alert("Emplacement de stockage invalide.");
-            return;
-        }
-        onCheckIn(order.id, storageLocation.toUpperCase(), notes);
-        alert(`Commande ${order.id} enregistrée manuellement.`);
-        setManualFormData({ trackingNumber: '', storageLocation: '', notes: '' });
-        setShowManualForm(false);
-    };
-
-    const InventoryPanel = () => {
-        const [searchTerm, setSearchTerm] = useState('');
-        const filteredInventory = useMemo(() => {
-            return ordersInDepot.filter(o => {
-                const query = searchTerm.toLowerCase();
-                return o.id.toLowerCase().includes(query) ||
-                    o.shippingAddress.fullName.toLowerCase().includes(query) ||
-                    o.storageLocationId?.toLowerCase().includes(query);
-            });
-        }, [ordersInDepot, searchTerm]);
-        
-        const storageMap = useMemo(() => {
-            const map = new Map<string, Order>();
-            ordersInDepot.forEach(o => {
-                if(o.storageLocationId) map.set(o.storageLocationId, o);
-            });
-            return map;
-        }, [ordersInDepot]);
-
-        return (
-            <div>
-                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="lg:col-span-1 space-y-4">
-                        <input
-                            type="text"
-                            placeholder="Rechercher par ID, client, emplacement..."
-                            value={searchTerm}
-                            onChange={e => setSearchTerm(e.target.value)}
-                            className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
-                        />
-                         <div className="space-y-2 max-h-96 overflow-y-auto">
-                            {filteredInventory.map(order => (
-                                <div key={order.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
-                                    <p className="font-bold">ID: {order.id}</p>
-                                    <p className="text-sm">Client: {order.shippingAddress.fullName}</p>
-                                    <p className="text-sm font-mono bg-gray-200 dark:bg-gray-600 inline-block px-2 py-0.5 rounded">Emplacement: {order.storageLocationId}</p>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="lg:col-span-2">
-                        <h4 className="font-semibold mb-2">Plan de l'entrepôt</h4>
-                        <div className="grid grid-cols-5 sm:grid-cols-8 lg:grid-cols-10 gap-1 p-2 bg-gray-200 dark:bg-gray-900 rounded-md">
-                            {STORAGE_LOCATIONS.map(loc => {
-                                const order = storageMap.get(loc);
-                                const hasIssue = order?.status === 'depot-issue';
-                                return (
-                                    <div 
-                                        key={loc} 
-                                        className={`h-12 flex items-center justify-center text-xs font-mono rounded-sm text-center ${
-                                            order ? (hasIssue ? 'bg-red-400 text-white' : 'bg-green-400 text-white') : 'bg-gray-50 dark:bg-gray-700'
-                                        }`}
-                                        title={order ? `ID: ${order.id}\nClient: ${order.shippingAddress.fullName}${hasIssue ? `\nProblème: ${order.discrepancy?.reason}` : ''}` : 'Libre'}
-                                    >
-                                        {loc}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    </div>
-                 </div>
-            </div>
-        );
-    };
-
-    const ReportsPanel = () => {
-        const [reportDate, setReportDate] = useState(new Date().toISOString().split('T')[0]);
-        const [reportData, setReportData] = useState<{ checkedIn: Order[], checkedOut: Order[] } | null>(null);
-
-        const generateReport = () => {
-            const startOfDay = new Date(reportDate + 'T00:00:00');
-            const endOfDay = new Date(reportDate + 'T23:59:59');
-
-            const checkedIn = allOrders.filter(o => 
-                o.checkedInAt && 
-                new Date(o.checkedInAt) >= startOfDay && 
-                new Date(o.checkedInAt) <= endOfDay &&
-                allUsers.find(u => u.id === o.checkedInBy)?.depotId === user.depotId
-            );
-
-            const checkedOut = allOrders.filter(o => 
-                o.processedForDepartureAt && 
-                new Date(o.processedForDepartureAt) >= startOfDay && 
-                new Date(o.processedForDepartureAt) <= endOfDay &&
-                o.departureProcessedByAgentId === user.id
-            );
-            
-            setReportData({ checkedIn, checkedOut });
+        return {
+            ordersToAssign: _ordersToAssign,
+            ordersInDelivery: _ordersInDelivery,
+            ordersWithIssues: _ordersWithIssues,
+            depotInventory: Array.from(_depotInventory.values()),
+            deliveryAgents: agentsWithPerf
         };
-        
+    }, [allOrders, allUsers]);
+
+    const OverviewPanel = () => (
+        <div className="space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-lg"><h3 className="font-bold text-blue-800 dark:text-blue-300">Colis à affecter</h3><p className="text-3xl font-bold text-blue-600 dark:text-blue-200">{ordersToAssign.length}</p></div>
+                <div className="p-4 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg"><h3 className="font-bold text-indigo-800 dark:text-indigo-300">Colis en livraison</h3><p className="text-3xl font-bold text-indigo-600 dark:text-indigo-200">{ordersInDelivery.length}</p></div>
+                <div className="p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg"><h3 className="font-bold text-yellow-800 dark:text-yellow-300">Livreurs disponibles</h3><p className="text-3xl font-bold text-yellow-600 dark:text-yellow-200">{deliveryAgents.filter(a => a.availabilityStatus === 'available').length}</p></div>
+             </div>
+        </div>
+    );
+    
+    const ParcelsPanel = () => {
+        const [subTab, setSubTab] = useState<'to-assign' | 'in-delivery' | 'issues'>('to-assign');
+        const ordersToShow = { 'to-assign': ordersToAssign, 'in-delivery': ordersInDelivery, 'issues': ordersWithIssues }[subTab];
         return (
             <div>
-                <h3 className="text-xl font-bold mb-4">Rapports Journaliers</h3>
-                 <div className="flex items-center gap-4 mb-4">
-                    <input type="date" value={reportDate} onChange={e => setReportDate(e.target.value)} className="p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
-                    <button onClick={generateReport} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Générer</button>
-                    {reportData && <button className="bg-gray-600 text-white font-bold py-2 px-4 rounded-lg">Imprimer</button>}
-                 </div>
-                 {reportData && (
-                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div className="p-4 border rounded-lg">
-                             <h4 className="font-semibold mb-2">Colis Reçus ({reportData.checkedIn.length})</h4>
-                             <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">{reportData.checkedIn.map(o => <li key={o.id}>{o.id} - {o.storageLocationId}</li>)}</ul>
+                <div className="flex border-b dark:border-gray-700 mb-4">
+                    <button onClick={() => setSubTab('to-assign')} className={`px-4 py-2 font-semibold ${subTab==='to-assign' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>À Affecter ({ordersToAssign.length})</button>
+                    <button onClick={() => setSubTab('in-delivery')} className={`px-4 py-2 font-semibold ${subTab==='in-delivery' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>En Livraison ({ordersInDelivery.length})</button>
+                    <button onClick={() => setSubTab('issues')} className={`px-4 py-2 font-semibold ${subTab==='issues' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>Problèmes ({ordersWithIssues.length})</button>
+                </div>
+                <div className="space-y-2">
+                    {ordersToShow.map(order => (
+                        <div key={order.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
+                            <div>
+                                <p className="font-bold">{order.id}</p>
+                                <p className="text-sm">Client: {order.shippingAddress.fullName} à {order.shippingAddress.city}</p>
+                                {order.status === 'out-for-delivery' && <p className="text-sm">Livreur: {allUsers.find(u => u.id === order.agentId)?.name}</p>}
+                            </div>
+                            {subTab === 'to-assign' && <button onClick={() => setAssigningOrder(order)} className="bg-blue-500 text-white font-bold py-1 px-3 rounded-lg text-sm">Affecter</button>}
                         </div>
-                        <div className="p-4 border rounded-lg">
-                             <h4 className="font-semibold mb-2">Colis Sortis ({reportData.checkedOut.length})</h4>
-                             <ul className="text-sm space-y-1 max-h-60 overflow-y-auto">{reportData.checkedOut.map(o => <li key={o.id}>{o.id}</li>)}</ul>
-                        </div>
-                     </div>
-                 )}
+                    ))}
+                </div>
             </div>
         );
     };
 
-    const renderOverview = () => (
-        <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-lg">
-                    <h3 className="font-bold text-blue-800 dark:text-blue-300">Colis en Attente de Réception</h3>
-                    <p className="text-3xl font-bold text-blue-600 dark:text-blue-200">{inboundOrders.length}</p>
-                </div>
-                 <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-lg">
-                    <h3 className="font-bold text-green-800 dark:text-green-300">Colis en Stock</h3>
-                    <p className="text-3xl font-bold text-green-600 dark:text-green-200">{ordersInDepot.length}</p>
-                </div>
-                 <div className="p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg">
-                    <h3 className="font-bold text-yellow-800 dark:text-yellow-300">Anomalies Signalées</h3>
-                    <p className="text-3xl font-bold text-yellow-600 dark:text-yellow-200">{ordersInDepot.filter(o => o.discrepancy).length}</p>
-                </div>
-            </div>
-            <div className="flex justify-center gap-4">
-                <button onClick={() => setScanMode('checkin')} className="bg-kmer-green text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2"><QrCodeIcon className="w-6 h-6"/> Enregistrer un Colis</button>
-                <button onClick={() => setScanMode('checkout')} className="bg-kmer-red text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2"><PaperAirplaneIcon className="w-6 h-6"/> Sortir un Colis</button>
+    const InventoryPanel = () => (
+        <div><h3 className="font-bold mb-4">Inventaire Actuel du Dépôt</h3>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {depotInventory.map(item => (
+                    <div key={item.id} className="p-3 border rounded-lg text-center">
+                        <img src={item.imageUrls[0]} alt={item.name} className="w-16 h-16 object-cover mx-auto rounded-md mb-2"/>
+                        <p className="font-semibold text-sm">{item.name}</p>
+                        <p className="text-lg font-bold">{item.quantity} <span className="text-xs">en stock</span></p>
+                    </div>
+                ))}
             </div>
         </div>
     );
     
-    const renderCheckIn = () => (
-        <div>
-            <div className="p-8 border-2 border-dashed rounded-lg text-center">
-                <h3 className="text-xl font-bold">Enregistrement des Colis</h3>
-                <p className="text-gray-500 my-4">Scannez le QR code d'un colis ou saisissez ses informations manuellement.</p>
-                <div className="flex justify-center gap-4">
-                    <button onClick={() => setScanMode('checkin')} className="bg-kmer-green text-white font-bold py-3 px-6 rounded-lg flex items-center gap-2">
-                        <QrCodeIcon className="w-6 h-6"/> Démarrer le Scan
-                    </button>
-                    <button onClick={() => setShowManualForm(prev => !prev)} className="bg-gray-600 text-white font-bold py-3 px-6 rounded-lg">
-                        Saisie Manuelle
-                    </button>
-                </div>
+    const AgentsPanel = () => (
+        <div><h3 className="font-bold mb-4">Gestion des Livreurs</h3>
+            <div className="space-y-2">
+                {deliveryAgents.map(agent => (
+                    <div key={agent.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
+                        <div>
+                            <p className="font-semibold">{agent.name}</p>
+                            <p className={`text-sm font-bold ${agent.availabilityStatus === 'available' ? 'text-green-500' : 'text-red-500'}`}>{agent.availabilityStatus === 'available' ? 'Disponible' : 'Indisponible'}</p>
+                        </div>
+                        <div className="text-right">
+                             <p className="text-sm">Taux de réussite: {agent.successRate.toFixed(1)}%</p>
+                             <p className="text-xs">{agent.deliveredCount} / {agent.totalMissions} livraisons réussies</p>
+                        </div>
+                    </div>
+                ))}
             </div>
-            {showManualForm && (
-                <form onSubmit={handleManualCheckin} className="mt-6 p-4 border rounded-lg bg-gray-50 dark:bg-gray-700/50 space-y-4 animate-in">
-                    <h4 className="font-semibold text-lg">Saisie Manuelle</h4>
-                    <div>
-                        <label htmlFor="trackingNumber" className="block text-sm font-medium">Numéro de suivi</label>
-                        <input type="text" id="trackingNumber" value={manualFormData.trackingNumber} onChange={e => setManualFormData(d => ({...d, trackingNumber: e.target.value}))} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
-                    </div>
-                    <div>
-                        <label htmlFor="storageLocation" className="block text-sm font-medium">Emplacement de stockage</label>
-                        <input type="text" id="storageLocation" value={manualFormData.storageLocation} onChange={e => setManualFormData(d => ({...d, storageLocation: e.target.value.toUpperCase()}))} placeholder="Ex: A5, C12" className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
-                    </div>
-                    <div>
-                        <label htmlFor="notes" className="block text-sm font-medium">Notes / Anomalies (optionnel)</label>
-                        <textarea id="notes" value={manualFormData.notes} onChange={e => setManualFormData(d => ({...d, notes: e.target.value}))} rows={2} placeholder="Ex: Colis endommagé sur un côté" className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                    </div>
-                    <div className="flex justify-end gap-2">
-                        <button type="button" onClick={() => setShowManualForm(false)} className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 py-2 rounded-md">Annuler</button>
-                        <button type="submit" className="bg-blue-500 text-white font-semibold px-4 py-2 rounded-md">Enregistrer</button>
-                    </div>
-                </form>
-            )}
         </div>
+    );
+    
+    const ReportsPanel = () => (
+         <div><h3 className="font-bold mb-4">Rapports et Statistiques</h3>
+            <p className="text-center text-gray-500 py-8">Section des rapports en cours de construction.</p>
+         </div>
     );
 
     const renderContent = () => {
         switch(activeTab) {
-            case 'overview': return renderOverview();
-            case 'checkin': return renderCheckIn();
+            case 'overview': return <OverviewPanel />;
+            case 'parcels': return <ParcelsPanel />;
             case 'inventory': return <InventoryPanel />;
+            case 'agents': return <AgentsPanel />;
             case 'reports': return <ReportsPanel />;
             default: return null;
         }
     };
-
+    
     return (
         <>
-            {scanMode && <ScannerModal title={scanMode === 'checkin' ? 'Enregistrer un colis' : 'Sortir un colis'} onClose={handleCloseScanner} onScanSuccess={handleScanSuccess} />}
+            {assigningOrder && <AssignModal order={assigningOrder} agents={deliveryAgents} onAssign={(orderId, agentId) => { onAssignAgentToOrder(orderId, agentId); setAssigningOrder(null); }} onCancel={() => setAssigningOrder(null)} />}
             <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
                  <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
                     <div className="container mx-auto px-4 sm:px-6 py-3">
                          <div className="flex justify-between items-center">
                             <div>
                                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">Tableau de bord Agent de Dépôt</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Dépôt: {user.depotId || 'Non assigné'} | Agent: {user.name}</p>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Agent: {user.name}</p>
                             </div>
                             <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">Déconnexion</button>
                         </div>
@@ -391,10 +180,11 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                 </header>
                 <main className="container mx-auto px-4 sm:px-6 py-6 space-y-6">
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                        <div className="p-2 border-b dark:border-gray-700 flex justify-around">
+                        <div className="p-2 border-b dark:border-gray-700 flex flex-wrap justify-around">
                              <button onClick={() => setActiveTab('overview')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'overview' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ChartPieIcon className="w-5 h-5"/>Aperçu</button>
-                             <button onClick={() => setActiveTab('checkin')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'checkin' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ArchiveBoxIcon className="w-5 h-5"/>Enregistrement</button>
+                             <button onClick={() => setActiveTab('parcels')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'parcels' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ArchiveBoxIcon className="w-5 h-5"/>Suivi Colis</button>
                              <button onClick={() => setActiveTab('inventory')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'inventory' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ShoppingBagIcon className="w-5 h-5"/>Inventaire</button>
+                             <button onClick={() => setActiveTab('agents')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'agents' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><UserGroupIcon className="w-5 h-5"/>Livreurs</button>
                              <button onClick={() => setActiveTab('reports')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'reports' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><DocumentTextIcon className="w-5 h-5"/>Rapports</button>
                         </div>
                         <div className="p-4 sm:p-6">

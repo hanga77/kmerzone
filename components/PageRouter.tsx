@@ -1,5 +1,4 @@
 import React from 'react';
-// FIX: Import PromoCode and Ticket types
 import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -42,10 +41,11 @@ interface PageRouterProps {
     siteData: any;
     setPromotionModalProduct: (product: Product | null) => void;
     setPaymentRequest: (request: PaymentRequest | null) => void;
+    onAdminUpdateUser: (userId: string, updates: Partial<User>) => void;
 }
 
-const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromotionModalProduct, setPaymentRequest }) => {
-    const { user, allUsers, setAllUsers } = useAuth();
+const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromotionModalProduct, setPaymentRequest, onAdminUpdateUser }) => {
+    const { user, allUsers, setAllUsers, logout } = useAuth();
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
     const { wishlist } = useWishlist();
 
@@ -184,7 +184,7 @@ const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromot
                 onToggleComparisonFeature={() => {}}
                 onAdminAddCategory={() => {}}
                 onAdminDeleteCategory={() => {}}
-                onUpdateUser={(userId, updates) => setAllUsers((prev: User[]) => prev.map(u => (u.id === userId ? { ...u, ...updates } : u)))}
+                onUpdateUser={onAdminUpdateUser}
                 onCreateUserByAdmin={() => {}}
                 onSanctionAgent={() => {}}
                 onResolveRefund={() => {}}
@@ -211,7 +211,13 @@ const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromot
         case 'delivery-agent-dashboard':
             return <DeliveryAgentDashboard allOrders={siteData.allOrders} allStores={siteData.allStores} allPickupPoints={siteData.allPickupPoints} onUpdateOrder={() => {}} onLogout={() => {}} onUpdateUserAvailability={() => {}}/>;
         case 'depot-agent-dashboard':
-            return user ? <DepotAgentDashboard user={user} allUsers={allUsers} allOrders={siteData.allOrders} onCheckIn={() => {}} onReportDiscrepancy={() => {}} onLogout={() => {}} onProcessDeparture={() => {}} /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            return user ? <DepotAgentDashboard 
+                user={user} 
+                allUsers={allUsers} 
+                allOrders={siteData.allOrders} 
+                onLogout={logout}
+                onAssignAgentToOrder={(orderId, agentId) => user && siteData.handleAssignAgentToOrder(orderId, agentId, user, allUsers)}
+            /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'account':
             return <AccountPage 
                         onBack={navigation.navigateToHome}

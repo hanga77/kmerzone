@@ -11,9 +11,10 @@ interface FooterProps {
     twitter: string;
     instagram: string;
   };
+  companyName: string;
 }
 
-const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, socialLinks }) => {
+const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, socialLinks, companyName }) => {
   return (
     <footer className="bg-gray-800 text-white dark:bg-gray-950">
       <div className="container mx-auto px-6 py-12">
@@ -65,7 +66,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, so
         </div>
 
         <div className="mt-12 border-t border-gray-700 dark:border-gray-800 pt-6 text-center text-gray-500">
-          <p>&copy; {new Date().getFullYear()} KMER ZONE. Tous droits réservés.</p>
+          <p>&copy; {new Date().getFullYear()} {companyName}. Tous droits réservés.</p>
         </div>
       </div>
     </footer>

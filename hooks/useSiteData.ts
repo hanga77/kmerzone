@@ -4,7 +4,7 @@ import type {
     Product, Category, Store, FlashSale, Order, SiteSettings, SiteContent, Advertisement, 
     PaymentMethod, SiteActivityLog, PickupPoint, Payout, PromoCode, OrderStatus, 
     NewOrderData, Review, User, DocumentStatus, Warning, Story, ProductCollection, 
-    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole 
+    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent 
 } from '../types';
 import { 
     initialCategories, initialProducts, initialStores, initialFlashSales, initialPickupPoints, 
@@ -102,6 +102,30 @@ export const useSiteData = () => {
         logActivity(user, 'AD_DELETED', `Publicité supprimée: ${id}`);
     }, [setAllAdvertisements, logActivity]);
 
+    const handleAssignAgentToOrder = useCallback((orderId: string, agentId: string, user: User, allUsers: User[]) => {
+        setAllOrders(prevOrders => prevOrders.map(o => {
+            if (o.id === orderId) {
+                const agentName = allUsers.find(u => u.id === agentId)?.name || 'Inconnu';
+                const newTrackingHistory: TrackingEvent = {
+                    status: 'out-for-delivery',
+                    date: new Date().toISOString(),
+                    location: `Dépôt (Agent: ${user.name})`,
+                    details: `Colis assigné au livreur ${agentName} (ID: ${agentId})`
+                };
+                return {
+                    ...o,
+                    status: 'out-for-delivery',
+                    agentId: agentId,
+                    trackingHistory: [...(o.trackingHistory || []), newTrackingHistory],
+                    departureProcessedByAgentId: user.id,
+                    processedForDepartureAt: new Date().toISOString(),
+                };
+            }
+            return o;
+        }));
+        logActivity(user, 'ORDER_ASSIGNED_TO_AGENT', `Commande ${orderId} assignée au livreur ${agentId}.`);
+    }, [setAllOrders, logActivity]);
+
     return {
         allProducts, setAllProducts,
         allCategories, setAllCategories,
@@ -130,6 +154,7 @@ export const useSiteData = () => {
         handleAddAdvertisement,
         handleUpdateAdvertisement,
         handleDeleteAdvertisement,
+        handleAssignAgentToOrder,
         logActivity,
     };
 };

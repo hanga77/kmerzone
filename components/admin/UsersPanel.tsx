@@ -35,9 +35,10 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                         <option value="seller">Vendeur</option>
                         <option value="delivery_agent">Livreur</option>
                         <option value="depot_agent">Agent de dépôt</option>
+                        <option value="depot_manager">Chef de Dépôt</option>
                         <option value="superadmin">Super Admin</option>
                     </select>
-                    {data.role === 'depot_agent' && (
+                    {(data.role === 'depot_agent' || data.role === 'depot_manager') && (
                         <div>
                             <label htmlFor="depotId" className="block text-sm font-medium dark:text-gray-300">Point de Dépôt Assigné</label>
                             <select name="depotId" id="depotId" value={data.depotId} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 mt-1">
@@ -60,7 +61,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
     const handleSaveUser = (data: any) => {
         if (editingUser) {
             const updates: Partial<User> = { role: data.role, name: data.name };
-            if (data.role === 'depot_agent') {
+            if (data.role === 'depot_agent' || data.role === 'depot_manager') {
                 updates.depotId = data.depotId || undefined;
             } else {
                 updates.depotId = undefined; // Clear depotId if role changes

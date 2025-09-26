@@ -9,9 +9,10 @@ export const LogsPanel: React.FC<LogsPanelProps> = ({ siteActivityLogs }) => {
     const [filter, setFilter] = useState('');
 
     const filteredLogs = useMemo(() => {
-        if (!filter) return siteActivityLogs;
+        const sortedLogs = [...siteActivityLogs].sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+        if (!filter) return sortedLogs;
         const lowerFilter = filter.toLowerCase();
-        return siteActivityLogs.filter(log =>
+        return sortedLogs.filter(log =>
             log.user.name.toLowerCase().includes(lowerFilter) ||
             log.action.toLowerCase().includes(lowerFilter) ||
             log.details.toLowerCase().includes(lowerFilter)
@@ -31,7 +32,7 @@ export const LogsPanel: React.FC<LogsPanelProps> = ({ siteActivityLogs }) => {
             <div className="space-y-2 max-h-[70vh] overflow-y-auto pr-2">
                 {filteredLogs.map(log => (
                     <div key={log.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md text-sm">
-                        <p className="font-mono text-xs text-gray-400 dark:text-gray-500">{new Date(log.timestamp).toLocaleString()}</p>
+                        <p className="font-mono text-xs text-gray-400 dark:text-gray-500">{new Date(log.timestamp).toLocaleString('fr-FR')}</p>
                         <p>
                             <span className="font-semibold">{log.user.name}</span> ({log.user.role}) a effectué l'action :
                             <span className="font-bold text-kmer-green ml-1">{log.action}</span>
@@ -39,6 +40,11 @@ export const LogsPanel: React.FC<LogsPanelProps> = ({ siteActivityLogs }) => {
                         <p className="text-gray-600 dark:text-gray-300">Détails : {log.details}</p>
                     </div>
                 ))}
+                {filteredLogs.length === 0 && (
+                    <div className="text-center py-8 text-gray-500">
+                        <p>Aucun log correspondant à votre recherche.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

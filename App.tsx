@@ -1,9 +1,14 @@
+
+
+
+
 import React, { useState, useEffect } from 'react';
 import { XIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import { useUI } from './contexts/UIContext';
-import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product } from './types';
+// FIX: Import 'Category' type
+import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint } from './types';
 import { Header } from './components/Header';
 import Footer from './components/Footer';
 import MaintenancePage from './components/MaintenancePage';
@@ -49,7 +54,7 @@ const AnnouncementBanner: React.FC<{
 
 
 export default function App() {
-  const { user, logout: authLogout, allUsers, resetPassword } = useAuth();
+  const { user, logout: authLogout, allUsers, setAllUsers, resetPassword } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
   const { comparisonList, setProducts: setComparisonProducts } = useComparison();
   
@@ -63,6 +68,68 @@ export default function App() {
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
   
+  const handleLoginSuccess = (loggedInUser: User) => {
+    setIsLoginModalOpen(false);
+    switch (loggedInUser.role) {
+        case 'superadmin':
+            navigation.navigateToSuperAdminDashboard();
+            break;
+        case 'seller':
+            navigation.navigateToSellerDashboard('overview');
+            break;
+        case 'delivery_agent':
+            navigation.navigateToDeliveryAgentDashboard();
+            break;
+        case 'depot_agent':
+        case 'depot_manager':
+            navigation.navigateToDepotAgentDashboard();
+            break;
+        case 'customer':
+        default:
+            navigation.navigateToAccount('dashboard');
+            break;
+    }
+  };
+
+    const handleAdminUpdateUser = (userId: string, updates: Partial<User>) => {
+        let oldUser: User | undefined;
+        const userToUpdate = allUsers.find(u => u.id === userId);
+        if(userToUpdate) {
+            oldUser = {...userToUpdate};
+        }
+
+        setAllUsers((prevUsers: User[]) => 
+            prevUsers.map(u => (u.id === userId ? { ...u, ...updates } : u))
+        );
+
+        const newRole = updates.role;
+        const newDepotId = updates.depotId;
+
+        if (oldUser) {
+             // Case 1: User is assigned as a new manager
+            if (newRole === 'depot_manager' && newDepotId) {
+                siteData.setAllPickupPoints((prevPoints: PickupPoint[]) => prevPoints.map(p => {
+                    // Remove user as manager from any other depot they might have been manager of.
+                    if (p.managerId === userId && p.id !== newDepotId) {
+                        return { ...p, managerId: undefined };
+                    }
+                    // Assign as new manager
+                    if (p.id === newDepotId) {
+                        return { ...p, managerId: userId };
+                    }
+                    return p;
+                }));
+            }
+            // Case 2: User was a manager but role changed or was unassigned from depot
+            else if (oldUser.role === 'depot_manager' && (newRole !== 'depot_manager' || !newDepotId)) {
+                siteData.setAllPickupPoints((prevPoints: PickupPoint[]) => prevPoints.map(p => 
+                    p.id === oldUser.depotId ? { ...p, managerId: undefined } : p
+                ));
+            }
+        }
+    };
+
+
   // Connect allProducts to comparison context
   useEffect(() => { setComparisonProducts(siteData.allProducts); }, [siteData.allProducts, setComparisonProducts]);
   
@@ -73,7 +140,7 @@ export default function App() {
 
     switch(page) {
       case 'product': if (selectedProduct) { title = `${selectedProduct.name} | KMER ZONE`; description = selectedProduct.description.substring(0, 160); ogImageUrl = selectedProduct.imageUrls[0] || ogImageUrl; } break;
-      case 'category': const category = siteData.allCategories.find(c => c.id === selectedCategoryId); if (category) { title = `${category.name} | KMER ZONE`; ogImageUrl = category.imageUrl || ogImageUrl; } break;
+      case 'category': const category = siteData.allCategories.find((c: Category) => c.id === selectedCategoryId); if (category) { title = `${category.name} | KMER ZONE`; ogImageUrl = category.imageUrl || ogImageUrl; } break;
       case 'vendor-page': const store = selectedStore; if (store) { title = `${store.name} - Boutique sur KMER ZONE`; ogImageUrl = store.logoUrl || ogImageUrl; } break;
       default: break;
     }
@@ -90,8 +157,8 @@ export default function App() {
   }, [navigation.page, navigation.selectedProduct, navigation.selectedCategoryId, navigation.selectedStore, siteData.siteSettings.seo, siteData.allCategories]);
 
   const activeAnnouncement = siteData.allAnnouncements
-      .filter(a => a.isActive && !siteData.dismissedAnnouncements.includes(a.id) && new Date(a.startDate) <= new Date() && new Date(a.endDate) >= new Date())
-      .find(a => {
+      .filter((a: Announcement) => a.isActive && !siteData.dismissedAnnouncements.includes(a.id) && new Date(a.startDate) <= new Date() && new Date(a.endDate) >= new Date())
+      .find((a: Announcement) => {
           if (a.target === 'all') return true;
           if (!user && (a.target === 'customers' || a.target === 'sellers')) return false;
           if (user && user.role === 'customer' && a.target === 'customers') return true;
@@ -132,8 +199,7 @@ export default function App() {
           isChatEnabled={true}
           isPremiumProgramEnabled={siteData.siteSettings.isPremiumProgramEnabled}
           logoUrl={siteData.siteSettings.logoUrl}
-          onLoginSuccess={() => setIsLoginModalOpen(false)}
-          notifications={siteData.allNotifications.filter(n => n.userId === user?.id)}
+          notifications={siteData.allNotifications.filter((n: Notification) => n.userId === user?.id)}
           onMarkNotificationAsRead={siteData.handleMarkNotificationAsRead}
           onNavigateFromNotification={navigation.handleNavigateFromNotification}
         />
@@ -144,6 +210,7 @@ export default function App() {
             siteData={siteData} 
             setPromotionModalProduct={setPromotionModalProduct}
             setPaymentRequest={setPaymentRequest}
+            onAdminUpdateUser={handleAdminUpdateUser}
           />
         </main>
 
@@ -152,6 +219,7 @@ export default function App() {
           logoUrl={siteData.siteSettings.logoUrl} 
           paymentMethods={siteData.allPaymentMethods}
           socialLinks={siteData.siteSettings.socialLinks}
+          companyName={siteData.siteSettings.companyName}
         />
         
         {comparisonList.length > 0 && <ComparisonBar />}
@@ -159,7 +227,7 @@ export default function App() {
         {isLoginModalOpen && (
           <LoginModal
             onClose={() => setIsLoginModalOpen(false)}
-            onLoginSuccess={() => setIsLoginModalOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
             onForgotPassword={() => { setIsLoginModalOpen(false); setIsForgotPasswordModalOpen(true); }}
           />
         )}

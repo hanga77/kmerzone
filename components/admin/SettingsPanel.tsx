@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import type { SiteSettings, SiteContent, PaymentMethod } from '../../types';
+import type { SiteSettings, SiteContent, PaymentMethod, EmailTemplate } from '../../types';
 
 interface SettingsPanelProps {
     siteSettings: SiteSettings;
@@ -45,6 +45,15 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
 
     const handleContentChange = (slug: string, field: 'title' | 'content', value: string) => {
         setContent(prev => prev.map(c => c.slug === slug ? { ...c, [field]: value } : c));
+    };
+    
+    const handleEmailTemplateChange = (id: string, field: 'subject' | 'body', value: string) => {
+        setSettings(prev => {
+            const updatedTemplates = (prev.emailTemplates || []).map(template => 
+                template.id === id ? { ...template, [field]: value } : template
+            );
+            return { ...prev, emailTemplates: updatedTemplates };
+        });
     };
 
     const handleSave = () => {
@@ -113,6 +122,19 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                     ))}
                 </div>
             </details>
+            
+            <details className="p-4 border dark:border-gray-700 rounded-md">
+                <summary className="font-semibold text-lg cursor-pointer">Modèles d'e-mails</summary>
+                <div className="mt-4 space-y-4">
+                    {(settings.emailTemplates || []).map(template => (
+                        <div key={template.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
+                             <h4 className="font-bold text-md mb-2">{template.name}</h4>
+                            <Field label="Sujet de l'e-mail"><input type="text" value={template.subject} onChange={e => handleEmailTemplateChange(template.id, 'subject', e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                            <Field label="Corps de l'e-mail" description={`Variables disponibles : ${template.variables}`}><textarea value={template.body} onChange={e => handleEmailTemplateChange(template.id, 'body', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        </div>
+                    ))}
+                </div>
+            </details>
 
              <details className="p-4 border dark:border-gray-700 rounded-md">
                  <summary className="font-semibold text-lg cursor-pointer">Mode Maintenance</summary>
@@ -128,8 +150,9 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
             </details>
             
             <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Réseaux Sociaux (Footer)</summary>
+                <summary className="font-semibold text-lg cursor-pointer">Pied de page (Footer)</summary>
                 <div className="mt-4 space-y-4">
+                    <Field label="Nom de l'entreprise (Copyright)"><input type="text" name="companyName" value={settings.companyName} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     <Field label="Lien Facebook"><input type="url" name="socialLinks.facebook" value={settings.socialLinks.facebook} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     <Field label="Lien Twitter"><input type="url" name="socialLinks.twitter" value={settings.socialLinks.twitter} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     <Field label="Lien Instagram"><input type="url" name="socialLinks.instagram" value={settings.socialLinks.instagram} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
