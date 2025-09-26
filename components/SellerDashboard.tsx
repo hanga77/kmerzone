@@ -126,9 +126,14 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     ];
     
     const renderContent = () => {
+        const selectedTab = TABS.find(t => t.id === activeTab);
+        if (selectedTab?.isLocked) {
+             return <UpgradeToPremiumPanel store={store} siteSettings={siteSettings} onRequestUpgrade={onRequestUpgrade} featureName={selectedTab.label} />;
+        }
+
         switch(activeTab) {
             case 'livraison':
-                return isPremium ? <ShippingSettingsPanel store={store} allShippingPartners={allShippingPartners} onUpdate={onUpdateShippingSettings} /> : <UpgradeToPremiumPanel store={store} siteSettings={siteSettings} onRequestUpgrade={onRequestUpgrade} featureName="Gestion de la livraison" />;
+                return <ShippingSettingsPanel store={store} allShippingPartners={allShippingPartners} onUpdate={onUpdateShippingSettings} />;
             case 'subscription':
                 return <SellerSubscriptionPanel store={store} siteSettings={siteSettings} onUpgrade={(level) => onRequestUpgrade(store.id, level)} />;
             // Add other tab component renders here...

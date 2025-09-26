@@ -195,6 +195,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     sku: '',
   });
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [imageUrlInput, setImageUrlInput] = useState('');
   const [keywords, setKeywords] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const ai = useMemo(() => new GoogleGenAI({ apiKey: process.env.API_KEY as string }), []);
@@ -253,7 +254,6 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
         return;
       }
       
-      // FIX: Explicitly type `file` as Blob to satisfy `readAsDataURL`.
       files.forEach((file: Blob) => {
           const reader = new FileReader();
           reader.onloadend = () => {
@@ -264,6 +264,24 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
           reader.readAsDataURL(file);
       });
     }
+  };
+
+  const handleImageUrlAdd = () => {
+    if (!imageUrlInput.trim()) return;
+    try {
+        new URL(imageUrlInput); // Basic URL validation
+    } catch (_) {
+        alert("Veuillez entrer une URL valide.");
+        return;
+    }
+    if (imagePreviews.length >= 5) {
+        alert("Vous ne pouvez avoir que 5 images au maximum.");
+        return;
+    }
+    
+    setImagePreviews(prev => [...prev, imageUrlInput]);
+    setProduct(prev => ({ ...prev, imageUrls: [...(prev.imageUrls || []), imageUrlInput] }));
+    setImageUrlInput('');
   };
 
   const removeImage = (index: number) => {
@@ -425,11 +443,33 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                         {imagePreviews.length < 5 && (
                             <label htmlFor="image-upload" className="flex flex-col items-center justify-center w-full h-24 border-2 border-dashed rounded-md cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700">
                                 <PhotoIcon className="w-8 h-8 text-gray-400"/>
-                                <span className="text-xs text-gray-500 dark:text-gray-400">Ajouter</span>
+                                <span className="text-xs text-gray-500 dark:text-gray-400">Téléverser</span>
                                 <input id="image-upload" name="image-upload" type="file" multiple className="sr-only" onChange={handleImageChange} accept="image/*" />
                             </label>
                         )}
                     </div>
+                    {imagePreviews.length < 5 && (
+                        <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Ou ajouter depuis une URL</label>
+                            <div className="flex gap-2 mt-1">
+                                <input
+                                    type="url"
+                                    value={imageUrlInput}
+                                    onChange={(e) => setImageUrlInput(e.target.value)}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handleImageUrlAdd(); } }}
+                                    placeholder="https://exemple.com/image.jpg"
+                                    className="flex-grow p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                                />
+                                <button
+                                    type="button"
+                                    onClick={handleImageUrlAdd}
+                                    className="bg-gray-200 dark:bg-gray-600 font-semibold px-4 rounded-md hover:bg-gray-300 dark:hover:bg-gray-500"
+                                >
+                                    Ajouter
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </FieldWrapper>
 
                 <CategorySpecificFields product={product} categories={categories} handleChange={handleChange} />

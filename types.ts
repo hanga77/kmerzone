@@ -5,7 +5,6 @@
 
 
 
-
 export interface Review {
   author: string;
   rating: number;
@@ -251,7 +250,6 @@ export interface PromoCode {
   discountValue: number;
   minPurchase?: number;
   validUntil?: string; // ISO Date string
-  maxUses?: number;
   sellerId: string; // To link the code to a specific seller
   uses: number; // To track how many times it has been used
 }
@@ -366,6 +364,24 @@ export interface SiteContent {
   content: string;
 }
 
+export interface EmailTemplate {
+    id: string;
+    name: string;
+    subject: string;
+    body: string;
+    variables: string;
+}
+
+export interface PlanSettings {
+    price: number;
+    durationDays: number;
+    productLimit: number;
+    commissionRate: number;
+    photoServiceIncluded: boolean;
+    featuredOnHomepage: boolean;
+    prioritySupport: boolean;
+}
+
 export interface SiteSettings {
   logoUrl: string;
   isStoriesEnabled: boolean;
@@ -382,14 +398,8 @@ export interface SiteSettings {
   rentAmount: number;
   canSellersCreateCategories: boolean;
   commissionRate: number;
-  premiumPlan: {
-      price: number;
-      durationDays: number;
-  };
-  superPremiumPlan: {
-      price: number;
-      durationDays: number;
-  };
+  premiumPlan: PlanSettings;
+  superPremiumPlan: PlanSettings;
   deliverySettings: {
     intraUrbanBaseFee: number;
     interUrbanBaseFee: number;
@@ -406,6 +416,12 @@ export interface SiteSettings {
     metaDescription: string;
     ogImageUrl: string;
   };
+  socialLinks: {
+    facebook: string;
+    twitter: string;
+    instagram: string;
+  };
+  emailTemplates?: EmailTemplate[];
 }
 
 export interface SiteActivityLog {

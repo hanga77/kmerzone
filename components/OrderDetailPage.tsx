@@ -28,7 +28,6 @@ const RefundRequestModal: React.FC<{
                 alert("Vous pouvez télécharger jusqu'à 5 fichiers.");
                 return;
             }
-            // FIX: Explicitly type `file` as Blob to satisfy `readAsDataURL`.
             files.forEach((file: Blob) => {
                 const reader = new FileReader();
                 reader.onloadend = () => {

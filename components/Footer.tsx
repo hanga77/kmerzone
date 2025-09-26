@@ -6,9 +6,14 @@ interface FooterProps {
   onNavigate: (slug: string) => void;
   logoUrl: string;
   paymentMethods: PaymentMethod[];
+  socialLinks: {
+    facebook: string;
+    twitter: string;
+    instagram: string;
+  };
 }
 
-const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods }) => {
+const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, socialLinks }) => {
   return (
     <footer className="bg-gray-800 text-white dark:bg-gray-950">
       <div className="container mx-auto px-6 py-12">
@@ -27,6 +32,8 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods }) 
               <li><button onClick={() => onNavigate('contact')} className="text-gray-400 hover:text-white">Contact</button></li>
               <li><button onClick={() => onNavigate('faq')} className="text-gray-400 hover:text-white">FAQ</button></li>
               <li><button onClick={() => onNavigate('careers')} className="text-gray-400 hover:text-white">Carrières</button></li>
+              <li><button onClick={() => onNavigate('terms-of-service')} className="text-gray-400 hover:text-white">Conditions d'utilisation</button></li>
+              <li><button onClick={() => onNavigate('privacy-policy')} className="text-gray-400 hover:text-white">Politique de confidentialité</button></li>
             </ul>
           </div>
 
@@ -44,9 +51,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods }) 
           <div>
             <h3 className="text-lg font-bold mb-4 text-white">Suivez-nous</h3>
             <div className="flex space-x-4 mb-6">
-              <a href="#" className="text-gray-400 hover:text-white"><FacebookIcon className="h-6 w-6" /></a>
-              <a href="#" className="text-gray-400 hover:text-white"><TwitterIcon className="h-6 w-6" /></a>
-              <a href="#" className="text-gray-400 hover:text-white"><InstagramIcon className="h-6 w-6" /></a>
+              <a href={socialLinks.facebook} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><FacebookIcon className="h-6 w-6" /></a>
+              <a href={socialLinks.twitter} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><TwitterIcon className="h-6 w-6" /></a>
+              <a href={socialLinks.instagram} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><InstagramIcon className="h-6 w-6" /></a>
             </div>
             <h3 className="text-lg font-bold mb-4 text-white">Moyens de Paiement</h3>
             <div className="flex items-center space-x-2 flex-wrap gap-y-2">

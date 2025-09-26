@@ -1,5 +1,11 @@
 
-import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod, ShippingPartner } from './types';
+
+
+
+
+
+
+import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod, ShippingPartner, SiteActivityLog } from './types';
 
 export const initialCategories: Category[] = [
     // Main Categories
@@ -296,30 +302,67 @@ export const initialSiteSettings: SiteSettings = {
   canSellersCreateCategories: true,
   commissionRate: 10,
   premiumPlan: {
-      price: 50000,
-      durationDays: 45,
+    price: 5000,
+    durationDays: 30,
+    productLimit: 100,
+    commissionRate: 8,
+    photoServiceIncluded: true,
+    featuredOnHomepage: false,
+    prioritySupport: true,
   },
   superPremiumPlan: {
-      price: 150000,
-      durationDays: 30,
+    price: 15000,
+    durationDays: 30,
+    productLimit: 500,
+    commissionRate: 5,
+    photoServiceIncluded: true,
+    featuredOnHomepage: true,
+    prioritySupport: true,
   },
   deliverySettings: {
-    intraUrbanBaseFee: 1000, // Example value for same-city delivery
-    interUrbanBaseFee: 2500, // Example value for different-city delivery
-    costPerKg: 500,        // Example value for cost per kg surcharge
+    intraUrbanBaseFee: 1000,
+    interUrbanBaseFee: 2500,
+    costPerKg: 500,
     premiumDeliveryDiscountPercentage: 25,
   },
   maintenanceMode: {
-      isEnabled: false,
-      message: "Nous effectuons une mise à jour. Nous serons de retour très bientôt !",
-      reopenDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
+    isEnabled: false,
+    message: "Nous effectuons une mise à jour. Nous serons de retour très bientôt !",
+    reopenDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
   },
-  // FIX: Added missing seo property
   seo: {
     metaTitle: 'KMER ZONE - Le meilleur du Cameroun, livré chez vous.',
     metaDescription: 'Achetez et vendez des produits locaux et internationaux sur la première place de marché en ligne du Cameroun. Mode, électronique, alimentation et plus encore.',
     ogImageUrl: 'https://images.unsplash.com/photo-1593359677879-a4bb92f82acb?q=80&w=2070&auto=format&fit=crop'
-  }
+  },
+  socialLinks: {
+    facebook: 'https://facebook.com/kmerzone',
+    twitter: 'https://twitter.com/kmerzone',
+    instagram: 'https://instagram.com/kmerzone',
+  },
+  emailTemplates: [
+    {
+        id: 'order-confirmation',
+        name: 'Confirmation de commande',
+        subject: 'Votre commande KMER ZONE #{orderId} est confirmée !',
+        body: 'Bonjour {customerName},\n\nMerci pour votre achat ! Votre commande #{orderId} a bien été reçue et est en cours de préparation.\n\nTotal : {orderTotal} FCFA\n\nNous vous informerons dès que votre colis sera expédié.\n\nL\'équipe KMER ZONE',
+        variables: '{customerName}, {orderId}, {orderTotal}'
+    },
+    {
+        id: 'order-shipped',
+        name: 'Commande expédiée',
+        subject: 'Votre commande KMER ZONE #{orderId} a été expédiée !',
+        body: 'Bonjour {customerName},\n\nBonne nouvelle ! Votre commande #{orderId} est maintenant en route.\n\nVous pouvez suivre son avancement ici : {trackingLink}\n\nL\'équipe KMER ZONE',
+        variables: '{customerName}, {orderId}, {trackingLink}'
+    },
+    {
+        id: 'new-seller-welcome',
+        name: 'Bienvenue au nouveau vendeur',
+        subject: 'Bienvenue sur KMER ZONE, {sellerName} !',
+        body: 'Bonjour {sellerName},\n\nFélicitations ! Votre boutique "{storeName}" est maintenant active sur KMER ZONE.\n\nConnectez-vous à votre tableau de bord pour commencer à ajouter vos produits : {dashboardLink}\n\nNous sommes ravis de vous compter parmi nous.\n\nL\'équipe KMER ZONE',
+        variables: '{sellerName}, {storeName}, {dashboardLink}'
+    }
+  ]
 };
 
 export const initialSiteContent: SiteContent[] = [
@@ -357,6 +400,16 @@ export const initialSiteContent: SiteContent[] = [
     slug: 'logistics',
     title: "Logistique & Livraison",
     content: "Notre réseau de livreurs est à votre disposition pour garantir des livraisons rapides et fiables à vos clients."
+  },
+  {
+    slug: 'terms-of-service',
+    title: "Conditions d'utilisation",
+    content: "En utilisant KMER ZONE, vous acceptez nos conditions. La vente de produits illégaux est strictement interdite. Nous nous réservons le droit de suspendre tout compte qui ne respecte pas nos règles."
+  },
+  {
+    slug: 'privacy-policy',
+    title: "Politique de confidentialité",
+    content: "Nous respectons votre vie privée. Vos données sont utilisées uniquement pour le traitement des commandes et l'amélioration de nos services. Nous ne partageons jamais vos informations avec des tiers sans votre consentement."
   }
 ];
 
@@ -371,4 +424,35 @@ export const initialPaymentMethods: PaymentMethod[] = [
     { id: 'pm3', name: 'Visa', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Visa Logo"><rect width="64" height="40" rx="4" fill="white" stroke="%23E0E0E0"/><path d="M24.7,25.8h-3.4L17.6,14h3.8l2,7.1c0.4,1.6,0.6,2.7,0.8,3.6h0.1c0.2-0.9,0.5-2.1,0.8-3.6l2-7.1h3.7L24.7,25.8z M45.1,14.2c-0.8-0.2-1.9-0.5-3.1-0.5c-3.1,0-5.4,1.7-5.4,4.2c0,2.1,1.7,3.4,3.1,4.1c1.4,0.6,1.9,1,1.9,1.6c0,0.8-0.9,1.2-2.1,1.2c-1.6,0-2.4-0.3-3.3-0.6l-0.5-0.2l-0.6,3.2c0.8,0.3,2.3,0.5,4,0.5c3.3,0,5.6-1.7,5.6-4.4c0-2.6-1.9-3.7-3.4-4.4c-1.3-0.6-1.7-1-1.7-1.5c0-0.5,0.6-1.1,2-1.1c1.3,0,2.1,0.3,2.8,0.6l0.4,0.2L45.1,14.2z M47,14h-3.1l-2.1,11.8h3.8L47,14z M14.8,14.2l-3,11.6h3.7l3-11.6H14.8z" fill="%23142688" /></svg>' },
     { id: 'pm4', name: 'Mastercard', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Mastercard Logo"><rect width="64" height="40" rx="4" fill="white" stroke="%23E0E0E0"/><circle cx="26" cy="20" r="8" fill="%23EA001B"/><circle cx="38" cy="20" r="8" fill="%23F79E1B"/><path d="M32,20 a8,8 0 0,1 -6,-1.41a8,8 0 0,0 0,2.82a8,8 0 0,1 6,1.41a8,8 0 0,0 6,-1.41a8,8 0 0,1 0,-2.82A8,8 0 0,0 32,20Z" fill="%23FF5F00" /></svg>' },
     { id: 'pm5', name: 'PayPal', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="PayPal Logo"><rect width="64" height="40" rx="4" fill="%23003087"/><path fill="white" d="M32.12,12.62c-2.28-.1-4.2,1.3-4.72,3.42-.64,2.58.74,4.52,2.7,5.2,2.16.76,4.48.3,5.92-1.32,1.26-1.42,1.68-3.32,1-5.12-1.02-3.1-3.6-4.5-5-4.2h.1Z"/><path fill="%23009cde" d="M29.1,19.2c-.52,2.12,1.02,4,2.94,4.54,2.14.6,4.5.1,5.9-1.52.92-1.04,1.2-2.38.74-3.6-.82-2.18-3-3.44-4.9-2.92h.22Z"/></svg>' },
+];
+
+export const initialSiteActivityLogs: SiteActivityLog[] = [
+    {
+      id: 'log1',
+      timestamp: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
+      user: { id: 'admin-1', name: 'Super Admin', role: 'superadmin' },
+      action: 'STORE_APPROVAL',
+      details: 'Approbation de la boutique: Kmer Fashion (store-1)',
+    },
+    {
+      id: 'log2',
+      timestamp: new Date(Date.now() - 5 * 60 * 60 * 1000).toISOString(),
+      user: { id: 'admin-1', name: 'Super Admin', role: 'superadmin' },
+      action: 'FLASH_SALE_CREATED',
+      details: "Création de la vente flash: Vente Flash de la Rentrée",
+    },
+     {
+      id: 'log3',
+      timestamp: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+      user: { id: 'seller-1', name: 'Kmer Fashion', role: 'seller' },
+      action: 'PRODUCT_ADDED',
+      details: "Ajout du produit: 'Robe en Tissu Pagne' (2)",
+    },
+     {
+      id: 'log4',
+      timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+      user: { id: 'customer-1', name: 'Client Test', role: 'customer' },
+      action: 'REVIEW_SUBMITTED',
+      details: "Avis soumis pour le produit 'Smartphone Pro Max' (4)",
+    },
 ];

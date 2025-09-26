@@ -154,8 +154,7 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
         }
      }, [missions, allStores, allPickupPoints, view]);
 
-    // Fix: Updated the type of deliveryFailureReason to match the Order type.
-    const handleUpdateStatus = (orderId: string, status: OrderStatus, deliveryFailureReason?: { reason: 'client-absent' | 'adresse-erronee' | 'colis-refuse', details: string }) => {
+    const handleUpdateStatus = (orderId: string, status: OrderStatus, deliveryFailureReason?: Order['deliveryFailureReason']) => {
         const updates: Partial<Order> = { status };
         if(status === 'delivery-failed' && deliveryFailureReason) {
             updates.deliveryFailureReason = { ...deliveryFailureReason, date: new Date().toISOString() };
@@ -244,13 +243,12 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
                                             {order.status === 'out-for-delivery' && (
                                                 <>
                                                     <button onClick={() => handleUpdateStatus(order.id, 'delivered')} className="bg-green-500 text-white px-3 py-1 rounded">Livré</button>
-                                                    {/* Fix: Added validation for the reason from the prompt to match the required type. */}
                                                     <button onClick={() => {
                                                         const reason = prompt("Motif de l'échec (client-absent, adresse-erronee, colis-refuse):");
                                                         const details = prompt("Détails supplémentaires :");
                                                         if (reason && details) {
                                                             if (['client-absent', 'adresse-erronee', 'colis-refuse'].includes(reason)) {
-                                                                handleUpdateStatus(order.id, 'delivery-failed', { reason: reason as 'client-absent' | 'adresse-erronee' | 'colis-refuse', details });
+                                                                handleUpdateStatus(order.id, 'delivery-failed', { reason: reason as 'client-absent' | 'adresse-erronee' | 'colis-refuse', details, date: '' });
                                                             } else {
                                                                 alert("Motif invalide. Veuillez choisir parmi : client-absent, adresse-erronee, colis-refuse.");
                                                             }
