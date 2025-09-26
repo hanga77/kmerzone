@@ -46,6 +46,10 @@
     <style>
       body {
         font-family: 'Poppins', sans-serif;
+        color: rgb(17 24 39); /* Default text color for light mode */
+      }
+      .dark body {
+        color: rgb(229 231 235); /* Default text color for dark mode */
       }
       .animate-in {
         animation: animate-in 0.3s ease-out;
@@ -138,7 +142,7 @@
 </script>
 <link rel="stylesheet" href="/index.css">
 </head>
-  <body class="bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
+  <body class="bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300">
     <div id="root"></div>
     <script type="module" src="/index.tsx"></script>
   </body>

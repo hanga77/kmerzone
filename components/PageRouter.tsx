@@ -197,6 +197,7 @@ const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromot
                 onDeleteAnnouncement={() => {}}
                 onReviewModeration={() => {}}
                 onUpdatePaymentMethods={siteData.setAllPaymentMethods}
+                allZones={siteData.allZones}
             />;
         case 'vendor-page':
              return navigation.selectedStore ? <VendorPage vendorName={navigation.selectedStore.name} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={true}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
@@ -214,7 +215,9 @@ const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromot
             return user ? <DepotAgentDashboard 
                 user={user} 
                 allUsers={allUsers} 
-                allOrders={siteData.allOrders} 
+                allOrders={siteData.allOrders}
+                allStores={siteData.allStores}
+                allZones={siteData.allZones}
                 onLogout={logout}
                 onAssignAgentToOrder={(orderId, agentId) => user && siteData.handleAssignAgentToOrder(orderId, agentId, user, allUsers)}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;

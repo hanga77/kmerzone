@@ -1,12 +1,13 @@
 import React, { useState, useMemo, FC } from 'react';
-import type { Order, OrderStatus, User, CartItem } from '../types';
-// FIX: Import DocumentTextIcon from ./Icons
-import { ArchiveBoxIcon, ShoppingBagIcon, ChartPieIcon, BuildingStorefrontIcon, TruckIcon, UserGroupIcon, ExclamationTriangleIcon, XIcon, CheckIcon, DocumentTextIcon } from './Icons';
+import type { Order, OrderStatus, User, CartItem, Store, Zone } from '../types';
+import { ArchiveBoxIcon, ShoppingBagIcon, ChartPieIcon, BuildingStorefrontIcon, TruckIcon, UserGroupIcon, ExclamationTriangleIcon, XIcon, CheckIcon, DocumentTextIcon, MapPinIcon } from './Icons';
 
 interface DepotAgentDashboardProps {
   user: User;
   allUsers: User[];
   allOrders: Order[];
+  allStores: Store[];
+  allZones: Zone[];
   onLogout: () => void;
   onAssignAgentToOrder: (orderId: string, agentId: string) => void;
 }
@@ -40,17 +41,24 @@ const AssignModal: FC<{ order: Order; agents: User[]; onAssign: (orderId: string
     );
 };
 
-export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, onLogout, onAssignAgentToOrder }) => {
-    const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'agents' | 'reports'>('overview');
+export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, allStores, allZones, onLogout, onAssignAgentToOrder }) => {
+    const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'agents' | 'sellers' | 'reports'>('overview');
     const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
 
-    const { ordersToAssign, ordersInDelivery, ordersWithIssues, depotInventory, deliveryAgents } = useMemo(() => {
-        const _ordersToAssign = allOrders.filter(o => o.status === 'at-depot' && o.deliveryMethod === 'home-delivery');
-        const _ordersInDelivery = allOrders.filter(o => o.status === 'out-for-delivery');
-        const _ordersWithIssues = allOrders.filter(o => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status));
+    const { ordersToAssign, ordersInDelivery, ordersWithIssues, depotInventory, deliveryAgents, zoneName } = useMemo(() => {
+        const userZoneId = user.zoneId;
+        const _zoneName = allZones.find(z => z.id === userZoneId)?.name || 'Inconnue';
 
-        const _depotInventory = allOrders
-            .filter(o => o.status === 'at-depot')
+        if (!userZoneId || !user.depotId) return { ordersToAssign: [], ordersInDelivery: [], ordersWithIssues: [], depotInventory: [], deliveryAgents: [], zoneName: _zoneName };
+        
+        const ordersInDepot = allOrders.filter(o => o.storageLocationId === user.depotId || (o.pickupPointId === user.depotId && o.deliveryMethod === 'pickup'));
+
+        const _ordersToAssign = ordersInDepot.filter(o => o.status === 'at-depot' && o.deliveryMethod === 'home-delivery');
+        const _ordersInDelivery = allOrders.filter(o => o.status === 'out-for-delivery' && allUsers.find(u => u.id === o.agentId)?.zoneId === userZoneId);
+        const _ordersWithIssues = ordersInDepot.filter(o => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status));
+
+        const _depotInventory = ordersInDepot
+            .filter(o => ['at-depot', 'ready-for-pickup'].includes(o.status))
             .flatMap(o => o.items)
             .reduce((acc, item) => {
                 const existing = acc.get(item.id);
@@ -59,7 +67,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                 return acc;
             }, new Map<string, CartItem>());
 
-        const _deliveryAgents = allUsers.filter(u => u.role === 'delivery_agent');
+        const _deliveryAgents = allUsers.filter(u => u.role === 'delivery_agent' && u.zoneId === userZoneId);
         
         const agentsWithPerf = _deliveryAgents.map(agent => {
             const agentOrders = allOrders.filter(o => o.agentId === agent.id);
@@ -73,9 +81,10 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
             ordersInDelivery: _ordersInDelivery,
             ordersWithIssues: _ordersWithIssues,
             depotInventory: Array.from(_depotInventory.values()),
-            deliveryAgents: agentsWithPerf
+            deliveryAgents: agentsWithPerf,
+            zoneName: _zoneName
         };
-    }, [allOrders, allUsers]);
+    }, [allOrders, allUsers, user, allZones]);
 
     const OverviewPanel = () => (
         <div className="space-y-6">
@@ -128,7 +137,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     );
     
     const AgentsPanel = () => (
-        <div><h3 className="font-bold mb-4">Gestion des Livreurs</h3>
+        <div><h3 className="font-bold mb-4">Gestion des Livreurs de la Zone {zoneName}</h3>
             <div className="space-y-2">
                 {deliveryAgents.map(agent => (
                     <div key={agent.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
@@ -146,6 +155,31 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
         </div>
     );
     
+    const SellersPanel = () => {
+        const sellersWithStock = useMemo(() => {
+            const sellerIds = new Set(depotInventory.map(item => allStores.find(s => s.name === item.vendor)?.sellerId));
+            return allStores.filter(s => sellerIds.has(s.sellerId));
+        }, [depotInventory, allStores]);
+
+        return (
+             <div><h3 className="font-bold mb-4">Vendeurs avec Colis au Dépôt</h3>
+                <div className="space-y-2">
+                    {sellersWithStock.map(store => (
+                        <div key={store.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <img src={store.logoUrl} alt={store.name} className="w-10 h-10 rounded-full object-contain bg-white" />
+                                <div>
+                                    <p className="font-semibold">{store.name}</p>
+                                    <p className="text-xs text-gray-500 flex items-center gap-1"><MapPinIcon className="w-3 h-3"/>{store.physicalAddress}</p>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+             </div>
+        );
+    }
+
     const ReportsPanel = () => (
          <div><h3 className="font-bold mb-4">Rapports et Statistiques</h3>
             <p className="text-center text-gray-500 py-8">Section des rapports en cours de construction.</p>
@@ -158,6 +192,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
             case 'parcels': return <ParcelsPanel />;
             case 'inventory': return <InventoryPanel />;
             case 'agents': return <AgentsPanel />;
+            case 'sellers': return <SellersPanel />;
             case 'reports': return <ReportsPanel />;
             default: return null;
         }
@@ -171,8 +206,8 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                     <div className="container mx-auto px-4 sm:px-6 py-3">
                          <div className="flex justify-between items-center">
                             <div>
-                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Tableau de bord Agent de Dépôt</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Agent: {user.name}</p>
+                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Tableau de bord - Dépôt (Zone {zoneName})</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">Chef de Dépôt: {user.name}</p>
                             </div>
                             <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">Déconnexion</button>
                         </div>
@@ -185,6 +220,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                              <button onClick={() => setActiveTab('parcels')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'parcels' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ArchiveBoxIcon className="w-5 h-5"/>Suivi Colis</button>
                              <button onClick={() => setActiveTab('inventory')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'inventory' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ShoppingBagIcon className="w-5 h-5"/>Inventaire</button>
                              <button onClick={() => setActiveTab('agents')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'agents' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><UserGroupIcon className="w-5 h-5"/>Livreurs</button>
+                             <button onClick={() => setActiveTab('sellers')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'sellers' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><BuildingStorefrontIcon className="w-5 h-5"/>Vendeurs</button>
                              <button onClick={() => setActiveTab('reports')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'reports' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><DocumentTextIcon className="w-5 h-5"/>Rapports</button>
                         </div>
                         <div className="p-4 sm:p-6">

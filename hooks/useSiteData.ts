@@ -4,13 +4,13 @@ import type {
     Product, Category, Store, FlashSale, Order, SiteSettings, SiteContent, Advertisement, 
     PaymentMethod, SiteActivityLog, PickupPoint, Payout, PromoCode, OrderStatus, 
     NewOrderData, Review, User, DocumentStatus, Warning, Story, ProductCollection, 
-    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent 
+    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone 
 } from '../types';
 import { 
     initialCategories, initialProducts, initialStores, initialFlashSales, initialPickupPoints, 
     initialSiteSettings, initialSiteContent, initialAdvertisements, initialPaymentMethods, 
     initialShippingPartners, sampleDeliveredOrder, sampleDeliveredOrder2, sampleDeliveredOrder3, sampleNewMissionOrder,
-    initialSiteActivityLogs
+    initialSiteActivityLogs, initialZones
 } from '../constants';
 
 export const useSiteData = () => {
@@ -33,6 +33,7 @@ export const useSiteData = () => {
     const [allAnnouncements, setAllAnnouncements] = usePersistentState<Announcement[]>('allAnnouncements', []);
     const [dismissedAnnouncements, setDismissedAnnouncements] = usePersistentState<string[]>('dismissedAnnouncements', []);
     const [recentlyViewedIds, setRecentlyViewedIds] = usePersistentState<string[]>('recentlyViewed', []);
+    const [allZones, setAllZones] = usePersistentState<Zone[]>('allZones', initialZones);
 
     const logActivity = useCallback((user: User, action: string, details: string) => {
         const newLog: SiteActivityLog = {
@@ -44,6 +45,44 @@ export const useSiteData = () => {
         };
         setSiteActivityLogs(prev => [newLog, ...prev].slice(0, 100)); // Keep last 100 logs
     }, [setSiteActivityLogs]);
+
+    const handleAdminUpdateUser = useCallback((userId: string, updates: Partial<User>, allUsers: User[]) => {
+        let oldUser: User | undefined;
+        const userToUpdate = allUsers.find(u => u.id === userId);
+        if(userToUpdate) {
+            oldUser = {...userToUpdate};
+        }
+
+        const updatedUsers = allUsers.map(u => (u.id === userId ? { ...u, ...updates } : u));
+        
+        const newRole = updates.role;
+        const newDepotId = updates.depotId;
+
+        if (oldUser) {
+             // Case 1: User is assigned as a new manager
+            if (newRole === 'depot_manager' && newDepotId) {
+                setAllPickupPoints((prevPoints: PickupPoint[]) => prevPoints.map(p => {
+                    // Remove user as manager from any other depot they might have been manager of.
+                    if (p.managerId === userId && p.id !== newDepotId) {
+                        return { ...p, managerId: undefined };
+                    }
+                    // Assign as new manager
+                    if (p.id === newDepotId) {
+                        return { ...p, managerId: userId };
+                    }
+                    return p;
+                }));
+            }
+            // Case 2: User was a manager but role changed or was unassigned from depot
+            else if (oldUser.role === 'depot_manager' && (newRole !== 'depot_manager' || !newDepotId)) {
+                setAllPickupPoints((prevPoints: PickupPoint[]) => prevPoints.map(p => 
+                    p.id === oldUser.depotId ? { ...p, managerId: undefined } : p
+                ));
+            }
+        }
+        return updatedUsers;
+    }, [setAllPickupPoints]);
+
 
     const handleDismissAnnouncement = useCallback((id: string) => {
         setDismissedAnnouncements(prev => [...prev, id]);
@@ -146,6 +185,8 @@ export const useSiteData = () => {
         allAnnouncements, setAllAnnouncements,
         dismissedAnnouncements, setDismissedAnnouncements,
         recentlyViewedIds, setRecentlyViewedIds,
+        allZones, setAllZones,
+        handleAdminUpdateUser,
         handleDismissAnnouncement,
         handleSetPromotion,
         handleConfirmOrder,

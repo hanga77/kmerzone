@@ -1,13 +1,10 @@
 
 
-
-
 import React, { useState, useEffect } from 'react';
 import { XIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import { useUI } from './contexts/UIContext';
-// FIX: Import 'Category' type
 import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint } from './types';
 import { Header } from './components/Header';
 import Footer from './components/Footer';
@@ -92,41 +89,8 @@ export default function App() {
   };
 
     const handleAdminUpdateUser = (userId: string, updates: Partial<User>) => {
-        let oldUser: User | undefined;
-        const userToUpdate = allUsers.find(u => u.id === userId);
-        if(userToUpdate) {
-            oldUser = {...userToUpdate};
-        }
-
-        setAllUsers((prevUsers: User[]) => 
-            prevUsers.map(u => (u.id === userId ? { ...u, ...updates } : u))
-        );
-
-        const newRole = updates.role;
-        const newDepotId = updates.depotId;
-
-        if (oldUser) {
-             // Case 1: User is assigned as a new manager
-            if (newRole === 'depot_manager' && newDepotId) {
-                siteData.setAllPickupPoints((prevPoints: PickupPoint[]) => prevPoints.map(p => {
-                    // Remove user as manager from any other depot they might have been manager of.
-                    if (p.managerId === userId && p.id !== newDepotId) {
-                        return { ...p, managerId: undefined };
-                    }
-                    // Assign as new manager
-                    if (p.id === newDepotId) {
-                        return { ...p, managerId: userId };
-                    }
-                    return p;
-                }));
-            }
-            // Case 2: User was a manager but role changed or was unassigned from depot
-            else if (oldUser.role === 'depot_manager' && (newRole !== 'depot_manager' || !newDepotId)) {
-                siteData.setAllPickupPoints((prevPoints: PickupPoint[]) => prevPoints.map(p => 
-                    p.id === oldUser.depotId ? { ...p, managerId: undefined } : p
-                ));
-            }
-        }
+        const updatedUsers = siteData.handleAdminUpdateUser(userId, updates, allUsers);
+        setAllUsers(updatedUsers);
     };
 
 

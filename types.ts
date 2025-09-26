@@ -1,13 +1,10 @@
 
 
-
-
-
-
-
-
-
-
+export interface Zone {
+  id: string;
+  name: string;
+  city: 'Douala' | 'Yaoundé' | 'Bafoussam' | 'Limbe' | 'Kribi';
+}
 
 export interface Review {
   author: string;
@@ -232,6 +229,7 @@ export interface User {
         orderUpdates: boolean;
         newsletters: boolean;
     };
+    zoneId?: string; // Add zoneId for logistics roles
 }
 
 export interface Address {
@@ -358,6 +356,7 @@ export interface PickupPoint {
   latitude?: number;
   longitude?: number;
   managerId?: string;
+  zoneId?: string; // Add zoneId
 }
 
 

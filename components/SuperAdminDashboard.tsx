@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, PickupPoint, User, SiteSettings, Payout, Advertisement, SiteContent, Ticket, Announcement, PaymentMethod } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, PickupPoint, User, SiteSettings, Payout, Advertisement, SiteContent, Ticket, Announcement, PaymentMethod, Zone } from '../types';
 
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, TruckIcon, BanknotesIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, Cog8ToothIcon, ChartPieIcon } from './Icons';
 
@@ -72,6 +72,7 @@ interface SuperAdminDashboardProps {
     onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => void;
     paymentMethods: PaymentMethod[];
     onUpdatePaymentMethods: (methods: PaymentMethod[]) => void;
+    allZones: Zone[];
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
@@ -104,7 +105,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
     const renderContent = () => {
         switch (activeTab) {
             case 'overview': return <OverviewPanel {...props} />;
-            case 'users': return <UsersPanel allUsers={props.allUsers} onUpdateUser={props.onUpdateUser} onCreateUserByAdmin={props.onCreateUserByAdmin} allPickupPoints={props.allPickupPoints} />;
+            case 'users': return <UsersPanel allUsers={props.allUsers} onUpdateUser={props.onUpdateUser} onCreateUserByAdmin={props.onCreateUserByAdmin} allPickupPoints={props.allPickupPoints} allZones={props.allZones} />;
             case 'catalog': return <CatalogPanel {...props} />;
             case 'marketing': return <MarketingPanel {...props} />;
             case 'stores': return <StoresPanel {...props} />;
