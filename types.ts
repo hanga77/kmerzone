@@ -388,6 +388,7 @@ export interface PlanSettings {
 
 export interface SiteSettings {
   logoUrl: string;
+  bannerUrl?: string;
   isStoriesEnabled: boolean;
   isPremiumProgramEnabled: boolean;
   premiumThresholds: {

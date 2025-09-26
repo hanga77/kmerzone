@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import type { Product, Category, Store, FlashSale, Advertisement, Order, User } from '../types';
+import type { Product, Category, Store, FlashSale, Advertisement, Order, User, SiteSettings } from '../types';
 import CategoryCard from './CategoryCard';
 import ProductCard from './ProductCard';
 import StoreCard from './StoreCard';
@@ -13,6 +13,7 @@ interface HomePageProps {
     stores: Store[];
     flashSales: FlashSale[];
     advertisements: Advertisement[];
+    siteSettings: SiteSettings;
     onProductClick: (product: Product) => void;
     onCategoryClick: (categoryId: string) => void;
     onVendorClick: (vendorName: string) => void;
@@ -133,7 +134,7 @@ const AdCarousel: React.FC<{ advertisements: Advertisement[] }> = ({ advertiseme
 };
 
 
-const RecommendedForYou: React.FC<Omit<HomePageProps, 'advertisements' | 'isStoriesEnabled'>> = ({ userOrders, wishlist, recentlyViewedIds, products, categories, onProductClick, onVendorClick, stores, flashSales, isComparisonEnabled }) => {
+const RecommendedForYou: React.FC<Omit<HomePageProps, 'advertisements' | 'isStoriesEnabled' | 'siteSettings'>> = ({ userOrders, wishlist, recentlyViewedIds, products, categories, onProductClick, onVendorClick, stores, flashSales, isComparisonEnabled }) => {
     const { user } = useAuth();
     
     const recommendedProducts = useMemo(() => {
@@ -198,7 +199,7 @@ const RecommendedForYou: React.FC<Omit<HomePageProps, 'advertisements' | 'isStor
 
 
 const HomePage: React.FC<HomePageProps> = (props) => {
-    const { categories, products, stores, flashSales, advertisements, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled, isStoriesEnabled, recentlyViewedIds, userOrders, wishlist } = props;
+    const { categories, products, stores, flashSales, advertisements, siteSettings, onProductClick, onCategoryClick, onVendorClick, onVisitStore, onViewStories, isComparisonEnabled, isStoriesEnabled, recentlyViewedIds, userOrders, wishlist } = props;
     
     const popularProductsRef = React.useRef<HTMLDivElement>(null);
     const findStoreLocation = (vendorName: string) => stores.find(s => s.name === vendorName)?.location;
@@ -235,7 +236,7 @@ const HomePage: React.FC<HomePageProps> = (props) => {
             {/* Hero Section */}
             <section className="relative bg-gradient-to-br from-kmer-green to-green-900 text-white h-[60vh] flex items-center justify-center">
               <div className="absolute inset-0">
-                <img src="https://picsum.photos/seed/market/1600/900" alt="Marché camerounais" className="w-full h-full object-cover opacity-20"/>
+                <img src={siteSettings.bannerUrl || "https://picsum.photos/seed/market/1600/900"} alt="Marché camerounais" className="w-full h-full object-cover opacity-20"/>
               </div>
               <div className="relative z-10 text-center p-4">
                 <h1 className="text-4xl md:text-6xl font-bold mb-4" style={{textShadow: '2px 2px 4px rgba(0,0,0,0.5)'}}>Le meilleur du Cameroun, livré chez vous.</h1>

@@ -287,6 +287,7 @@ export const initialPickupPoints: PickupPoint[] = [
 
 export const initialSiteSettings: SiteSettings = {
   logoUrl: '',
+  bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop',
   companyName: 'KMER ZONE',
   isStoriesEnabled: true,
   isPremiumProgramEnabled: true,
@@ -348,40 +349,35 @@ export const initialSiteSettings: SiteSettings = {
         id: 'order-confirmation',
         name: 'Client - Confirmation de commande',
         subject: 'Votre commande KMER ZONE #{orderId} est confirmée !',
-// FIX: Incorrectly escaped apostrophe. Replaced \\' with \'.
-        body: 'Bonjour {customerName},\\n\\nMerci pour votre achat ! Votre commande #{orderId} a bien été reçue et est en cours de préparation.\\n\\nTotal : {orderTotal} FCFA\\n\\nNous vous informerons dès que votre colis sera expédié.\\n\\nL\'équipe KMER ZONE',
+        body: 'Bonjour {customerName},\n\nMerci pour votre achat ! Votre commande #{orderId} a bien été reçue et est en cours de préparation.\n\nTotal : {orderTotal} FCFA\n\nNous vous informerons dès que votre colis sera expédié.\n\nL\'équipe KMER ZONE',
         variables: '{customerName}, {orderId}, {orderTotal}, {trackingLink}'
     },
     {
         id: 'order-shipped',
         name: 'Client - Commande expédiée',
         subject: 'Votre commande KMER ZONE #{orderId} a été expédiée !',
-// FIX: Incorrectly escaped apostrophe. Replaced \\' with \'.
-        body: 'Bonjour {customerName},\\n\\nBonne nouvelle ! Votre commande #{orderId} est maintenant en route.\\n\\nVous pouvez suivre son avancement ici : {trackingLink}\\n\\nL\'équipe KMER ZONE',
+        body: 'Bonjour {customerName},\n\nBonne nouvelle ! Votre commande #{orderId} est maintenant en route.\n\nVous pouvez suivre son avancement ici : {trackingLink}\n\nL\'équipe KMER ZONE',
         variables: '{customerName}, {orderId}, {trackingLink}'
     },
     {
         id: 'new-seller-welcome',
         name: 'Vendeur - Bienvenue',
         subject: 'Bienvenue sur KMER ZONE, {sellerName} !',
-// FIX: Incorrectly escaped apostrophe. Replaced \\' with \'.
-        body: 'Bonjour {sellerName},\\n\\nFélicitations ! Votre boutique "{storeName}" est maintenant active sur KMER ZONE.\\n\\nConnectez-vous à votre tableau de bord pour commencer à ajouter vos produits : {dashboardLink}\\n\\nNous sommes ravis de vous compter parmi nous.\\n\\nL\'équipe KMER ZONE',
+        body: 'Bonjour {sellerName},\n\nFélicitations ! Votre boutique "{storeName}" est maintenant active sur KMER ZONE.\n\nConnectez-vous à votre tableau de bord pour commencer à ajouter vos produits : {dashboardLink}\n\nNous sommes ravis de vous compter parmi nous.\n\nL\'équipe KMER ZONE',
         variables: '{sellerName}, {storeName}, {dashboardLink}'
     },
     {
         id: 'new-order-for-seller',
         name: 'Vendeur - Nouvelle commande',
         subject: 'Nouvelle commande #{orderId} pour votre boutique {storeName}',
-// FIX: Incorrectly escaped apostrophe. Replaced \\' with \'.
-        body: 'Bonjour {sellerName},\\n\\nVous avez une nouvelle commande ! Connectez-vous à votre tableau de bord pour la préparer.\\n\\nID Commande: #{orderId}\\n\\nLien: {dashboardLink}\\n\\nL\'équipe KMER ZONE',
+        body: 'Bonjour {sellerName},\n\nVous avez une nouvelle commande ! Connectez-vous à votre tableau de bord pour la préparer.\n\nID Commande: #{orderId}\n\nLien: {dashboardLink}\n\nL\'équipe KMER ZONE',
         variables: '{sellerName}, {storeName}, {orderId}, {dashboardLink}'
     },
     {
         id: 'password-reset',
         name: 'Utilisateur - Réinitialisation de mot de passe',
         subject: 'Réinitialisation de votre mot de passe KMER ZONE',
-// FIX: Incorrectly escaped apostrophes. Replaced \\' with \'.
-        body: 'Bonjour {customerName},\\n\\nPour réinitialiser votre mot de passe, veuillez cliquer sur le lien suivant : {resetLink}\\n\\nSi vous n\'êtes pas à l\'origine de cette demande, veuillez ignorer cet email.\\n\\nL\'équipe KMER ZONE',
+        body: 'Bonjour {customerName},\n\nPour réinitialiser votre mot de passe, veuillez cliquer sur le lien suivant : {resetLink}\n\nSi vous n\'êtes pas à l\'origine de cette demande, veuillez ignorer cet email.\n\nL\'équipe KMER ZONE',
         variables: '{customerName}, {resetLink}'
     }
   ]

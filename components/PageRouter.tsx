@@ -62,6 +62,7 @@ const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromot
                 stores={siteData.allStores}
                 flashSales={siteData.flashSales}
                 advertisements={siteData.allAdvertisements}
+                siteSettings={siteData.siteSettings}
                 onProductClick={navigation.navigateToProduct}
                 onCategoryClick={navigation.navigateToCategory}
                 onVendorClick={navigation.navigateToVendorPage}

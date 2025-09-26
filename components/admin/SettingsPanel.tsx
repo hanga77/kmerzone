@@ -69,6 +69,20 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                 <button onClick={handleSave} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Sauvegarder les Paramètres</button>
             </div>
             
+            <details className="p-4 border dark:border-gray-700 rounded-md">
+                <summary className="font-semibold text-lg cursor-pointer">Identité Visuelle</summary>
+                <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <Field label="URL du Logo du site">
+                        <input type="url" name="logoUrl" value={settings.logoUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        {settings.logoUrl && <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-md inline-block"><img src={settings.logoUrl} alt="Aperçu du logo" className="h-12"/></div>}
+                    </Field>
+                    <Field label="URL de la Bannière de la page d'accueil">
+                        <input type="url" name="bannerUrl" value={settings.bannerUrl || ''} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                        {settings.bannerUrl && <img src={settings.bannerUrl} alt="Aperçu de la bannière" className="mt-2 h-24 w-full object-cover rounded" />}
+                    </Field>
+                </div>
+            </details>
+
             <details className="p-4 border dark:border-gray-700 rounded-md" open>
                 <summary className="font-semibold text-lg cursor-pointer">Livraison</summary>
                 <div className="mt-4 space-y-4">
