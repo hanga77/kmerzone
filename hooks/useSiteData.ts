@@ -165,6 +165,12 @@ export const useSiteData = () => {
         logActivity(user, 'ORDER_ASSIGNED_TO_AGENT', `Commande ${orderId} assignée au livreur ${agentId}.`);
     }, [setAllOrders, logActivity]);
 
+    const handleSendBulkEmail = useCallback((recipientIds: string[], subject: string, body: string, currentUser: User) => {
+        // This is a simulation. In a real app, this would trigger a backend service.
+        logActivity(currentUser, 'BULK_EMAIL_SENT', `E-mail envoyé à ${recipientIds.length} utilisateur(s) avec le sujet : "${subject}".`);
+        // We could also create notifications for each user here.
+    }, [logActivity]);
+
     return {
         allProducts, setAllProducts,
         allCategories, setAllCategories,
@@ -196,6 +202,7 @@ export const useSiteData = () => {
         handleUpdateAdvertisement,
         handleDeleteAdvertisement,
         handleAssignAgentToOrder,
+        handleSendBulkEmail,
         logActivity,
     };
 };

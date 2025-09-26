@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import type { User, UserRole, PickupPoint, Zone } from '../../types';
+import type { User, UserRole, PickupPoint, Zone, SiteSettings } from '../../types';
 import { PencilSquareIcon, PlusIcon } from '../Icons';
+import BulkEmailModal from './BulkEmailModal';
 
 interface UsersPanelProps {
     allUsers: User[];
@@ -8,17 +9,35 @@ interface UsersPanelProps {
     onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => void;
     allPickupPoints: PickupPoint[];
     allZones: Zone[];
+    onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => void;
+    siteSettings: SiteSettings;
 }
 
-export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, allPickupPoints, allZones }) => {
+export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, allPickupPoints, allZones, onSendBulkEmail, siteSettings }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
+    const [isEmailModalOpen, setIsEmailModalOpen] = useState(false);
     
     const filteredUsers = useMemo(() => 
         allUsers.filter(u => u.name.toLowerCase().includes(searchTerm.toLowerCase()) || u.email.toLowerCase().includes(searchTerm.toLowerCase())),
         [allUsers, searchTerm]
     );
+
+    const handleSelectUser = (userId: string) => {
+        setSelectedUserIds(prev => 
+            prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+        );
+    };
+
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.checked) {
+            setSelectedUserIds(filteredUsers.map(u => u.id));
+        } else {
+            setSelectedUserIds([]);
+        }
+    };
 
     const UserForm = ({ user, onSave, onCancel }: { user?: User | null, onSave: (data: any) => void, onCancel: () => void }) => {
         const [data, setData] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || 'customer', depotId: user?.depotId || '', zoneId: user?.zoneId || '' });
@@ -92,22 +111,44 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
         setIsCreating(false);
     };
 
+    const handleSendEmail = (subject: string, body: string) => {
+        onSendBulkEmail(selectedUserIds, subject, body);
+        setIsEmailModalOpen(false);
+        setSelectedUserIds([]);
+    };
+
     return (
         <div className="p-4 sm:p-6">
+            {isEmailModalOpen && (
+                <BulkEmailModal 
+                    isOpen={isEmailModalOpen}
+                    onClose={() => setIsEmailModalOpen(false)}
+                    onSend={handleSendEmail}
+                    recipients={allUsers.filter(u => selectedUserIds.includes(u.id))}
+                    emailTemplates={siteSettings.emailTemplates || []}
+                />
+            )}
             <h2 className="text-xl font-bold mb-4">Gestion des Utilisateurs ({allUsers.length})</h2>
-            <div className="flex justify-between items-center mb-4">
-                <input type="text" placeholder="Rechercher par nom ou email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="p-2 border rounded-md w-1/2 dark:bg-gray-700 dark:border-gray-600"/>
-                <button onClick={() => setIsCreating(true)} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><PlusIcon className="w-5 h-5"/> Créer un utilisateur</button>
+            <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
+                <input type="text" placeholder="Rechercher par nom ou email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="p-2 border rounded-md w-full sm:w-1/2 dark:bg-gray-700 dark:border-gray-600"/>
+                <div className="flex gap-2">
+                    <button onClick={() => setIsEmailModalOpen(true)} disabled={selectedUserIds.length === 0} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 disabled:bg-gray-400">
+                        Envoyer un e-mail ({selectedUserIds.length})
+                    </button>
+                    <button onClick={() => setIsCreating(true)} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><PlusIcon className="w-5 h-5"/> Créer</button>
+                </div>
             </div>
             {(editingUser || isCreating) && <UserForm user={editingUser} onSave={handleSaveUser} onCancel={() => {setEditingUser(null); setIsCreating(false);}}/>}
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
-                    <thead className="bg-gray-100 dark:bg-gray-700"><tr >
+                    <thead className="bg-gray-100 dark:bg-gray-700"><tr>
+                        <th className="p-2 w-10"><input type="checkbox" onChange={handleSelectAll} checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0} /></th>
                         <th className="p-2 text-left">Nom</th><th className="p-2 text-left">Email</th><th className="p-2 text-left">Rôle</th><th className="p-2 text-center">Action</th>
                     </tr></thead>
                     <tbody>
                         {filteredUsers.map(user => (
                             <tr key={user.id} className="border-b dark:border-gray-700">
+                                <td className="p-2"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => handleSelectUser(user.id)} /></td>
                                 <td className="p-2">{user.name}</td><td className="p-2">{user.email}</td><td className="p-2 capitalize">{user.role.replace('_', ' ')}</td>
                                 <td className="p-2 text-center"><button onClick={() => setEditingUser(user)} className="text-blue-500"><PencilSquareIcon className="w-5 h-5"/></button></td>
                             </tr>

@@ -93,6 +93,12 @@ export default function App() {
         setAllUsers(updatedUsers);
     };
 
+    const handleSendBulkEmail = (recipientIds: string[], subject: string, body: string) => {
+        if (user) {
+            siteData.handleSendBulkEmail(recipientIds, subject, body, user);
+        }
+    };
+
 
   // Connect allProducts to comparison context
   useEffect(() => { setComparisonProducts(siteData.allProducts); }, [siteData.allProducts, setComparisonProducts]);
@@ -175,6 +181,7 @@ export default function App() {
             setPromotionModalProduct={setPromotionModalProduct}
             setPaymentRequest={setPaymentRequest}
             onAdminUpdateUser={handleAdminUpdateUser}
+            onSendBulkEmail={handleSendBulkEmail}
           />
         </main>
 

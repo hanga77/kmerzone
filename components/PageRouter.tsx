@@ -42,9 +42,10 @@ interface PageRouterProps {
     setPromotionModalProduct: (product: Product | null) => void;
     setPaymentRequest: (request: PaymentRequest | null) => void;
     onAdminUpdateUser: (userId: string, updates: Partial<User>) => void;
+    onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => void;
 }
 
-const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromotionModalProduct, setPaymentRequest, onAdminUpdateUser }) => {
+const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromotionModalProduct, setPaymentRequest, onAdminUpdateUser, onSendBulkEmail }) => {
     const { user, allUsers, setAllUsers, logout } = useAuth();
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
     const { wishlist } = useWishlist();
@@ -164,6 +165,7 @@ const PageRouter: React.FC<PageRouterProps> = ({ navigation, siteData, setPromot
                 onAddAdvertisement={(data) => user && siteData.handleAddAdvertisement(data, user)}
                 onUpdateAdvertisement={(id, data) => user && siteData.handleUpdateAdvertisement(id, data, user)}
                 onDeleteAdvertisement={(id) => user && siteData.handleDeleteAdvertisement(id, user)}
+                onSendBulkEmail={onSendBulkEmail}
                 onUpdateOrderStatus={() => {}}
                 onUpdateCategoryImage={() => {}}
                 onWarnStore={() => {}}

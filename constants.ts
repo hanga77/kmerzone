@@ -379,6 +379,13 @@ export const initialSiteSettings: SiteSettings = {
         subject: 'Réinitialisation de votre mot de passe KMER ZONE',
         body: 'Bonjour {customerName},\n\nPour réinitialiser votre mot de passe, veuillez cliquer sur le lien suivant : {resetLink}\n\nSi vous n\'êtes pas à l\'origine de cette demande, veuillez ignorer cet email.\n\nL\'équipe KMER ZONE',
         variables: '{customerName}, {resetLink}'
+    },
+    {
+        id: 'admin-bulk-marketing',
+        name: 'Admin - Email Marketing Groupé',
+        subject: 'Une nouvelle annonce de KMER ZONE',
+        body: 'Bonjour {customerName},\n\nNous avons une annonce importante pour vous :\n\n{emailContent}\n\nMerci de votre confiance,\nL\'équipe KMER ZONE',
+        variables: '{customerName}, {emailContent}'
     }
   ]
 };
