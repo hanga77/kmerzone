@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { SearchIcon, ShoppingCartIcon, UserCircleIcon, MenuIcon, XIcon, BuildingStorefrontIcon, Cog8ToothIcon, SunIcon, MoonIcon, ClipboardDocumentListIcon, AcademicCapIcon, ChevronDownIcon, TagIcon, BoltIcon, ArrowRightOnRectangleIcon, HeartIcon, TruckIcon, ChatBubbleBottomCenterTextIcon, LogoIcon, StarIcon, StarPlatinumIcon, BellIcon, PhotoIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
@@ -8,6 +6,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useChatContext } from '../contexts/ChatContext';
 import type { Category, User, Notification, Page } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface HeaderProps {
   categories: Category[];
@@ -48,7 +47,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [isSearchFocused, setIsSearchFocused] = useState(false);
-  const [language, setLanguage] = useState<'fr' | 'en'>('fr');
+  const { language, setLanguage, t } = useLanguage();
   const { cart } = useCart();
   const { wishlist } = useWishlist();
   const { user } = useAuth();
@@ -69,22 +68,6 @@ export const Header: React.FC<HeaderProps> = (props) => {
         subCategories: categories.filter(c => c.parentId === mainCat.id)
     }));
   }, [categories]);
-
-  const translations = {
-    searchPlaceholder: { fr: 'Rechercher un produit...', en: 'Search for a product...' },
-    login: { fr: 'Connexion', en: 'Login' },
-    myOrders: { fr: 'Mes Commandes', en: 'My Orders' },
-    wishlist: { fr: 'Favoris', en: 'Wishlist' },
-    messages: { fr: 'Messages', en: 'Messages' },
-    cart: { fr: 'Panier', en: 'Cart' },
-    categories: { fr: 'Catégories', en: 'Categories' },
-    promotions: { fr: 'Promotions', en: 'Promotions' },
-    flashSales: { fr: 'Ventes Flash', en: 'Flash Sales' },
-    stores: { fr: 'Boutiques', en: 'Stores' },
-    becomeSeller: { fr: 'Devenir vendeur', en: 'Become a seller' },
-    becomePremium: { fr: 'Devenir Premium', en: 'Become Premium' },
-    notifications: { fr: 'Notifications', en: 'Notifications' },
-  };
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -122,20 +105,20 @@ export const Header: React.FC<HeaderProps> = (props) => {
   };
 
   const userMenuItems = [
-    ...(user?.role === 'superadmin' ? [{ label: 'Superadmin Dashboard', action: onNavigateToSuperAdminDashboard, icon: <AcademicCapIcon className="h-5 w-5" /> }] : []),
+    ...(user?.role === 'superadmin' ? [{ label: t('header.superadminDashboard'), action: onNavigateToSuperAdminDashboard, icon: <AcademicCapIcon className="h-5 w-5" /> }] : []),
     ...(user?.role === 'seller' ? [
-        { label: `Tableau de bord (${user.shopName})`, action: onNavigateToSellerDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> },
-        { label: 'Mon Profil', action: onNavigateToSellerProfile, icon: <Cog8ToothIcon className="h-5 w-5" /> }
+        { label: t('header.sellerDashboard'), action: onNavigateToSellerDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> },
+        { label: t('header.sellerProfile'), action: onNavigateToSellerProfile, icon: <Cog8ToothIcon className="h-5 w-5" /> }
     ] : []),
     ...(user?.role === 'customer' ? [
-        { label: 'Mon Compte', action: () => onNavigateToAccount('profile'), icon: <UserCircleIcon className="h-5 w-5" /> },
-        { label: 'Boutiques Suivies', action: () => onNavigateToAccount('followed-stores'), icon: <BuildingStorefrontIcon className="h-5 w-5" /> }
+        { label: t('header.myAccount'), action: () => onNavigateToAccount('profile'), icon: <UserCircleIcon className="h-5 w-5" /> },
+        { label: t('header.followedStores'), action: () => onNavigateToAccount('followed-stores'), icon: <BuildingStorefrontIcon className="h-5 w-5" /> }
     ] : []),
-    ...(user?.role === 'delivery_agent' ? [{ label: 'Tableau de bord Livreur', action: onNavigateToDeliveryAgentDashboard, icon: <TruckIcon className="h-5 w-5" /> }] : []),
-    ...(user?.role === 'depot_agent' ? [{ label: 'Tableau de bord Dépôt', action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
+    ...(user?.role === 'delivery_agent' ? [{ label: t('header.deliveryDashboard'), action: onNavigateToDeliveryAgentDashboard, icon: <TruckIcon className="h-5 w-5" /> }] : []),
+    ...(user?.role === 'depot_agent' || user?.role === 'depot_manager' ? [{ label: t('header.depotDashboard'), action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
     ...(user && (user.role === 'customer' || user.role === 'seller') ? [
-        { label: 'Mes Commandes', action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> },
-        { label: 'Support', action: () => onNavigateToAccount('support'), icon: <ChatBubbleBottomCenterTextIcon className="h-5 w-5" /> }
+        { label: t('header.myOrders'), action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> },
+        { label: t('header.support'), action: () => onNavigateToAccount('support'), icon: <ChatBubbleBottomCenterTextIcon className="h-5 w-5" /> }
     ] : [])
   ];
 
@@ -154,7 +137,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
       <div className="container mx-auto px-4 sm:px-6 py-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center">
-             <button onClick={onNavigateHome} aria-label="Retour à l'accueil">
+             <button onClick={onNavigateHome} aria-label={t('header.backToHome')}>
               <LogoIcon className="h-10" logoUrl={logoUrl} />
             </button>
           </div>
@@ -163,12 +146,12 @@ export const Header: React.FC<HeaderProps> = (props) => {
               onSubmit={(e) => handleSearchSubmit(e, searchQuery)} 
               className={`relative w-full ${isSearchFocused ? 'max-w-2xl' : 'max-w-md'} transition-all duration-300 ease-in-out`}
             >
-               <button type="button" onClick={onNavigateToVisualSearch} className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400 hover:text-kmer-green" title="Recherche par image">
+               <button type="button" onClick={onNavigateToVisualSearch} className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500 dark:text-gray-400 hover:text-kmer-green" title={t('header.visualSearch')}>
                 <PhotoIcon className="h-5 w-5" />
               </button>
               <input 
                 type="text" 
-                placeholder={translations.searchPlaceholder[language]}
+                placeholder={t('header.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={() => setIsSearchFocused(true)}
@@ -184,7 +167,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
           <div className="hidden lg:flex items-center space-x-2">
             {(!user || user.role === 'customer') && (
                 <button onClick={onNavigateToBecomeSeller} className="text-sm font-semibold text-kmer-green border-2 border-kmer-green rounded-full px-4 py-1.5 hover:bg-kmer-green/10 transition-colors">
-                    {translations.becomeSeller[language]}
+                    {t('header.becomeSeller')}
                 </button>
             )}
             {user ? (
@@ -211,21 +194,21 @@ export const Header: React.FC<HeaderProps> = (props) => {
                     ))}
                     <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
                     <button onClick={() => { onLogout(); setIsUserMenuOpen(false); }} className="w-full text-left flex items-center gap-3 px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700">
-                       <ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter
+                       <ArrowRightOnRectangleIcon className="h-5 w-5" /> {t('header.logout')}
                     </button>
                   </div>
                 )}
               </div>
               
                <div className="relative" ref={notificationsMenuRef}>
-                    <ActionButton onClick={() => setIsNotificationsOpen(o => !o)} icon={<BellIcon className="h-6 w-6" />} label={translations.notifications[language]} count={unreadNotificationsCount} />
+                    <ActionButton onClick={() => setIsNotificationsOpen(o => !o)} icon={<BellIcon className="h-6 w-6" />} label={t('header.notifications')} count={unreadNotificationsCount} />
                     {isNotificationsOpen && (
                         <div className="absolute right-0 mt-2 w-80 bg-white dark:bg-gray-800 rounded-md shadow-lg ring-1 ring-black ring-opacity-5 max-h-96 overflow-y-auto">
                            <div className="p-3 border-b dark:border-gray-700">
-                            <h3 className="font-semibold text-gray-800 dark:text-white">Notifications</h3>
+                            <h3 className="font-semibold text-gray-800 dark:text-white">{t('header.notifications')}</h3>
                            </div>
                            {notifications.length === 0 ? (
-                               <p className="p-4 text-sm text-gray-500">Aucune notification.</p>
+                               <p className="p-4 text-sm text-gray-500">{t('header.noNotifications')}</p>
                            ) : (
                                notifications.map(notif => (
                                 <button
@@ -247,30 +230,30 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 </div>
               </>
             ) : (
-              <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label={translations.login[language]} />
+              <ActionButton onClick={onOpenLogin} icon={<UserCircleIcon className="h-6 w-6" />} label={t('header.login')} />
             )}
             
-            {user?.role === 'customer' && <ActionButton onClick={onNavigateToOrderHistory} icon={<ClipboardDocumentListIcon className="h-6 w-6" />} label={translations.myOrders[language]} />}
+            {user?.role === 'customer' && <ActionButton onClick={onNavigateToOrderHistory} icon={<ClipboardDocumentListIcon className="h-6 w-6" />} label={t('header.myOrders')} />}
 
             {user && (user.role === 'customer' || user.role === 'seller') && (
               <>
-                <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={translations.wishlist[language]} count={wishlistItemCount} />
-                {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={translations.messages[language]} count={totalUnreadCount} />}
+                <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={t('header.wishlist')} count={wishlistItemCount} />
+                {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={t('header.messages')} count={totalUnreadCount} />}
               </>
             )}
 
             {user && user.role === 'customer' && (
-               <ActionButton onClick={onNavigateCart} icon={<ShoppingCartIcon className="h-6 w-6" />} label={translations.cart[language]} count={cartItemCount} />
+               <ActionButton onClick={onNavigateCart} icon={<ShoppingCartIcon className="h-6 w-6" />} label={t('header.cart')} count={cartItemCount} />
             )}
             
             {user?.role === 'superadmin' && isChatEnabled && (
-               <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={translations.messages[language]} count={totalUnreadCount} />
+               <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={t('header.messages')} count={totalUnreadCount} />
             )}
             
             <button onClick={toggleTheme} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                 {theme === 'dark' ? <SunIcon className="h-6 w-6" /> : <MoonIcon className="h-6 w-6" />}
             </button>
-             <button onClick={() => setLanguage(lang => lang === 'fr' ? 'en' : 'fr')} className="p-2 rounded-full text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+             <button onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')} className="p-2 rounded-full text-sm font-bold text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
                 {language.toUpperCase()}
             </button>
           </div>
@@ -289,7 +272,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 onClick={() => setIsCategoryMenuOpen(o => !o)}
                 className="flex items-center text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold"
               >
-                {translations.categories[language]}
+                {t('header.categories')}
                 <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform ${isCategoryMenuOpen ? 'rotate-180' : ''}`} />
               </button>
               {isCategoryMenuOpen && (
@@ -320,12 +303,12 @@ export const Header: React.FC<HeaderProps> = (props) => {
                 </div>
               )}
             </div>
-            <button onClick={onNavigateToPromotions} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><TagIcon className="w-5 h-5 text-kmer-red"/>{translations.promotions[language]}</button>
-            <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>{translations.flashSales[language]}</button>
-            <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">{translations.stores[language]}</button>
+            <button onClick={onNavigateToPromotions} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><TagIcon className="w-5 h-5 text-kmer-red"/>{t('header.promotions')}</button>
+            <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>{t('header.flashSales')}</button>
+            <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">{t('header.stores')}</button>
             {isPremiumProgramEnabled && (
                 <button onClick={user ? onNavigateToBecomePremium : onOpenLogin} className="text-kmer-yellow hover:text-yellow-400 font-bold flex items-center gap-1">
-                    <StarIcon className="w-5 h-5"/>{translations.becomePremium[language]}
+                    <StarIcon className="w-5 h-5"/>{t('header.becomePremium')}
                 </button>
             )}
           </nav>
@@ -339,7 +322,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Rechercher..."
+                  placeholder={t('header.searchPlaceholder')}
                   value={mobileSearchQuery}
                   onChange={(e) => setMobileSearchQuery(e.target.value)}
                   className="w-full pl-4 pr-10 py-2 rounded-full border border-gray-300 dark:border-gray-600 bg-gray-100 dark:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-kmer-green"
@@ -355,13 +338,13 @@ export const Header: React.FC<HeaderProps> = (props) => {
             <nav className="flex flex-col space-y-4">
               {user?.role !== 'delivery_agent' && user?.role !== 'depot_agent' && (
                 <>
-                  <button onClick={() => {onNavigateToPromotions(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Promotions</button>
-                  <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Ventes Flash</button>
-                  <button onClick={() => {onNavigateToStores(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Boutiques</button>
-                  {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="text-left text-kmer-green font-bold py-2">{translations.becomeSeller[language]}</button>}
+                  <button onClick={() => {onNavigateToPromotions(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">{t('header.promotions')}</button>
+                  <button onClick={() => {onNavigateToFlashSales(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">{t('header.flashSales')}</button>
+                  <button onClick={() => {onNavigateToStores(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">{t('header.stores')}</button>
+                  {(!user || user.role === 'customer') && <button onClick={() => {onNavigateToBecomeSeller(); setIsMenuOpen(false);}} className="text-left text-kmer-green font-bold py-2">{t('header.becomeSeller')}</button>}
                   
                   <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                     <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Catégories</h3>
+                     <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">{t('header.categories')}</h3>
                      <div className="flex flex-col items-start">
                         {categoryTree.map(mainCat => (
                           <div key={mainCat.id} className="w-full">
@@ -379,15 +362,15 @@ export const Header: React.FC<HeaderProps> = (props) => {
               )}
 
               <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
-                 <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">Mon Compte</h3>
+                 <h3 className="font-bold text-gray-500 dark:text-gray-400 text-sm py-2">{t('header.myAccount')}</h3>
                  <div className="flex flex-col items-start">
                     {user ? userMenuItems.map(item => (
                       <button key={item.label} onClick={() => {item.action(); setIsMenuOpen(false);}} className="text-left flex items-center gap-3 py-1.5">{item.icon} {item.label}</button>
                     )) : (
-                      <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">Connexion / Inscription</button>
+                      <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">{t('header.login')}</button>
                     )}
                     {isPremiumProgramEnabled && (
-                      <button onClick={() => { (user ? onNavigateToBecomePremium : onOpenLogin)(); setIsMenuOpen(false); }} className="text-left font-bold text-kmer-yellow py-2">Devenir Premium</button>
+                      <button onClick={() => { (user ? onNavigateToBecomePremium : onOpenLogin)(); setIsMenuOpen(false); }} className="text-left font-bold text-kmer-yellow py-2">{t('header.becomePremium')}</button>
                     )}
                  </div>
               </div>
@@ -397,7 +380,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
           {user && (
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <button onClick={() => {onLogout(); setIsMenuOpen(false);}} className="w-full bg-gray-100 dark:bg-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2">
-                   <ArrowRightOnRectangleIcon className="h-5 w-5" /> Se déconnecter
+                   <ArrowRightOnRectangleIcon className="h-5 w-5" /> {t('header.logout')}
                 </button>
             </div>
           )}

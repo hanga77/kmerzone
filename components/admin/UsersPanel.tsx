@@ -1,19 +1,20 @@
 import React, { useState, useMemo } from 'react';
 import type { User, UserRole, PickupPoint, Zone, SiteSettings } from '../../types';
-import { PencilSquareIcon, PlusIcon } from '../Icons';
+import { PencilSquareIcon, PlusIcon, ExclamationTriangleIcon } from '../Icons';
 import BulkEmailModal from './BulkEmailModal';
 
 interface UsersPanelProps {
     allUsers: User[];
     onUpdateUser: (userId: string, updates: Partial<User>) => void;
     onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => void;
+    onWarnUser: (userId: string, reason: string) => void;
     allPickupPoints: PickupPoint[];
     allZones: Zone[];
     onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => void;
     siteSettings: SiteSettings;
 }
 
-export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, allPickupPoints, allZones, onSendBulkEmail, siteSettings }) => {
+export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, onWarnUser, allPickupPoints, allZones, onSendBulkEmail, siteSettings }) => {
     const [searchTerm, setSearchTerm] = useState('');
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isCreating, setIsCreating] = useState(false);
@@ -150,7 +151,14 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                             <tr key={user.id} className="border-b dark:border-gray-700">
                                 <td className="p-2"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => handleSelectUser(user.id)} /></td>
                                 <td className="p-2">{user.name}</td><td className="p-2">{user.email}</td><td className="p-2 capitalize">{user.role.replace('_', ' ')}</td>
-                                <td className="p-2 text-center"><button onClick={() => setEditingUser(user)} className="text-blue-500"><PencilSquareIcon className="w-5 h-5"/></button></td>
+                                <td className="p-2 text-center">
+                                    <div className="flex justify-center gap-2">
+                                        <button onClick={() => setEditingUser(user)} className="text-blue-500" title="Modifier"><PencilSquareIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => { const reason = prompt(`Motif de l'avertissement pour ${user.name}:`); if(reason) onWarnUser(user.id, reason); }} className="text-yellow-500" title="Avertir">
+                                            <ExclamationTriangleIcon className="w-5 h-5"/>
+                                        </button>
+                                    </div>
+                                </td>
                             </tr>
                         ))}
                     </tbody>

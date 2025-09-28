@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import type { Store } from '../../types';
-import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon } from '../Icons';
+import type { Store, DocumentStatus } from '../../types';
+import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, CheckIcon, XIcon, DocumentTextIcon } from '../Icons';
 
 interface StoresPanelProps {
     allStores: Store[];
@@ -8,9 +8,20 @@ interface StoresPanelProps {
     onRejectStore: (store: Store) => void;
     onToggleStoreStatus: (storeId: string, currentStatus: 'active' | 'suspended') => void;
     onWarnStore: (storeId: string, reason: string) => void;
+    onUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason?: string) => void;
 }
 
-export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore }) => {
+const DocumentStatusBadge: React.FC<{status: DocumentStatus}> = ({ status }) => {
+    const styles = {
+        requested: 'bg-gray-200 text-gray-700',
+        uploaded: 'bg-blue-100 text-blue-700',
+        verified: 'bg-green-100 text-green-700',
+        rejected: 'bg-red-100 text-red-700',
+    };
+    return <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${styles[status]}`}>{status}</span>;
+}
+
+export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onUpdateDocumentStatus }) => {
     const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'suspended'>('pending');
     
     const storesByStatus = {
@@ -35,6 +46,7 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                         <tr>
                             <th className="p-2 text-left">Boutique</th>
                             <th className="p-2 text-left">Vendeur</th>
+                            {activeTab === 'pending' && <th className="p-2 text-left">Documents</th>}
                             <th className="p-2 text-left">Localisation</th>
                             <th className="p-2 text-center">Actions</th>
                         </tr>
@@ -44,6 +56,25 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                             <tr key={store.id} className="border-b dark:border-gray-700">
                                 <td className="p-2 font-semibold">{store.name}</td>
                                 <td className="p-2">{store.sellerFirstName} {store.sellerLastName}</td>
+                                 {activeTab === 'pending' && (
+                                    <td className="p-2">
+                                        {store.documents.map(doc => (
+                                            <div key={doc.name} className="flex items-center gap-2 mb-1">
+                                                <DocumentStatusBadge status={doc.status}/>
+                                                <span>{doc.name}</span>
+                                                {doc.status === 'uploaded' && (
+                                                    <div className="flex items-center">
+                                                        <button onClick={() => onUpdateDocumentStatus(store.id, doc.name, 'verified')} className="p-1 text-green-500"><CheckIcon className="w-4 h-4"/></button>
+                                                        <button onClick={() => {
+                                                            const reason = prompt("Motif du rejet :");
+                                                            if(reason) onUpdateDocumentStatus(store.id, doc.name, 'rejected', reason);
+                                                        }} className="p-1 text-red-500"><XIcon className="w-4 h-4"/></button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </td>
+                                )}
                                 <td className="p-2">{store.location}</td>
                                 <td className="p-2">
                                     <div className="flex justify-center gap-2">

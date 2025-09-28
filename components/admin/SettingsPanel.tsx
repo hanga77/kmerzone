@@ -18,6 +18,48 @@ const Field: React.FC<{ label: string; children: React.ReactNode, description?: 
     </div>
 );
 
+const ImageUrlOrUpload: React.FC<{
+    label: string;
+    name: string;
+    value: string;
+    preview: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+}> = ({ label, name, value, preview, onChange }) => {
+    
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                const syntheticEvent = {
+                    target: { name, value: reader.result as string, type: 'text' }
+                } as React.ChangeEvent<HTMLInputElement>;
+                onChange(syntheticEvent);
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    };
+
+    return (
+         <Field label={label}>
+            <div className="flex items-center gap-2">
+                <input
+                    type="url"
+                    name={name}
+                    value={value || ''}
+                    onChange={onChange}
+                    placeholder="https://... ou téléverser"
+                    className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                />
+                 <label htmlFor={`${name}-upload`} className="cursor-pointer bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-md text-sm font-medium">
+                    Choisir
+                    <input id={`${name}-upload`} type="file" className="sr-only" onChange={handleFileChange} accept="image/*" />
+                </label>
+            </div>
+            {preview && <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-md inline-block"><img src={preview} alt="Aperçu" className="h-12 object-contain"/></div>}
+        </Field>
+    )
+}
+
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUpdateSiteSettings, siteContent, onUpdateSiteContent }) => {
     const [settings, setSettings] = useState(siteSettings);
     const [content, setContent] = useState(siteContent);
@@ -25,7 +67,17 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
     const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
-        const numberValue = type === 'number' ? parseFloat(value) : value;
+
+        const valueToSet = (() => {
+            if (type === 'checkbox') {
+                return checked;
+            }
+            if (type === 'number') {
+                const num = parseFloat(value);
+                return isNaN(num) ? null : num;
+            }
+            return value;
+        })();
 
         const keys = name.split('.');
         if (keys.length > 1) {
@@ -35,12 +87,30 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                 for (let i = 0; i < keys.length - 1; i++) {
                     current = current[keys[i]];
                 }
-                current[keys[keys.length - 1]] = type === 'checkbox' ? checked : numberValue;
+                current[keys[keys.length - 1]] = valueToSet;
                 return newSettings;
             });
         } else {
-            setSettings(s => ({ ...s, [name]: type === 'checkbox' ? checked : numberValue }));
+            setSettings(s => ({ ...s, [name]: valueToSet }));
         }
+    };
+    
+    const handleRequiredDocsChange = (docName: string, isRequired: boolean) => {
+        setSettings(s => ({
+            ...s,
+            requiredSellerDocuments: {
+                ...s.requiredSellerDocuments,
+                [docName]: isRequired,
+            }
+        }));
+    };
+    
+    const handleBenefitsChange = (plan: 'premium' | 'premiumPlus', value: string) => {
+        setSettings(s => {
+            const newSettings = JSON.parse(JSON.stringify(s));
+            newSettings.customerLoyaltyProgram[plan].benefits = value.split('\n').filter(b => b.trim() !== '');
+            return newSettings;
+        });
     };
 
     const handleContentChange = (slug: string, field: 'title' | 'content', value: string) => {
@@ -72,14 +142,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
             <details className="p-4 border dark:border-gray-700 rounded-md">
                 <summary className="font-semibold text-lg cursor-pointer">Identité Visuelle</summary>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Field label="URL du Logo du site">
-                        <input type="url" name="logoUrl" value={settings.logoUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                        {settings.logoUrl && <div className="mt-2 p-2 bg-gray-100 dark:bg-gray-700 rounded-md inline-block"><img src={settings.logoUrl} alt="Aperçu du logo" className="h-12"/></div>}
-                    </Field>
-                    <Field label="URL de la Bannière de la page d'accueil">
-                        <input type="url" name="bannerUrl" value={settings.bannerUrl || ''} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                        {settings.bannerUrl && <img src={settings.bannerUrl} alt="Aperçu de la bannière" className="mt-2 h-24 w-full object-cover rounded" />}
-                    </Field>
+                    <ImageUrlOrUpload label="Logo du site" name="logoUrl" value={settings.logoUrl} preview={settings.logoUrl} onChange={handleSettingsChange}/>
+                    <ImageUrlOrUpload label="Bannière de la page d'accueil" name="bannerUrl" value={settings.bannerUrl || ''} preview={settings.bannerUrl || ''} onChange={handleSettingsChange} />
+                </div>
+            </details>
+            
+             <details className="p-4 border dark:border-gray-700 rounded-md">
+                <summary className="font-semibold text-lg cursor-pointer">Fonctionnalités</summary>
+                <div className="mt-4 space-y-4">
+                     <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+                        <input type="checkbox" name="isChatEnabled" checked={settings.isChatEnabled} onChange={handleSettingsChange} className="h-5 w-5 rounded"/>
+                        <span>Activer le chat client-vendeur</span>
+                    </label>
+                    <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+                        <input type="checkbox" name="isComparisonEnabled" checked={settings.isComparisonEnabled} onChange={handleSettingsChange} className="h-5 w-5 rounded"/>
+                        <span>Activer la comparaison de produits</span>
+                    </label>
                 </div>
             </details>
 
@@ -90,6 +168,18 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                     <Field label="Frais de base inter-urbain (FCFA)"><input type="number" name="deliverySettings.interUrbanBaseFee" value={settings.deliverySettings.interUrbanBaseFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     <Field label="Coût additionnel par Kg (FCFA)"><input type="number" name="deliverySettings.costPerKg" value={settings.deliverySettings.costPerKg} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     <Field label="Réduction livraison pour Premium (%)"><input type="number" name="deliverySettings.premiumDeliveryDiscountPercentage" value={settings.deliverySettings.premiumDeliveryDiscountPercentage || 0} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                </div>
+            </details>
+            
+             <details className="p-4 border dark:border-gray-700 rounded-md">
+                <summary className="font-semibold text-lg cursor-pointer">Documents Vendeur Requis</summary>
+                <div className="mt-4 space-y-2">
+                    {Object.entries(settings.requiredSellerDocuments).map(([name, isRequired]) => (
+                        <label key={name} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+                            <input type="checkbox" checked={isRequired} onChange={(e) => handleRequiredDocsChange(name, e.target.checked)} className="h-5 w-5 rounded"/>
+                            <span>{name}</span>
+                        </label>
+                    ))}
                 </div>
             </details>
 
@@ -116,6 +206,35 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                 </div>
             </details>
             
+            <details className="p-4 border dark:border-gray-700 rounded-md">
+                <summary className="font-semibold text-lg cursor-pointer">Programme de Fidélité Client</summary>
+                <div className="mt-4 space-y-4">
+                    <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
+                        <input type="checkbox" name="customerLoyaltyProgram.isEnabled" checked={settings.customerLoyaltyProgram.isEnabled} onChange={handleSettingsChange} className="h-5 w-5 rounded"/>
+                        <span>Activer le programme de fidélité pour les clients</span>
+                    </label>
+                    
+                    <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
+                        <h4 className="font-bold text-md">Plan Premium Client</h4>
+                        <Field label="Nombre de commandes requises"><input type="number" name="customerLoyaltyProgram.premium.thresholds.orders" value={settings.customerLoyaltyProgram.premium.thresholds.orders} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label="Montant total dépensé requis (FCFA)"><input type="number" name="customerLoyaltyProgram.premium.thresholds.spending" value={settings.customerLoyaltyProgram.premium.thresholds.spending} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label="Montant de la caution (FCFA)"><input type="number" name="customerLoyaltyProgram.premium.cautionAmount" value={settings.customerLoyaltyProgram.premium.cautionAmount} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label="Avantages (un par ligne)">
+                            <textarea value={settings.customerLoyaltyProgram.premium.benefits.join('\n')} onChange={e => handleBenefitsChange('premium', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </Field>
+                    </div>
+                    
+                    <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
+                        <h4 className="font-bold text-md">Plan Premium+ Client</h4>
+                        <label className="flex items-center gap-2"><input type="checkbox" name="customerLoyaltyProgram.premiumPlus.isEnabled" checked={settings.customerLoyaltyProgram.premiumPlus.isEnabled} onChange={handleSettingsChange} /> Activer le plan Premium+</label>
+                        <Field label="Frais annuels (FCFA)"><input type="number" name="customerLoyaltyProgram.premiumPlus.annualFee" value={settings.customerLoyaltyProgram.premiumPlus.annualFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label="Avantages (un par ligne)">
+                            <textarea value={settings.customerLoyaltyProgram.premiumPlus.benefits.join('\n')} onChange={e => handleBenefitsChange('premiumPlus', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
+                        </Field>
+                    </div>
+                </div>
+            </details>
+
             <details className="p-4 border dark:border-gray-700 rounded-md">
                 <summary className="font-semibold text-lg cursor-pointer">SEO & Métadonnées</summary>
                 <div className="mt-4 space-y-4">
@@ -167,9 +286,22 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                 <summary className="font-semibold text-lg cursor-pointer">Pied de page (Footer)</summary>
                 <div className="mt-4 space-y-4">
                     <Field label="Nom de l'entreprise (Copyright)"><input type="text" name="companyName" value={settings.companyName} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="Lien Facebook"><input type="url" name="socialLinks.facebook" value={settings.socialLinks.facebook} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="Lien Twitter"><input type="url" name="socialLinks.twitter" value={settings.socialLinks.twitter} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="Lien Instagram"><input type="url" name="socialLinks.instagram" value={settings.socialLinks.instagram} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    
+                    <div className='p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-2'>
+                        <h4 className='font-semibold'>Facebook</h4>
+                        <ImageUrlOrUpload label="URL de l'icône" name="socialLinks.facebook.iconUrl" value={settings.socialLinks.facebook.iconUrl} preview={settings.socialLinks.facebook.iconUrl} onChange={handleSettingsChange} />
+                        <Field label="URL du lien"><input type="url" name="socialLinks.facebook.linkUrl" value={settings.socialLinks.facebook.linkUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    </div>
+                     <div className='p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-2'>
+                        <h4 className='font-semibold'>Twitter</h4>
+                        <ImageUrlOrUpload label="URL de l'icône" name="socialLinks.twitter.iconUrl" value={settings.socialLinks.twitter.iconUrl} preview={settings.socialLinks.twitter.iconUrl} onChange={handleSettingsChange} />
+                        <Field label="URL du lien"><input type="url" name="socialLinks.twitter.linkUrl" value={settings.socialLinks.twitter.linkUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    </div>
+                     <div className='p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-2'>
+                        <h4 className='font-semibold'>Instagram</h4>
+                        <ImageUrlOrUpload label="URL de l'icône" name="socialLinks.instagram.iconUrl" value={settings.socialLinks.instagram.iconUrl} preview={settings.socialLinks.instagram.iconUrl} onChange={handleSettingsChange} />
+                        <Field label="URL du lien"><input type="url" name="socialLinks.instagram.linkUrl" value={settings.socialLinks.instagram.linkUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    </div>
                 </div>
             </details>
         </div>

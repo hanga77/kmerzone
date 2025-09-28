@@ -1,5 +1,10 @@
 
 
+
+
+
+
+
 export interface Zone {
   id: string;
   name: string;
@@ -376,7 +381,7 @@ export interface EmailTemplate {
     variables: string;
 }
 
-export interface PlanSettings {
+export interface SellerPlanSettings {
     price: number;
     durationDays: number;
     productLimit: number;
@@ -386,25 +391,41 @@ export interface PlanSettings {
     prioritySupport: boolean;
 }
 
+export interface CustomerLoyaltySettings {
+    isEnabled: boolean;
+    premium: {
+        thresholds: {
+            orders: number;
+            spending: number;
+        };
+        cautionAmount: number;
+        benefits: string[];
+    };
+    premiumPlus: {
+        isEnabled: boolean;
+        annualFee: number;
+        benefits: string[];
+    };
+}
+
+export interface SocialLink {
+    linkUrl: string;
+    iconUrl: string;
+}
+
 export interface SiteSettings {
   logoUrl: string;
   bannerUrl?: string;
+  companyName: string;
   isStoriesEnabled: boolean;
-  isPremiumProgramEnabled: boolean;
-  premiumThresholds: {
-    orders: number;
-    spending: number;
-  };
-  premiumCautionAmount: number;
-  isPremiumPlusEnabled: boolean;
-  premiumPlusAnnualFee: number;
   requiredSellerDocuments: Record<string, boolean>;
   isRentEnabled: boolean;
   rentAmount: number;
   canSellersCreateCategories: boolean;
   commissionRate: number;
-  premiumPlan: PlanSettings;
-  superPremiumPlan: PlanSettings;
+  premiumPlan: SellerPlanSettings;
+  superPremiumPlan: SellerPlanSettings;
+  customerLoyaltyProgram: CustomerLoyaltySettings;
   deliverySettings: {
     intraUrbanBaseFee: number;
     interUrbanBaseFee: number;
@@ -422,12 +443,13 @@ export interface SiteSettings {
     ogImageUrl: string;
   };
   socialLinks: {
-    facebook: string;
-    twitter: string;
-    instagram: string;
+    facebook: SocialLink;
+    twitter: SocialLink;
+    instagram: SocialLink;
   };
   emailTemplates?: EmailTemplate[];
-  companyName: string;
+  isChatEnabled: boolean;
+  isComparisonEnabled: boolean;
 }
 
 export interface SiteActivityLog {

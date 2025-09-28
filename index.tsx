@@ -8,21 +8,24 @@ import { CartProvider } from './contexts/CartContext';
 import { WishlistProvider } from './contexts/WishlistContext';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { ChatProvider } from './contexts/ChatContext';
+import { LanguageProvider } from './contexts/LanguageContext';
 
 const AppProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <AuthProvider>
         <ThemeProvider>
-            <UIProvider>
-                <CartProvider>
-                    <WishlistProvider>
-                        <ComparisonProvider>
-                            <ChatProvider>
-                                {children}
-                            </ChatProvider>
-                        </ComparisonProvider>
-                    </WishlistProvider>
-                </CartProvider>
-            </UIProvider>
+            <LanguageProvider>
+                <UIProvider>
+                    <CartProvider>
+                        <WishlistProvider>
+                            <ComparisonProvider>
+                                <ChatProvider>
+                                    {children}
+                                </ChatProvider>
+                            </ComparisonProvider>
+                        </WishlistProvider>
+                    </CartProvider>
+                </UIProvider>
+            </LanguageProvider>
         </ThemeProvider>
     </AuthProvider>
 );

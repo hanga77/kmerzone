@@ -51,21 +51,14 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
 
         if (!userZoneId || !user.depotId) return { ordersToAssign: [], ordersInDelivery: [], ordersWithIssues: [], depotInventory: [], deliveryAgents: [], zoneName: _zoneName };
         
-        const ordersInDepot = allOrders.filter(o => o.storageLocationId === user.depotId || (o.pickupPointId === user.depotId && o.deliveryMethod === 'pickup'));
+        const ordersPhysicallyInDepot = allOrders.filter(o => 
+            (o.status === 'at-depot' || o.status === 'ready-for-pickup') &&
+            (o.storageLocationId || o.pickupPointId === user.depotId)
+        );
 
-        const _ordersToAssign = ordersInDepot.filter(o => o.status === 'at-depot' && o.deliveryMethod === 'home-delivery');
+        const _ordersToAssign = ordersPhysicallyInDepot.filter(o => o.status === 'at-depot' && o.deliveryMethod === 'home-delivery');
         const _ordersInDelivery = allOrders.filter(o => o.status === 'out-for-delivery' && allUsers.find(u => u.id === o.agentId)?.zoneId === userZoneId);
-        const _ordersWithIssues = ordersInDepot.filter(o => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status));
-
-        const _depotInventory = ordersInDepot
-            .filter(o => ['at-depot', 'ready-for-pickup'].includes(o.status))
-            .flatMap(o => o.items)
-            .reduce((acc, item) => {
-                const existing = acc.get(item.id);
-                if (existing) { existing.quantity += item.quantity; } 
-                else { acc.set(item.id, { ...item }); }
-                return acc;
-            }, new Map<string, CartItem>());
+        const _ordersWithIssues = allOrders.filter(o => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status) && o.pickupPointId === user.depotId);
 
         const _deliveryAgents = allUsers.filter(u => u.role === 'delivery_agent' && u.zoneId === userZoneId);
         
@@ -80,7 +73,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
             ordersToAssign: _ordersToAssign,
             ordersInDelivery: _ordersInDelivery,
             ordersWithIssues: _ordersWithIssues,
-            depotInventory: Array.from(_depotInventory.values()),
+            depotInventory: ordersPhysicallyInDepot,
             deliveryAgents: agentsWithPerf,
             zoneName: _zoneName
         };
@@ -123,15 +116,30 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     };
 
     const InventoryPanel = () => (
-        <div><h3 className="font-bold mb-4">Inventaire Actuel du Dépôt</h3>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                {depotInventory.map(item => (
-                    <div key={item.id} className="p-3 border rounded-lg text-center">
-                        <img src={item.imageUrls[0]} alt={item.name} className="w-16 h-16 object-cover mx-auto rounded-md mb-2"/>
-                        <p className="font-semibold text-sm">{item.name}</p>
-                        <p className="text-lg font-bold">{item.quantity} <span className="text-xs">en stock</span></p>
-                    </div>
-                ))}
+        <div>
+            <h3 className="font-bold mb-4">Inventaire Actuel des Colis au Dépôt</h3>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th className="p-2 text-left">ID Commande</th>
+                            <th className="p-2 text-left">Client</th>
+                            <th className="p-2 text-left">Emplacement</th>
+                            <th className="p-2 text-center">Nbr Articles</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {depotInventory.map(order => (
+                            <tr key={order.id} className="border-b dark:border-gray-700">
+                                <td className="p-2 font-mono">{order.id}</td>
+                                <td className="p-2">{order.shippingAddress.fullName}</td>
+                                <td className="p-2 font-semibold">{order.storageLocationId || 'N/A'}</td>
+                                <td className="p-2 text-center">{order.items.length}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+                 {depotInventory.length === 0 && <p className="text-center py-8 text-gray-500">Aucun colis en stock pour le moment.</p>}
             </div>
         </div>
     );
@@ -157,8 +165,8 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     
     const SellersPanel = () => {
         const sellersWithStock = useMemo(() => {
-            const sellerIds = new Set(depotInventory.map(item => allStores.find(s => s.name === item.vendor)?.sellerId));
-            return allStores.filter(s => sellerIds.has(s.sellerId));
+            const sellerNames = new Set(depotInventory.flatMap(order => order.items.map(item => item.vendor)));
+            return allStores.filter(s => sellerNames.has(s.name));
         }, [depotInventory, allStores]);
 
         return (

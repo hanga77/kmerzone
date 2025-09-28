@@ -143,12 +143,16 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const sendMessage = useCallback(async (chatId: string, text: string, allProducts: Product[], allCategories: Category[]) => {
     if (!user) return;
     
+    const chat = chats.find(c => c.id === chatId);
+    const censoredVersion = censorText(text, chat?.sellerStoreInfo);
+    
     // Add user message immediately
     const userMessage: Message = {
       id: `msg_${Date.now()}`,
       chatId,
       senderId: user.id,
       text: text,
+      censoredText: censoredVersion !== text ? censoredVersion : undefined,
       timestamp: new Date().toISOString(),
       isRead: false,
     };
@@ -179,7 +183,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     
     // AI Logic with Streaming
     try {
-        const chat = chats.find(c => c.id === chatId);
         if (!chat) throw new Error("Chat not found");
 
         const chatHistory = messages[chatId] || [];

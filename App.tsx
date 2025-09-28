@@ -1,11 +1,9 @@
-
-
 import React, { useState, useEffect } from 'react';
 import { XIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import { useUI } from './contexts/UIContext';
-import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint } from './types';
+import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint, Store, Warning, DocumentStatus } from './types';
 import { Header } from './components/Header';
 import Footer from './components/Footer';
 import MaintenancePage from './components/MaintenancePage';
@@ -19,6 +17,7 @@ import { ComparisonBar, StoryViewer } from './components/ComponentStubs';
 import { useSiteData } from './hooks/useSiteData';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import PageRouter from './components/PageRouter';
+import { useLanguage } from './contexts/LanguageContext';
 
 
 const updateMetaTag = (name: string, content: string, isProperty: boolean = false) => {
@@ -54,6 +53,7 @@ export default function App() {
   const { user, logout: authLogout, allUsers, setAllUsers, resetPassword } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
   const { comparisonList, setProducts: setComparisonProducts } = useComparison();
+  const { t } = useLanguage();
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
@@ -93,16 +93,44 @@ export default function App() {
         setAllUsers(updatedUsers);
     };
 
+    const handleWarnUser = (userId: string, reason: string) => {
+        if (!user) return;
+        const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason };
+        setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, warnings: [...(u.warnings || []), newWarning] } : u));
+        siteData.logActivity(user, 'USER_WARNED', `Avertissement envoyé à l'utilisateur ${userId}. Motif: ${reason}`);
+    };
+    
+    const handleUpdateDocumentStatus = (storeId: string, documentName: string, status: DocumentStatus, rejectionReason: string | undefined) => {
+        if (!user) return;
+        siteData.handleUpdateDocumentStatus(storeId, documentName, status, rejectionReason, user);
+    };
+
     const handleSendBulkEmail = (recipientIds: string[], subject: string, body: string) => {
         if (user) {
             siteData.handleSendBulkEmail(recipientIds, subject, body, user);
         }
     };
 
+    const handleLogout = () => {
+        authLogout();
+        navigation.navigateToHome();
+    };
+
 
   // Connect allProducts to comparison context
   useEffect(() => { setComparisonProducts(siteData.allProducts); }, [siteData.allProducts, setComparisonProducts]);
   
+    // Dynamically update favicon
+    useEffect(() => {
+        const favicon = document.getElementById('favicon') as HTMLLinkElement;
+        if (favicon && siteData.siteSettings.logoUrl) {
+            // Simple URL check. In real app, might need more robust handling for SVG data URLs etc.
+            if (siteData.siteSettings.logoUrl.startsWith('http') || siteData.siteSettings.logoUrl.startsWith('data:image')) {
+                favicon.href = siteData.siteSettings.logoUrl;
+            }
+        }
+    }, [siteData.siteSettings.logoUrl]);
+
   // Update SEO meta tags based on current page/selection
   useEffect(() => {
     let { metaTitle: title, metaDescription: description, ogImageUrl } = siteData.siteSettings.seo;
@@ -164,10 +192,10 @@ export default function App() {
           onNavigateToAccount={navigation.navigateToAccount}
           onNavigateToVisualSearch={navigation.navigateToVisualSearch}
           onOpenLogin={() => setIsLoginModalOpen(true)}
-          onLogout={authLogout}
+          onLogout={handleLogout}
           onSearch={navigation.handleSearch}
-          isChatEnabled={true}
-          isPremiumProgramEnabled={siteData.siteSettings.isPremiumProgramEnabled}
+          isChatEnabled={siteData.siteSettings.isChatEnabled}
+          isPremiumProgramEnabled={siteData.siteSettings.customerLoyaltyProgram.isEnabled}
           logoUrl={siteData.siteSettings.logoUrl}
           notifications={siteData.allNotifications.filter((n: Notification) => n.userId === user?.id)}
           onMarkNotificationAsRead={siteData.handleMarkNotificationAsRead}
@@ -182,6 +210,29 @@ export default function App() {
             setPaymentRequest={setPaymentRequest}
             onAdminUpdateUser={handleAdminUpdateUser}
             onSendBulkEmail={handleSendBulkEmail}
+            onApproveStore={(store: Store) => user && siteData.handleApproveStore(store, user)}
+            onRejectStore={(store: Store) => user && siteData.handleRejectStore(store, user)}
+            onToggleStoreStatus={(storeId: string, currentStatus: 'active' | 'suspended') => user && siteData.handleToggleStoreStatus(storeId, currentStatus, user)}
+            onWarnStore={(storeId: string, reason: string) => user && siteData.handleWarnStore(storeId, reason, user)}
+            onAdminAddCategory={(name, parentId) => user && siteData.handleAdminAddCategory(name, parentId, user)}
+            onAdminDeleteCategory={(categoryId) => user && siteData.handleAdminDeleteCategory(categoryId, user)}
+            onAdminUpdateCategory={(categoryId, updates) => user && siteData.handleAdminUpdateCategory(categoryId, updates, user)}
+            onUpdateDocumentStatus={handleUpdateDocumentStatus}
+            onWarnUser={handleWarnUser}
+            onSaveFlashSale={(saleData) => user && siteData.handleSaveFlashSale(saleData, user)}
+            onUpdateFlashSaleSubmissionStatus={(flashSaleId, productId, status) => user && siteData.handleUpdateFlashSaleSubmissionStatus(flashSaleId, productId, status, user)}
+            onBatchUpdateFlashSaleStatus={(flashSaleId, productIds, status) => user && siteData.handleBatchUpdateFlashSaleStatus(flashSaleId, productIds, status, user)}
+            onAddPickupPoint={(point) => user && siteData.handleAddPickupPoint(point, user)}
+            onUpdatePickupPoint={(point) => user && siteData.handleUpdatePickupPoint(point, user)}
+            onDeletePickupPoint={(pointId) => user && siteData.handleDeletePickupPoint(pointId, user)}
+            onAdminReplyToTicket={(ticketId, message) => user && siteData.handleAdminReplyToTicket(ticketId, message, user)}
+            onAdminUpdateTicketStatus={(ticketId, status) => user && siteData.handleAdminUpdateTicketStatus(ticketId, status, user)}
+            onReviewModeration={(productId, reviewIdentifier, newStatus) => user && siteData.handleReviewModeration(productId, reviewIdentifier, newStatus, user)}
+            onCreateUserByAdmin={(data) => user && siteData.handleCreateUserByAdmin(data, user)}
+            onCreateOrUpdateAnnouncement={(data) => user && siteData.handleCreateOrUpdateAnnouncement(data, user)}
+            onDeleteAnnouncement={(id) => user && siteData.handleDeleteAnnouncement(id, user)}
+            onUpdateOrderStatus={(orderId, status) => user && siteData.handleUpdateOrderStatus(orderId, status, user)}
+            onResolveDispute={(orderId, resolution) => user && siteData.handleResolveDispute(orderId, resolution, user)}
           />
         </main>
 
@@ -193,7 +244,7 @@ export default function App() {
           companyName={siteData.siteSettings.companyName}
         />
         
-        {comparisonList.length > 0 && <ComparisonBar />}
+        {comparisonList.length > 0 && siteData.siteSettings.isComparisonEnabled && <ComparisonBar />}
         
         {isLoginModalOpen && (
           <LoginModal
@@ -206,7 +257,7 @@ export default function App() {
         {isForgotPasswordModalOpen && (
           <ForgotPasswordModal
             onClose={() => setIsForgotPasswordModalOpen(false)}
-            onEmailSubmit={(email) => { setEmailForPasswordReset(email); alert(`Un email de réinitialisation a été envoyé à ${email}. (Simulation)`); }}
+            onEmailSubmit={(email) => { setEmailForPasswordReset(email); alert(t('app.passwordResetEmailSent', email)); }}
           />
         )}
 
@@ -216,7 +267,7 @@ export default function App() {
         
         {paymentRequest && <PaymentModal paymentRequest={paymentRequest} paymentMethods={siteData.allPaymentMethods} onClose={() => setPaymentRequest(null)} />}
 
-        {user && <ChatWidget allUsers={allUsers} allProducts={siteData.allProducts} allCategories={siteData.allCategories} />}
+        {user && siteData.siteSettings.isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={siteData.allProducts} allCategories={siteData.allCategories} />}
 
         {navigation.viewingStoriesFor && <StoryViewer store={navigation.viewingStoriesFor} onClose={navigation.handleCloseStories} />}
     </div>

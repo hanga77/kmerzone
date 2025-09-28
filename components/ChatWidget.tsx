@@ -119,8 +119,7 @@ const MessageThread: React.FC<{
           const isMe = msg.senderId === currentUser.id;
           const isAssistant = msg.senderId === 'assistant-id';
           
-          const isReceiver = !isMe;
-          const textToDisplay = isReceiver && msg.censoredText ? msg.censoredText : msg.text;
+          const textToDisplay = msg.censoredText ? msg.censoredText : msg.text;
 
           return (
             <div key={msg.id} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>

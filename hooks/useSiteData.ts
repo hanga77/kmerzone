@@ -4,7 +4,7 @@ import type {
     Product, Category, Store, FlashSale, Order, SiteSettings, SiteContent, Advertisement, 
     PaymentMethod, SiteActivityLog, PickupPoint, Payout, PromoCode, OrderStatus, 
     NewOrderData, Review, User, DocumentStatus, Warning, Story, ProductCollection, 
-    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone 
+    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus 
 } from '../types';
 import { 
     initialCategories, initialProducts, initialStores, initialFlashSales, initialPickupPoints, 
@@ -166,10 +166,181 @@ export const useSiteData = () => {
     }, [setAllOrders, logActivity]);
 
     const handleSendBulkEmail = useCallback((recipientIds: string[], subject: string, body: string, currentUser: User) => {
-        // This is a simulation. In a real app, this would trigger a backend service.
         logActivity(currentUser, 'BULK_EMAIL_SENT', `E-mail envoyé à ${recipientIds.length} utilisateur(s) avec le sujet : "${subject}".`);
-        // We could also create notifications for each user here.
     }, [logActivity]);
+
+    const handleApproveStore = useCallback((storeToApprove: Store, user: User) => {
+        setAllStores(prev => prev.map(s => s.id === storeToApprove.id ? { ...s, status: 'active' } : s));
+        logActivity(user, 'STORE_APPROVED', `Boutique approuvée : ${storeToApprove.name} (ID: ${storeToApprove.id})`);
+    }, [setAllStores, logActivity]);
+
+    const handleRejectStore = useCallback((storeToReject: Store, user: User) => {
+        setAllStores(prev => prev.filter(s => s.id !== storeToReject.id));
+        logActivity(user, 'STORE_REJECTED', `Boutique rejetée et supprimée : ${storeToReject.name} (ID: ${storeToReject.id})`);
+    }, [setAllStores, logActivity]);
+
+    const handleToggleStoreStatus = useCallback((storeId: string, currentStatus: 'active' | 'suspended', user: User) => {
+        const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+        let storeName = '';
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                storeName = s.name;
+                return { ...s, status: newStatus };
+            }
+            return s;
+        }));
+        logActivity(user, 'STORE_STATUS_TOGGLED', `Statut de la boutique ${storeName} (ID: ${storeId}) changé à ${newStatus}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleWarnStore = useCallback((storeId: string, reason: string, user: User) => {
+        const newWarning: Warning = {
+            id: `warn-${Date.now()}`,
+            date: new Date().toISOString(),
+            reason,
+        };
+        let storeName = '';
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                storeName = s.name;
+                return { ...s, warnings: [...(s.warnings || []), newWarning] };
+            }
+            return s;
+        }));
+        logActivity(user, 'STORE_WARNED', `Avertissement envoyé à la boutique ${storeName} (ID: ${storeId}). Motif : ${reason}`);
+    }, [setAllStores, logActivity]);
+    
+    // Admin Actions
+    const handleAdminAddCategory = useCallback((name: string, parentId: string | undefined, user: User) => {
+        const newCategory: Category = { id: `cat-${Date.now()}`, name, parentId, imageUrl: 'https://via.placeholder.com/300' };
+        setAllCategories(prev => [...prev, newCategory]);
+        logActivity(user, 'CATALOG_UPDATE', `Catégorie créée : "${name}"`);
+    }, [setAllCategories, logActivity]);
+    
+    const handleAdminDeleteCategory = useCallback((categoryId: string, user: User) => {
+        setAllCategories(prev => prev.filter(c => c.id !== categoryId && c.parentId !== categoryId));
+        logActivity(user, 'CATALOG_UPDATE', `Catégorie supprimée : ID ${categoryId}`);
+    }, [setAllCategories, logActivity]);
+
+    const handleAdminUpdateCategory = useCallback((categoryId: string, updates: Partial<Omit<Category, 'id'>>, user: User) => {
+        setAllCategories(prev => prev.map(c => c.id === categoryId ? { ...c, ...updates } : c));
+        logActivity(user, 'CATALOG_UPDATE', `Catégorie modifiée : "${updates.name}" (ID: ${categoryId})`);
+    }, [setAllCategories, logActivity]);
+    
+    const handleUpdateDocumentStatus = useCallback((storeId: string, documentName: string, status: DocumentStatus, rejectionReason: string | undefined, user: User) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                return { ...s, documents: s.documents.map(d => d.name === documentName ? { ...d, status, rejectionReason } : d) };
+            }
+            return s;
+        }));
+        logActivity(user, 'STORE_DOCUMENT_MODERATED', `Document "${documentName}" pour la boutique ${storeId} modéré à ${status}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleResolveDispute = useCallback((orderId: string, resolution: 'refunded' | 'rejected', user: User) => {
+        const newStatus = resolution === 'refunded' ? 'refunded' : 'delivered'; // Rejecting returns it to delivered status for now
+        setAllOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
+        logActivity(user, 'ORDER_DISPUTE_RESOLVED', `Litige pour la commande ${orderId} résolu. Résolution : ${resolution}.`);
+    }, [setAllOrders, logActivity]);
+
+    const handleSaveFlashSale = useCallback((saleData: Omit<FlashSale, 'id' | 'products'>, user: User) => {
+        const newSale: FlashSale = { ...saleData, id: `fs-${Date.now()}`, products: [] };
+        setFlashSales(prev => [...prev, newSale]);
+        logActivity(user, 'MARKETING_UPDATE', `Vente flash créée : "${saleData.name}"`);
+    }, [setFlashSales, logActivity]);
+    
+    const handleUpdateFlashSaleSubmissionStatus = useCallback((flashSaleId: string, productId: string, status: 'approved' | 'rejected', user: User) => {
+        setFlashSales(prev => prev.map(fs => fs.id === flashSaleId ? { ...fs, products: fs.products.map(p => p.productId === productId ? { ...p, status } : p) } : fs));
+        logActivity(user, 'MARKETING_UPDATE', `Statut du produit ${productId} changé à ${status} pour la vente flash ${flashSaleId}.`);
+    }, [setFlashSales, logActivity]);
+
+    const handleBatchUpdateFlashSaleStatus = useCallback((flashSaleId: string, productIds: string[], status: 'approved' | 'rejected', user: User) => {
+        setFlashSales(prev => prev.map(fs => {
+            if (fs.id === flashSaleId) {
+                const updatedProducts = fs.products.map(p => {
+                    if (productIds.includes(p.productId)) {
+                        return { ...p, status };
+                    }
+                    return p;
+                });
+                return { ...fs, products: updatedProducts };
+            }
+            return fs;
+        }));
+        logActivity(user, 'MARKETING_UPDATE', `Statut de ${productIds.length} produit(s) changé à ${status} pour la vente flash ${flashSaleId}.`);
+    }, [setFlashSales, logActivity]);
+
+    const handleCreateOrUpdateAnnouncement = useCallback((data: Omit<Announcement, 'id'> | Announcement, user: User) => {
+        if ('id' in data && data.id) {
+            setAllAnnouncements(prev => prev.map(a => a.id === data.id ? { ...a, ...data } : a));
+            logActivity(user, 'ANNOUNCEMENT_UPDATED', `Annonce modifiée : "${data.title}"`);
+        } else {
+            const newAnnouncement: Announcement = { ...data, id: `ann-${Date.now()}` };
+            setAllAnnouncements(prev => [...prev, newAnnouncement]);
+            logActivity(user, 'ANNOUNCEMENT_CREATED', `Annonce créée : "${data.title}"`);
+        }
+    }, [setAllAnnouncements, logActivity]);
+
+    const handleDeleteAnnouncement = useCallback((id: string, user: User) => {
+        setAllAnnouncements(prev => prev.filter(a => a.id !== id));
+        logActivity(user, 'ANNOUNCEMENT_DELETED', `Annonce supprimée : ID ${id}`);
+    }, [setAllAnnouncements, logActivity]);
+
+    const handleAddPickupPoint = useCallback((point: Omit<PickupPoint, 'id'>, user: User) => {
+        const newPoint: PickupPoint = { ...point, id: `pp-${Date.now()}` };
+        setAllPickupPoints(prev => [...prev, newPoint]);
+        logActivity(user, 'LOGISTICS_UPDATE', `Point de retrait ajouté : "${point.name}"`);
+    }, [setAllPickupPoints, logActivity]);
+    
+    const handleUpdatePickupPoint = useCallback((point: PickupPoint, user: User) => {
+        setAllPickupPoints(prev => prev.map(p => p.id === point.id ? point : p));
+        logActivity(user, 'LOGISTICS_UPDATE', `Point de retrait mis à jour : "${point.name}"`);
+    }, [setAllPickupPoints, logActivity]);
+
+    const handleDeletePickupPoint = useCallback((pointId: string, user: User) => {
+        setAllPickupPoints(prev => prev.filter(p => p.id !== pointId));
+        logActivity(user, 'LOGISTICS_UPDATE', `Point de retrait supprimé : ID ${pointId}`);
+    }, [setAllPickupPoints, logActivity]);
+
+    const handleAdminReplyToTicket = useCallback((ticketId: string, message: string, user: User) => {
+        const newMessage = { authorId: user.id, authorName: user.name, message, date: new Date().toISOString() };
+        setAllTickets(prev => prev.map(t => t.id === ticketId ? { ...t, messages: [...t.messages, newMessage], updatedAt: new Date().toISOString() } : t));
+        logActivity(user, 'SUPPORT_TICKET_REPLY', `Réponse au ticket ${ticketId}.`);
+    }, [setAllTickets, logActivity]);
+    
+    const handleAdminUpdateTicketStatus = useCallback((ticketId: string, status: TicketStatus, user: User) => {
+        setAllTickets(prev => prev.map(t => t.id === ticketId ? { ...t, status, updatedAt: new Date().toISOString() } : t));
+        logActivity(user, 'SUPPORT_TICKET_STATUS_CHANGE', `Statut du ticket ${ticketId} changé à ${status}.`);
+    }, [setAllTickets, logActivity]);
+
+    const handleReviewModeration = useCallback((productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected', user: User) => {
+        setAllProducts(prev => prev.map(p => {
+            if (p.id === productId) {
+                return { ...p, reviews: p.reviews.map(r => (r.author === reviewIdentifier.author && r.date === reviewIdentifier.date) ? { ...r, status: newStatus } : r) };
+            }
+            return p;
+        }));
+        logActivity(user, 'REVIEW_MODERATED', `Avis sur le produit ${productId} modéré à ${newStatus}.`);
+    }, [setAllProducts, logActivity]);
+
+    const handleCreateUserByAdmin = useCallback((data: { name: string, email: string, role: UserRole }, adminUser: User) => {
+        const newUser: User = {
+            id: `user-${Date.now()}`,
+            name: data.name,
+            email: data.email,
+            role: data.role,
+            password: 'password', // Default password
+            loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
+        };
+        // This is a simplified way to handle this; useAuth's setAllUsers should be used.
+        // For now, we'll log it. This logic should be moved to AuthContext.
+        logActivity(adminUser, 'USER_CREATED', `Utilisateur créé : ${data.name} (${data.email}) avec le rôle ${data.role}.`);
+        alert("La création d'utilisateur est simulée et logguée. La gestion des utilisateurs devrait être centralisée dans AuthContext pour un état persistant.");
+    }, [logActivity]);
+
+     const handleUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus, user: User) => {
+        setAllOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
+        logActivity(user, 'ORDER_STATUS_UPDATED', `Statut de la commande ${orderId} changé à ${status}.`);
+    }, [setAllOrders, logActivity]);
 
     return {
         allProducts, setAllProducts,
@@ -204,5 +375,27 @@ export const useSiteData = () => {
         handleAssignAgentToOrder,
         handleSendBulkEmail,
         logActivity,
+        handleApproveStore,
+        handleRejectStore,
+        handleToggleStoreStatus,
+        handleWarnStore,
+        handleAdminAddCategory,
+        handleAdminDeleteCategory,
+        handleSaveFlashSale,
+        handleUpdateFlashSaleSubmissionStatus,
+        handleBatchUpdateFlashSaleStatus,
+        handleCreateOrUpdateAnnouncement,
+        handleDeleteAnnouncement,
+        handleAddPickupPoint,
+        handleUpdatePickupPoint,
+        handleDeletePickupPoint,
+        handleAdminReplyToTicket,
+        handleAdminUpdateTicketStatus,
+        handleReviewModeration,
+        handleCreateUserByAdmin,
+        handleUpdateOrderStatus,
+        handleAdminUpdateCategory,
+        handleUpdateDocumentStatus,
+        handleResolveDispute
     };
 };

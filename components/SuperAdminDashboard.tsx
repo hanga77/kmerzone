@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, PickupPoint, User, SiteSettings, Payout, Advertisement, SiteContent, Ticket, Announcement, PaymentMethod, Zone, EmailTemplate } from '../types';
+import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, PickupPoint, User, SiteSettings, Payout, Advertisement, SiteContent, Ticket, Announcement, PaymentMethod, Zone, EmailTemplate, DocumentStatus } from '../types';
 
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, TruckIcon, BanknotesIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, Cog8ToothIcon, ChartPieIcon } from './Icons';
 
@@ -58,7 +58,8 @@ interface SuperAdminDashboardProps {
     onDeleteAdvertisement: (id: string) => void;
     onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => void;
     onSanctionAgent: () => void;
-    onResolveRefund: () => void;
+    // FIX: Renamed 'onResolveRefund' to 'onResolveDispute' and corrected its signature to match what PageRouter passes and OrdersPanel expects.
+    onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => void;
     onAdminStoreMessage: () => void;
     onAdminCustomerMessage: () => void;
     siteContent: SiteContent[];
@@ -74,6 +75,10 @@ interface SuperAdminDashboardProps {
     onUpdatePaymentMethods: (methods: PaymentMethod[]) => void;
     allZones: Zone[];
     onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => void;
+    // FIX: Added missing props required by child components.
+    onWarnUser: (userId: string, reason: string) => void;
+    onAdminUpdateCategory: (categoryId: string, updates: Partial<Omit<Category, 'id'>>) => void;
+    onUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason?: string) => void;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
@@ -106,11 +111,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
     const renderContent = () => {
         switch (activeTab) {
             case 'overview': return <OverviewPanel {...props} />;
-            case 'users': return <UsersPanel allUsers={props.allUsers} onUpdateUser={props.onUpdateUser} onCreateUserByAdmin={props.onCreateUserByAdmin} allPickupPoints={props.allPickupPoints} allZones={props.allZones} onSendBulkEmail={props.onSendBulkEmail} siteSettings={props.siteSettings} />;
-            case 'catalog': return <CatalogPanel {...props} />;
+            // FIX: Pass required `onWarnUser` prop to UsersPanel.
+            case 'users': return <UsersPanel allUsers={props.allUsers} onUpdateUser={props.onUpdateUser} onCreateUserByAdmin={props.onCreateUserByAdmin} onWarnUser={props.onWarnUser} allPickupPoints={props.allPickupPoints} allZones={props.allZones} onSendBulkEmail={props.onSendBulkEmail} siteSettings={props.siteSettings} />;
+            // FIX: Explicitly pass props to CatalogPanel to fix missing prop error.
+            case 'catalog': return <CatalogPanel allCategories={props.allCategories} onAdminAddCategory={props.onAdminAddCategory} onAdminDeleteCategory={props.onAdminDeleteCategory} onAdminUpdateCategory={props.onAdminUpdateCategory} />;
             case 'marketing': return <MarketingPanel {...props} />;
-            case 'stores': return <StoresPanel {...props} />;
-            case 'orders': return <OrdersPanel {...props} />;
+            // FIX: Explicitly pass props to StoresPanel to fix missing prop error.
+            case 'stores': return <StoresPanel allStores={props.allStores} onApproveStore={props.onApproveStore} onRejectStore={props.onRejectStore} onToggleStoreStatus={props.onToggleStoreStatus} onWarnStore={props.onWarnStore} onUpdateDocumentStatus={props.onUpdateDocumentStatus} />;
+            // FIX: Explicitly pass props to OrdersPanel to fix missing prop error.
+            case 'orders': return <OrdersPanel allOrders={props.allOrders} onUpdateOrderStatus={props.onUpdateOrderStatus} onResolveDispute={props.onResolveDispute} />;
             case 'logistics': return <LogisticsPanel {...props} />;
             case 'payouts': return <PayoutsPanel {...props} />;
             case 'support': return <SupportPanel {...props} />;

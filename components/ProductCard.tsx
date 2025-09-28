@@ -54,7 +54,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
   const { isInComparison, toggleComparison } = useComparison();
   const { user } = useAuth();
 
-  const isSeller = user?.role === 'seller';
+  const isMyProduct = user?.role === 'seller' && user.shopName === product.vendor;
   const hasVariants = product.variants && product.variants.length > 0;
   
   const isPremiumVendor = useMemo(() => {
@@ -153,10 +153,10 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
         <div className="absolute bottom-2 right-2">
             <button 
               onClick={handleAddToCart} 
-              disabled={totalStock === 0 || isSeller}
+              disabled={totalStock === 0 || isMyProduct}
               className={`flex items-center justify-center h-12 w-12 text-gray-900 rounded-full shadow-md transform transition-all duration-300 hover:scale-110 bg-kmer-yellow disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed`}
-              aria-label={isSeller ? "Les vendeurs ne peuvent pas effectuer d'achats" : (totalStock === 0 ? "Épuisé" : (hasVariants ? "Choisir options" : "Ajouter au panier"))}
-              title={isSeller ? "Les vendeurs ne peuvent pas effectuer d'achats" : (hasVariants ? "Choisir les options" : "Ajouter au panier")}
+              aria-label={isMyProduct ? "Vous ne pouvez pas acheter votre propre produit" : (totalStock === 0 ? "Épuisé" : (hasVariants ? "Choisir options" : "Ajouter au panier"))}
+              title={isMyProduct ? "Vous ne pouvez pas acheter votre propre produit" : (hasVariants ? "Choisir les options" : "Ajouter au panier")}
             >
                 {totalStock === 0 ? <span className="text-xs font-bold text-white">ÉPUISÉ</span> : <ShoppingCartIcon className="h-5 w-5" />}
             </button>

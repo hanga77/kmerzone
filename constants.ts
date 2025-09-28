@@ -1,5 +1,3 @@
-
-
 import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod, ShippingPartner, SiteActivityLog, Zone } from './types';
 
 export const initialZones: Zone[] = [
@@ -290,11 +288,32 @@ export const initialSiteSettings: SiteSettings = {
   bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop',
   companyName: 'KMER ZONE',
   isStoriesEnabled: true,
-  isPremiumProgramEnabled: true,
-  premiumThresholds: { orders: 10, spending: 50000 },
-  premiumCautionAmount: 10000,
-  isPremiumPlusEnabled: true,
-  premiumPlusAnnualFee: 25000,
+  isChatEnabled: true,
+  isComparisonEnabled: true,
+  customerLoyaltyProgram: {
+    isEnabled: true,
+    premium: {
+      thresholds: { orders: 10, spending: 50000 },
+      cautionAmount: 10000,
+      benefits: [
+        "Badge de confiance sur votre profil",
+        "Support client prioritaire",
+        "Accès exclusif aux ventes privées",
+        "Accès aux ventes flash 24h en avance",
+        "Remises sur les frais de livraison",
+      ],
+    },
+    premiumPlus: {
+      isEnabled: true,
+      annualFee: 25000,
+      benefits: [
+        "Tous les avantages Premium",
+        "Livraison gratuite sur les articles éligibles",
+        "Offres et promotions personnalisées",
+        "Retour de produits facilité",
+      ],
+    },
+  },
   requiredSellerDocuments: {
       "CNI (Carte Nationale d'Identité)": true,
       "Registre de Commerce": true,
@@ -340,9 +359,18 @@ export const initialSiteSettings: SiteSettings = {
     ogImageUrl: 'https://images.unsplash.com/photo-1593359677879-a4bb92f82acb?q=80&w=2070&auto=format&fit=crop'
   },
   socialLinks: {
-    facebook: 'https://facebook.com/kmerzone',
-    twitter: 'https://twitter.com/kmerzone',
-    instagram: 'https://instagram.com/kmerzone',
+    facebook: {
+        linkUrl: 'https://facebook.com/kmerzone',
+        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNOSA4aC0zdjRoM3YxMmg1di0xMmgzLjY0MmwzNTgtNGgtNHYtMS42NjdjMC0uOTU1LjE5Mi0xLjMzMyAxLjExNS0xLjMzM2gyLjg4NXYtNWgtMy44MDhjLTMuNTk2IDAtNS4xOTIgMS41ODMtNS4xOTIgNC42MTV2My4zODV6IiAvPjwvc3ZnPg=='
+    },
+    twitter: {
+        linkUrl: 'https://twitter.com/kmerzone',
+        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNMjQgNC41NTdjLS44ODMuMzkyLTEuODMyLjY1Ni0yLjgyOC43NzUgMS4wMTctLjYwOSAxLjc5OC0xLjU3NCAyLjE2NS0yLjcyNC0uOTUxLjU2NC0yLjAwNS45NzQtMy4xMjcgMS4xOTUtLjg5Ny0uOTU3LTIuMTc4LTEuNTU1LTMuNTk0LTEuNTU1LTMuMTc5IDAtNS41MTUgMi45NjYtNC43OTcgNi4wNDUtNC4wOTEtLjIwNS03LjcxOS0yLjE2NS0xMC4xNDgtNS4xNDQtMS4yOSAyLjIxMy0uNjY5IDUuMTA4IDEuNTIzIDYuNTc0LS44MDYtLjAyNi0xLjU2Ni0uMjQ3LTIuMjI5LS42MTZ2LjA2NGMwIDIuMjk4IDEuNjM4IDQuMjE4IDMuODIgNC42NTQtLjczLjE5Ny0xLjQ5Mi4yMjMtMi4yMi4wODQuNjE2IDEuOTI0IDIuMzk2IDMuMzE2IDQuNDkxIDMuMzU0LTEuNzIyIDEuMzU0LTMuODg1IDUuMTYtNi4yMjQgNS4xNi0uNDA0IDAtLjc5OS0uMDI0LTEuMTg2LS4wNzEgMi4yMjQgMS40MjggNC44NjMgMi4yNjMgNy43MTIgMi4yNjMgOS4yNjEgMCAxNC4zMjgtNy42ODMgMTQuMDQ1LTE0LjM0Ni45NjItLjY5MyAxLjc5NS0xLjU2MiAyLjQ1Ny0yLjU0eiIgLz48L3N2Zz4='
+    },
+    instagram: {
+        linkUrl: 'https://instagram.com/kmerzone',
+        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNMTIgMi4xNjNjMy4yMDQgMCAzLjU4NC4wMTIgNC44NS4wNyAzLjI1Mi4xNDggNC43NzEgMS42OTEgNC45MTkgNC45MTkuMDU4IDEuMjY1LjA2OSAxLjY0NS4wNjkgNC44NXMtLjAxMSAzLjU4NC0uMDY5IDQuODVjLS4xNDkgMy4yMjUtMS42NjQgNC43NzEtNC45MTkgNC45MTktMS4yNjYuMDU4LTEuNjQ0LjA2OS00Ljg1LjA2OXMtMy41ODUtLjAxMS00Ljg1LS4wNjljLTMuMjUyLS4xNDktNC43NzEtMS42OTktNC45MTktNC45Mi0uMDU4LTEuMjY1LS4wNy0xLjY0NC0uMDctNC44NXMuMDEyLTMuNTg0LjA3LTQuODVjLjE0OC0zLjIyNSAxLjY2NC00Ljc3MSA0LjkxOS00LjkxOSAxLjI2Ni0uMDU3IDEuNjQ1LS4wNjkgNC44NS0uMDY5em0wLTIuMTYzYy0zLjI1OSAwLTMuNjY3LjAxNC00Ljk0Ny4wNzItNC4zNTguMi02Ljc4IDIuNjE4LTYuOTggNi45OC0uMDU5IDEuMjgxLS4wNzMgMS42ODktLjA3MyA0Ljk0OHMuMDE0IDMuNjY3LjA3MiA0Ljk0N2MuMiA0LjM1OSAyLjYxOCA2Ljc4IDYuOTggNi45OCAxLjI4MS4wNTggMS42ODkuMDcyIDQuOTQ4LjA3MnMzLjY2Ny0uMDE0IDQuOTQ3LS4wNzJjNC4zNTQtLjIgNi43ODItMi42MTggNi45NzktNi45OC4wNTktMS4yOC4wNzMtMS42ODkuMDczLTQuOTQ3cy0uMDE0LTMuNjY3LS4wNzItNC45NDdjLS4xOTctNC4zNTQtMi42MTctNi43OC02Ljk3OS02Ljk4LTEuMjgxLS4wNTktMS42ODktLjA3My00Ljk0OC0uMDczem0wIDUuODM4Yy0zLjQwMyAwLTYuMTYyIDIuNzU5LTYuMTYyIDYuMTYyczIuNzU5IDYuMTYyIDYuMTYyIDYuMTYyIDYuMTYyLTIuNzU5IDYuMTYyLTYuMTYyLTIuNzU5LTYuMTYyLTYuMTYyLTYuMTYyem0wIDEwLjE2MmMtMi4yMDkgMC00LTEuNzktNC00czEuNzkxLTQgNC00IDQgMS43OSA0IDQtMS43OTEgNC00IDR6bTYuNDA2LTExLjg0NWMtLjc5NiAwLTEuNDQxLjY0NS0xLjQ0MSAxLjQ0cy42NDUgMS40NCAxLjQ0MSAxLjQ0IDEuNDQtLjY0NiAxLjQ0LTEuNDQtLjY0NS0xLjQ0LTEuNDQtMS40NHoiIC8+PC9zdmc+'
+    },
   },
   emailTemplates: [
     {

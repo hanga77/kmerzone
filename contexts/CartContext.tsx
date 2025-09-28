@@ -33,7 +33,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const addToCart = useCallback((product: Product, quantity: number = 1, selectedVariant?: Record<string, string>, options?: { suppressModal?: boolean }) => {
     if (user && user.role === 'seller' && user.shopName === product.vendor) {
-        alert("Vous не pouvez pas acheter des produits de votre propre boutique.");
+        alert("Vous ne pouvez pas acheter des produits de votre propre boutique.");
         return;
     }
     if (user && ['superadmin', 'delivery_agent', 'depot_agent', 'depot_manager'].includes(user.role)) {
