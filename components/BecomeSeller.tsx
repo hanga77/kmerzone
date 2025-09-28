@@ -61,7 +61,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
             
             mapRef.current.on('click', (e: any) => updateMarker(e.latlng));
 
-            setTimeout(() => mapRef.current.invalidateSize(), 400);
+            setTimeout(() => mapRef.current?.invalidateSize(), 400);
         }
     }, []);
 

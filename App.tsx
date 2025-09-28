@@ -3,7 +3,7 @@ import { XIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import { useUI } from './contexts/UIContext';
-import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint, Store, Warning, DocumentStatus } from './types';
+import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint, Store, Warning, DocumentStatus, UserAvailabilityStatus, OrderStatus, Order } from './types';
 import { Header } from './components/Header';
 import Footer from './components/Footer';
 import MaintenancePage from './components/MaintenancePage';
@@ -50,7 +50,7 @@ const AnnouncementBanner: React.FC<{
 
 
 export default function App() {
-  const { user, logout: authLogout, allUsers, setAllUsers, resetPassword } = useAuth();
+  const { user, logout: authLogout, allUsers, setAllUsers, resetPassword, updateUserInfo } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
   const { comparisonList, setProducts: setComparisonProducts } = useComparison();
   const { t } = useLanguage();
@@ -92,7 +92,7 @@ export default function App() {
         const updatedUsers = siteData.handleAdminUpdateUser(userId, updates, allUsers);
         setAllUsers(updatedUsers);
     };
-
+    
     const handleWarnUser = (userId: string, reason: string) => {
         if (!user) return;
         const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason };
@@ -114,6 +114,16 @@ export default function App() {
     const handleLogout = () => {
         authLogout();
         navigation.navigateToHome();
+    };
+
+    const handleUpdateUserAvailability = (userId: string, newStatus: UserAvailabilityStatus) => {
+        updateUserInfo(userId, { availabilityStatus: newStatus });
+    };
+    
+    const handleUpdateDeliveryStatus = (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => {
+        if (user) {
+            siteData.handleUpdateDeliveryStatus(orderId, status, user, details);
+        }
     };
 
 
@@ -233,6 +243,12 @@ export default function App() {
             onDeleteAnnouncement={(id) => user && siteData.handleDeleteAnnouncement(id, user)}
             onUpdateOrderStatus={(orderId, status) => user && siteData.handleUpdateOrderStatus(orderId, status, user)}
             onResolveDispute={(orderId, resolution) => user && siteData.handleResolveDispute(orderId, resolution, user)}
+            onSellerUpdateOrderStatus={(orderId, status) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user)}
+            onCreateOrUpdateCollection={(storeId, collection) => user && siteData.handleCreateOrUpdateCollection(storeId, collection, user)}
+            onDeleteCollection={(storeId, collectionId) => user && siteData.handleDeleteCollection(storeId, collectionId, user)}
+            onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
+            onUpdateUserAvailability={handleUpdateUserAvailability}
+            onUpdateDeliveryStatus={handleUpdateDeliveryStatus}
           />
         </main>
 

@@ -4,7 +4,7 @@ import type {
     Product, Category, Store, FlashSale, Order, SiteSettings, SiteContent, Advertisement, 
     PaymentMethod, SiteActivityLog, PickupPoint, Payout, PromoCode, OrderStatus, 
     NewOrderData, Review, User, DocumentStatus, Warning, Story, ProductCollection, 
-    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus 
+    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus, UserAvailabilityStatus 
 } from '../types';
 import { 
     initialCategories, initialProducts, initialStores, initialFlashSales, initialPickupPoints, 
@@ -92,7 +92,7 @@ export const useSiteData = () => {
         setAllProducts(prev => prev.map(p => p.id === productId ? { ...p, promotionPrice: promoPrice, promotionStartDate: startDate, promotionEndDate: endDate } : p));
     }, [setAllProducts]);
     
-    const handleConfirmOrder = useCallback((orderData: NewOrderData, user: User) => {
+    const handleConfirmOrder = useCallback((orderData: NewOrderData, user: User): Order => {
         const newOrder: Order = {
             ...orderData,
             id: `ORDER-${Date.now()}`,
@@ -108,6 +108,7 @@ export const useSiteData = () => {
         };
         setAllOrders(prev => [...prev, newOrder]);
         logActivity(user, 'ORDER_PLACED', `Nouvelle commande: ${newOrder.id} pour un total de ${newOrder.total} FCFA.`);
+        return newOrder;
     }, [setAllOrders, logActivity]);
     
     const handleMarkNotificationAsRead = useCallback((notificationId: string) => {
@@ -163,6 +164,40 @@ export const useSiteData = () => {
             return o;
         }));
         logActivity(user, 'ORDER_ASSIGNED_TO_AGENT', `Commande ${orderId} assignée au livreur ${agentId}.`);
+    }, [setAllOrders, logActivity]);
+    
+    const handleUpdateDeliveryStatus = useCallback((orderId: string, status: OrderStatus, user: User, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId) {
+                const newTrackingEvent: TrackingEvent = {
+                    status,
+                    date: new Date().toISOString(),
+                    location: user.name,
+                    details: status === 'delivered'
+                        ? `Livré à ${details?.signature}.`
+                        : `Échec de livraison : ${details?.failureReason?.reason} - ${details?.failureReason?.details}.`
+                };
+
+                const updatedOrder: Order = {
+                    ...o,
+                    status,
+                    trackingHistory: [...(o.trackingHistory || []), newTrackingEvent],
+                };
+
+                if (status === 'delivered' && details?.signature) {
+                    updatedOrder.signatureUrl = details.signature;
+                    updatedOrder.proofOfDeliveryUrl = "Signature captured";
+                }
+
+                if (status === 'delivery-failed' && details?.failureReason) {
+                    updatedOrder.deliveryFailureReason = { ...details.failureReason, date: new Date().toISOString() };
+                }
+
+                return updatedOrder;
+            }
+            return o;
+        }));
+        logActivity(user, 'DELIVERY_STATUS_UPDATE', `Statut de la commande ${orderId} changé à ${status}.`);
     }, [setAllOrders, logActivity]);
 
     const handleSendBulkEmail = useCallback((recipientIds: string[], subject: string, body: string, currentUser: User) => {
@@ -341,6 +376,55 @@ export const useSiteData = () => {
         setAllOrders(prev => prev.map(o => o.id === orderId ? { ...o, status } : o));
         logActivity(user, 'ORDER_STATUS_UPDATED', `Statut de la commande ${orderId} changé à ${status}.`);
     }, [setAllOrders, logActivity]);
+    
+    // Seller-specific actions
+    const handleSellerUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus, user: User) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId) {
+                const newTrackingEvent: TrackingEvent = {
+                    status,
+                    date: new Date().toISOString(),
+                    location: user.shopName || 'Vendeur',
+                    details: 'Statut mis à jour par le vendeur.'
+                };
+                return { ...o, status, trackingHistory: [...(o.trackingHistory || []), newTrackingEvent] };
+            }
+            return o;
+        }));
+        logActivity(user, 'SELLER_ORDER_UPDATE', `Le vendeur a mis à jour le statut de la commande ${orderId} à ${status}.`);
+    }, [setAllOrders, logActivity]);
+
+    const handleCreateOrUpdateCollection = useCallback((storeId: string, collection: ProductCollection, user: User) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                const collections = s.collections || [];
+                const existingIndex = collections.findIndex(c => c.id === collection.id);
+                if (existingIndex > -1) {
+                    collections[existingIndex] = collection;
+                } else {
+                    collections.push({ ...collection, id: `coll-${Date.now()}` });
+                }
+                return { ...s, collections };
+            }
+            return s;
+        }));
+        logActivity(user, 'STORE_COLLECTION_UPDATE', `Collection "${collection.name}" mise à jour pour la boutique ${storeId}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleDeleteCollection = useCallback((storeId: string, collectionId: string, user: User) => {
+        setAllStores(prev => prev.map(s => {
+            if (s.id === storeId) {
+                return { ...s, collections: (s.collections || []).filter(c => c.id !== collectionId) };
+            }
+            return s;
+        }));
+        logActivity(user, 'STORE_COLLECTION_DELETE', `Collection ${collectionId} supprimée pour la boutique ${storeId}.`);
+    }, [setAllStores, logActivity]);
+
+    const handleUpdateStoreProfile = useCallback((storeId: string, updatedData: Partial<Store>, user: User) => {
+        setAllStores(prev => prev.map(s => s.id === storeId ? { ...s, ...updatedData } : s));
+        logActivity(user, 'STORE_PROFILE_UPDATE', `Profil de la boutique ${storeId} mis à jour.`);
+    }, [setAllStores, logActivity]);
 
     return {
         allProducts, setAllProducts,
@@ -396,6 +480,12 @@ export const useSiteData = () => {
         handleUpdateOrderStatus,
         handleAdminUpdateCategory,
         handleUpdateDocumentStatus,
-        handleResolveDispute
+        handleResolveDispute,
+        // Seller actions
+        handleSellerUpdateOrderStatus,
+        handleCreateOrUpdateCollection,
+        handleDeleteCollection,
+        handleUpdateStoreProfile,
+        handleUpdateDeliveryStatus,
     };
 };

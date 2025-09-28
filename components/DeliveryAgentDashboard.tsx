@@ -1,7 +1,8 @@
+
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { QrCodeIcon, MapIcon, ListBulletIcon, PhotoIcon, ChartPieIcon } from './Icons';
+import { QrCodeIcon, MapIcon, ListBulletIcon, PhotoIcon, ChartPieIcon, XIcon, CheckIcon } from './Icons';
 
 declare namespace L {
     // Basic type for LatLng to satisfy the type checker for the global L object from Leaflet.
@@ -19,9 +20,9 @@ interface DeliveryAgentDashboardProps {
   allOrders: Order[];
   allStores: Store[];
   allPickupPoints: PickupPoint[];
-  onUpdateOrder: (orderId: string, updates: Partial<Order>) => void;
   onLogout: () => void;
   onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
+  onUpdateDeliveryStatus: (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => void;
 }
 
 const statusTranslations: { [key in OrderStatus]: string } = {
@@ -102,71 +103,153 @@ const ScannerModal: React.FC<{
     );
 };
 
-export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onUpdateOrder, onLogout, onUpdateUserAvailability }) => {
-    const { user } = useAuth();
-    const [view, setView] = useState<'list' | 'map'>('list');
-    const [isScannerOpen, setIsScannerOpen] = useState(false);
-    const mapRef = useRef<any>(null);
-    const mapContainerRef = useRef<HTMLDivElement>(null);
-    const agentMarkerRef = useRef<any>(null);
+const SignatureModal: React.FC<{
+    order: Order;
+    onClose: () => void;
+    onConfirm: (orderId: string, recipientName: string) => void;
+}> = ({ order, onClose, onConfirm }) => {
+    const [recipientName, setRecipientName] = useState('');
+    return (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold mb-4 dark:text-white">Confirmer la livraison</h3>
+                <p className="text-sm mb-4">Commande: <span className="font-mono">{order.id}</span></p>
+                <div>
+                    <label htmlFor="recipientName" className="block text-sm font-medium dark:text-gray-300">Nom du réceptionnaire *</label>
+                    <input
+                        id="recipientName"
+                        type="text"
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        placeholder="Ex: Jean Dupont"
+                        required
+                    />
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                    <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg">Annuler</button>
+                    <button onClick={() => onConfirm(order.id, recipientName)} disabled={!recipientName.trim()} className="bg-green-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-400 flex items-center gap-2">
+                        <CheckIcon className="w-5 h-5"/> Confirmer
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const DeliveryFailureModal: React.FC<{
+    order: Order;
+    onClose: () => void;
+    onConfirm: (orderId: string, failureReason: Required<Order['deliveryFailureReason']>) => void;
+}> = ({ order, onClose, onConfirm }) => {
+    const [reason, setReason] = useState<'client-absent' | 'adresse-erronee' | 'colis-refuse'>('client-absent');
+    const [details, setDetails] = useState('');
+    return (
+        <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+                <h3 className="text-xl font-bold mb-4 dark:text-white">Signaler un échec de livraison</h3>
+                <p className="text-sm mb-4">Commande: <span className="font-mono">{order.id}</span></p>
+                <div className="space-y-4">
+                    <div>
+                        <label htmlFor="failureReason" className="block text-sm font-medium dark:text-gray-300">Motif *</label>
+                        <select
+                            id="failureReason"
+                            value={reason}
+                            onChange={(e) => setReason(e.target.value as any)}
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                        >
+                            <option value="client-absent">Client absent</option>
+                            <option value="adresse-erronee">Adresse erronée</option>
+                            <option value="colis-refuse">Colis refusé</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label htmlFor="failureDetails" className="block text-sm font-medium dark:text-gray-300">Détails supplémentaires *</label>
+                        <textarea
+                            id="failureDetails"
+                            value={details}
+                            onChange={(e) => setDetails(e.target.value)}
+                            rows={3}
+                            className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
+                            placeholder="Ex: Le client ne répond pas au téléphone, la porte est fermée..."
+                            required
+                        />
+                    </div>
+                </div>
+                <div className="flex justify-end gap-2 mt-6">
+                    <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg">Annuler</button>
+                    <button onClick={() => onConfirm(order.id, { reason, details, date: new Date().toISOString() })} disabled={!details.trim()} className="bg-red-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-400 flex items-center gap-2">
+                        <XIcon className="w-5 h-5"/> Confirmer l'échec
+                    </button>
+                </div>
+            </div>
+        </div>
+    );
+};
+
+const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end }) => {
+    const mapRef = useRef<HTMLDivElement>(null);
+    const leafletMap = useRef<any>();
     const routingControlRef = useRef<any>(null);
 
-    const missions = useMemo(() => {
-        if (!user) return [];
-        return allOrders.filter(o => o.agentId === user.id && ['picked-up', 'at-depot', 'out-for-delivery', 'ready-for-pickup'].includes(o.status));
-    }, [allOrders, user]);
-
     useEffect(() => {
-        if (view === 'map' && mapContainerRef.current && !mapRef.current && typeof L !== 'undefined') {
-            mapRef.current = L.map(mapContainerRef.current).setView([4.0511, 9.7679], 12);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
-            agentMarkerRef.current = L.marker([4.0511, 9.7679], { title: "Votre position" }).addTo(mapRef.current);
+        if (mapRef.current && !leafletMap.current) {
+            leafletMap.current = L.map(mapRef.current).setView([4.05, 9.75], 11);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '&copy; OpenStreetMap contributors'
+            }).addTo(leafletMap.current);
         }
-    }, [view]);
-    
-     useEffect(() => {
-        if (mapRef.current && missions.length > 0) {
-            const waypoints = missions.flatMap(order => {
-                const store = allStores.find(s => s.name === order.items[0].vendor);
-                const pickupPoint = allPickupPoints.find(p => p.id === order.pickupPointId);
-                const customerAddress = order.shippingAddress;
-                
-                const points = [];
-                if (order.status === 'ready-for-pickup' && store?.latitude && store?.longitude) {
-                    points.push(L.latLng(store.latitude, store.longitude));
-                }
-                if (order.deliveryMethod === 'pickup' && pickupPoint?.latitude && pickupPoint?.longitude) {
-                    points.push(L.latLng(pickupPoint.latitude, pickupPoint.longitude));
-                } else if (order.deliveryMethod === 'home-delivery' && customerAddress?.latitude && customerAddress?.longitude) {
-                    points.push(L.latLng(customerAddress.latitude, customerAddress.longitude));
-                }
-                return points;
-            }).filter(Boolean);
-            
+
+        if (leafletMap.current && end) {
             if (routingControlRef.current) {
-                routingControlRef.current.setWaypoints(waypoints);
-            } else if (waypoints.length > 0) {
+                leafletMap.current.removeControl(routingControlRef.current);
+            }
+            if(start) {
                 routingControlRef.current = L.Routing.control({
-                    waypoints,
-                    routeWhileDragging: true
-                }).addTo(mapRef.current);
+                    waypoints: [L.latLng(start), L.latLng(end)],
+                    routeWhileDragging: false,
+                    show: false,
+                    createMarker: function() { return null; }
+                }).addTo(leafletMap.current);
+            } else {
+                 L.marker(end).addTo(leafletMap.current);
+                 leafletMap.current.setView(end, 14);
             }
         }
-     }, [missions, allStores, allPickupPoints, view]);
+         // Invalidate map size after a short delay to ensure it renders correctly
+        // FIX: Pass `true` to `leafletMap.current.invalidateSize()` to satisfy the expected argument, ensuring the map resizes correctly with animation.
+        setTimeout(() => leafletMap.current?.invalidateSize(true), 100);
+    }, [start, end]);
 
-    const handleUpdateStatus = (orderId: string, status: OrderStatus, deliveryFailureReason?: Order['deliveryFailureReason']) => {
-        const updates: Partial<Order> = { status };
-        if(status === 'delivery-failed' && deliveryFailureReason) {
-            updates.deliveryFailureReason = { ...deliveryFailureReason, date: new Date().toISOString() };
-        }
-        if(status === 'delivered') {
-            const signature = prompt("Nom du réceptionnaire (ou description si laissé quelque part) :");
-            if(signature) updates.signatureUrl = signature; // In real app, this would be an image URL
-        }
-        onUpdateOrder(orderId, updates);
-    };
+    return <div ref={mapRef} className="h-48 w-full rounded-md mt-4 z-0"></div>;
+};
+
+export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onLogout, onUpdateUserAvailability, onUpdateDeliveryStatus }) => {
+    const { user } = useAuth();
+    const [view, setView] = useState<'missions' | 'history'>('missions');
+    const [isScannerOpen, setIsScannerOpen] = useState(false);
+    const [modalState, setModalState] = useState<{ type: 'signature' | 'failure'; order: Order } | null>(null);
+    const [openMapOrderId, setOpenMapOrderId] = useState<string | null>(null);
+
+    const { missions, history } = useMemo(() => {
+        if (!user) return { missions: [], history: [] };
+        const agentOrders = allOrders.filter(o => o.agentId === user.id);
+        const _missions = agentOrders.filter(o => ['picked-up', 'at-depot', 'out-for-delivery', 'ready-for-pickup'].includes(o.status));
+        const _history = agentOrders.filter(o => ['delivered', 'delivery-failed', 'returned'].includes(o.status));
+        return { missions: _missions, history: _history };
+    }, [allOrders, user]);
+
+    const handleConfirmDelivery = useCallback((orderId: string, recipientName: string) => {
+        onUpdateDeliveryStatus(orderId, 'delivered', { signature: recipientName });
+        setModalState(null);
+    }, [onUpdateDeliveryStatus]);
+
+    const handleConfirmFailure = useCallback((orderId: string, failureReason: Required<Order['deliveryFailureReason']>) => {
+        onUpdateDeliveryStatus(orderId, 'delivery-failed', { failureReason });
+        setModalState(null);
+    }, [onUpdateDeliveryStatus]);
     
-    const handleScanSuccess = (decodedText: string) => {
+    const handleScanSuccess = useCallback((decodedText: string) => {
         setIsScannerOpen(false);
         const order = allOrders.find(o => o.trackingNumber === decodedText);
         if (!order) {
@@ -174,21 +257,53 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
             return;
         }
         if (order.status === 'ready-for-pickup') {
-            handleUpdateStatus(order.id, 'picked-up');
+            onUpdateDeliveryStatus(order.id, 'picked-up');
             alert(`Commande ${order.id} marquée comme "Pris en charge".`);
         } else if (order.status === 'out-for-delivery') {
-            handleUpdateStatus(order.id, 'delivered');
-             alert(`Commande ${order.id} marquée comme "Livrée".`);
+            setModalState({ type: 'signature', order });
         } else {
              alert(`Action non valide pour le statut actuel de la commande (${statusTranslations[order.status]}).`);
         }
-    };
+    }, [allOrders, onUpdateDeliveryStatus]);
+
+    const handleScannerClose = useCallback(() => {
+        setIsScannerOpen(false);
+    }, []);
+
+    const getRouteDetails = useCallback((order: Order) => {
+        let start: L.LatLng | undefined;
+        let end: L.LatLng | undefined;
+        let destinationLabel = '';
+
+        const agentZoneDepot = allPickupPoints.find(p => p.zoneId === user?.zoneId);
+        if (agentZoneDepot?.latitude && agentZoneDepot?.longitude) {
+            start = L.latLng(agentZoneDepot.latitude, agentZoneDepot.longitude);
+        }
+
+        if (order.status === 'ready-for-pickup') {
+            const vendorName = order.items[0]?.vendor;
+            const store = allStores.find(s => s.name === vendorName);
+            if (store?.latitude && store?.longitude) {
+                end = L.latLng(store.latitude, store.longitude);
+                destinationLabel = `Récupérer chez : ${store.name}`;
+            }
+        } else if (['picked-up', 'at-depot', 'out-for-delivery'].includes(order.status)) {
+            if (order.shippingAddress.latitude && order.shippingAddress.longitude) {
+                end = L.latLng(order.shippingAddress.latitude, order.shippingAddress.longitude);
+                destinationLabel = `Livrer à : ${order.shippingAddress.fullName}`;
+            }
+        }
+        return { start, end, destinationLabel };
+    }, [user, allStores, allPickupPoints]);
     
     if (!user) return null;
 
     return (
         <>
-            {isScannerOpen && <ScannerModal onClose={() => setIsScannerOpen(false)} onScanSuccess={handleScanSuccess} />}
+            {isScannerOpen && <ScannerModal onClose={handleScannerClose} onScanSuccess={handleScanSuccess} />}
+            {modalState?.type === 'signature' && <SignatureModal order={modalState.order} onClose={() => setModalState(null)} onConfirm={handleConfirmDelivery} />}
+            {modalState?.type === 'failure' && <DeliveryFailureModal order={modalState.order} onClose={() => setModalState(null)} onConfirm={handleConfirmFailure} />}
+            
             <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
                 <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
                     <div className="container mx-auto px-4 sm:px-6 py-3">
@@ -223,46 +338,41 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
                     </div>
                     
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                        <div className="p-2 border-b dark:border-gray-700 flex justify-between items-center">
-                             <h2 className="text-lg font-bold">Mes missions</h2>
-                             <div className="flex items-center gap-1 bg-gray-200 dark:bg-gray-700 p-1 rounded-lg">
-                                <button onClick={() => setView('list')} className={`p-2 rounded-md ${view === 'list' ? 'bg-white dark:bg-gray-800 shadow' : ''}`}><ListBulletIcon className="w-5 h-5"/></button>
-                                <button onClick={() => setView('map')} className={`p-2 rounded-md ${view === 'map' ? 'bg-white dark:bg-gray-800 shadow' : ''}`}><MapIcon className="w-5 h-5"/></button>
-                            </div>
+                        <div className="p-2 border-b dark:border-gray-700 flex justify-start items-center">
+                             <button onClick={() => setView('missions')} className={`px-4 py-2 font-semibold ${view === 'missions' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>Missions en cours</button>
+                             <button onClick={() => setView('history')} className={`px-4 py-2 font-semibold ${view === 'history' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>Historique</button>
                         </div>
 
-                        {view === 'list' ? (
-                             <div className="space-y-4 p-4">
-                                {missions.map(order => (
-                                    <div key={order.id} className="p-3 border rounded-md dark:border-gray-700">
-                                        <p className="font-bold">{order.id}</p>
-                                        <p>Client: {order.shippingAddress.fullName}</p>
-                                        <p>Adresse: {order.shippingAddress.address}, {order.shippingAddress.city}</p>
-                                        <div className="mt-2 flex gap-2">
-                                            {order.status === 'ready-for-pickup' && <button onClick={() => handleUpdateStatus(order.id, 'picked-up')} className="bg-blue-500 text-white px-3 py-1 rounded">Récupéré</button>}
-                                            {order.status === 'out-for-delivery' && (
-                                                <>
-                                                    <button onClick={() => handleUpdateStatus(order.id, 'delivered')} className="bg-green-500 text-white px-3 py-1 rounded">Livré</button>
-                                                    <button onClick={() => {
-                                                        const reason = prompt("Motif de l'échec (client-absent, adresse-erronee, colis-refuse):");
-                                                        const details = prompt("Détails supplémentaires :");
-                                                        if (reason && details) {
-                                                            if (['client-absent', 'adresse-erronee', 'colis-refuse'].includes(reason)) {
-                                                                handleUpdateStatus(order.id, 'delivery-failed', { reason: reason as 'client-absent' | 'adresse-erronee' | 'colis-refuse', details, date: '' });
-                                                            } else {
-                                                                alert("Motif invalide. Veuillez choisir parmi : client-absent, adresse-erronee, colis-refuse.");
-                                                            }
-                                                        }
-                                                    }} className="bg-red-500 text-white px-3 py-1 rounded">Échec livraison</button>
-                                                </>
-                                            )}
+                         <div className="space-y-4 p-4">
+                            {(view === 'missions' ? missions : history).map(order => {
+                                const { start, end, destinationLabel } = getRouteDetails(order);
+                                return (
+                                <div key={order.id} className="p-4 border rounded-md dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
+                                    <div className="flex justify-between items-start">
+                                        <div>
+                                            <p className="font-bold">{order.id}</p>
+                                            <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${order.status === 'out-for-delivery' ? 'bg-indigo-100 text-indigo-800' : 'bg-blue-100 text-blue-800'}`}>{statusTranslations[order.status]}</span>
                                         </div>
+                                        <p className="text-lg font-bold">{order.total.toLocaleString('fr-CM')} FCFA</p>
                                     </div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div ref={mapContainerRef} className="h-96 w-full"></div>
-                        )}
+                                    <div className="mt-4 border-t pt-4 dark:border-gray-700">
+                                        <p className="font-semibold">{destinationLabel || `Client: ${order.shippingAddress.fullName} (${order.shippingAddress.phone})`}</p>
+                                        <p>Adresse: {order.shippingAddress.address}, {order.shippingAddress.city}</p>
+                                    </div>
+                                    {openMapOrderId === order.id && end && <MissionMap start={start} end={end} />}
+                                    <div className="mt-4 flex flex-wrap gap-2">
+                                        {end && <button onClick={() => setOpenMapOrderId(prev => prev === order.id ? null : order.id)} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2"><MapIcon className="w-5 h-5"/>{openMapOrderId === order.id ? 'Cacher la carte' : 'Voir la carte'}</button>}
+                                        {order.status === 'ready-for-pickup' && <button onClick={() => onUpdateDeliveryStatus(order.id, 'picked-up')} className="bg-blue-500 text-white px-3 py-2 rounded-lg font-semibold text-sm">Récupéré chez le vendeur</button>}
+                                        {order.status === 'out-for-delivery' && (
+                                            <>
+                                                <button onClick={() => setModalState({ type: 'signature', order })} className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold text-sm">Livré</button>
+                                                <button onClick={() => setModalState({ type: 'failure', order })} className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold text-sm">Échec livraison</button>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )})}
+                        </div>
                     </div>
                 </main>
             </div>

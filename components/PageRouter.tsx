@@ -1,5 +1,5 @@
 import React from 'react';
-import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning } from '../types';
+import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -66,6 +66,14 @@ interface PageRouterProps {
     onDeleteAnnouncement: (id: string) => void;
     onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
     onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => void;
+    // Seller actions
+    onSellerUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+    onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => void;
+    onDeleteCollection: (storeId: string, collectionId: string) => void;
+    onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
+    // Delivery actions
+    onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
+    onUpdateDeliveryStatus: (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => void;
 }
 
 const PageRouter: React.FC<PageRouterProps> = (props) => {
@@ -77,7 +85,9 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         onSaveFlashSale, onUpdateFlashSaleSubmissionStatus,
         onBatchUpdateFlashSaleStatus, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint,
         onAdminReplyToTicket, onAdminUpdateTicketStatus, onReviewModeration, onCreateUserByAdmin,
-        onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onUpdateOrderStatus, onResolveDispute
+        onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onUpdateOrderStatus, onResolveDispute,
+        onSellerUpdateOrderStatus, onCreateOrUpdateCollection, onDeleteCollection, onUpdateStoreProfile,
+        onUpdateUserAvailability, onUpdateDeliveryStatus
     } = props;
     
     const { user, allUsers, setAllUsers, logout } = useAuth();
@@ -128,9 +138,35 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'cart':
             return <CartView onBack={navigation.navigateToHome} onNavigateToCheckout={navigation.navigateToCheckout} flashSales={siteData.flashSales} allPromoCodes={siteData.allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={onApplyPromoCode} />;
         case 'checkout':
-            return <Checkout onBack={navigation.navigateToCart} onOrderConfirm={(orderData) => { if(user) { siteData.handleConfirmOrder(orderData, user); clearCart(); navigation.setPage('order-success') } }} flashSales={siteData.flashSales} allPickupPoints={siteData.allPickupPoints} allStores={siteData.allStores} appliedPromoCode={appliedPromoCode} siteSettings={siteData.siteSettings} paymentMethods={siteData.allPaymentMethods} />;
+            return <Checkout 
+                onBack={navigation.navigateToCart} 
+                onOrderConfirm={(orderData) => {
+                    if (user) {
+                        const handlePaymentSuccess = (paymentDetails: PaymentDetails) => {
+                            const finalOrderData = { ...orderData, paymentDetails };
+                            const newOrder = siteData.handleConfirmOrder(finalOrderData, user);
+                            if (newOrder) {
+                                clearCart();
+                                navigation.setSelectedOrder(newOrder);
+                                navigation.setPage('order-success');
+                            }
+                        };
+                        setPaymentRequest({
+                            amount: orderData.total,
+                            reason: `Paiement pour votre commande KMER ZONE`,
+                            onSuccess: handlePaymentSuccess
+                        });
+                    }
+                }}
+                flashSales={siteData.flashSales} 
+                allPickupPoints={siteData.allPickupPoints} 
+                allStores={siteData.allStores} 
+                appliedPromoCode={appliedPromoCode} 
+                siteSettings={siteData.siteSettings} 
+                paymentMethods={siteData.allPaymentMethods} 
+            />;
         case 'order-success':
-            return <OrderSuccess order={siteData.allOrders[siteData.allOrders.length - 1]} onNavigateHome={navigation.navigateToHome} onNavigateToOrders={navigation.navigateToOrderHistory} />;
+            return <OrderSuccess order={navigation.selectedOrder || siteData.allOrders[siteData.allOrders.length - 1]} onNavigateHome={navigation.navigateToHome} onNavigateToOrders={navigation.navigateToOrderHistory} />;
         case 'category':
             return navigation.selectedCategoryId ? <CategoryPage categoryId={navigation.selectedCategoryId} allCategories={siteData.allCategories} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'seller-dashboard':
@@ -147,34 +183,28 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onEditProduct={(p) => {}}
                 onDeleteProduct={() => {}}
                 onUpdateProductStatus={() => {}}
-                onNavigateToProfile={navigation.navigateToSellerProfile}
-                onNavigateToAnalytics={() => navigation.setPage('seller-analytics-dashboard')}
+                onNavigateToProfile={() => navigation.navigateToSellerDashboard('profile')}
+                onNavigateToAnalytics={() => navigation.navigateToSellerDashboard('analytics')}
                 onSetPromotion={setPromotionModalProduct}
                 onRemovePromotion={() => {}}
                 onProposeForFlashSale={() => {}}
                 onUploadDocument={() => {}}
-                onUpdateOrderStatus={() => {}}
+                onUpdateOrderStatus={onSellerUpdateOrderStatus}
                 onCreatePromoCode={() => {}}
                 onDeletePromoCode={() => {}}
                 isChatEnabled={siteData.siteSettings.isChatEnabled}
-                onPayRent={(storeId) => setPaymentRequest({ amount: siteData.siteSettings.rentAmount, reason: `Paiement du loyer pour ${sellerStore.name}`, onSuccess: () => {} })}
                 siteSettings={siteData.siteSettings}
-                onAddStory={() => {}}
-                onDeleteStory={() => {}}
                 payouts={siteData.payouts}
-                onSellerDisputeMessage={() => {}}
-                onBulkUpdateProducts={() => {}}
                 onReplyToReview={() => {}}
-                onCreateOrUpdateCollection={() => {}}
-                onDeleteCollection={() => {}}
+                onCreateOrUpdateCollection={onCreateOrUpdateCollection}
+                onDeleteCollection={onDeleteCollection}
                 initialTab={navigation.sellerDashboardTab}
                 sellerNotifications={sellerNotifications}
-                onMarkNotificationAsRead={siteData.handleMarkNotificationAsRead}
-                onNavigateFromNotification={navigation.handleNavigateFromNotification}
                 onCreateTicket={() => {}}
                 allShippingPartners={siteData.allShippingPartners}
                 onUpdateShippingSettings={() => {}}
                 onRequestUpgrade={() => {}}
+                onUpdateStoreProfile={onUpdateStoreProfile}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'superadmin-dashboard':
             if (user?.role !== 'superadmin') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
@@ -237,7 +267,6 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onToggleComparisonFeature={() => {}}
                 onAssignAgent={() => {}}
                 onUpdateCategoryImage={() => {}}
-                // FIX: Corrected a prop type mismatch issue by changing `onResolveRefund` to `onResolveDispute`. The prop name was incorrect in the SuperAdminDashboard component's props interface.
                 onResolveDispute={onResolveDispute}
             />;
         case 'vendor-page':
@@ -251,7 +280,14 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'wishlist':
             return <WishlistPage allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/>;
         case 'delivery-agent-dashboard':
-            return <DeliveryAgentDashboard allOrders={siteData.allOrders} allStores={siteData.allStores} allPickupPoints={siteData.allPickupPoints} onUpdateOrder={() => {}} onLogout={() => {}} onUpdateUserAvailability={() => {}}/>;
+            return <DeliveryAgentDashboard 
+                allOrders={siteData.allOrders} 
+                allStores={siteData.allStores} 
+                allPickupPoints={siteData.allPickupPoints} 
+                onUpdateDeliveryStatus={onUpdateDeliveryStatus}
+                onLogout={logout} 
+                onUpdateUserAvailability={onUpdateUserAvailability}
+            />;
         case 'depot-agent-dashboard':
             return user ? <DepotAgentDashboard 
                 user={user} 

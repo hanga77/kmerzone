@@ -1,0 +1,62 @@
+import React from 'react';
+import type { Order, OrderStatus } from '../../types';
+
+interface OrdersPanelProps {
+    sellerOrders: Order[];
+    onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+}
+
+const statusTranslations: { [key in OrderStatus]: string } = {
+    confirmed: 'Confirmée',
+    'ready-for-pickup': 'Prêt pour enlèvement',
+    'picked-up': 'Pris en charge',
+    'at-depot': 'Au dépôt',
+    'out-for-delivery': 'En livraison',
+    delivered: 'Livré',
+    cancelled: 'Annulé',
+    'refund-requested': 'Litige',
+    refunded: 'Remboursé',
+    returned: 'Retourné',
+    'depot-issue': 'Problème au dépôt',
+    'delivery-failed': 'Échec de livraison'
+};
+
+const OrdersPanel: React.FC<OrdersPanelProps> = ({ sellerOrders, onUpdateOrderStatus }) => {
+    return (
+        <div className="p-6">
+            <h2 className="text-2xl font-bold mb-4">Mes Commandes ({sellerOrders.length})</h2>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                    <thead className="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th className="p-2 text-left">ID Commande</th>
+                            <th className="p-2 text-left">Client</th>
+                            <th className="p-2 text-right">Total</th>
+                            <th className="p-2 text-center">Statut</th>
+                            <th className="p-2 text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {sellerOrders.map(order => (
+                             <tr key={order.id} className="border-b dark:border-gray-700">
+                                <td className="p-2 font-mono">{order.id}</td>
+                                <td className="p-2">{order.shippingAddress.fullName}</td>
+                                <td className="p-2 text-right font-semibold">{order.total.toLocaleString('fr-CM')} FCFA</td>
+                                <td className="p-2 text-center capitalize">{statusTranslations[order.status] || order.status}</td>
+                                <td className="p-2 text-center">
+                                    {order.status === 'confirmed' && (
+                                        <button onClick={() => onUpdateOrderStatus(order.id, 'ready-for-pickup')} className="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600">
+                                            Marquer comme prêt pour l'expédition
+                                        </button>
+                                    )}
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    );
+};
+
+export default OrdersPanel;

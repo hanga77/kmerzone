@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Store } from '../types';
-import { ArrowLeftIcon, BuildingStorefrontIcon, PhotoIcon } from './Icons';
+import { ArrowLeftIcon, BuildingStorefrontIcon, PhotoIcon, MapPinIcon, DocumentTextIcon } from './Icons';
 
 // Leaflet is loaded from a script tag in index.html
 declare const L: any;
@@ -54,7 +54,7 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
         });
         
         // Invalidate map size after a short delay to ensure it renders correctly
-        setTimeout(() => mapRef.current.invalidateSize(), 100);
+        setTimeout(() => mapRef.current?.invalidateSize(), 100);
 
     }, []);
 

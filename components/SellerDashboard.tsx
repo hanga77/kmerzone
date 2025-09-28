@@ -1,13 +1,28 @@
-import React, { useState, useMemo, useRef, useEffect } from 'react';
-import QRCode from 'qrcode';
-import type { Product, Category, Store, FlashSale, Order, OrderStatus, PromoCode, DocumentStatus, SiteSettings, Story, FlashSaleProduct, Payout, CartItem, ProductCollection, Review, Notification, Ticket, ShippingPartner, ShippingSettings } from '../types';
+import React, { useState, useEffect } from 'react';
+import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { useChatContext } from '../contexts/ChatContext';
-import { PencilSquareIcon, TrashIcon, Cog8ToothIcon, TagIcon, ExclamationTriangleIcon, CheckCircleIcon, ClockIcon, BoltIcon, DocumentTextIcon, ShoppingBagIcon, TruckIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ChartPieIcon, StarIcon, ChatBubbleBottomCenterTextIcon, PlusIcon, XCircleIcon, PrinterIcon, SparklesIcon, BarChartIcon, PaperAirplaneIcon, BanknotesIcon, ChatBubbleLeftRightIcon, BookmarkSquareIcon, BellIcon, PaperclipIcon, UsersIcon, StarPlatinumIcon } from './Icons';
-import ShippingSettingsPanel from './ShippingSettingsPanel';
-import SellerSubscriptionPanel from './SellerSubscriptionPanel';
-
-declare const Html5Qrcode: any;
+import { 
+    ChartPieIcon, ShoppingBagIcon, TruckIcon, StarIcon, TagIcon, BoltIcon, 
+    BarChartIcon, BanknotesIcon, BuildingStorefrontIcon, DocumentTextIcon, 
+    ChatBubbleLeftRightIcon, ChatBubbleBottomCenterTextIcon, SparklesIcon, 
+    BookmarkSquareIcon, StarPlatinumIcon 
+} from './Icons';
+import OverviewPanel from './seller/OverviewPanel';
+import ProductsPanel from './seller/ProductsPanel';
+import OrdersPanel from './seller/OrdersPanel';
+import ReviewsPanel from './seller/ReviewsPanel';
+import PromotionsPanel from './seller/PromotionsPanel';
+import FlashSalesPanel from './seller/FlashSalesPanel';
+import PayoutsPanel from './seller/PayoutsPanel';
+import DocumentsPanel from './seller/DocumentsPanel';
+import SupportPanel from './seller/SupportPanel';
+import CollectionsPanel from './seller/CollectionsPanel';
+import ShippingPanel from './seller/ShippingPanel';
+import SubscriptionPanel from './seller/SubscriptionPanel';
+import UpgradePanel from './seller/UpgradePanel';
+import AnalyticsPanel from './seller/AnalyticsPanel';
+import ProfilePanel from './seller/ProfilePanel';
+import ChatPanel from './seller/ChatPanel';
 
 interface SellerDashboardProps {
   store?: Store;
@@ -28,28 +43,22 @@ interface SellerDashboardProps {
   onRemovePromotion: (productId: string) => void;
   onProposeForFlashSale: (flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => void;
   onUploadDocument: (storeId: string, documentName: string, fileUrl: string) => void;
-  onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+  onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
   onCreatePromoCode: (codeData: Omit<PromoCode, 'uses'>) => void;
   onDeletePromoCode: (code: string) => void;
-  isChatEnabled: boolean;
-  onPayRent: (storeId: string) => void;
   siteSettings: SiteSettings;
-  onAddStory: (storeId: string, imageUrl: string) => void;
-  onDeleteStory: (storeId: string, storyId: string) => void;
   payouts: Payout[];
-  onSellerDisputeMessage: (orderId: string, message: string) => void;
-  onBulkUpdateProducts: (updates: Array<Pick<Product, 'id' | 'price' | 'stock'>>) => void;
   onReplyToReview: (productId: string, reviewIdentifier: { author: string; date: string }, replyText: string) => void;
-  onCreateOrUpdateCollection: (storeId: string, collection: Omit<ProductCollection, 'id' | 'storeId'> | ProductCollection) => void;
+  onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => void;
   onDeleteCollection: (storeId: string, collectionId: string) => void;
   initialTab: string;
   sellerNotifications: Notification[];
-  onMarkNotificationAsRead: (notificationId: string) => void;
-  onNavigateFromNotification: (link: Notification['link']) => void;
-  onCreateTicket: (subject: string, message: string, relatedOrderId?: string, type?: 'support' | 'service_request', attachmentUrls?: string[]) => void;
+  onCreateTicket: (subject: string, message: string, orderId?: string) => void;
   allShippingPartners: ShippingPartner[];
-  onUpdateShippingSettings: (storeId: string, settings: ShippingSettings) => void;
+  onUpdateShippingSettings: (storeId: string, settings: any) => void;
   onRequestUpgrade: (storeId: string, level: 'premium' | 'super_premium') => void;
+  isChatEnabled: boolean;
+  onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number, isLocked?: boolean }> = ({ icon, label, isActive, onClick, count, isLocked }) => (
@@ -71,40 +80,20 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
     </button>
 );
 
-
-const UpgradeToPremiumPanel: React.FC<{ 
-    store: Store;
-    siteSettings: SiteSettings; 
-    onRequestUpgrade: (storeId: string, level: 'premium' | 'super_premium') => void;
-    featureName: string; 
-}> = ({ store, siteSettings, onRequestUpgrade, featureName }) => (
-    <div className="text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-        <StarIcon className="w-12 h-12 text-kmer-yellow mx-auto mb-4"/>
-        <h2 className="text-2xl font-bold mb-2">Débloquez la fonctionnalité "{featureName}"</h2>
-        <p className="text-gray-600 dark:text-gray-400 mb-6">Passez au statut Premium pour accéder à des outils avancés et booster votre visibilité.</p>
-        <button onClick={() => onRequestUpgrade(store.id, 'premium')} className="bg-kmer-yellow text-gray-900 font-bold py-3 px-6 rounded-lg hover:bg-yellow-300 transition-colors">
-            Je veux devenir Premium
-        </button>
-    </div>
-);
-
-
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, products, categories, flashSales, sellerOrders, promoCodes, allTickets, onBack, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onNavigateToProfile, onNavigateToAnalytics, onSetPromotion, onRemovePromotion, onProposeForFlashSale, onUploadDocument, onUpdateOrderStatus, onCreatePromoCode, onDeletePromoCode, isChatEnabled, onPayRent, siteSettings, onAddStory, onDeleteStory, payouts, onSellerDisputeMessage, onBulkUpdateProducts, onReplyToReview, onCreateOrUpdateCollection, onDeleteCollection, initialTab, sellerNotifications, onMarkNotificationAsRead, onNavigateFromNotification, onCreateTicket, allShippingPartners, onUpdateShippingSettings, onRequestUpgrade } = props;
+    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade } = props;
     const [activeTab, setActiveTab] = useState(initialTab || 'overview');
-    const { user } = useAuth();
     
     useEffect(() => {
         setActiveTab(initialTab);
     }, [initialTab]);
     
-    const unreadNotifications = sellerNotifications.filter(n => !n.isRead).length;
-
     if (!store) {
         return <div className="p-8 text-center">Chargement des informations de la boutique...</div>;
     }
     
     const isPremium = store.premiumStatus === 'premium' || store.premiumStatus === 'super_premium';
+    const unreadNotifications = sellerNotifications.filter(n => !n.isRead).length;
 
     const TABS = [
       { id: 'overview', label: 'Aperçu', icon: <ChartPieIcon className="w-5 h-5"/>, count: unreadNotifications, isLocked: false },
@@ -114,10 +103,9 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
       { id: 'reviews', label: 'Avis Clients', icon: <StarIcon className="w-5 h-5"/>, isLocked: false },
       { id: 'promotions', label: 'Promotions', icon: <TagIcon className="w-5 h-5"/>, isLocked: false },
       { id: 'flash-sales', label: 'Ventes Flash', icon: <BoltIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'analytics', label: 'Statistiques', icon: <BarChartIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'analytics', label: 'Statistiques', icon: <BarChartIcon className="w-5 h-5"/>, isLocked: !isPremium },
       { id: 'payouts', label: 'Paiements', icon: <BanknotesIcon className="w-5 h-5"/>, isLocked: false },
       { id: 'livraison', label: 'Livraison', icon: <TruckIcon className="w-5 h-5"/>, isLocked: !isPremium },
-      { id: 'services', label: 'Services', icon: <SparklesIcon className="w-5 h-5"/>, isLocked: !isPremium },
       { id: 'profile', label: 'Profil Boutique', icon: <BuildingStorefrontIcon className="w-5 h-5"/>, isLocked: false },
       { id: 'subscription', label: 'Abonnement', icon: <StarPlatinumIcon className="w-5 h-5" />, isLocked: false },
       { id: 'documents', label: 'Documents', icon: <DocumentTextIcon className="w-5 h-5"/>, isLocked: false },
@@ -128,35 +116,27 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     const renderContent = () => {
         const selectedTab = TABS.find(t => t.id === activeTab);
         if (selectedTab?.isLocked) {
-             return <UpgradeToPremiumPanel store={store} siteSettings={siteSettings} onRequestUpgrade={onRequestUpgrade} featureName={selectedTab.label} />;
+             return <UpgradePanel store={store} siteSettings={siteSettings} onRequestUpgrade={onRequestUpgrade} featureName={selectedTab.label} />;
         }
 
         switch(activeTab) {
-            case 'livraison':
-                return <ShippingSettingsPanel store={store} allShippingPartners={allShippingPartners} onUpdate={onUpdateShippingSettings} />;
-            case 'subscription':
-                return <SellerSubscriptionPanel store={store} siteSettings={siteSettings} onUpgrade={(level) => onRequestUpgrade(store.id, level)} />;
-            // Add other tab component renders here...
+            case 'overview': return <OverviewPanel {...props} store={store} setActiveTab={setActiveTab} />;
+            case 'products': return <ProductsPanel {...props} />;
+            case 'collections': return <CollectionsPanel {...props} store={store} />;
+            case 'orders': return <OrdersPanel {...props} />;
+            case 'reviews': return <ReviewsPanel {...props} />;
+            case 'promotions': return <PromotionsPanel {...props} />;
+            case 'flash-sales': return <FlashSalesPanel {...props} store={store} />;
+            case 'analytics': return <AnalyticsPanel sellerOrders={props.sellerOrders} sellerProducts={props.products} flashSales={props.flashSales} />;
+            case 'payouts': return <PayoutsPanel {...props} />;
+            case 'livraison': return <ShippingPanel store={store} allShippingPartners={props.allShippingPartners} onUpdate={props.onUpdateShippingSettings} />;
+            case 'profile': return <ProfilePanel store={store} onUpdateProfile={props.onUpdateStoreProfile} />;
+            case 'subscription': return <SubscriptionPanel store={store} siteSettings={siteSettings} onUpgrade={(level) => onRequestUpgrade(store.id, level)} />;
+            case 'documents': return <DocumentsPanel {...props} store={store} />;
+            case 'chat': return <ChatPanel />;
+            case 'support': return <SupportPanel {...props} />;
             default:
-                return (
-                    <div className="p-6">
-                        <h2 className="text-2xl font-bold mb-4">Aperçu</h2>
-                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                            <div className="p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm">
-                                <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Visites (jour)</h3>
-                                <p className="text-3xl font-bold text-gray-800 dark:text-white">{store.visits || 0}</p>
-                            </div>
-                         </div>
-
-                         {store.premiumStatus === 'standard' && (
-                            <div className="p-6 bg-green-50 dark:bg-green-900/50 border-l-4 border-green-500 rounded-r-lg">
-                                <h3 className="font-bold text-lg">Passez au niveau supérieur !</h3>
-                                <p className="text-sm text-gray-600 dark:text-gray-300 mt-2">Débloquez plus d'outils, augmentez votre visibilité et profitez d'un support prioritaire en passant au statut Premium.</p>
-                                <button onClick={() => setActiveTab('subscription')} className="mt-4 bg-kmer-green text-white font-semibold py-2 px-4 rounded-md">Voir les plans d'abonnement</button>
-                            </div>
-                         )}
-                    </div>
-                );
+                return <OverviewPanel {...props} store={store} setActiveTab={setActiveTab} />;
         }
     };
     
