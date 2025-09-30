@@ -238,12 +238,14 @@ Please provide a helpful response as the KMER ZONE assistant.
         }));
         
         const response = await ai.models.generateContentStream({
+            // FIX: Use 'gemini-2.5-flash' model as per guidelines.
             model: 'gemini-2.5-flash',
             contents: prompt,
         });
 
         let fullText = '';
         for await (const chunk of response) {
+            // FIX: Access the 'text' property directly instead of calling it as a function.
             const chunkText = chunk.text;
             if (chunkText) {
                 fullText += chunkText;

@@ -58,7 +58,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
   const hasVariants = product.variants && product.variants.length > 0;
   
   const store = useMemo(() => stores.find(s => s.name === product.vendor), [stores, product.vendor]);
-  const isPremiumVendor = store?.premiumStatus === 'premium' || store?.premiumStatus === 'super_premium';
   const isFollowingStore = user?.followedStores?.includes(store?.id || '');
 
 
@@ -183,7 +182,6 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
       <div className="p-4 flex-grow flex flex-col">
         <div className="flex justify-between items-center gap-2">
           <button onClick={handleVendorClick} className="text-sm text-gray-500 dark:text-gray-400 mb-1 hover:text-kmer-green hover:underline text-left truncate flex items-center gap-1.5">
-            {isPremiumVendor && <StarIcon className="w-4 h-4 text-kmer-yellow flex-shrink-0" title="Vendeur Premium" />}
             <span>{product.vendor}</span>
           </button>
           {location && (

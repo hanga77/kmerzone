@@ -454,8 +454,8 @@ export const useSiteData = () => {
         user: User, 
         allUsers: User[]
     ) => {
-        if (!user || user.role !== 'seller') {
-            console.error("Only users with role 'seller' can create a store.");
+        if (!user) {
+            console.error("A valid user must be provided to create a store.");
             return null;
         }
 

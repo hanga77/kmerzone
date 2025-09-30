@@ -194,13 +194,31 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
             return;
         }
         
+        let finalShippingAddress: Address;
+        if (deliveryMethod === 'home-delivery') {
+            if (!selectedAddress) {
+                alert("Veuillez sélectionner une adresse de livraison.");
+                return;
+            }
+            finalShippingAddress = selectedAddress;
+        } else {
+            const pickupPoint = allPickupPoints.find(p => p.id === selectedPickupPointId);
+            finalShippingAddress = {
+                id: `pickup-${pickupPoint?.id || 'unknown'}`,
+                fullName: user.name,
+                phone: user.phone || 'N/A',
+                address: pickupPoint ? `${pickupPoint.name}, ${pickupPoint.neighborhood}` : 'Point de retrait',
+                city: pickupPoint?.city || '',
+            };
+        }
+
         const orderData: NewOrderData = {
             userId: user.id,
             items: cart,
             subtotal,
             deliveryFee,
             total,
-            shippingAddress: selectedAddress!, // This needs to be improved for pickup
+            shippingAddress: finalShippingAddress,
             deliveryMethod,
             pickupPointId: deliveryMethod === 'pickup' ? selectedPickupPointId : undefined,
             appliedPromoCode: appliedPromoCode || undefined,

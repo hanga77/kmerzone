@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Product, Store, FlashSale } from '../types';
 import ProductCard from './ProductCard';
-import { ArrowLeftIcon, StarIcon, CheckCircleIcon, HeartIcon } from './Icons';
+import { ArrowLeftIcon, StarIcon, CheckCircleIcon, BookmarkSquareIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
 import { useAuth } from '../contexts/AuthContext';
@@ -36,18 +36,6 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
       {store?.bannerUrl && (
         <div className="mb-8 rounded-lg overflow-hidden shadow-lg h-48 bg-gray-200 dark:bg-gray-800">
             <img src={store.bannerUrl} alt={`${store.name} banner`} className="w-full h-full object-cover"/>
-        </div>
-      )}
-
-      {store?.premiumStatus === 'premium' && (
-        <div className="mb-8 p-4 bg-kmer-yellow/10 border-l-4 border-kmer-yellow text-yellow-800 dark:text-yellow-200 rounded-r-lg">
-          <div className="flex items-center gap-3">
-            <StarIcon className="w-8 h-8 text-kmer-yellow" />
-            <div>
-              <h3 className="font-bold text-lg">Boutique Premium</h3>
-              <p className="text-sm">Ce vendeur est reconnu pour sa fiabilité et la qualité de ses services.</p>
-            </div>
-          </div>
         </div>
       )}
 
@@ -111,7 +99,7 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
                           onClick={() => toggleFollowStore(store.id)}
                           className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold transition-colors w-full sm:w-auto ${isFollowing ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300' : 'bg-kmer-green text-white hover:bg-green-700'}`}
                       >
-                          <HeartIcon className="w-5 h-5" filled={isFollowing}/>
+                          <BookmarkSquareIcon className={`w-5 h-5 ${isFollowing ? 'text-kmer-green' : 'text-inherit'}`}/>
                           <span>{isFollowing ? 'Suivi' : 'Suivre'}</span>
                       </button>
                   )}

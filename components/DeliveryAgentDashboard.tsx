@@ -1,3 +1,5 @@
+
+
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -220,7 +222,8 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
             }
         }
          // Invalidate map size after a short delay to ensure it renders correctly
-        // FIX: Pass boolean argument to invalidateSize to fix error where one argument was expected.
+        // FIX: The error indicates `invalidateSize` was called with no arguments. It expects a boolean.
+        // FIX: The `invalidateSize` method on a Leaflet map instance expects a boolean argument.
         setTimeout(() => leafletMap.current?.invalidateSize(true), 100);
     }, [start, end]);
 

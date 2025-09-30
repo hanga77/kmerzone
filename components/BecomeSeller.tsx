@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import type { SiteSettings } from '../types';
-import { ArrowLeftIcon, BuildingStorefrontIcon, PhotoIcon, MapPinIcon, DocumentTextIcon } from './Icons';
+import { ArrowLeftIcon, PhotoIcon, MapPinIcon, DocumentTextIcon, BecomeSellerIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 declare const L: any;
@@ -19,11 +19,10 @@ interface BecomeSellerProps {
     latitude?: number,
     longitude?: number
   ) => void;
-  onRegistrationSuccess: () => void;
   siteSettings: SiteSettings;
 }
 
-const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onRegistrationSuccess, siteSettings }) => {
+const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, siteSettings }) => {
     const { t } = useLanguage();
     const [formData, setFormData] = useState({
         shopName: '',
@@ -44,28 +43,67 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
     const mapRef = useRef<any>(null);
     const markerRef = useRef<any>(null);
     
+    const updateMarkerAndForm = useCallback((latlng: { lat: number, lng: number }) => {
+        setFormData(prev => ({ ...prev, latitude: latlng.lat, longitude: latlng.lng }));
+        if (mapRef.current) {
+            if (!markerRef.current) {
+                markerRef.current = L.marker(latlng, { draggable: true }).addTo(mapRef.current);
+                markerRef.current.on('dragend', (e: any) => updateMarkerAndForm(e.target.getLatLng()));
+            } else {
+                markerRef.current.setLatLng(latlng);
+            }
+            mapRef.current.panTo(latlng);
+        }
+    }, []);
+
     useEffect(() => {
         if (mapContainerRef.current && !mapRef.current && typeof L !== 'undefined') {
             const initialLatLng: [number, number] = [4.0511, 9.7679]; // Douala
             mapRef.current = L.map(mapContainerRef.current).setView(initialLatLng, 13);
             L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
             
-            const updateMarker = (latlng: { lat: number, lng: number }) => {
-                setFormData(prev => ({ ...prev, latitude: latlng.lat, longitude: latlng.lng }));
-                if (!markerRef.current) {
-                    markerRef.current = L.marker(latlng, { draggable: true }).addTo(mapRef.current);
-                    markerRef.current.on('dragend', (e: any) => updateMarker(e.target.getLatLng()));
-                } else {
-                    markerRef.current.setLatLng(latlng);
-                }
-                mapRef.current.panTo(latlng);
-            };
-            
-            mapRef.current.on('click', (e: any) => updateMarker(e.latlng));
+            mapRef.current.on('click', (e: any) => updateMarkerAndForm(e.latlng));
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        const userLatLng = { lat: latitude, lng: longitude };
+                        mapRef.current.setView(userLatLng, 15);
+                        updateMarkerAndForm(userLatLng);
+                    },
+                    (error) => {
+                        console.warn(`Geolocation error: ${error.message}`);
+                        updateMarkerAndForm({ lat: initialLatLng[0], lng: initialLatLng[1] });
+                    },
+                    { timeout: 10000 }
+                );
+            } else {
+                updateMarkerAndForm({ lat: initialLatLng[0], lng: initialLatLng[1] });
+            }
 
             setTimeout(() => mapRef.current?.invalidateSize(), 400);
         }
-    }, []);
+    }, [updateMarkerAndForm]);
+    
+    const handleGeolocate = () => {
+        if (navigator.geolocation && mapRef.current) {
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    const { latitude, longitude } = position.coords;
+                    const userLatLng = { lat: latitude, lng: longitude };
+                    mapRef.current.setView(userLatLng, 15);
+                    updateMarkerAndForm(userLatLng);
+                },
+                (error) => {
+                    alert(`Erreur de géolocalisation: ${error.message}`);
+                },
+                { enableHighAccuracy: true }
+            );
+        } else {
+            alert("La géolocalisation n'est pas supportée par votre navigateur.");
+        }
+    };
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -115,7 +153,6 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
                 formData.latitude,
                 formData.longitude
             );
-            onRegistrationSuccess();
         }
     };
     
@@ -132,7 +169,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
                 </button>
                 <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
                      <div className="text-center mb-8">
-                        <BuildingStorefrontIcon className="w-12 h-12 mx-auto text-kmer-green" />
+                        <BecomeSellerIcon className="w-12 h-12 mx-auto text-kmer-green" />
                         <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">{t('becomeSeller.title')}</h1>
                         <p className="text-gray-600 dark:text-gray-400 mt-2">{t('becomeSeller.subtitle')}</p>
                     </div>
@@ -205,7 +242,13 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
                                     {errors.physicalAddress && <p className="text-red-500 text-xs mt-1">{errors.physicalAddress}</p>}
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.gpsLabel')}</label>
+                                    <div className="flex justify-between items-center mb-1">
+                                        <label className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.gpsLabel')}</label>
+                                        <button type="button" onClick={handleGeolocate} className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
+                                            <MapPinIcon className="w-4 h-4" />
+                                            {t('becomeSeller.findMyPosition')}
+                                        </button>
+                                    </div>
                                     <p className="text-xs text-gray-500 dark:text-gray-400">{t('becomeSeller.gpsDescription')}</p>
                                     <div ref={mapContainerRef} className="h-64 w-full mt-2 rounded-md z-0"></div>
                                 </div>

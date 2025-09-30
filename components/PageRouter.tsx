@@ -400,7 +400,6 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             return <BecomeSeller 
                 onBack={navigation.navigateToHome} 
                 onBecomeSeller={onBecomeSeller} 
-                onRegistrationSuccess={() => {}} // No longer needed as onBecomeSeller handles nav
                 siteSettings={siteData.siteSettings} 
             />;
         case 'become-premium':

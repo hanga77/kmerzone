@@ -347,10 +347,12 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
         Génère uniquement la description du produit.`;
         
         const response = await ai.models.generateContent({
+            // FIX: Use 'gemini-2.5-flash' model as per guidelines.
             model: 'gemini-2.5-flash',
             contents: prompt
         });
 
+        // FIX: Access the 'text' property directly instead of calling it as a function.
         const description = response.text;
         setProduct(prev => ({ ...prev, description }));
     } catch (error) {

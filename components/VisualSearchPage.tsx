@@ -53,10 +53,12 @@ const VisualSearchPage: React.FC<VisualSearchPageProps> = ({ onSearch }) => {
       const prompt = "Décris cet objet en 3 à 5 mots-clés pertinents pour une recherche e-commerce. Sépare les mots-clés par des virgules. Ne retourne que les mots-clés. Exemple : robe, pagne, élégante, soirée, coton";
       
       const response = await ai.models.generateContent({
+        // FIX: Use 'gemini-2.5-flash' model as per guidelines.
         model: 'gemini-2.5-flash',
         contents: { parts: [imagePart, { text: prompt }] },
       });
 
+      // FIX: Access the 'text' property directly instead of calling it as a function.
       const keywords = response.text.trim();
       if (keywords) {
         onSearch(keywords);
