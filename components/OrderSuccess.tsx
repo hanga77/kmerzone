@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import type { Order } from '../types';
 import { CheckIcon, QrCodeIcon, PrinterIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 declare const QRCode: any;
 
@@ -12,17 +13,28 @@ interface OrderSuccessProps {
 
 const OrderSuccess: React.FC<OrderSuccessProps> = ({ order, onNavigateHome, onNavigateToOrders }) => {
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
+  const { t } = useLanguage();
 
   useEffect(() => {
-    if (qrCodeRef.current && order.trackingNumber && typeof QRCode !== 'undefined') {
+    if (qrCodeRef.current && order?.trackingNumber && typeof QRCode !== 'undefined') {
       QRCode.toCanvas(qrCodeRef.current, order.trackingNumber, { width: 160 }, (error: any) => {
         if (error) console.error(error);
       });
     }
-  }, [order.trackingNumber]);
+  }, [order]);
   
   const handlePrint = () => {
     window.print();
+  }
+  
+  if (!order) {
+    return (
+        <div className="container mx-auto px-4 sm:px-6 py-12 text-center">
+            <h1 className="text-2xl font-bold">Chargement de votre confirmation de commande...</h1>
+            <p className="mt-4">Si cette page ne se charge pas, vous pouvez retrouver votre commande dans la section "Mes Commandes".</p>
+            <button onClick={onNavigateToOrders} className="mt-6 bg-kmer-green text-white font-bold py-3 px-6 rounded-full">Voir mes commandes</button>
+        </div>
+    );
   }
 
   return (

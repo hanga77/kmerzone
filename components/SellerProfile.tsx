@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Store } from '../types';
 import { ArrowLeftIcon, BuildingStorefrontIcon, PhotoIcon, MapPinIcon, DocumentTextIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Leaflet is loaded from a script tag in index.html
 declare const L: any;
@@ -12,6 +13,7 @@ interface SellerProfileProps {
 }
 
 const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdateProfile }) => {
+    const { t } = useLanguage();
     const [formData, setFormData] = useState<Partial<Store>>(store);
     const [logoPreview, setLogoPreview] = useState(store.logoUrl);
     const [bannerPreview, setBannerPreview] = useState(store.bannerUrl);
@@ -88,45 +90,45 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
         <div className="container mx-auto px-4 sm:px-6 py-12">
             <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
                 <ArrowLeftIcon className="w-5 h-5" />
-                Retour au tableau de bord
+                {t('sellerDashboard.analytics.backToDashboard')}
             </button>
 
             <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg max-w-4xl mx-auto space-y-8">
                 <div className="flex items-center gap-3">
                     <BuildingStorefrontIcon className="w-8 h-8 text-kmer-green" />
-                    <h1 className="text-3xl font-bold dark:text-white">Profil de la Boutique</h1>
+                    <h1 className="text-3xl font-bold dark:text-white">{t('sellerDashboard.tabs.profile')}</h1>
                 </div>
 
                 {/* Store Info */}
                 <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                    <legend className="px-2 font-semibold dark:text-gray-200">Informations de la boutique</legend>
+                    <legend className="px-2 font-semibold dark:text-gray-200">{t('becomeSeller.step1Title')}</legend>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                         <div>
-                            <label htmlFor="name" className="block text-sm font-medium dark:text-gray-300">Nom de la boutique</label>
+                            <label htmlFor="name" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.shopNameLabel')}</label>
                             <input type="text" id="name" name="name" value={formData.name || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                          <div>
-                            <label htmlFor="category" className="block text-sm font-medium dark:text-gray-300">Catégorie principale</label>
+                            <label htmlFor="category" className="block text-sm font-medium dark:text-gray-300">{t('header.categories')}</label>
                             <input type="text" id="category" name="category" value={formData.category || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium dark:text-gray-300">Logo</label>
+                            <label className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.shopLogoLabel')}</label>
                             <div className="mt-1 flex items-center gap-4">
                                 <img src={logoPreview} alt="Logo" className="h-20 w-20 object-contain rounded-md bg-gray-100 dark:bg-gray-700 p-1"/>
                                 <label htmlFor="logo-upload" className="cursor-pointer bg-white dark:bg-gray-700 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2">
-                                    <PhotoIcon className="w-5 h-5" /> Changer
+                                    <PhotoIcon className="w-5 h-5" /> {t('sellerDashboard.profile.change')}
                                     <input id="logo-upload" type="file" className="sr-only" onChange={(e) => handleImageChange(e, 'logoUrl')} accept="image/*" />
                                 </label>
                             </div>
                         </div>
                         <div>
-                            <label className="block text-sm font-medium dark:text-gray-300">Bannière</label>
+                            <label className="block text-sm font-medium dark:text-gray-300">{t('Bannière')}</label>
                              <div className="mt-1 flex items-center gap-4">
                                 <div className="h-20 w-40 rounded-md bg-gray-100 dark:bg-gray-700 p-1 flex items-center justify-center">
                                     {bannerPreview ? <img src={bannerPreview} alt="Banner" className="h-full w-full object-cover rounded-md"/> : <PhotoIcon className="w-10 h-10 text-gray-400"/> }
                                 </div>
                                 <label htmlFor="banner-upload" className="cursor-pointer bg-white dark:bg-gray-700 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2">
-                                     <PhotoIcon className="w-5 h-5" /> Changer
+                                     <PhotoIcon className="w-5 h-5" /> {t('sellerDashboard.profile.change')}
                                     <input id="banner-upload" type="file" className="sr-only" onChange={(e) => handleImageChange(e, 'bannerUrl')} accept="image/*" />
                                 </label>
                             </div>
@@ -136,18 +138,18 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
 
                 {/* Contact Info */}
                  <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                    <legend className="px-2 font-semibold dark:text-gray-200">Informations de contact (Gérant)</legend>
+                    <legend className="px-2 font-semibold dark:text-gray-200">{t('becomeSeller.step2Title')}</legend>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                          <div>
-                            <label htmlFor="sellerFirstName" className="block text-sm font-medium dark:text-gray-300">Prénom</label>
+                            <label htmlFor="sellerFirstName" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.firstNameLabel')}</label>
                             <input type="text" id="sellerFirstName" name="sellerFirstName" value={formData.sellerFirstName || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                         <div>
-                            <label htmlFor="sellerLastName" className="block text-sm font-medium dark:text-gray-300">Nom</label>
+                            <label htmlFor="sellerLastName" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.lastNameLabel')}</label>
                             <input type="text" id="sellerLastName" name="sellerLastName" value={formData.sellerLastName || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                         <div className="md:col-span-2">
-                            <label htmlFor="sellerPhone" className="block text-sm font-medium dark:text-gray-300">Téléphone</label>
+                            <label htmlFor="sellerPhone" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.phoneLabel')}</label>
                             <input type="tel" id="sellerPhone" name="sellerPhone" value={formData.sellerPhone || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                     </div>
@@ -155,14 +157,14 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
 
                 {/* Location Info */}
                  <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                    <legend className="px-2 font-semibold dark:text-gray-200">Localisation</legend>
+                    <legend className="px-2 font-semibold dark:text-gray-200">{t('becomeSeller.step3Title')}</legend>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                         <div>
-                            <label htmlFor="physicalAddress" className="block text-sm font-medium dark:text-gray-300">Adresse physique complète</label>
+                            <label htmlFor="physicalAddress" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.addressLabel')}</label>
                             <textarea id="physicalAddress" name="physicalAddress" value={formData.physicalAddress || ''} onChange={handleChange} rows={2} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                         <div>
-                             <label htmlFor="location" className="block text-sm font-medium dark:text-gray-300">Ville</label>
+                             <label htmlFor="location" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.cityLabel')}</label>
                             <select id="location" name="location" value={formData.location || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
                                 <option>Douala</option>
                                 <option>Yaoundé</option>
@@ -172,12 +174,12 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
                             </select>
                         </div>
                         <div className="md:col-span-2">
-                            <label htmlFor="neighborhood" className="block text-sm font-medium dark:text-gray-300">Quartier</label>
+                            <label htmlFor="neighborhood" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.neighborhoodLabel')}</label>
                             <input type="text" id="neighborhood" name="neighborhood" value={formData.neighborhood || ''} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                         </div>
                          <div className="md:col-span-2">
-                            <label className="block text-sm font-medium dark:text-gray-300">Coordonnées GPS</label>
-                            <p className="text-xs text-gray-500 dark:text-gray-400">Cliquez sur la carte ou faites glisser le marqueur pour définir votre emplacement exact.</p>
+                            <label className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.gpsLabel')}</label>
+                            <p className="text-xs text-gray-500 dark:text-gray-400">{t('becomeSeller.gpsDescription')}</p>
                             <div ref={mapContainerRef} className="h-64 w-full mt-2 rounded-md z-0" aria-label="Carte pour sélectionner l'emplacement"></div>
                             <div className="flex gap-4 mt-2">
                                 <input type="number" readOnly value={formData.latitude || ''} placeholder="Latitude" className="w-full p-2 border rounded-md bg-gray-100 dark:bg-gray-700 dark:border-gray-600" />
@@ -188,8 +190,8 @@ const SellerProfile: React.FC<SellerProfileProps> = ({ store, onBack, onUpdatePr
                 </fieldset>
                 
                 <div className="flex justify-end gap-4 pt-4 border-t dark:border-gray-700">
-                    <button type="button" onClick={onBack} className="bg-gray-200 dark:bg-gray-600 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">Annuler</button>
-                    <button type="submit" className="bg-kmer-green text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">Sauvegarder</button>
+                    <button type="button" onClick={onBack} className="bg-gray-200 dark:bg-gray-600 font-bold py-2 px-6 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-500">{t('common.cancel')}</button>
+                    <button type="submit" className="bg-kmer-green text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700">{t('common.save')}</button>
                 </div>
             </form>
         </div>

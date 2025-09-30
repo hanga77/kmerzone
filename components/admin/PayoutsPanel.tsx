@@ -1,5 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Order, Store, Payout, SiteSettings } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface PayoutsPanelProps {
     allOrders: Order[];
@@ -10,7 +11,7 @@ interface PayoutsPanelProps {
 }
 
 export const PayoutsPanel: React.FC<PayoutsPanelProps> = ({ allOrders, allStores, payouts, onPayoutSeller, siteSettings }) => {
-    
+    const { t } = useLanguage();
     const getCommissionRate = (store: Store) => {
         switch (store.premiumStatus) {
             case 'premium':
@@ -55,21 +56,21 @@ export const PayoutsPanel: React.FC<PayoutsPanelProps> = ({ allOrders, allStores
 
     return (
         <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4">Paiements des Vendeurs</h2>
+            <h2 className="text-xl font-bold mb-4">{t('superadmin.payouts.title')}</h2>
             <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
-                <p className="font-semibold">Taux de commission actuel : {siteSettings.commissionRate}% (Standard)</p>
-                <p className="text-sm">Le solde dû est calculé sur les commandes livrées, moins la commission et les paiements déjà effectués.</p>
+                <p className="font-semibold">{t('superadmin.payouts.commissionInfo', siteSettings.commissionRate)}</p>
+                <p className="text-sm">{t('superadmin.payouts.balanceInfo')}</p>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-100 dark:bg-gray-700">
                         <tr>
-                            <th className="p-2 text-left">Boutique</th>
-                            <th className="p-2 text-right">Revenu Total</th>
-                            <th className="p-2 text-right">Commission Due</th>
-                            <th className="p-2 text-right">Déjà Payé</th>
-                            <th className="p-2 text-right">Solde Dû</th>
-                            <th className="p-2 text-center">Action</th>
+                            <th className="p-2 text-left">{t('superadmin.payouts.table.store')}</th>
+                            <th className="p-2 text-right">{t('superadmin.payouts.table.totalRevenue')}</th>
+                            <th className="p-2 text-right">{t('superadmin.payouts.table.commissionDue')}</th>
+                            <th className="p-2 text-right">{t('superadmin.payouts.table.paidAmount')}</th>
+                            <th className="p-2 text-right">{t('superadmin.payouts.table.balanceDue')}</th>
+                            <th className="p-2 text-center">{t('common.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -82,14 +83,14 @@ export const PayoutsPanel: React.FC<PayoutsPanelProps> = ({ allOrders, allStores
                                 <td className="p-2 text-right font-bold">{data.balanceDue.toLocaleString('fr-CM')} F</td>
                                 <td className="p-2 text-center">
                                     <button onClick={() => onPayoutSeller(data.storeId, data.balanceDue)} className="bg-green-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-green-600">
-                                        Marquer comme payé
+                                        {t('superadmin.payouts.markAsPaid')}
                                     </button>
                                 </td>
                             </tr>
                         ))}
                     </tbody>
                 </table>
-                 {payoutData.length === 0 && <p className="text-center text-gray-500 py-8">Aucun paiement en attente.</p>}
+                 {payoutData.length === 0 && <p className="text-center text-gray-500 py-8">{t('superadmin.payouts.noPending')}</p>}
             </div>
         </div>
     );

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import type { SiteSettings, SiteContent, PaymentMethod, EmailTemplate } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface SettingsPanelProps {
     siteSettings: SiteSettings;
@@ -25,7 +26,7 @@ const ImageUrlOrUpload: React.FC<{
     preview: string;
     onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }> = ({ label, name, value, preview, onChange }) => {
-    
+    const { t } = useLanguage();
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const reader = new FileReader();
@@ -51,7 +52,7 @@ const ImageUrlOrUpload: React.FC<{
                     className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
                 />
                  <label htmlFor={`${name}-upload`} className="cursor-pointer bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-md text-sm font-medium">
-                    Choisir
+                    {t('superadmin.settings.identity.upload')}
                     <input id={`${name}-upload`} type="file" className="sr-only" onChange={handleFileChange} accept="image/*" />
                 </label>
             </div>
@@ -61,6 +62,7 @@ const ImageUrlOrUpload: React.FC<{
 }
 
 export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUpdateSiteSettings, siteContent, onUpdateSiteContent }) => {
+    const { t } = useLanguage();
     const [settings, setSettings] = useState(siteSettings);
     const [content, setContent] = useState(siteContent);
 
@@ -135,44 +137,44 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
     return (
         <div className="p-4 sm:p-6 space-y-8">
             <div className="flex justify-between items-center">
-                <h2 className="text-xl font-bold">Paramètres du Site</h2>
-                <button onClick={handleSave} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">Sauvegarder les Paramètres</button>
+                <h2 className="text-xl font-bold">{t('superadmin.settings.title')}</h2>
+                <button onClick={handleSave} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">{t('superadmin.settings.save')}</button>
             </div>
             
             <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Identité Visuelle</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.identity')}</summary>
                 <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <ImageUrlOrUpload label="Logo du site" name="logoUrl" value={settings.logoUrl} preview={settings.logoUrl} onChange={handleSettingsChange}/>
-                    <ImageUrlOrUpload label="Bannière de la page d'accueil" name="bannerUrl" value={settings.bannerUrl || ''} preview={settings.bannerUrl || ''} onChange={handleSettingsChange} />
+                    <ImageUrlOrUpload label={t('superadmin.settings.identity.logo')} name="logoUrl" value={settings.logoUrl} preview={settings.logoUrl} onChange={handleSettingsChange}/>
+                    <ImageUrlOrUpload label={t('superadmin.settings.identity.banner')} name="bannerUrl" value={settings.bannerUrl || ''} preview={settings.bannerUrl || ''} onChange={handleSettingsChange} />
                 </div>
             </details>
             
              <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Fonctionnalités</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.features')}</summary>
                 <div className="mt-4 space-y-4">
                      <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
                         <input type="checkbox" name="isChatEnabled" checked={settings.isChatEnabled} onChange={handleSettingsChange} className="h-5 w-5 rounded"/>
-                        <span>Activer le chat client-vendeur</span>
+                        <span>{t('superadmin.settings.features.chat')}</span>
                     </label>
                     <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
                         <input type="checkbox" name="isComparisonEnabled" checked={settings.isComparisonEnabled} onChange={handleSettingsChange} className="h-5 w-5 rounded"/>
-                        <span>Activer la comparaison de produits</span>
+                        <span>{t('superadmin.settings.features.comparison')}</span>
                     </label>
                 </div>
             </details>
 
             <details className="p-4 border dark:border-gray-700 rounded-md" open>
-                <summary className="font-semibold text-lg cursor-pointer">Livraison</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.delivery')}</summary>
                 <div className="mt-4 space-y-4">
-                    <Field label="Frais de base intra-urbain (FCFA)"><input type="number" name="deliverySettings.intraUrbanBaseFee" value={settings.deliverySettings.intraUrbanBaseFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="Frais de base inter-urbain (FCFA)"><input type="number" name="deliverySettings.interUrbanBaseFee" value={settings.deliverySettings.interUrbanBaseFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="Coût additionnel par Kg (FCFA)"><input type="number" name="deliverySettings.costPerKg" value={settings.deliverySettings.costPerKg} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="Réduction livraison pour Premium (%)"><input type="number" name="deliverySettings.premiumDeliveryDiscountPercentage" value={settings.deliverySettings.premiumDeliveryDiscountPercentage || 0} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.delivery.intraUrban')}><input type="number" name="deliverySettings.intraUrbanBaseFee" value={settings.deliverySettings.intraUrbanBaseFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.delivery.interUrban')}><input type="number" name="deliverySettings.interUrbanBaseFee" value={settings.deliverySettings.interUrbanBaseFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.delivery.perKg')}><input type="number" name="deliverySettings.costPerKg" value={settings.deliverySettings.costPerKg} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.delivery.premiumDiscount')}><input type="number" name="deliverySettings.premiumDeliveryDiscountPercentage" value={settings.deliverySettings.premiumDeliveryDiscountPercentage || 0} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                 </div>
             </details>
             
              <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Documents Vendeur Requis</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.sellerDocs')}</summary>
                 <div className="mt-4 space-y-2">
                     {Object.entries(settings.requiredSellerDocuments).map(([name, isRequired]) => (
                         <label key={name} className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
@@ -184,51 +186,58 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
             </details>
 
              <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Plans Vendeurs</summary>
-                <div className="mt-4 grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.sellerPlans')}</summary>
+                <div className="mt-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
                     <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
-                        <h4 className="font-bold text-md">Plan Premium</h4>
-                        <Field label="Prix (FCFA)"><input type="number" name="premiumPlan.price" value={settings.premiumPlan.price} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Durée (jours)"><input type="number" name="premiumPlan.durationDays" value={settings.premiumPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Limite de produits"><input type="number" name="premiumPlan.productLimit" value={settings.premiumPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Commission (%)"><input type="number" name="premiumPlan.commissionRate" value={settings.premiumPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <label className="flex items-center gap-2"><input type="checkbox" name="premiumPlan.photoServiceIncluded" checked={settings.premiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> Service photo inclus</label>
+                        <h4 className="font-bold text-md">{t('superadmin.settings.plans.standard')}</h4>
+                        <Field label={t('superadmin.settings.plans.price')}><input type="number" name="standardPlan.price" value={settings.standardPlan.price} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.duration')}><input type="number" name="standardPlan.durationDays" value={settings.standardPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.limit')}><input type="number" name="standardPlan.productLimit" value={settings.standardPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.commission')}><input type="number" name="standardPlan.commissionRate" value={settings.standardPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    </div>
+                    <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
+                        <h4 className="font-bold text-md">{t('superadmin.settings.plans.premium')}</h4>
+                        <Field label={t('superadmin.settings.plans.price')}><input type="number" name="premiumPlan.price" value={settings.premiumPlan.price} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.duration')}><input type="number" name="premiumPlan.durationDays" value={settings.premiumPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.limit')}><input type="number" name="premiumPlan.productLimit" value={settings.premiumPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.commission')}><input type="number" name="premiumPlan.commissionRate" value={settings.premiumPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <label className="flex items-center gap-2"><input type="checkbox" name="premiumPlan.photoServiceIncluded" checked={settings.premiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.photoService')}</label>
                     </div>
                      <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
-                        <h4 className="font-bold text-md">Plan Super Premium</h4>
-                        <Field label="Prix (FCFA)"><input type="number" name="superPremiumPlan.price" value={settings.superPremiumPlan.price} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Durée (jours)"><input type="number" name="superPremiumPlan.durationDays" value={settings.superPremiumPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Limite de produits"><input type="number" name="superPremiumPlan.productLimit" value={settings.superPremiumPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Commission (%)"><input type="number" name="superPremiumPlan.commissionRate" value={settings.superPremiumPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <label className="flex items-center gap-2"><input type="checkbox" name="superPremiumPlan.photoServiceIncluded" checked={settings.superPremiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> Service photo inclus</label>
-                        <label className="flex items-center gap-2"><input type="checkbox" name="superPremiumPlan.featuredOnHomepage" checked={settings.superPremiumPlan.featuredOnHomepage} onChange={handleSettingsChange} /> Mise en avant sur l'accueil</label>
+                        <h4 className="font-bold text-md">{t('superadmin.settings.plans.superPremium')}</h4>
+                        <Field label={t('superadmin.settings.plans.price')}><input type="number" name="superPremiumPlan.price" value={settings.superPremiumPlan.price} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.duration')}><input type="number" name="superPremiumPlan.durationDays" value={settings.superPremiumPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.limit')}><input type="number" name="superPremiumPlan.productLimit" value={settings.superPremiumPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.plans.commission')}><input type="number" name="superPremiumPlan.commissionRate" value={settings.superPremiumPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <label className="flex items-center gap-2"><input type="checkbox" name="superPremiumPlan.photoServiceIncluded" checked={settings.superPremiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.photoService')}</label>
+                        <label className="flex items-center gap-2"><input type="checkbox" name="superPremiumPlan.featuredOnHomepage" checked={settings.superPremiumPlan.featuredOnHomepage} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.homepageFeature')}</label>
                     </div>
                 </div>
             </details>
             
             <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Programme de Fidélité Client</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.loyalty')}</summary>
                 <div className="mt-4 space-y-4">
                     <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
                         <input type="checkbox" name="customerLoyaltyProgram.isEnabled" checked={settings.customerLoyaltyProgram.isEnabled} onChange={handleSettingsChange} className="h-5 w-5 rounded"/>
-                        <span>Activer le programme de fidélité pour les clients</span>
+                        <span>{t('superadmin.settings.loyalty.enable')}</span>
                     </label>
                     
                     <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
-                        <h4 className="font-bold text-md">Plan Premium Client</h4>
-                        <Field label="Nombre de commandes requises"><input type="number" name="customerLoyaltyProgram.premium.thresholds.orders" value={settings.customerLoyaltyProgram.premium.thresholds.orders} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Montant total dépensé requis (FCFA)"><input type="number" name="customerLoyaltyProgram.premium.thresholds.spending" value={settings.customerLoyaltyProgram.premium.thresholds.spending} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Montant de la caution (FCFA)"><input type="number" name="customerLoyaltyProgram.premium.cautionAmount" value={settings.customerLoyaltyProgram.premium.cautionAmount} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Avantages (un par ligne)">
+                        <h4 className="font-bold text-md">{t('superadmin.settings.loyalty.premium')}</h4>
+                        <Field label={t('superadmin.settings.loyalty.ordersRequired')}><input type="number" name="customerLoyaltyProgram.premium.thresholds.orders" value={settings.customerLoyaltyProgram.premium.thresholds.orders} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.loyalty.spendingRequired')}><input type="number" name="customerLoyaltyProgram.premium.thresholds.spending" value={settings.customerLoyaltyProgram.premium.thresholds.spending} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.loyalty.caution')}><input type="number" name="customerLoyaltyProgram.premium.cautionAmount" value={settings.customerLoyaltyProgram.premium.cautionAmount} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.loyalty.benefits')}>
                             <textarea value={settings.customerLoyaltyProgram.premium.benefits.join('\n')} onChange={e => handleBenefitsChange('premium', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
                         </Field>
                     </div>
                     
                     <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
-                        <h4 className="font-bold text-md">Plan Premium+ Client</h4>
-                        <label className="flex items-center gap-2"><input type="checkbox" name="customerLoyaltyProgram.premiumPlus.isEnabled" checked={settings.customerLoyaltyProgram.premiumPlus.isEnabled} onChange={handleSettingsChange} /> Activer le plan Premium+</label>
-                        <Field label="Frais annuels (FCFA)"><input type="number" name="customerLoyaltyProgram.premiumPlus.annualFee" value={settings.customerLoyaltyProgram.premiumPlus.annualFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <Field label="Avantages (un par ligne)">
+                        <h4 className="font-bold text-md">{t('superadmin.settings.loyalty.premiumPlus')}</h4>
+                        <label className="flex items-center gap-2"><input type="checkbox" name="customerLoyaltyProgram.premiumPlus.isEnabled" checked={settings.customerLoyaltyProgram.premiumPlus.isEnabled} onChange={handleSettingsChange} /> {t('superadmin.settings.loyalty.enablePremiumPlus')}</label>
+                        <Field label={t('superadmin.settings.loyalty.annualFee')}><input type="number" name="customerLoyaltyProgram.premiumPlus.annualFee" value={settings.customerLoyaltyProgram.premiumPlus.annualFee} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <Field label={t('superadmin.settings.loyalty.benefits')}>
                             <textarea value={settings.customerLoyaltyProgram.premiumPlus.benefits.join('\n')} onChange={e => handleBenefitsChange('premiumPlus', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
                         </Field>
                     </div>
@@ -236,70 +245,70 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
             </details>
 
             <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">SEO & Métadonnées</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.seo')}</summary>
                 <div className="mt-4 space-y-4">
-                    <Field label="Titre Méta par défaut"><input type="text" name="seo.metaTitle" value={settings.seo.metaTitle} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="Description Méta par défaut"><textarea name="seo.metaDescription" value={settings.seo.metaDescription} onChange={handleSettingsChange} rows={3} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                    <Field label="URL de l'image de partage (OpenGraph)"><input type="url" name="seo.ogImageUrl" value={settings.seo.ogImageUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.seo.defaultTitle')}><input type="text" name="seo.metaTitle" value={settings.seo.metaTitle} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.seo.defaultDesc')}><textarea name="seo.metaDescription" value={settings.seo.metaDescription} onChange={handleSettingsChange} rows={3} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.seo.ogImage')}><input type="url" name="seo.ogImageUrl" value={settings.seo.ogImageUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                 </div>
             </details>
 
             <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Gestion du contenu des pages</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.content')}</summary>
                 <div className="mt-4 space-y-4">
                     {content.map(page => (
                         <div key={page.slug} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
-                            <Field label={`Titre de la page : ${page.title}`}><input type="text" value={page.title} onChange={e => handleContentChange(page.slug, 'title', e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                            <Field label="Contenu"><textarea value={page.content} onChange={e => handleContentChange(page.slug, 'content', e.target.value)} rows={4} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                            <Field label={t('superadmin.settings.content.pageTitle', page.title)}><input type="text" value={page.title} onChange={e => handleContentChange(page.slug, 'title', e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                            <Field label={t('superadmin.settings.content.content')}><textarea value={page.content} onChange={e => handleContentChange(page.slug, 'content', e.target.value)} rows={4} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                         </div>
                     ))}
                 </div>
             </details>
             
             <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Modèles d'e-mails</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.emails')}</summary>
                 <div className="mt-4 space-y-4">
                     {(settings.emailTemplates || []).map(template => (
                         <div key={template.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
                              <h4 className="font-bold text-md mb-2">{template.name}</h4>
-                            <Field label="Sujet de l'e-mail"><input type="text" value={template.subject} onChange={e => handleEmailTemplateChange(template.id, 'subject', e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
-                            <Field label="Corps de l'e-mail" description={`Variables disponibles : ${template.variables}`}><textarea value={template.body} onChange={e => handleEmailTemplateChange(template.id, 'body', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                            <Field label={t('superadmin.settings.emails.subject')}><input type="text" value={template.subject} onChange={e => handleEmailTemplateChange(template.id, 'subject', e.target.value)} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                            <Field label={t('superadmin.settings.emails.body')} description={t('superadmin.settings.emails.variables', template.variables)}><textarea value={template.body} onChange={e => handleEmailTemplateChange(template.id, 'body', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                         </div>
                     ))}
                 </div>
             </details>
 
              <details className="p-4 border dark:border-gray-700 rounded-md">
-                 <summary className="font-semibold text-lg cursor-pointer">Mode Maintenance</summary>
+                 <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.maintenance')}</summary>
                  <div className="mt-4 flex flex-col gap-4">
                     <label className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md">
                         <input type="checkbox" name="maintenanceMode.isEnabled" checked={settings.maintenanceMode.isEnabled} onChange={handleSettingsChange} className="h-5 w-5 rounded"/>
-                        <span>Activer le mode maintenance</span>
+                        <span>{t('superadmin.settings.maintenance.enable')}</span>
                     </label>
-                    <Field label="Message de maintenance">
+                    <Field label={t('superadmin.settings.maintenance.message')}>
                          <textarea name="maintenanceMode.message" value={settings.maintenanceMode.message} onChange={handleSettingsChange} rows={2} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                     </Field>
                  </div>
             </details>
             
             <details className="p-4 border dark:border-gray-700 rounded-md">
-                <summary className="font-semibold text-lg cursor-pointer">Pied de page (Footer)</summary>
+                <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.footer')}</summary>
                 <div className="mt-4 space-y-4">
-                    <Field label="Nom de l'entreprise (Copyright)"><input type="text" name="companyName" value={settings.companyName} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
+                    <Field label={t('superadmin.settings.footer.companyName')}><input type="text" name="companyName" value={settings.companyName} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     
                     <div className='p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-2'>
                         <h4 className='font-semibold'>Facebook</h4>
-                        <ImageUrlOrUpload label="URL de l'icône" name="socialLinks.facebook.iconUrl" value={settings.socialLinks.facebook.iconUrl} preview={settings.socialLinks.facebook.iconUrl} onChange={handleSettingsChange} />
+                        <ImageUrlOrUpload label={t('superadmin.settings.footer.iconUrl')} name="socialLinks.facebook.iconUrl" value={settings.socialLinks.facebook.iconUrl} preview={settings.socialLinks.facebook.iconUrl} onChange={handleSettingsChange} />
                         <Field label="URL du lien"><input type="url" name="socialLinks.facebook.linkUrl" value={settings.socialLinks.facebook.linkUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     </div>
                      <div className='p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-2'>
                         <h4 className='font-semibold'>Twitter</h4>
-                        <ImageUrlOrUpload label="URL de l'icône" name="socialLinks.twitter.iconUrl" value={settings.socialLinks.twitter.iconUrl} preview={settings.socialLinks.twitter.iconUrl} onChange={handleSettingsChange} />
+                        <ImageUrlOrUpload label={t('superadmin.settings.footer.iconUrl')} name="socialLinks.twitter.iconUrl" value={settings.socialLinks.twitter.iconUrl} preview={settings.socialLinks.twitter.iconUrl} onChange={handleSettingsChange} />
                         <Field label="URL du lien"><input type="url" name="socialLinks.twitter.linkUrl" value={settings.socialLinks.twitter.linkUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     </div>
                      <div className='p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md space-y-2'>
                         <h4 className='font-semibold'>Instagram</h4>
-                        <ImageUrlOrUpload label="URL de l'icône" name="socialLinks.instagram.iconUrl" value={settings.socialLinks.instagram.iconUrl} preview={settings.socialLinks.instagram.iconUrl} onChange={handleSettingsChange} />
+                        <ImageUrlOrUpload label={t('superadmin.settings.footer.iconUrl')} name="socialLinks.instagram.iconUrl" value={settings.socialLinks.instagram.iconUrl} preview={settings.socialLinks.instagram.iconUrl} onChange={handleSettingsChange} />
                         <Field label="URL du lien"><input type="url" name="socialLinks.instagram.linkUrl" value={settings.socialLinks.instagram.linkUrl} onChange={handleSettingsChange} className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" /></Field>
                     </div>
                 </div>

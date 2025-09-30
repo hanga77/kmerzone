@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { User, UserRole, PickupPoint, Zone, SiteSettings } from '../../types';
 import { PencilSquareIcon, PlusIcon, ExclamationTriangleIcon } from '../Icons';
 import BulkEmailModal from './BulkEmailModal';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface UsersPanelProps {
     allUsers: User[];
@@ -15,6 +16,7 @@ interface UsersPanelProps {
 }
 
 export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, onWarnUser, allPickupPoints, allZones, onSendBulkEmail, siteSettings }) => {
+    const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
     const [editingUser, setEditingUser] = useState<User | null>(null);
     const [isCreating, setIsCreating] = useState(false);
@@ -50,24 +52,24 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
         return (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
                 <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full space-y-4">
-                    <h3 className="text-lg font-bold">{user ? "Modifier l'utilisateur" : "Créer un utilisateur"}</h3>
-                    <input name="name" value={data.name} onChange={handleChange} placeholder="Nom complet" className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
+                    <h3 className="text-lg font-bold">{user ? t('superadmin.users.form.editTitle') : t('superadmin.users.form.createTitle')}</h3>
+                    <input name="name" value={data.name} onChange={handleChange} placeholder={t('superadmin.users.form.name')} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
                     <input type="email" name="email" value={data.email} onChange={handleChange} placeholder="Email" className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required disabled={!!user} />
                     <select name="role" value={data.role} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                        <option value="customer">Client</option>
-                        <option value="seller">Vendeur</option>
-                        <option value="delivery_agent">Livreur</option>
-                        <option value="depot_agent">Agent de dépôt</option>
-                        <option value="depot_manager">Chef de Dépôt</option>
-                        <option value="superadmin">Super Admin</option>
+                        <option value="customer">{t('superadmin.users.form.role_customer')}</option>
+                        <option value="seller">{t('superadmin.users.form.role_seller')}</option>
+                        <option value="delivery_agent">{t('superadmin.users.form.role_delivery_agent')}</option>
+                        <option value="depot_agent">{t('superadmin.users.form.role_depot_agent')}</option>
+                        <option value="depot_manager">{t('superadmin.users.form.role_depot_manager')}</option>
+                        <option value="superadmin">{t('superadmin.users.form.role_superadmin')}</option>
                     </select>
                     {isLogisticsRole && (
                         <>
                             {(data.role === 'depot_agent' || data.role === 'depot_manager') && (
                                 <div>
-                                    <label htmlFor="depotId" className="block text-sm font-medium dark:text-gray-300">Point de Dépôt Assigné</label>
+                                    <label htmlFor="depotId" className="block text-sm font-medium dark:text-gray-300">{t('superadmin.users.form.assignedDepot')}</label>
                                     <select name="depotId" id="depotId" value={data.depotId} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 mt-1">
-                                        <option value="">-- Non assigné --</option>
+                                        <option value="">{t('superadmin.users.form.noDepot')}</option>
                                         {allPickupPoints.map(point => (
                                             <option key={point.id} value={point.id}>{point.name} - {point.city}</option>
                                         ))}
@@ -75,9 +77,9 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                                 </div>
                             )}
                             <div>
-                                <label htmlFor="zoneId" className="block text-sm font-medium dark:text-gray-300">Zone de livraison</label>
+                                <label htmlFor="zoneId" className="block text-sm font-medium dark:text-gray-300">{t('superadmin.users.form.deliveryZone')}</label>
                                 <select name="zoneId" id="zoneId" value={data.zoneId} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600 mt-1">
-                                    <option value="">-- Aucune zone --</option>
+                                    <option value="">{t('superadmin.users.form.noZone')}</option>
                                     {allZones.map(zone => (
                                         <option key={zone.id} value={zone.id}>{zone.name} - {zone.city}</option>
                                     ))}
@@ -86,8 +88,8 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                         </>
                     )}
                     <div className="flex justify-end gap-2">
-                        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg">Annuler</button>
-                        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-lg">Sauvegarder</button>
+                        <button type="button" onClick={onCancel} className="px-4 py-2 bg-gray-200 dark:bg-gray-600 rounded-lg">{t('common.cancel')}</button>
+                        <button type="submit" className="px-4 py-2 bg-blue-500 text-white rounded-lg">{t('common.save')}</button>
                     </div>
                 </form>
             </div>
@@ -129,14 +131,14 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                     emailTemplates={siteSettings.emailTemplates || []}
                 />
             )}
-            <h2 className="text-xl font-bold mb-4">Gestion des Utilisateurs ({allUsers.length})</h2>
+            <h2 className="text-xl font-bold mb-4">{t('superadmin.users.title', allUsers.length)}</h2>
             <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-                <input type="text" placeholder="Rechercher par nom ou email..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="p-2 border rounded-md w-full sm:w-1/2 dark:bg-gray-700 dark:border-gray-600"/>
+                <input type="text" placeholder={t('superadmin.users.searchPlaceholder')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="p-2 border rounded-md w-full sm:w-1/2 dark:bg-gray-700 dark:border-gray-600"/>
                 <div className="flex gap-2">
                     <button onClick={() => setIsEmailModalOpen(true)} disabled={selectedUserIds.length === 0} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2 disabled:bg-gray-400">
-                        Envoyer un e-mail ({selectedUserIds.length})
+                        {t('superadmin.users.sendEmail', selectedUserIds.length)}
                     </button>
-                    <button onClick={() => setIsCreating(true)} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><PlusIcon className="w-5 h-5"/> Créer</button>
+                    <button onClick={() => setIsCreating(true)} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><PlusIcon className="w-5 h-5"/> {t('superadmin.users.create')}</button>
                 </div>
             </div>
             {(editingUser || isCreating) && <UserForm user={editingUser} onSave={handleSaveUser} onCancel={() => {setEditingUser(null); setIsCreating(false);}}/>}
@@ -144,7 +146,7 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                 <table className="w-full text-sm">
                     <thead className="bg-gray-100 dark:bg-gray-700"><tr>
                         <th className="p-2 w-10"><input type="checkbox" onChange={handleSelectAll} checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0} /></th>
-                        <th className="p-2 text-left">Nom</th><th className="p-2 text-left">Email</th><th className="p-2 text-left">Rôle</th><th className="p-2 text-center">Action</th>
+                        <th className="p-2 text-left">{t('superadmin.users.table.name')}</th><th className="p-2 text-left">{t('superadmin.users.table.email')}</th><th className="p-2 text-left">{t('superadmin.users.table.role')}</th><th className="p-2 text-center">{t('superadmin.users.table.action')}</th>
                     </tr></thead>
                     <tbody>
                         {filteredUsers.map(user => (
@@ -153,8 +155,8 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                                 <td className="p-2">{user.name}</td><td className="p-2">{user.email}</td><td className="p-2 capitalize">{user.role.replace('_', ' ')}</td>
                                 <td className="p-2 text-center">
                                     <div className="flex justify-center gap-2">
-                                        <button onClick={() => setEditingUser(user)} className="text-blue-500" title="Modifier"><PencilSquareIcon className="w-5 h-5"/></button>
-                                        <button onClick={() => { const reason = prompt(`Motif de l'avertissement pour ${user.name}:`); if(reason) onWarnUser(user.id, reason); }} className="text-yellow-500" title="Avertir">
+                                        <button onClick={() => setEditingUser(user)} className="text-blue-500" title={t('common.edit')}><PencilSquareIcon className="w-5 h-5"/></button>
+                                        <button onClick={() => { const reason = prompt(`${t('superadmin.stores.warnReason')} ${user.name}:`); if(reason) onWarnUser(user.id, reason); }} className="text-yellow-500" title={t('common.warn')}>
                                             <ExclamationTriangleIcon className="w-5 h-5"/>
                                         </button>
                                     </div>

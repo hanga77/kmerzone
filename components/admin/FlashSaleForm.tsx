@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { FlashSale } from '../../types';
 import { ExclamationTriangleIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface FlashSaleFormProps {
   onSave: (flashSale: Omit<FlashSale, 'id' | 'products'>) => void;
@@ -8,6 +9,7 @@ interface FlashSaleFormProps {
 }
 
 const FlashSaleForm: React.FC<FlashSaleFormProps> = ({ onSave, onCancel }) => {
+  const { t } = useLanguage();
   const [name, setName] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -17,13 +19,13 @@ const FlashSaleForm: React.FC<FlashSaleFormProps> = ({ onSave, onCancel }) => {
     const newErrors: { name?: string; startDate?: string; endDate?: string } = {};
     
     if (!name.trim()) {
-      newErrors.name = "Le nom de l'événement est requis.";
+      newErrors.name = t('superadmin.marketing.flashSaleForm.error_name');
     }
     if (!startDate) {
-      newErrors.startDate = "La date et l'heure de début sont requises.";
+      newErrors.startDate = t('superadmin.marketing.flashSaleForm.error_startDate');
     }
     if (!endDate) {
-      newErrors.endDate = "La date et l'heure de fin sont requises.";
+      newErrors.endDate = t('superadmin.marketing.flashSaleForm.error_endDate');
     }
 
     if (startDate && endDate) {
@@ -32,11 +34,11 @@ const FlashSaleForm: React.FC<FlashSaleFormProps> = ({ onSave, onCancel }) => {
       const now = new Date();
 
       if (start >= end) {
-        newErrors.endDate = "La date de fin doit être postérieure à la date de début.";
+        newErrors.endDate = t('superadmin.marketing.flashSaleForm.error_endDateAfterStart');
       }
       
       if (end < now) {
-        newErrors.endDate = "La date de fin ne peut pas être dans le passé.";
+        newErrors.endDate = t('superadmin.marketing.flashSaleForm.error_endDatePast');
       }
     }
 
@@ -53,10 +55,10 @@ const FlashSaleForm: React.FC<FlashSaleFormProps> = ({ onSave, onCancel }) => {
 
   return (
     <div className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-lg border dark:border-gray-700">
-      <h3 className="text-xl font-bold mb-4 dark:text-white">Créer un événement Vente Flash</h3>
+      <h3 className="text-xl font-bold mb-4 dark:text-white">{t('superadmin.marketing.flashSaleForm.title')}</h3>
       <div className="space-y-4">
         <div>
-          <label htmlFor="fsName" className="block text-sm font-medium dark:text-gray-300">Nom de l'événement (ex: Black Friday)</label>
+          <label htmlFor="fsName" className="block text-sm font-medium dark:text-gray-300">{t('superadmin.marketing.flashSaleForm.name')}</label>
           <input 
             type="text" 
             id="fsName" 
@@ -75,7 +77,7 @@ const FlashSaleForm: React.FC<FlashSaleFormProps> = ({ onSave, onCancel }) => {
         </div>
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="fsStartDate" className="block text-sm font-medium dark:text-gray-300">Date et heure de début</label>
+            <label htmlFor="fsStartDate" className="block text-sm font-medium dark:text-gray-300">{t('superadmin.marketing.flashSaleForm.startDate')}</label>
             <input 
                 type="datetime-local" 
                 id="fsStartDate" 
@@ -93,7 +95,7 @@ const FlashSaleForm: React.FC<FlashSaleFormProps> = ({ onSave, onCancel }) => {
             )}
           </div>
           <div>
-            <label htmlFor="fsEndDate" className="block text-sm font-medium dark:text-gray-300">Date et heure de fin</label>
+            <label htmlFor="fsEndDate" className="block text-sm font-medium dark:text-gray-300">{t('superadmin.marketing.flashSaleForm.endDate')}</label>
             <input 
                 type="datetime-local" 
                 id="fsEndDate" 
@@ -113,10 +115,10 @@ const FlashSaleForm: React.FC<FlashSaleFormProps> = ({ onSave, onCancel }) => {
         </div>
         <div className="flex justify-end gap-3 pt-4 border-t dark:border-gray-700">
           <button onClick={onCancel} className="bg-white dark:bg-gray-600 py-2 px-4 border border-gray-300 dark:border-gray-500 rounded-md shadow-sm text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-500">
-            Annuler
+            {t('common.cancel')}
           </button>
           <button onClick={handleSave} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700">
-            Créer l'événement
+            {t('superadmin.marketing.flashSaleForm.create')}
           </button>
         </div>
       </div>

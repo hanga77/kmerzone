@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Store, DocumentStatus } from '../../types';
 import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, CheckIcon, XIcon, DocumentTextIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface StoresPanelProps {
     allStores: Store[];
@@ -22,6 +23,7 @@ const DocumentStatusBadge: React.FC<{status: DocumentStatus}> = ({ status }) => 
 }
 
 export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onUpdateDocumentStatus }) => {
+    const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'suspended'>('pending');
     
     const storesByStatus = {
@@ -29,14 +31,20 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
         active: allStores.filter(s => s.status === 'active'),
         suspended: allStores.filter(s => s.status === 'suspended'),
     };
+    
+    const tabLabels: Record<typeof activeTab, string> = {
+        pending: t('superadmin.stores.tabs.pending'),
+        active: t('superadmin.stores.tabs.active'),
+        suspended: t('superadmin.stores.tabs.suspended'),
+    }
 
     return (
         <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4">Gestion des Boutiques</h2>
+            <h2 className="text-xl font-bold mb-4">{t('superadmin.stores.title')}</h2>
             <div className="flex border-b dark:border-gray-700 mb-4">
                 {(Object.keys(storesByStatus) as Array<keyof typeof storesByStatus>).map(status => (
                     <button key={status} onClick={() => setActiveTab(status)} className={`px-4 py-2 font-semibold capitalize ${activeTab === status ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500 dark:text-gray-400'}`}>
-                        {status} ({storesByStatus[status].length})
+                        {tabLabels[status]} ({storesByStatus[status].length})
                     </button>
                 ))}
             </div>
@@ -44,11 +52,11 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                 <table className="w-full text-sm">
                     <thead className="bg-gray-100 dark:bg-gray-700">
                         <tr>
-                            <th className="p-2 text-left">Boutique</th>
-                            <th className="p-2 text-left">Vendeur</th>
-                            {activeTab === 'pending' && <th className="p-2 text-left">Documents</th>}
-                            <th className="p-2 text-left">Localisation</th>
-                            <th className="p-2 text-center">Actions</th>
+                            <th className="p-2 text-left">{t('superadmin.stores.table.store')}</th>
+                            <th className="p-2 text-left">{t('superadmin.stores.table.seller')}</th>
+                            {activeTab === 'pending' && <th className="p-2 text-left">{t('superadmin.stores.table.documents')}</th>}
+                            <th className="p-2 text-left">{t('superadmin.stores.table.location')}</th>
+                            <th className="p-2 text-center">{t('common.actions')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -66,7 +74,7 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                                                     <div className="flex items-center">
                                                         <button onClick={() => onUpdateDocumentStatus(store.id, doc.name, 'verified')} className="p-1 text-green-500"><CheckIcon className="w-4 h-4"/></button>
                                                         <button onClick={() => {
-                                                            const reason = prompt("Motif du rejet :");
+                                                            const reason = prompt(t('superadmin.stores.rejectionReason'));
                                                             if(reason) onUpdateDocumentStatus(store.id, doc.name, 'rejected', reason);
                                                         }} className="p-1 text-red-500"><XIcon className="w-4 h-4"/></button>
                                                     </div>
@@ -80,18 +88,18 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                                     <div className="flex justify-center gap-2">
                                         {activeTab === 'pending' && (
                                             <>
-                                                <button onClick={() => onApproveStore(store)} className="text-green-500 flex items-center gap-1 text-xs font-bold"><CheckCircleIcon className="w-4 h-4"/> Approuver</button>
-                                                <button onClick={() => onRejectStore(store)} className="text-red-500 flex items-center gap-1 text-xs font-bold"><XCircleIcon className="w-4 h-4"/> Rejeter</button>
+                                                <button onClick={() => onApproveStore(store)} className="text-green-500 flex items-center gap-1 text-xs font-bold"><CheckCircleIcon className="w-4 h-4"/> {t('common.approve')}</button>
+                                                <button onClick={() => onRejectStore(store)} className="text-red-500 flex items-center gap-1 text-xs font-bold"><XCircleIcon className="w-4 h-4"/> {t('common.reject')}</button>
                                             </>
                                         )}
                                         {activeTab === 'active' && (
                                             <>
-                                                <button onClick={() => onToggleStoreStatus(store.id, 'active')} className="text-red-500 flex items-center gap-1 text-xs font-bold"><XCircleIcon className="w-4 h-4"/> Suspendre</button>
-                                                <button onClick={() => { const reason = prompt('Motif de l\'avertissement:'); if(reason) onWarnStore(store.id, reason); }} className="text-yellow-500 flex items-center gap-1 text-xs font-bold"><ExclamationTriangleIcon className="w-4 h-4"/> Avertir</button>
+                                                <button onClick={() => onToggleStoreStatus(store.id, 'active')} className="text-red-500 flex items-center gap-1 text-xs font-bold"><XCircleIcon className="w-4 h-4"/> {t('superadmin.stores.tabs.suspended')}</button>
+                                                <button onClick={() => { const reason = prompt(`${t('superadmin.stores.warnReason')}:`); if(reason) onWarnStore(store.id, reason); }} className="text-yellow-500 flex items-center gap-1 text-xs font-bold"><ExclamationTriangleIcon className="w-4 h-4"/> {t('common.warn')}</button>
                                             </>
                                         )}
                                         {activeTab === 'suspended' && (
-                                            <button onClick={() => onToggleStoreStatus(store.id, 'suspended')} className="text-green-500 flex items-center gap-1 text-xs font-bold"><CheckCircleIcon className="w-4 h-4"/> Activer</button>
+                                            <button onClick={() => onToggleStoreStatus(store.id, 'suspended')} className="text-green-500 flex items-center gap-1 text-xs font-bold"><CheckCircleIcon className="w-4 h-4"/> {t('superadmin.stores.tabs.active')}</button>
                                         )}
                                     </div>
                                 </td>
@@ -99,7 +107,7 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                         ))}
                     </tbody>
                 </table>
-                 {storesByStatus[activeTab].length === 0 && <p className="text-center text-gray-500 py-8">Aucune boutique dans cette catégorie.</p>}
+                 {storesByStatus[activeTab].length === 0 && <p className="text-center text-gray-500 py-8">{t('superadmin.stores.noStores')}</p>}
             </div>
         </div>
     );

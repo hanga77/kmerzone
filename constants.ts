@@ -214,7 +214,7 @@ export const initialStores: Store[] = [
     },
     { 
         id: 'store-4', sellerId: 'seller-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', 
-        bannerUrl: 'https://images.unsplash.com/photo-1583947581920-8025819a58a7?q=80&w=2071&auto=format&fit=crop',
+        bannerUrl: 'https://images.unsplash.com/photo-1583947581920-802581a58a7?q=80&w=2071&auto=format&fit=crop',
         category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
         location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
         physicalAddress: 'Rue Njo-Njo, Bonapriso', latitude: 4.0321, longitude: 9.715, subscriptionStatus: 'inactive',
@@ -324,8 +324,17 @@ export const initialSiteSettings: SiteSettings = {
   rentAmount: 5000,
   canSellersCreateCategories: true,
   commissionRate: 10,
+  standardPlan: {
+    price: 10000,
+    durationDays: 30,
+    productLimit: 20,
+    commissionRate: 10,
+    photoServiceIncluded: false,
+    featuredOnHomepage: false,
+    prioritySupport: false,
+  },
   premiumPlan: {
-    price: 5000,
+    price: 25000,
     durationDays: 30,
     productLimit: 100,
     commissionRate: 8,
@@ -334,7 +343,7 @@ export const initialSiteSettings: SiteSettings = {
     prioritySupport: true,
   },
   superPremiumPlan: {
-    price: 15000,
+    price: 50000,
     durationDays: 30,
     productLimit: 500,
     commissionRate: 5,

@@ -2,6 +2,7 @@ import React from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import type { Order, OrderStatus } from '../types';
 import { ArrowLeftIcon, ArrowPathIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface OrderHistoryPageProps {
   userOrders: Order[];
@@ -12,6 +13,7 @@ interface OrderHistoryPageProps {
 
 const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack, onSelectOrder, onRepeatOrder }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   
   const getStatusClass = (status: OrderStatus) => {
     switch(status) {
@@ -28,21 +30,6 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
         case 'delivery-failed': return 'bg-red-200 text-red-900 dark:bg-red-800/50 dark:text-red-200 font-bold';
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
-  };
-
-  const statusTranslations: {[key in OrderStatus]: string} = {
-    confirmed: 'Confirmée',
-    'ready-for-pickup': 'Prêt pour enlèvement',
-    'picked-up': 'Pris en charge',
-    'at-depot': 'Au dépôt',
-    'out-for-delivery': 'En livraison',
-    delivered: 'Livré',
-    cancelled: 'Annulé',
-    'refund-requested': 'Remboursement demandé',
-    refunded: 'Remboursé',
-    returned: 'Retourné',
-    'depot-issue': 'Problème au dépôt',
-    'delivery-failed': 'Échec de livraison'
   };
 
   return (
@@ -78,7 +65,7 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
                     <td className="px-6 py-4">{order.total.toLocaleString('fr-CM')} FCFA</td>
                     <td className="px-6 py-4">
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusClass(order.status)}`}>
-                            {statusTranslations[order.status]}
+                            {t(`orderStatus.${order.status as OrderStatus}`, order.status)}
                         </span>
                     </td>
                     <td className="px-6 py-4">

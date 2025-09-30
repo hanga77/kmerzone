@@ -72,7 +72,12 @@ export default function App() {
             navigation.navigateToSuperAdminDashboard();
             break;
         case 'seller':
-            navigation.navigateToSellerDashboard('overview');
+            // If new seller without a shop, guide them to create one.
+            if (!loggedInUser.shopName) {
+                navigation.navigateToBecomeSeller();
+            } else {
+                navigation.navigateToSellerDashboard('overview');
+            }
             break;
         case 'delivery_agent':
             navigation.navigateToDeliveryAgentDashboard();

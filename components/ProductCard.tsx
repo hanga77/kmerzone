@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Product, FlashSale, Store } from '../types';
-import { ShoppingCartIcon, HeartIcon, CalendarDaysIcon, MapPinIcon, BoltIcon, ScaleIcon, StarIcon } from './Icons';
+import { ShoppingCartIcon, HeartIcon, CalendarDaysIcon, MapPinIcon, BoltIcon, ScaleIcon, StarIcon, BookmarkSquareIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -52,15 +52,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
   const { addToCart } = useCart();
   const { isWishlisted, toggleWishlist } = useWishlist();
   const { isInComparison, toggleComparison } = useComparison();
-  const { user } = useAuth();
+  const { user, toggleFollowStore } = useAuth();
 
   const isMyProduct = user?.role === 'seller' && user.shopName === product.vendor;
   const hasVariants = product.variants && product.variants.length > 0;
   
-  const isPremiumVendor = useMemo(() => {
-      const store = stores.find(s => s.name === product.vendor);
-      return store?.premiumStatus === 'premium';
-  }, [stores, product.vendor]);
+  const store = useMemo(() => stores.find(s => s.name === product.vendor), [stores, product.vendor]);
+  const isPremiumVendor = store?.premiumStatus === 'premium' || store?.premiumStatus === 'super_premium';
+  const isFollowingStore = user?.followedStores?.includes(store?.id || '');
+
 
   const handleAddToCart = (e: React.MouseEvent) => {
     e.stopPropagation(); 
@@ -81,6 +81,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
   const handleCompareClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     toggleComparison(product.id);
+  };
+
+  const handleFollowClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (store && user) {
+        toggleFollowStore(store.id);
+    } else if (!user) {
+        alert("Veuillez vous connecter pour suivre une boutique.");
+    }
   };
 
   const handleVendorClick = (e: React.MouseEvent) => {
@@ -139,6 +148,15 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
             >
               <HeartIcon className="h-5 w-5" filled={isWishlisted(product.id)} />
             </button>
+             {user && user.role === 'customer' && (
+              <button 
+                onClick={handleFollowClick} 
+                className={`bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm rounded-full p-2 hover:bg-white dark:hover:bg-gray-700 transition-colors ${isFollowingStore ? 'text-kmer-green' : ''}`}
+                aria-label="Suivre la boutique"
+              >
+                <BookmarkSquareIcon className="h-5 w-5" />
+              </button>
+            )}
             {isComparisonEnabled && (
               <button 
                 onClick={handleCompareClick} 

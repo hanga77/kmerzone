@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -94,10 +94,77 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
     const { wishlist } = useWishlist();
 
-    const sellerStore = user?.role === 'seller' ? siteData.allStores.find((s: Store) => s.sellerId === user.id) : undefined;
+    const sellerStore = useMemo(() => {
+        if (!user) return undefined;
+        // FIX: Find store by sellerId instead of shopName for robustness
+        return siteData.allStores.find((s: Store) => s.sellerId === user.id);
+    }, [user, siteData.allStores]);
+
     const sellerProducts = user?.role === 'seller' && sellerStore ? siteData.allProducts.filter((p: Product) => p.vendor === sellerStore.name) : [];
     const sellerOrders = user?.role === 'seller' && sellerStore ? siteData.allOrders.filter((o: Order) => o.items.some(i => i.vendor === sellerStore.name)) : [];
     const sellerNotifications = user?.role === 'seller' && sellerStore ? siteData.allNotifications.filter((n: Notification) => n.userId === user.id) : [];
+
+    const onBecomeSeller = (
+        shopName: string, location: string, neighborhood: string, sellerFirstName: string,
+        sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string,
+        latitude?: number, longitude?: number
+    ) => {
+        if (user) {
+            // FIX: Ensure user role is set to seller before creating store
+            const userWithSellerRole = { ...user, role: 'seller' as const };
+            
+            const newStore = siteData.createStoreAndNotifyAdmin({
+                name: shopName,
+                category: 'Non classé',
+                location,
+                neighborhood,
+                sellerFirstName,
+                sellerLastName,
+                sellerPhone,
+                physicalAddress,
+                logoUrl,
+                latitude,
+                longitude
+            }, userWithSellerRole, allUsers);
+
+            if (newStore) {
+                 // Update the user in the global state to link them to their new store
+                setAllUsers((prevUsers: User[]) => prevUsers.map(u =>
+                    u.id === user.id ? { ...u, role: 'seller', shopName: newStore.name } : u
+                ));
+                // After creating the store, navigate to the subscription page
+                navigation.setPage('seller-subscription');
+            }
+        }
+    };
+    
+    const onSelectSubscription = (status: 'standard' | 'premium' | 'super_premium') => {
+        // FIX: Find store by sellerId, which is more reliable than checking user.shopName immediately after creation
+        const currentSellerStore = siteData.allStores.find((s: Store) => s.sellerId === user?.id);
+
+        if (currentSellerStore) {
+            const plan = status === 'standard' ? siteData.siteSettings.standardPlan : (status === 'premium' ? siteData.siteSettings.premiumPlan : siteData.siteSettings.superPremiumPlan);
+            
+            setPaymentRequest({
+                amount: plan.price,
+                reason: `Abonnement au plan ${status}`,
+                onSuccess: () => {
+                    siteData.setAllStores((prevStores: Store[]) => prevStores.map((s: Store) => 
+                        s.id === currentSellerStore.id ? { 
+                            ...s, 
+                            premiumStatus: status, 
+                            subscriptionStatus: 'active',
+                            subscriptionDueDate: new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000).toISOString()
+                        } : s
+                    ));
+                    navigation.navigateToSellerDashboard('overview');
+                }
+            });
+        } else {
+            alert("Erreur: Impossible de trouver les informations de votre boutique. Veuillez contacter le support.");
+            navigation.navigateToHome();
+        }
+    };
 
     switch (navigation.page) {
         case 'home':
@@ -314,11 +381,28 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'seller-analytics-dashboard':
             return <SellerAnalyticsDashboard onBack={() => navigation.navigateToSellerDashboard('overview')} sellerOrders={sellerOrders} sellerProducts={sellerProducts} flashSales={siteData.flashSales}/>
         case 'seller-subscription':
-            return <SellerSubscriptionPage siteSettings={siteData.siteSettings} onSelectSubscription={() => {}}/>
+            return <SellerSubscriptionPage 
+                siteSettings={siteData.siteSettings} 
+                onSelectSubscription={onSelectSubscription} 
+            />;
         case 'visual-search':
             return <VisualSearchPage onSearch={navigation.handleSearch} />;
         case 'become-seller':
-            return <BecomeSeller onBack={navigation.navigateToHome} onBecomeSeller={() => {}} onRegistrationSuccess={() => navigation.setPage('seller-subscription')} siteSettings={siteData.siteSettings} />;
+            if (!user) {
+                // Should not happen if entry point is protected, but as a safeguard.
+                return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            }
+            if (user.role === 'seller' && sellerStore) {
+                 // User is already a seller, redirect them.
+                 navigation.navigateToSellerDashboard('overview');
+                 return null; // Return null while redirecting
+            }
+            return <BecomeSeller 
+                onBack={navigation.navigateToHome} 
+                onBecomeSeller={onBecomeSeller} 
+                onRegistrationSuccess={() => {}} // No longer needed as onBecomeSeller handles nav
+                siteSettings={siteData.siteSettings} 
+            />;
         case 'become-premium':
             return <BecomePremiumPage siteSettings={siteData.siteSettings} onBack={navigation.navigateToHome} onBecomePremiumByCaution={() => {}} onUpgradeToPremiumPlus={() => {}}/>
         case 'info':

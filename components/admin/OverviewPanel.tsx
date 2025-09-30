@@ -1,6 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Order, Store, SiteActivityLog, User, OrderStatus } from '../../types';
 import { ShoppingBagIcon, UsersIcon, BuildingStorefrontIcon, CurrencyDollarIcon, ClockIcon, UserGroupIcon, TagIcon, BoltIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface OverviewPanelProps {
     allOrders: Order[];
@@ -21,14 +22,8 @@ const StatCard: React.FC<{ icon: React.ReactNode, label: string, value: string |
     </div>
 );
 
-const statusTranslations: {[key in OrderStatus]: string} = {
-    confirmed: 'Confirmée', 'ready-for-pickup': 'Prêt pour enlèvement', 'picked-up': 'Pris en charge',
-    'at-depot': 'Au dépôt', 'out-for-delivery': 'En livraison', delivered: 'Livré',
-    cancelled: 'Annulé', 'refund-requested': 'Remboursement demandé', refunded: 'Remboursé',
-    returned: 'Retourné', 'depot-issue': 'Problème au dépôt', 'delivery-failed': 'Échec de livraison'
-};
-
 export const OverviewPanel: React.FC<OverviewPanelProps> = ({ allOrders, allStores, allUsers, siteActivityLogs }) => {
+    const { t } = useLanguage();
     const { stats, salesData, orderStatusDistribution } = useMemo(() => {
         const deliveredOrders = allOrders.filter(o => o.status === 'delivered');
         const totalRevenue = deliveredOrders.reduce((sum, order) => sum + order.total, 0);
@@ -67,15 +62,15 @@ export const OverviewPanel: React.FC<OverviewPanelProps> = ({ allOrders, allStor
     return (
         <div className="p-4 sm:p-6 space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label="Revenu Total (Livré)" value={`${stats.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
-                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Commandes Totales" value={stats.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
-                <StatCard icon={<UsersIcon className="w-7 h-7"/>} label="Utilisateurs Totals" value={stats.totalUsers} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" />
-                <StatCard icon={<BuildingStorefrontIcon className="w-7 h-7"/>} label="Boutiques en Attente" value={stats.pendingStores} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
+                <StatCard icon={<CurrencyDollarIcon className="w-7 h-7"/>} label={t('superadmin.overview.totalRevenue')} value={`${stats.totalRevenue.toLocaleString('fr-CM')} FCFA`} color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300" />
+                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label={t('superadmin.overview.totalOrders')} value={stats.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
+                <StatCard icon={<UsersIcon className="w-7 h-7"/>} label={t('superadmin.overview.totalUsers')} value={stats.totalUsers} color="bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600 dark:text-yellow-300" />
+                <StatCard icon={<BuildingStorefrontIcon className="w-7 h-7"/>} label={t('superadmin.overview.pendingStores')} value={stats.pendingStores} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6">
-                    <h2 className="text-xl font-bold mb-4">Revenus des 7 derniers jours</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('superadmin.overview.revenueLast7Days')}</h2>
                     <div className="flex justify-around items-end h-64 border-l border-b border-gray-200 dark:border-gray-700 pl-4 pb-4">
                         {salesData.map(({ label, revenue }) => (
                              <div key={label} className="flex flex-col items-center h-full justify-end" title={`${revenue.toLocaleString('fr-CM')} FCFA`}>
@@ -86,11 +81,11 @@ export const OverviewPanel: React.FC<OverviewPanelProps> = ({ allOrders, allStor
                     </div>
                 </div>
                  <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6">
-                    <h2 className="text-xl font-bold mb-4">Statuts des Commandes</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('superadmin.overview.orderStatuses')}</h2>
                     <ul className="space-y-2">
                         {orderStatusDistribution.map(([status, count]) => (
                             <li key={status} className="flex justify-between text-sm">
-                                <span>{statusTranslations[status as OrderStatus] || status}</span>
+                                <span>{t(`orderStatus.${status as OrderStatus}`, status)}</span>
                                 <span className="font-bold">{count}</span>
                             </li>
                         ))}
@@ -100,7 +95,7 @@ export const OverviewPanel: React.FC<OverviewPanelProps> = ({ allOrders, allStor
 
              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                  <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6">
-                    <h2 className="text-xl font-bold mb-4">Dernières Commandes</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('superadmin.overview.recentOrders')}</h2>
                      <ul className="divide-y dark:divide-gray-700">
                         {recentOrders.map(o => (
                             <li key={o.id} className="py-2 flex justify-between items-center text-sm">
@@ -110,14 +105,14 @@ export const OverviewPanel: React.FC<OverviewPanelProps> = ({ allOrders, allStor
                                 </div>
                                 <div className="text-right">
                                     <p className="font-bold">{o.total.toLocaleString('fr-CM')} FCFA</p>
-                                    <p className="text-xs">{statusTranslations[o.status]}</p>
+                                    <p className="text-xs">{t(`orderStatus.${o.status as OrderStatus}`, o.status)}</p>
                                 </div>
                             </li>
                         ))}
                     </ul>
                 </div>
                 <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6">
-                    <h2 className="text-xl font-bold mb-4">Nouveaux Utilisateurs</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('superadmin.overview.newUsers')}</h2>
                     <ul className="divide-y dark:divide-gray-700">
                         {recentUsers.map(u => (
                             <li key={u.id} className="py-2 flex justify-between items-center text-sm">

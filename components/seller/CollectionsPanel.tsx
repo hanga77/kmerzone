@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { ProductCollection, Store, Product } from '../../types';
 import { PlusIcon, PencilSquareIcon, TrashIcon, XIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface CollectionsPanelProps {
     store: Store;
@@ -15,6 +16,7 @@ const CollectionForm: React.FC<{
     onSave: (collection: Omit<ProductCollection, 'storeId' | 'id'> & { id?: string }) => void;
     onCancel: () => void;
 }> = ({ collection, allProducts, onSave, onCancel }) => {
+    const { t } = useLanguage();
     const [name, setName] = useState(collection?.name || '');
     const [description, setDescription] = useState(collection?.description || '');
     const [selectedProductIds, setSelectedProductIds] = useState<string[]>(collection?.productIds || []);
@@ -33,12 +35,12 @@ const CollectionForm: React.FC<{
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <form onSubmit={handleSubmit} className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-2xl w-full">
-                <h3 className="text-lg font-bold mb-4">{collection ? 'Modifier' : 'Créer'} une collection</h3>
+                <h3 className="text-lg font-bold mb-4">{collection ? t('sellerDashboard.collections.editTitle') : t('sellerDashboard.collections.createTitle')}</h3>
                 <div className="space-y-4">
-                    <input value={name} onChange={e => setName(e.target.value)} placeholder="Nom de la collection" className="w-full p-2 border rounded-md" required />
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="Description (optionnel)" rows={3} className="w-full p-2 border rounded-md" />
+                    <input value={name} onChange={e => setName(e.target.value)} placeholder={t('sellerDashboard.collections.name')} className="w-full p-2 border rounded-md" required />
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={t('sellerDashboard.collections.description')} rows={3} className="w-full p-2 border rounded-md" />
                     <div>
-                        <h4 className="font-semibold mb-2">Sélectionner les produits</h4>
+                        <h4 className="font-semibold mb-2">{t('sellerDashboard.collections.selectProducts')}</h4>
                         <div className="max-h-60 overflow-y-auto border p-2 rounded-md space-y-2">
                             {allProducts.map(p => (
                                 <label key={p.id} className="flex items-center gap-2 p-1 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700/50">
@@ -51,8 +53,8 @@ const CollectionForm: React.FC<{
                     </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-4">
-                    <button type="button" onClick={onCancel} className="bg-gray-200 px-4 py-2 rounded-lg">Annuler</button>
-                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg">Sauvegarder</button>
+                    <button type="button" onClick={onCancel} className="bg-gray-200 px-4 py-2 rounded-lg">{t('common.cancel')}</button>
+                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded-lg">{t('common.save')}</button>
                 </div>
             </form>
         </div>
@@ -60,6 +62,7 @@ const CollectionForm: React.FC<{
 };
 
 const CollectionsPanel: React.FC<CollectionsPanelProps> = ({ store, products, onCreateOrUpdateCollection, onDeleteCollection }) => {
+    const { t } = useLanguage();
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingCollection, setEditingCollection] = useState<ProductCollection | null>(null);
 
@@ -87,9 +90,9 @@ const CollectionsPanel: React.FC<CollectionsPanelProps> = ({ store, products, on
                 />
             )}
             <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold">Mes Collections</h2>
+                <h2 className="text-2xl font-bold">{t('sellerDashboard.collections.title')}</h2>
                 <button onClick={() => { setEditingCollection(null); setIsFormOpen(true); }} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
-                    <PlusIcon className="w-5 h-5"/> Créer une collection
+                    <PlusIcon className="w-5 h-5"/> {t('sellerDashboard.collections.create')}
                 </button>
             </div>
             <div className="space-y-4">
@@ -110,7 +113,7 @@ const CollectionsPanel: React.FC<CollectionsPanelProps> = ({ store, products, on
                 ))}
                  {(!store.collections || store.collections.length === 0) && (
                     <div className="text-center py-8 text-gray-500">
-                        <p>Vous n'avez aucune collection. Créez-en une pour regrouper vos produits !</p>
+                        <p>{t('sellerDashboard.collections.noCollections')}</p>
                     </div>
                 )}
             </div>

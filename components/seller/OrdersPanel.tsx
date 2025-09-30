@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Order, OrderStatus } from '../../types';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface OrdersPanelProps {
     sellerOrders: Order[];
@@ -22,18 +23,19 @@ const statusTranslations: { [key in OrderStatus]: string } = {
 };
 
 const OrdersPanel: React.FC<OrdersPanelProps> = ({ sellerOrders, onUpdateOrderStatus }) => {
+    const { t } = useLanguage();
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Mes Commandes ({sellerOrders.length})</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('sellerDashboard.orders.title', sellerOrders.length)}</h2>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-100 dark:bg-gray-700">
                         <tr>
-                            <th className="p-2 text-left">ID Commande</th>
-                            <th className="p-2 text-left">Client</th>
-                            <th className="p-2 text-right">Total</th>
-                            <th className="p-2 text-center">Statut</th>
-                            <th className="p-2 text-center">Action</th>
+                            <th className="p-2 text-left">{t('sellerDashboard.orders.table.orderId')}</th>
+                            <th className="p-2 text-left">{t('sellerDashboard.orders.table.customer')}</th>
+                            <th className="p-2 text-right">{t('sellerDashboard.orders.table.total')}</th>
+                            <th className="p-2 text-center">{t('sellerDashboard.orders.table.status')}</th>
+                            <th className="p-2 text-center">{t('sellerDashboard.orders.table.action')}</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -46,7 +48,7 @@ const OrdersPanel: React.FC<OrdersPanelProps> = ({ sellerOrders, onUpdateOrderSt
                                 <td className="p-2 text-center">
                                     {order.status === 'confirmed' && (
                                         <button onClick={() => onUpdateOrderStatus(order.id, 'ready-for-pickup')} className="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600">
-                                            Marquer comme prêt pour l'expédition
+                                            {t('sellerDashboard.orders.markReady')}
                                         </button>
                                     )}
                                 </td>

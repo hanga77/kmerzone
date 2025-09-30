@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import type { SiteSettings } from '../types';
 import { ArrowLeftIcon, BuildingStorefrontIcon, PhotoIcon, MapPinIcon, DocumentTextIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 declare const L: any;
 
@@ -23,6 +24,7 @@ interface BecomeSellerProps {
 }
 
 const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onRegistrationSuccess, siteSettings }) => {
+    const { t } = useLanguage();
     const [formData, setFormData] = useState({
         shopName: '',
         location: 'Douala',
@@ -88,12 +90,12 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
 
     const validate = () => {
         const newErrors: Partial<typeof formData> = {};
-        if (!formData.shopName.trim()) newErrors.shopName = "Le nom de la boutique est requis.";
-        if (!formData.sellerFirstName.trim()) newErrors.sellerFirstName = "Le prénom est requis.";
-        if (!formData.sellerLastName.trim()) newErrors.sellerLastName = "Le nom de famille est requis.";
-        if (!formData.sellerPhone.trim()) newErrors.sellerPhone = "Le numéro de téléphone est requis.";
-        if (!formData.physicalAddress.trim()) newErrors.physicalAddress = "L'adresse physique est requise.";
-        if (!formData.logoUrl) newErrors.logoUrl = "Un logo est requis.";
+        if (!formData.shopName.trim()) newErrors.shopName = t('becomeSeller.errors.shopName');
+        if (!formData.sellerFirstName.trim()) newErrors.sellerFirstName = t('becomeSeller.errors.firstName');
+        if (!formData.sellerLastName.trim()) newErrors.sellerLastName = t('becomeSeller.errors.lastName');
+        if (!formData.sellerPhone.trim()) newErrors.sellerPhone = t('becomeSeller.errors.phone');
+        if (!formData.physicalAddress.trim()) newErrors.physicalAddress = t('becomeSeller.errors.address');
+        if (!formData.logoUrl) newErrors.logoUrl = t('becomeSeller.errors.logo');
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -126,33 +128,33 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
             <div className="container mx-auto px-4 sm:px-6">
                  <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
                     <ArrowLeftIcon className="w-5 h-5" />
-                    Retour à l'accueil
+                    {t('common.backToHome')}
                 </button>
                 <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
                      <div className="text-center mb-8">
                         <BuildingStorefrontIcon className="w-12 h-12 mx-auto text-kmer-green" />
-                        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">Devenez Vendeur sur KMER ZONE</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">Rejoignez notre communauté de commerçants et développez votre activité en ligne.</p>
+                        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">{t('becomeSeller.title')}</h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">{t('becomeSeller.subtitle')}</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
                         {/* Section 1 */}
                         <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">1. Informations sur votre boutique</legend>
+                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeSeller.step1Title')}</legend>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                                 <div>
-                                    <label htmlFor="shopName" className="block text-sm font-medium dark:text-gray-300">Nom de la boutique*</label>
+                                    <label htmlFor="shopName" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.shopNameLabel')}</label>
                                     <input type="text" id="shopName" name="shopName" value={formData.shopName} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                                     {errors.shopName && <p className="text-red-500 text-xs mt-1">{errors.shopName}</p>}
                                 </div>
                                  <div>
-                                    <label className="block text-sm font-medium dark:text-gray-300">Logo de la boutique*</label>
+                                    <label className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.shopLogoLabel')}</label>
                                     <div className="mt-1 flex items-center gap-4">
                                         <div className="h-20 w-20 rounded-md bg-gray-100 dark:bg-gray-700 p-1 flex items-center justify-center">
                                             {logoPreview ? <img src={logoPreview} alt="Logo" className="h-full w-full object-contain rounded-md"/> : <PhotoIcon className="w-10 h-10 text-gray-400"/> }
                                         </div>
                                         <label htmlFor="logo-upload" className="cursor-pointer bg-white dark:bg-gray-700 py-2 px-3 border border-gray-300 dark:border-gray-600 rounded-md text-sm font-medium hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center gap-2">
-                                            <PhotoIcon className="w-5 h-5" /> Téléverser
+                                            <PhotoIcon className="w-5 h-5" /> {t('becomeSeller.upload')}
                                             <input id="logo-upload" type="file" className="sr-only" onChange={handleLogoChange} accept="image/*" />
                                         </label>
                                     </div>
@@ -163,20 +165,20 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
 
                         {/* Section 2 */}
                         <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">2. Vos informations de contact</legend>
+                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeSeller.step2Title')}</legend>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                                  <div>
-                                    <label htmlFor="sellerFirstName" className="block text-sm font-medium dark:text-gray-300">Prénom*</label>
+                                    <label htmlFor="sellerFirstName" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.firstNameLabel')}</label>
                                     <input type="text" id="sellerFirstName" name="sellerFirstName" value={formData.sellerFirstName} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                                     {errors.sellerFirstName && <p className="text-red-500 text-xs mt-1">{errors.sellerFirstName}</p>}
                                 </div>
                                 <div>
-                                    <label htmlFor="sellerLastName" className="block text-sm font-medium dark:text-gray-300">Nom*</label>
+                                    <label htmlFor="sellerLastName" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.lastNameLabel')}</label>
                                     <input type="text" id="sellerLastName" name="sellerLastName" value={formData.sellerLastName} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                                      {errors.sellerLastName && <p className="text-red-500 text-xs mt-1">{errors.sellerLastName}</p>}
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label htmlFor="sellerPhone" className="block text-sm font-medium dark:text-gray-300">Téléphone*</label>
+                                    <label htmlFor="sellerPhone" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.phoneLabel')}</label>
                                     <input type="tel" id="sellerPhone" name="sellerPhone" value={formData.sellerPhone} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                                     {errors.sellerPhone && <p className="text-red-500 text-xs mt-1">{errors.sellerPhone}</p>}
                                 </div>
@@ -185,26 +187,26 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
 
                         {/* Section 3 */}
                         <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">3. Adresse de la boutique</legend>
+                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeSeller.step3Title')}</legend>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                                 <div>
-                                    <label htmlFor="location" className="block text-sm font-medium dark:text-gray-300">Ville*</label>
+                                    <label htmlFor="location" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.cityLabel')}</label>
                                     <select id="location" name="location" value={formData.location} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
                                         <option>Douala</option><option>Yaoundé</option><option>Bafoussam</option>
                                     </select>
                                 </div>
                                 <div>
-                                    <label htmlFor="neighborhood" className="block text-sm font-medium dark:text-gray-300">Quartier</label>
+                                    <label htmlFor="neighborhood" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.neighborhoodLabel')}</label>
                                     <input type="text" id="neighborhood" name="neighborhood" value={formData.neighborhood} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label htmlFor="physicalAddress" className="block text-sm font-medium dark:text-gray-300">Adresse physique complète (avec repère)*</label>
+                                    <label htmlFor="physicalAddress" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.addressLabel')}</label>
                                     <textarea id="physicalAddress" name="physicalAddress" value={formData.physicalAddress} onChange={handleChange} rows={2} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
                                     {errors.physicalAddress && <p className="text-red-500 text-xs mt-1">{errors.physicalAddress}</p>}
                                 </div>
                                 <div className="md:col-span-2">
-                                    <label className="block text-sm font-medium dark:text-gray-300">Localisation GPS</label>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">Cliquez sur la carte pour placer un marqueur à l'emplacement exact de votre boutique.</p>
+                                    <label className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.gpsLabel')}</label>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('becomeSeller.gpsDescription')}</p>
                                     <div ref={mapContainerRef} className="h-64 w-full mt-2 rounded-md z-0"></div>
                                 </div>
                             </div>
@@ -212,8 +214,8 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
                         
                         {/* Section 4 */}
                         <div className="p-4 border-l-4 border-kmer-green bg-green-50 dark:bg-green-900/20 rounded-r-lg">
-                             <h2 className="text-lg font-semibold flex items-center gap-2"><DocumentTextIcon className="w-5 h-5"/> Documents Requis</h2>
-                             <p className="text-sm mt-2 text-gray-700 dark:text-gray-300">Après avoir soumis votre candidature, vous devrez téléverser les documents suivants depuis votre tableau de bord vendeur :</p>
+                             <h2 className="text-lg font-semibold flex items-center gap-2"><DocumentTextIcon className="w-5 h-5"/> {t('becomeSeller.requiredDocsTitle')}</h2>
+                             <p className="text-sm mt-2 text-gray-700 dark:text-gray-300">{t('becomeSeller.requiredDocsDescription')}</p>
                              <ul className="list-disc list-inside mt-2 space-y-1 text-sm text-gray-700 dark:text-gray-300">
                                 {requiredDocuments.map(doc => <li key={doc}>{doc}</li>)}
                              </ul>
@@ -221,7 +223,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, onR
 
                         <div className="flex justify-end pt-4">
                             <button type="submit" className="bg-kmer-green text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-colors text-lg">
-                                Soumettre ma candidature
+                                {t('becomeSeller.submitCandidacy')}
                             </button>
                         </div>
                     </form>

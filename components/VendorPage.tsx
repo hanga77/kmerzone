@@ -1,10 +1,11 @@
 import React, { useMemo } from 'react';
 import type { Product, Store, FlashSale } from '../types';
 import ProductCard from './ProductCard';
-import { ArrowLeftIcon, StarIcon, CheckCircleIcon } from './Icons';
+import { ArrowLeftIcon, StarIcon, CheckCircleIcon, HeartIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface VendorPageProps {
   vendorName: string;
@@ -19,6 +20,7 @@ interface VendorPageProps {
 
 const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
   const { user, toggleFollowStore } = useAuth();
+  const { t } = useLanguage();
   const productsFromVendor = useMemo(() => allProducts.filter(p => p.vendor === vendorName), [allProducts, vendorName]);
   const { filteredAndSortedProducts, filters, setFilters, resetFilters } = useProductFiltering(productsFromVendor, allStores);
   const store = allStores.find(s => s.name === vendorName);
@@ -107,9 +109,10 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
                    {store && user && user.role === 'customer' && (
                       <button 
                           onClick={() => toggleFollowStore(store.id)}
-                          className={`px-6 py-2 rounded-lg font-bold transition-colors w-full sm:w-auto ${isFollowing ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300' : 'bg-kmer-green text-white hover:bg-green-700'}`}
+                          className={`flex items-center gap-2 px-6 py-2 rounded-lg font-bold transition-colors w-full sm:w-auto ${isFollowing ? 'bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 hover:bg-gray-300' : 'bg-kmer-green text-white hover:bg-green-700'}`}
                       >
-                          {isFollowing ? 'Ne plus suivre' : 'Suivre la boutique'}
+                          <HeartIcon className="w-5 h-5" filled={isFollowing}/>
+                          <span>{isFollowing ? 'Suivi' : 'Suivre'}</span>
                       </button>
                   )}
                 </div>

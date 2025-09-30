@@ -15,6 +15,7 @@ import { SupportPanel } from './admin/SupportPanel';
 import { LogsPanel } from './admin/LogsPanel';
 import { SettingsPanel } from './admin/SettingsPanel';
 import ReviewModerationPanel from './admin/ReviewModerationPanel';
+import { useLanguage } from '../contexts/LanguageContext';
 
 
 interface SuperAdminDashboardProps {
@@ -102,6 +103,7 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
 export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
     const { allStores, allOrders, allProducts, allTickets } = props;
     const [activeTab, setActiveTab] = useState('overview');
+    const { t } = useLanguage();
     
     const pendingStoresCount = useMemo(() => allStores.filter(s => s.status === 'pending').length, [allStores]);
     const refundRequestsCount = useMemo(() => allOrders.filter(o => o.status === 'refund-requested').length, [allOrders]);
@@ -126,7 +128,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
             case 'reviews': return <ReviewModerationPanel allProducts={allProducts} onReviewModeration={props.onReviewModeration} />;
             case 'logs': return <LogsPanel {...props} />;
             case 'settings': return <SettingsPanel {...props} />;
-            default: return <div className="p-6">{`Le panneau pour "${activeTab}" est en cours de construction.`}</div>;
+            default: return <div className="p-6">{t('superadmin.panelUnderConstruction', activeTab)}</div>;
         }
     };
 
@@ -135,18 +137,18 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
             <div className="container mx-auto px-4 sm:px-6 py-6 flex flex-col md:flex-row gap-8">
                 <aside className="md:w-1/4 lg:w-1/5 flex-shrink-0">
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md space-y-2 sticky top-24">
-                        <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label="Aperçu" isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                        <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label="Commandes" isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} count={refundRequestsCount} />
-                        <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label="Boutiques" isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} count={pendingStoresCount} />
-                        <TabButton icon={<UsersIcon className="w-5 h-5"/>} label="Utilisateurs" isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
-                        <TabButton icon={<TagIcon className="w-5 h-5"/>} label="Catalogue" isActive={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} />
-                        <TabButton icon={<BoltIcon className="w-5 h-5"/>} label="Marketing" isActive={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} />
-                        <TabButton icon={<TruckIcon className="w-5 h-5"/>} label="Logistique" isActive={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
-                        <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label="Paiements" isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
-                        <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label="Support" isActive={activeTab === 'support'} onClick={() => setActiveTab('support')} count={openTicketsCount} />
-                        <TabButton icon={<StarIcon className="w-5 h-5"/>} label="Avis" isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} count={pendingReviewsCount} />
-                        <TabButton icon={<ScaleIcon className="w-5 h-5"/>} label="Logs" isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
-                        <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label="Paramètres" isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
+                        <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label={t('superadmin.tabs.overview')} isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
+                        <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label={t('superadmin.tabs.orders')} isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} count={refundRequestsCount} />
+                        <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label={t('superadmin.tabs.stores')} isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} count={pendingStoresCount} />
+                        <TabButton icon={<UsersIcon className="w-5 h-5"/>} label={t('superadmin.tabs.users')} isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
+                        <TabButton icon={<TagIcon className="w-5 h-5"/>} label={t('superadmin.tabs.catalog')} isActive={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} />
+                        <TabButton icon={<BoltIcon className="w-5 h-5"/>} label={t('superadmin.tabs.marketing')} isActive={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} />
+                        <TabButton icon={<TruckIcon className="w-5 h-5"/>} label={t('superadmin.tabs.logistics')} isActive={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
+                        <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label={t('superadmin.tabs.payouts')} isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
+                        <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label={t('superadmin.tabs.support')} isActive={activeTab === 'support'} onClick={() => setActiveTab('support')} count={openTicketsCount} />
+                        <TabButton icon={<StarIcon className="w-5 h-5"/>} label={t('superadmin.tabs.reviews')} isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} count={pendingReviewsCount} />
+                        <TabButton icon={<ScaleIcon className="w-5 h-5"/>} label={t('superadmin.tabs.logs')} isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />
+                        <TabButton icon={<Cog8ToothIcon className="w-5 h-5"/>} label={t('superadmin.tabs.settings')} isActive={activeTab === 'settings'} onClick={() => setActiveTab('settings')} />
                     </div>
                 </aside>
                 <main className="flex-grow">

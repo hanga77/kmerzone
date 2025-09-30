@@ -2,9 +2,11 @@ import React from 'react';
 import ChatWidget from '../ChatWidget'; // We can reuse the main chat widget component
 import { useAuth } from '../../contexts/AuthContext';
 import { useChatContext } from '../../contexts/ChatContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 const ChatPanel: React.FC = () => {
     const { user, allUsers } = useAuth();
+    const { t } = useLanguage();
     const { isWidgetOpen, setIsWidgetOpen } = useChatContext();
 
     // Since ChatWidget is a full-screen modal-like component, 
@@ -20,7 +22,7 @@ const ChatPanel: React.FC = () => {
 
     return (
         <div className="p-6 h-[calc(100vh-10rem)]">
-            <h2 className="text-2xl font-bold mb-4">Messagerie</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('sellerDashboard.tabs.chat')}</h2>
              <div className="border rounded-lg h-full overflow-hidden">
                 {/* The ChatWidget is globally positioned, so we can't truly embed it without a refactor.
                     This panel will serve as a placeholder for the chat functionality.

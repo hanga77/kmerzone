@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, PickupPoint, DisputeMessage, User } from '../types';
 import { ArrowLeftIcon, CheckIcon, TruckIcon, ExclamationTriangleIcon, XIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 declare const QRCode: any;
 
@@ -109,26 +110,8 @@ const RefundRequestModal: React.FC<{
 
 const statusSteps: OrderStatus[] = ['confirmed', 'ready-for-pickup', 'picked-up', 'at-depot', 'out-for-delivery', 'delivered'];
 
-const statusTranslations: Record<OrderStatus, { title: string, description: string }> = {
-    confirmed: { title: 'Commande confirmée', description: 'La boutique prépare le colis.' },
-    'ready-for-pickup': { title: 'Prêt pour expédition', description: "Le vendeur a préparé votre colis pour l'enlèvement." },
-    'picked-up': { title: 'Colis pris en charge', description: 'Un transporteur a récupéré le colis.' },
-    'at-depot': { 
-      title: 'Arrivée au centre de destination', 
-      description: '' // This will be dynamic based on delivery method in the main component
-    },
-    'out-for-delivery': { title: 'En cours de livraison', description: 'Le livreur est en route.' },
-    delivered: { title: 'Livré', description: 'Votre colis a été remis.' },
-    cancelled: { title: 'Annulé', description: 'Votre commande a été annulée.' },
-    'refund-requested': { title: 'Remboursement demandé', description: 'Votre demande est en cours d\'examen.' },
-    refunded: { title: 'Remboursé', description: 'Cette commande a été remboursée.' },
-    returned: { title: 'Retourné', description: 'Le colis a été retourné.' },
-    'depot-issue': { title: 'Problème au dépôt', description: 'Un problème a été signalé avec votre colis au dépôt.' },
-    'delivery-failed': { title: 'Échec de livraison', description: 'Un problème est survenu lors de la livraison.' },
-};
-
-
 const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
+  const { t } = useLanguage();
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
   const currentStatusIndex = statusSteps.indexOf(order.status);
@@ -138,6 +121,24 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
 
   const canCancel = ['confirmed', 'ready-for-pickup'].includes(order.status);
   const canRequestRefund = order.status === 'delivered';
+
+  const getStatusTranslation = (status: OrderStatus) => t(`orderStatus.${status}`, status);
+
+  const statusDescriptions: Record<OrderStatus, string> = {
+    confirmed: 'La boutique prépare le colis.',
+    'ready-for-pickup': "Le vendeur a préparé votre colis pour l'enlèvement.",
+    'picked-up': 'Un transporteur a récupéré le colis.',
+    'at-depot': order.deliveryMethod === 'pickup' ? 'Votre colis est prêt pour le retrait.' : 'Prêt pour la distribution locale.',
+    'out-for-delivery': 'Le livreur est en route.',
+    delivered: 'Votre colis a été remis.',
+    cancelled: 'Votre commande a été annulée.',
+    'refund-requested': 'Votre demande est en cours d\'examen.',
+    refunded: 'Cette commande a été remboursée.',
+    returned: 'Le colis a été retourné.',
+    'depot-issue': 'Un problème a été signalé avec votre colis au dépôt.',
+    'delivery-failed': 'Un problème est survenu lors de la livraison.',
+  };
+
 
   useEffect(() => {
     if (qrCodeRef.current && order.trackingNumber && typeof QRCode !== 'undefined') {
@@ -152,8 +153,6 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
     setIsRefundModalOpen(false);
   };
   
-  statusTranslations['at-depot'].description = order.deliveryMethod === 'pickup' ? 'Votre colis est prêt pour le retrait.' : 'Prêt pour la distribution locale.';
-
   const getStepIcon = (step: OrderStatus) => {
     switch(step) {
       case 'out-for-delivery': return <TruckIcon className="w-6 h-6" />;
@@ -208,7 +207,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                     order.status === 'delivery-failed' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300 font-bold' :
                     'bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-200'
                 }`}>
-                    {statusTranslations[order.status].title}
+                    {getStatusTranslation(order.status)}
                     {order.status === 'depot-issue' && <p className="font-normal mt-1">{order.discrepancy?.reason}</p>}
                     {order.status === 'delivery-failed' && <p className="font-normal mt-1">{order.deliveryFailureReason?.reason}: {order.deliveryFailureReason?.details}</p>}
                 </div>
@@ -225,8 +224,8 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                            {isActive ? getStepIcon(step) : <div className="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full"></div>}
                         </div>
                         <div className="ml-4 sm:ml-0 sm:mt-2 text-left sm:text-center">
-                          <p className={`text-sm font-semibold ${isActive ? 'text-kmer-green' : 'text-gray-500 dark:text-gray-400'}`}>{statusTranslations[step].title}</p>
-                          {isCurrent && <p className="text-xs text-gray-500 dark:text-gray-400 px-2">{statusTranslations[step].description}</p>}
+                          <p className={`text-sm font-semibold ${isActive ? 'text-kmer-green' : 'text-gray-500 dark:text-gray-400'}`}>{getStatusTranslation(step)}</p>
+                          {isCurrent && <p className="text-xs text-gray-500 dark:text-gray-400 px-2">{statusDescriptions[step]}</p>}
                         </div>
                         
                         {index < relevantStatusSteps.length - 1 && (
@@ -246,7 +245,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                     <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
                         {(order.statusChangeLog || []).map((log, index) => (
                             <li key={index}>
-                                <span className="font-semibold">{new Date(log.date).toLocaleString('fr-FR')}:</span> {statusTranslations[log.status].title} <span className="text-xs text-gray-400">(par {log.changedBy})</span>
+                                <span className="font-semibold">{new Date(log.date).toLocaleString('fr-FR')}:</span> {getStatusTranslation(log.status)} <span className="text-xs text-gray-400">(par {log.changedBy})</span>
                             </li>
                         ))}
                     </ul>
@@ -255,7 +254,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
             <div>
               <h3 className="font-semibold mb-4 dark:text-white flex items-center gap-2"><QrCodeIcon className="w-5 h-5"/> Suivi par QR Code</h3>
               <div className="flex flex-col sm:flex-row items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900/50 rounded-lg">
-                  <canvas ref={qrCodeRef} className="rounded-lg shadow-sm"></canvas>
+                  <canvas ref={qrCodeRef} className="rounded-lg shadow-sm mx-auto"></canvas>
                   <div>
                     <p className="text-sm font-semibold dark:text-gray-200">Numéro de suivi :</p>
                     <p className="font-mono text-lg bg-gray-200 dark:bg-gray-700 px-2 py-1 rounded-md inline-block">{order.trackingNumber}</p>

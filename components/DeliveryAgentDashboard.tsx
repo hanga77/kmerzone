@@ -1,8 +1,8 @@
-
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { QrCodeIcon, MapIcon, ListBulletIcon, PhotoIcon, ChartPieIcon, XIcon, CheckIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 declare namespace L {
     // Basic type for LatLng to satisfy the type checker for the global L object from Leaflet.
@@ -43,7 +43,8 @@ const statusTranslations: { [key in OrderStatus]: string } = {
 const ScannerModal: React.FC<{
     onClose: () => void;
     onScanSuccess: (decodedText: string) => void;
-}> = ({ onClose, onScanSuccess }) => {
+    t: (key: string) => string;
+}> = ({ onClose, onScanSuccess, t }) => {
     const html5QrCodeRef = useRef<any>(null);
     const [scannerError, setScannerError] = useState<string | null>(null);
 
@@ -73,11 +74,11 @@ const ScannerModal: React.FC<{
                         );
                     }
                 } else {
-                     setScannerError("Aucune caméra trouvée.");
+                     setScannerError(t('deliveryDashboard.noCamera'));
                 }
             } catch (err) {
                 console.error("Failed to start scanner", err);
-                setScannerError("Impossible d'activer la caméra. Veuillez vérifier les permissions.");
+                setScannerError(t('deliveryDashboard.scannerError'));
             }
         };
 
@@ -89,15 +90,15 @@ const ScannerModal: React.FC<{
                 html5QrCodeRef.current.stop().catch((err: any) => console.error("Error stopping scanner", err));
             }
         };
-    }, [onClose, onScanSuccess]);
+    }, [onClose, onScanSuccess, t]);
 
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
             <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full text-white">
-                <h3 className="text-xl font-bold mb-4">Scanner le colis</h3>
+                <h3 className="text-xl font-bold mb-4">{t('deliveryDashboard.scanPackage')}</h3>
                 <div id="reader" className="w-full h-64 bg-gray-900 rounded-md"></div>
                 {scannerError && <p className="text-red-400 mt-2">{scannerError}</p>}
-                <button onClick={onClose} className="mt-4 w-full bg-gray-600 py-2 rounded-md">Annuler</button>
+                <button onClick={onClose} className="mt-4 w-full bg-gray-600 py-2 rounded-md">{t('common.cancel')}</button>
             </div>
         </div>
     );
@@ -107,15 +108,16 @@ const SignatureModal: React.FC<{
     order: Order;
     onClose: () => void;
     onConfirm: (orderId: string, recipientName: string) => void;
-}> = ({ order, onClose, onConfirm }) => {
+    t: (key: string) => string;
+}> = ({ order, onClose, onConfirm, t }) => {
     const [recipientName, setRecipientName] = useState('');
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                <h3 className="text-xl font-bold mb-4 dark:text-white">Confirmer la livraison</h3>
-                <p className="text-sm mb-4">Commande: <span className="font-mono">{order.id}</span></p>
+                <h3 className="text-xl font-bold mb-4 dark:text-white">{t('deliveryDashboard.confirmDelivery')}</h3>
+                <p className="text-sm mb-4">{t('deliveryDashboard.order')}: <span className="font-mono">{order.id}</span></p>
                 <div>
-                    <label htmlFor="recipientName" className="block text-sm font-medium dark:text-gray-300">Nom du réceptionnaire *</label>
+                    <label htmlFor="recipientName" className="block text-sm font-medium dark:text-gray-300">{t('deliveryDashboard.recipientName')}</label>
                     <input
                         id="recipientName"
                         type="text"
@@ -127,9 +129,9 @@ const SignatureModal: React.FC<{
                     />
                 </div>
                 <div className="flex justify-end gap-2 mt-6">
-                    <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg">Annuler</button>
+                    <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg">{t('common.cancel')}</button>
                     <button onClick={() => onConfirm(order.id, recipientName)} disabled={!recipientName.trim()} className="bg-green-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-400 flex items-center gap-2">
-                        <CheckIcon className="w-5 h-5"/> Confirmer
+                        <CheckIcon className="w-5 h-5"/> {t('deliveryDashboard.confirm')}
                     </button>
                 </div>
             </div>
@@ -141,30 +143,31 @@ const DeliveryFailureModal: React.FC<{
     order: Order;
     onClose: () => void;
     onConfirm: (orderId: string, failureReason: Required<Order['deliveryFailureReason']>) => void;
-}> = ({ order, onClose, onConfirm }) => {
+    t: (key: string) => string;
+}> = ({ order, onClose, onConfirm, t }) => {
     const [reason, setReason] = useState<'client-absent' | 'adresse-erronee' | 'colis-refuse'>('client-absent');
     const [details, setDetails] = useState('');
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                <h3 className="text-xl font-bold mb-4 dark:text-white">Signaler un échec de livraison</h3>
-                <p className="text-sm mb-4">Commande: <span className="font-mono">{order.id}</span></p>
+                <h3 className="text-xl font-bold mb-4 dark:text-white">{t('deliveryDashboard.reportFailure')}</h3>
+                <p className="text-sm mb-4">{t('deliveryDashboard.order')}: <span className="font-mono">{order.id}</span></p>
                 <div className="space-y-4">
                     <div>
-                        <label htmlFor="failureReason" className="block text-sm font-medium dark:text-gray-300">Motif *</label>
+                        <label htmlFor="failureReason" className="block text-sm font-medium dark:text-gray-300">{t('deliveryDashboard.reason')}</label>
                         <select
                             id="failureReason"
                             value={reason}
                             onChange={(e) => setReason(e.target.value as any)}
                             className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
                         >
-                            <option value="client-absent">Client absent</option>
-                            <option value="adresse-erronee">Adresse erronée</option>
-                            <option value="colis-refuse">Colis refusé</option>
+                            <option value="client-absent">{t('deliveryDashboard.clientAbsent')}</option>
+                            <option value="adresse-erronee">{t('deliveryDashboard.wrongAddress')}</option>
+                            <option value="colis-refuse">{t('deliveryDashboard.packageRefused')}</option>
                         </select>
                     </div>
                     <div>
-                        <label htmlFor="failureDetails" className="block text-sm font-medium dark:text-gray-300">Détails supplémentaires *</label>
+                        <label htmlFor="failureDetails" className="block text-sm font-medium dark:text-gray-300">{t('deliveryDashboard.details')}</label>
                         <textarea
                             id="failureDetails"
                             value={details}
@@ -177,9 +180,9 @@ const DeliveryFailureModal: React.FC<{
                     </div>
                 </div>
                 <div className="flex justify-end gap-2 mt-6">
-                    <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg">Annuler</button>
+                    <button onClick={onClose} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg">{t('common.cancel')}</button>
                     <button onClick={() => onConfirm(order.id, { reason, details, date: new Date().toISOString() })} disabled={!details.trim()} className="bg-red-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-400 flex items-center gap-2">
-                        <XIcon className="w-5 h-5"/> Confirmer l'échec
+                        <XIcon className="w-5 h-5"/> {t('deliveryDashboard.confirmFailure')}
                     </button>
                 </div>
             </div>
@@ -217,7 +220,7 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
             }
         }
          // Invalidate map size after a short delay to ensure it renders correctly
-        // FIX: Pass `true` to `leafletMap.current.invalidateSize()` to satisfy the expected argument, ensuring the map resizes correctly with animation.
+        // FIX: Pass boolean argument to invalidateSize to fix error where one argument was expected.
         setTimeout(() => leafletMap.current?.invalidateSize(true), 100);
     }, [start, end]);
 
@@ -226,6 +229,7 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
 
 export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onLogout, onUpdateUserAvailability, onUpdateDeliveryStatus }) => {
     const { user } = useAuth();
+    const { t } = useLanguage();
     const [view, setView] = useState<'missions' | 'history'>('missions');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [modalState, setModalState] = useState<{ type: 'signature' | 'failure'; order: Order } | null>(null);
@@ -300,19 +304,19 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
 
     return (
         <>
-            {isScannerOpen && <ScannerModal onClose={handleScannerClose} onScanSuccess={handleScanSuccess} />}
-            {modalState?.type === 'signature' && <SignatureModal order={modalState.order} onClose={() => setModalState(null)} onConfirm={handleConfirmDelivery} />}
-            {modalState?.type === 'failure' && <DeliveryFailureModal order={modalState.order} onClose={() => setModalState(null)} onConfirm={handleConfirmFailure} />}
+            {isScannerOpen && <ScannerModal onClose={handleScannerClose} onScanSuccess={handleScanSuccess} t={t} />}
+            {modalState?.type === 'signature' && <SignatureModal order={modalState.order} onClose={() => setModalState(null)} onConfirm={handleConfirmDelivery} t={t} />}
+            {modalState?.type === 'failure' && <DeliveryFailureModal order={modalState.order} onClose={() => setModalState(null)} onConfirm={handleConfirmFailure} t={t} />}
             
             <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
                 <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
                     <div className="container mx-auto px-4 sm:px-6 py-3">
                         <div className="flex justify-between items-center">
                             <div>
-                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Tableau de bord Livreur</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Agent: {user.name}</p>
+                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">{t('deliveryDashboard.title')}</h1>
+                                <p className="text-sm text-gray-500 dark:text-gray-400">{t('deliveryDashboard.agent')}: {user.name}</p>
                             </div>
-                            <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">Déconnexion</button>
+                            <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">{t('deliveryDashboard.logout')}</button>
                         </div>
                     </div>
                 </header>
@@ -320,27 +324,27 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md flex justify-between items-center">
                             <div>
-                                <h3 className="font-bold text-gray-600 dark:text-gray-300">Statut</h3>
-                                <p className={`text-xl font-bold ${user.availabilityStatus === 'available' ? 'text-green-500' : 'text-red-500'}`}>{user.availabilityStatus === 'available' ? 'Disponible' : 'Indisponible'}</p>
+                                <h3 className="font-bold text-gray-600 dark:text-gray-300">{t('deliveryDashboard.status')}</h3>
+                                <p className={`text-xl font-bold ${user.availabilityStatus === 'available' ? 'text-green-500' : 'text-red-500'}`}>{user.availabilityStatus === 'available' ? t('deliveryDashboard.available') : t('deliveryDashboard.unavailable')}</p>
                             </div>
                              <button onClick={() => onUpdateUserAvailability(user.id, user.availabilityStatus === 'available' ? 'unavailable' : 'available')} className={`px-4 py-2 rounded-md font-semibold text-white ${user.availabilityStatus === 'available' ? 'bg-red-500' : 'bg-green-500'}`}>
-                                {user.availabilityStatus === 'available' ? 'Passer indisponible' : 'Passer disponible'}
+                                {user.availabilityStatus === 'available' ? t('deliveryDashboard.setUnavailable') : t('deliveryDashboard.setAvailable')}
                             </button>
                         </div>
                         <div className="p-4 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                            <h3 className="font-bold text-gray-600 dark:text-gray-300">Missions Actives</h3>
+                            <h3 className="font-bold text-gray-600 dark:text-gray-300">{t('deliveryDashboard.activeMissions')}</h3>
                             <p className="text-3xl font-bold text-gray-800 dark:text-white">{missions.length}</p>
                         </div>
                         <button onClick={() => setIsScannerOpen(true)} className="md:col-span-1 p-4 bg-kmer-green text-white rounded-lg shadow-md flex flex-col justify-center items-center text-center hover:bg-green-700">
                             <QrCodeIcon className="w-8 h-8"/>
-                            <p className="font-bold mt-1">Scanner un Colis</p>
+                            <p className="font-bold mt-1">{t('deliveryDashboard.scanPackage')}</p>
                         </button>
                     </div>
                     
                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
                         <div className="p-2 border-b dark:border-gray-700 flex justify-start items-center">
-                             <button onClick={() => setView('missions')} className={`px-4 py-2 font-semibold ${view === 'missions' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>Missions en cours</button>
-                             <button onClick={() => setView('history')} className={`px-4 py-2 font-semibold ${view === 'history' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>Historique</button>
+                             <button onClick={() => setView('missions')} className={`px-4 py-2 font-semibold ${view === 'missions' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>{t('deliveryDashboard.currentMissions')}</button>
+                             <button onClick={() => setView('history')} className={`px-4 py-2 font-semibold ${view === 'history' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>{t('deliveryDashboard.history')}</button>
                         </div>
 
                          <div className="space-y-4 p-4">
@@ -361,12 +365,12 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
                                     </div>
                                     {openMapOrderId === order.id && end && <MissionMap start={start} end={end} />}
                                     <div className="mt-4 flex flex-wrap gap-2">
-                                        {end && <button onClick={() => setOpenMapOrderId(prev => prev === order.id ? null : order.id)} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2"><MapIcon className="w-5 h-5"/>{openMapOrderId === order.id ? 'Cacher la carte' : 'Voir la carte'}</button>}
-                                        {order.status === 'ready-for-pickup' && <button onClick={() => onUpdateDeliveryStatus(order.id, 'picked-up')} className="bg-blue-500 text-white px-3 py-2 rounded-lg font-semibold text-sm">Récupéré chez le vendeur</button>}
+                                        {end && <button onClick={() => setOpenMapOrderId(prev => prev === order.id ? null : order.id)} className="bg-gray-200 dark:bg-gray-600 px-4 py-2 rounded-lg font-semibold text-sm flex items-center gap-2"><MapIcon className="w-5 h-5"/>{openMapOrderId === order.id ? t('deliveryDashboard.hideMap') : t('deliveryDashboard.showMap')}</button>}
+                                        {order.status === 'ready-for-pickup' && <button onClick={() => onUpdateDeliveryStatus(order.id, 'picked-up')} className="bg-blue-500 text-white px-3 py-2 rounded-lg font-semibold text-sm">{t('deliveryDashboard.pickedUpFromSeller')}</button>}
                                         {order.status === 'out-for-delivery' && (
                                             <>
-                                                <button onClick={() => setModalState({ type: 'signature', order })} className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold text-sm">Livré</button>
-                                                <button onClick={() => setModalState({ type: 'failure', order })} className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold text-sm">Échec livraison</button>
+                                                <button onClick={() => setModalState({ type: 'signature', order })} className="bg-green-500 text-white px-4 py-2 rounded-lg font-semibold text-sm">{t('deliveryDashboard.delivered')}</button>
+                                                <button onClick={() => setModalState({ type: 'failure', order })} className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold text-sm">{t('deliveryDashboard.deliveryFailed')}</button>
                                             </>
                                         )}
                                     </div>

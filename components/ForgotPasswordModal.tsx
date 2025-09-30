@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { XIcon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ForgotPasswordModalProps {
   onClose: () => void;
@@ -8,6 +9,7 @@ interface ForgotPasswordModalProps {
 }
 
 const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onClose, onEmailSubmit }) => {
+  const { t } = useLanguage();
   const [email, setEmail] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -26,23 +28,23 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onClose, onEm
 
         {submitted ? (
           <div className="text-center">
-            <h2 className="text-2xl font-bold mb-4 dark:text-white">Vérifiez vos e-mails</h2>
-            <p className="text-gray-600 dark:text-gray-400">Si un compte existe pour <strong>{email}</strong>, vous y trouverez un lien pour réinitialiser votre mot de passe.</p>
+            <h2 className="text-2xl font-bold mb-4 dark:text-white">{t('forgotPassword.checkEmailTitle')}</h2>
+            <p className="text-gray-600 dark:text-gray-400">{t('forgotPassword.checkEmailDescription', email)}</p>
             <button
               onClick={onClose}
               className="mt-6 bg-kmer-green hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline w-full"
             >
-              Fermer
+              {t('forgotPassword.close')}
             </button>
           </div>
         ) : (
           <>
-            <h2 className="text-2xl font-bold text-center mb-4 dark:text-white">Mot de passe oublié</h2>
-            <p className="text-center text-gray-600 dark:text-gray-400 mb-6">Ne vous inquiétez pas. Entrez votre email et nous vous enverrons un lien de réinitialisation.</p>
+            <h2 className="text-2xl font-bold text-center mb-4 dark:text-white">{t('forgotPassword.title')}</h2>
+            <p className="text-center text-gray-600 dark:text-gray-400 mb-6">{t('forgotPassword.description')}</p>
             <form onSubmit={handleSubmit}>
               <div className="mb-4">
                 <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="forgot-email">
-                  Adresse e-mail
+                  {t('forgotPassword.emailLabel')}
                 </label>
                 <input
                   className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green"
@@ -59,14 +61,14 @@ const ForgotPasswordModal: React.FC<ForgotPasswordModalProps> = ({ onClose, onEm
                   className="bg-kmer-green hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline w-full"
                   type="submit"
                 >
-                  Envoyer le lien
+                  {t('forgotPassword.sendLink')}
                 </button>
                  <button
                   type="button"
                   onClick={onClose}
                   className="mt-4 text-gray-500 dark:text-gray-400 text-sm hover:underline"
                 >
-                  Annuler
+                  {t('common.cancel')}
                 </button>
               </div>
             </form>

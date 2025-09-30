@@ -377,6 +377,29 @@ export const useSiteData = () => {
         logActivity(user, 'ORDER_STATUS_UPDATED', `Statut de la commande ${orderId} changé à ${status}.`);
     }, [setAllOrders, logActivity]);
     
+    const handleDepotCheckIn = useCallback((orderId: string, storageLocationId: string, user: User) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId) {
+                const newTrackingEvent: TrackingEvent = {
+                    status: 'at-depot',
+                    date: new Date().toISOString(),
+                    location: user.name,
+                    details: `Colis enregistré au dépôt à l'emplacement: ${storageLocationId}.`
+                };
+                return {
+                    ...o,
+                    status: 'at-depot',
+                    storageLocationId,
+                    checkedInAt: new Date().toISOString(),
+                    checkedInBy: user.id,
+                    trackingHistory: [...(o.trackingHistory || []), newTrackingEvent]
+                };
+            }
+            return o;
+        }));
+        logActivity(user, 'DEPOT_CHECK_IN', `Colis ${orderId} enregistré à l'emplacement ${storageLocationId}.`);
+    }, [setAllOrders, logActivity]);
+    
     // Seller-specific actions
     const handleSellerUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus, user: User) => {
         setAllOrders(prev => prev.map(o => {
@@ -425,6 +448,51 @@ export const useSiteData = () => {
         setAllStores(prev => prev.map(s => s.id === storeId ? { ...s, ...updatedData } : s));
         logActivity(user, 'STORE_PROFILE_UPDATE', `Profil de la boutique ${storeId} mis à jour.`);
     }, [setAllStores, logActivity]);
+
+    const createStoreAndNotifyAdmin = useCallback((
+        storeData: Pick<Store, 'name' | 'logoUrl' | 'category' | 'location' | 'neighborhood' | 'sellerFirstName' | 'sellerLastName' | 'sellerPhone' | 'physicalAddress' | 'latitude' | 'longitude'>,
+        user: User, 
+        allUsers: User[]
+    ) => {
+        if (!user || user.role !== 'seller') {
+            console.error("Only users with role 'seller' can create a store.");
+            return null;
+        }
+
+        const requiredDocs = Object.entries(siteSettings.requiredSellerDocuments)
+            .filter(([, isRequired]) => isRequired)
+            .map(([name]) => ({ name, status: 'requested' as DocumentStatus }));
+
+        const newStore: Store = {
+            ...storeData,
+            id: `store-${Date.now()}`,
+            sellerId: user.id,
+            warnings: [],
+            status: 'pending',
+            documents: requiredDocs,
+            premiumStatus: 'standard',
+            subscriptionStatus: 'inactive',
+        };
+
+        setAllStores(prev => [...prev, newStore]);
+
+        const adminUsers = allUsers.filter(u => u.role === 'superadmin');
+        const newNotifications: Notification[] = adminUsers.map(admin => ({
+            id: `notif-${Date.now()}-${admin.id}`,
+            userId: admin.id,
+            message: `Nouvelle boutique en attente d'approbation : "${newStore.name}".`,
+            link: {
+                page: 'superadmin-dashboard',
+            },
+            isRead: false,
+            timestamp: new Date().toISOString(),
+        }));
+        
+        setAllNotifications(prev => [...prev, ...newNotifications]);
+        logActivity(user, 'STORE_CREATED', `Boutique "${newStore.name}" créée et en attente d'approbation.`);
+        
+        return newStore;
+    }, [setAllStores, setAllNotifications, logActivity, siteSettings.requiredSellerDocuments]);
 
     return {
         allProducts, setAllProducts,
@@ -481,11 +549,13 @@ export const useSiteData = () => {
         handleAdminUpdateCategory,
         handleUpdateDocumentStatus,
         handleResolveDispute,
+        handleDepotCheckIn,
         // Seller actions
         handleSellerUpdateOrderStatus,
         handleCreateOrUpdateCollection,
         handleDeleteCollection,
         handleUpdateStoreProfile,
         handleUpdateDeliveryStatus,
+        createStoreAndNotifyAdmin,
     };
 };

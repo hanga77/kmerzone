@@ -1,6 +1,7 @@
 import React from 'react';
 import type { FlashSale, Product } from '../../types';
 import { CheckIcon, XIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface FlashSaleDetailViewProps {
   sale: FlashSale;
@@ -10,6 +11,7 @@ interface FlashSaleDetailViewProps {
 }
 
 const FlashSaleDetailView: React.FC<FlashSaleDetailViewProps> = ({ sale, allProducts, onUpdateStatus, onBatchUpdateStatus }) => {
+  const { t } = useLanguage();
   const pendingProductIds = sale.products.filter(p => p.status === 'pending').map(p => p.productId);
 
   const getProductInfo = (productId: string) => {
@@ -35,11 +37,11 @@ const FlashSaleDetailView: React.FC<FlashSaleDetailViewProps> = ({ sale, allProd
   return (
     <div className="p-4 bg-gray-100 dark:bg-gray-900/50">
       <div className="flex justify-between items-center mb-4">
-        <h4 className="font-bold">Soumissions de produits</h4>
+        <h4 className="font-bold">{t('superadmin.marketing.flashSaleDetail.submissions')}</h4>
         {pendingProductIds.length > 0 && (
           <div className="flex gap-2">
-            <button onClick={handleBatchApprove} className="bg-green-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-green-600">Tout Approuver</button>
-            <button onClick={handleBatchReject} className="bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-600">Tout Rejeter</button>
+            <button onClick={handleBatchApprove} className="bg-green-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-green-600">{t('superadmin.marketing.flashSaleDetail.approveAll')}</button>
+            <button onClick={handleBatchReject} className="bg-red-500 text-white text-xs font-bold py-1 px-3 rounded-md hover:bg-red-600">{t('superadmin.marketing.flashSaleDetail.rejectAll')}</button>
           </div>
         )}
       </div>
@@ -47,12 +49,12 @@ const FlashSaleDetailView: React.FC<FlashSaleDetailViewProps> = ({ sale, allProd
         <table className="min-w-full text-sm">
           <thead className="bg-gray-200 dark:bg-gray-700">
             <tr>
-              <th className="px-4 py-2 text-left">Produit</th>
-              <th className="px-4 py-2 text-left">Vendeur</th>
-              <th className="px-4 py-2 text-right">Prix Original</th>
-              <th className="px-4 py-2 text-right">Prix Flash</th>
-              <th className="px-4 py-2 text-center">Statut</th>
-              <th className="px-4 py-2 text-center">Actions</th>
+              <th className="px-4 py-2 text-left">{t('superadmin.marketing.flashSaleDetail.product')}</th>
+              <th className="px-4 py-2 text-left">{t('superadmin.marketing.flashSaleDetail.seller')}</th>
+              <th className="px-4 py-2 text-right">{t('superadmin.marketing.flashSaleDetail.originalPrice')}</th>
+              <th className="px-4 py-2 text-right">{t('superadmin.marketing.flashSaleDetail.flashPrice')}</th>
+              <th className="px-4 py-2 text-center">{t('common.status')}</th>
+              <th className="px-4 py-2 text-center">{t('common.actions')}</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-200 dark:divide-gray-600">
@@ -78,8 +80,8 @@ const FlashSaleDetailView: React.FC<FlashSaleDetailViewProps> = ({ sale, allProd
                   <td className="px-4 py-2 text-center">
                     {sp.status === 'pending' ? (
                       <div className="flex justify-center gap-2">
-                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'approved')} className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-full" aria-label="Approuver"><CheckIcon className="w-5 h-5"/></button>
-                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'rejected')} className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full" aria-label="Rejeter"><XIcon className="w-5 h-5"/></button>
+                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'approved')} className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-full" aria-label={t('common.approve')}><CheckIcon className="w-5 h-5"/></button>
+                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'rejected')} className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full" aria-label={t('common.reject')}><XIcon className="w-5 h-5"/></button>
                       </div>
                     ) : '-'}
                   </td>

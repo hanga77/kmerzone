@@ -7,9 +7,9 @@ export function usePersistentState<T,>(key: string, defaultValue: T): [T, React.
             if (storedValue) {
                 const parsed = JSON.parse(storedValue);
                 // Specific fix for siteSettings data migration from localStorage.
-                // If the stored settings object is missing the `seo` property,
+                // If the stored settings object is missing new properties,
                 // merge it with the default value to prevent a crash.
-                if (key === 'siteSettings' && (parsed.seo === undefined || parsed.socialLinks === undefined)) {
+                if (key === 'siteSettings' && (parsed.seo === undefined || parsed.socialLinks === undefined || !parsed.standardPlan)) {
                     const defaultSettings = defaultValue as object;
                     return { ...defaultSettings, ...parsed };
                 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import type { Store, DocumentStatus } from '../../types';
 import { CheckCircleIcon, ClockIcon, ExclamationTriangleIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface DocumentsPanelProps {
     store: Store;
@@ -17,6 +18,7 @@ const getStatusIcon = (status: DocumentStatus) => {
 };
 
 const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ store, onUploadDocument }) => {
+    const { t } = useLanguage();
 
     const handleFileUpload = (documentName: string, e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
@@ -32,7 +34,7 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ store, onUploadDocument
     
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4">Mes Documents</h2>
+            <h2 className="text-2xl font-bold mb-4">{t('sellerDashboard.documents.title')}</h2>
             <div className="space-y-4">
                 {store.documents.map(doc => (
                     <div key={doc.name} className="p-4 border rounded-lg dark:border-gray-700">
@@ -43,12 +45,12 @@ const DocumentsPanel: React.FC<DocumentsPanelProps> = ({ store, onUploadDocument
                             </div>
                             {doc.status !== 'verified' && (
                                 <label className="bg-blue-500 text-white text-sm font-bold py-1 px-3 rounded-md cursor-pointer">
-                                    {doc.status === 'uploaded' ? 'Remplacer' : 'Téléverser'}
+                                    {doc.status === 'uploaded' ? t('sellerDashboard.documents.replace') : t('sellerDashboard.documents.upload')}
                                     <input type="file" className="hidden" onChange={(e) => handleFileUpload(doc.name, e)} />
                                 </label>
                             )}
                         </div>
-                        {doc.rejectionReason && <p className="text-xs text-red-500 mt-1">Motif du rejet: {doc.rejectionReason}</p>}
+                        {doc.rejectionReason && <p className="text-xs text-red-500 mt-1">{t('sellerDashboard.documents.rejectionReason', doc.rejectionReason)}</p>}
                     </div>
                 ))}
             </div>

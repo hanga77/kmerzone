@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection } from '../types';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { 
     ChartPieIcon, ShoppingBagIcon, TruckIcon, StarIcon, TagIcon, BoltIcon, 
     BarChartIcon, BanknotesIcon, BuildingStorefrontIcon, DocumentTextIcon, 
@@ -61,56 +62,61 @@ interface SellerDashboardProps {
   onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
 }
 
-const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number, isLocked?: boolean }> = ({ icon, label, isActive, onClick, count, isLocked }) => (
-    <button
-        onClick={onClick}
-        disabled={isLocked}
-        className={`relative flex items-center gap-3 w-full text-left px-3 py-3 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
-            isActive
-                ? 'bg-kmer-green/10 text-kmer-green'
-                : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400'
-        } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
-        title={isLocked ? "Passez au statut Premium pour débloquer cette fonctionnalité" : ""}
-    >
-        {icon}
-        <span>{label}</span>
-        {count !== undefined && count > 0 && (
-            <span className="ml-auto text-xs bg-kmer-red text-white rounded-full px-1.5 py-0.5">{count}</span>
-        )}
-    </button>
-);
+const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number, isLocked?: boolean }> = ({ icon, label, isActive, onClick, count, isLocked }) => {
+    const { t } = useLanguage();
+    return (
+        <button
+            onClick={onClick}
+            disabled={isLocked}
+            className={`relative flex items-center gap-3 w-full text-left px-3 py-3 text-sm font-semibold rounded-lg transition-colors whitespace-nowrap ${
+                isActive
+                    ? 'bg-kmer-green/10 text-kmer-green'
+                    : 'text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 dark:text-gray-400'
+            } ${isLocked ? 'opacity-50 cursor-not-allowed' : ''}`}
+            title={isLocked ? t('sellerDashboard.premiumFeatureTooltip') : ""}
+        >
+            {icon}
+            <span>{label}</span>
+            {count !== undefined && count > 0 && (
+                <span className="ml-auto text-xs bg-kmer-red text-white rounded-full px-1.5 py-0.5">{count}</span>
+            )}
+        </button>
+    );
+};
+
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade } = props;
     const [activeTab, setActiveTab] = useState(initialTab || 'overview');
+    const { t } = useLanguage();
     
     useEffect(() => {
         setActiveTab(initialTab);
     }, [initialTab]);
     
     if (!store) {
-        return <div className="p-8 text-center">Chargement des informations de la boutique...</div>;
+        return <div className="p-8 text-center">Loading store information...</div>;
     }
     
     const isPremium = store.premiumStatus === 'premium' || store.premiumStatus === 'super_premium';
     const unreadNotifications = sellerNotifications.filter(n => !n.isRead).length;
 
     const TABS = [
-      { id: 'overview', label: 'Aperçu', icon: <ChartPieIcon className="w-5 h-5"/>, count: unreadNotifications, isLocked: false },
-      { id: 'products', label: 'Produits', icon: <ShoppingBagIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'collections', label: 'Collections', icon: <BookmarkSquareIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'orders', label: 'Commandes', icon: <TruckIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'reviews', label: 'Avis Clients', icon: <StarIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'promotions', label: 'Promotions', icon: <TagIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'flash-sales', label: 'Ventes Flash', icon: <BoltIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'analytics', label: 'Statistiques', icon: <BarChartIcon className="w-5 h-5"/>, isLocked: !isPremium },
-      { id: 'payouts', label: 'Paiements', icon: <BanknotesIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'livraison', label: 'Livraison', icon: <TruckIcon className="w-5 h-5"/>, isLocked: !isPremium },
-      { id: 'profile', label: 'Profil Boutique', icon: <BuildingStorefrontIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'subscription', label: 'Abonnement', icon: <StarPlatinumIcon className="w-5 h-5" />, isLocked: false },
-      { id: 'documents', label: 'Documents', icon: <DocumentTextIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'chat', label: 'Messages', icon: <ChatBubbleLeftRightIcon className="w-5 h-5"/>, isLocked: false },
-      { id: 'support', label: 'Support', icon: <ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'overview', label: t('sellerDashboard.tabs.overview'), icon: <ChartPieIcon className="w-5 h-5"/>, count: unreadNotifications, isLocked: false },
+      { id: 'products', label: t('sellerDashboard.tabs.products'), icon: <ShoppingBagIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'collections', label: t('sellerDashboard.tabs.collections'), icon: <BookmarkSquareIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'orders', label: t('sellerDashboard.tabs.orders'), icon: <TruckIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'reviews', label: t('sellerDashboard.tabs.reviews'), icon: <StarIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'promotions', label: t('sellerDashboard.tabs.promotions'), icon: <TagIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'flash-sales', label: t('sellerDashboard.tabs.flashSales'), icon: <BoltIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'analytics', label: t('sellerDashboard.tabs.analytics'), icon: <BarChartIcon className="w-5 h-5"/>, isLocked: !isPremium },
+      { id: 'payouts', label: t('sellerDashboard.tabs.payouts'), icon: <BanknotesIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'livraison', label: t('sellerDashboard.tabs.delivery'), icon: <TruckIcon className="w-5 h-5"/>, isLocked: !isPremium },
+      { id: 'profile', label: t('sellerDashboard.tabs.profile'), icon: <BuildingStorefrontIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'subscription', label: t('sellerDashboard.tabs.subscription'), icon: <StarPlatinumIcon className="w-5 h-5" />, isLocked: false },
+      { id: 'documents', label: t('sellerDashboard.tabs.documents'), icon: <DocumentTextIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'chat', label: t('sellerDashboard.tabs.chat'), icon: <ChatBubbleLeftRightIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'support', label: t('sellerDashboard.tabs.support'), icon: <ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>, isLocked: false },
     ];
     
     const renderContent = () => {

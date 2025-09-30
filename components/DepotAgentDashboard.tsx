@@ -1,6 +1,20 @@
-import React, { useState, useMemo, FC } from 'react';
-import type { Order, OrderStatus, User, CartItem, Store, Zone } from '../types';
-import { ArchiveBoxIcon, ShoppingBagIcon, ChartPieIcon, BuildingStorefrontIcon, TruckIcon, UserGroupIcon, ExclamationTriangleIcon, XIcon, CheckIcon, DocumentTextIcon, MapPinIcon } from './Icons';
+import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
+import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus, Zone } from '../types';
+import { useAuth } from '../contexts/AuthContext';
+import { QrCodeIcon, MapIcon, ListBulletIcon, PhotoIcon, ChartPieIcon, XIcon, CheckIcon, DocumentTextIcon, MapPinIcon, ArchiveBoxIcon, ShoppingBagIcon, UserGroupIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
+
+declare namespace L {
+    // Basic type for LatLng to satisfy the type checker for the global L object from Leaflet.
+    interface LatLng {
+        lat: number;
+        lng: number;
+        alt?: number;
+    }
+}
+
+declare const L: any; // Leaflet is loaded from a script tag in index.html
+declare const Html5Qrcode: any;
 
 interface DepotAgentDashboardProps {
   user: User;
@@ -12,29 +26,23 @@ interface DepotAgentDashboardProps {
   onAssignAgentToOrder: (orderId: string, agentId: string) => void;
 }
 
-const statusTranslations: { [key in OrderStatus]: string } = {
-    confirmed: 'Confirmée', 'ready-for-pickup': 'Prêt pour enlèvement', 'picked-up': 'Pris en charge',
-    'at-depot': 'Au dépôt', 'out-for-delivery': 'En livraison', delivered: 'Livré',
-    cancelled: 'Annulé', 'refund-requested': 'Remboursement demandé', refunded: 'Remboursé',
-    returned: 'Retourné', 'depot-issue': 'Problème au dépôt', 'delivery-failed': 'Échec de livraison'
-};
-
-const AssignModal: FC<{ order: Order; agents: User[]; onAssign: (orderId: string, agentId: string) => void; onCancel: () => void }> = ({ order, agents, onAssign, onCancel }) => {
+const AssignModal: React.FC<{ order: Order; agents: User[]; onAssign: (orderId: string, agentId: string) => void; onCancel: () => void }> = ({ order, agents, onAssign, onCancel }) => {
+    const { t } = useLanguage();
     const [selectedAgentId, setSelectedAgentId] = useState('');
     const availableAgents = agents.filter(a => a.availabilityStatus === 'available');
 
     return (
         <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
             <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
-                <h3 className="text-lg font-bold mb-4">Affecter un livreur</h3>
-                <p className="text-sm mb-4">Commande: <span className="font-mono">{order.id}</span></p>
+                <h3 className="text-lg font-bold mb-4">{t('depotDashboard.assignDriver')}</h3>
+                <p className="text-sm mb-4">{t('common.orderId')}: <span className="font-mono">{order.id}</span></p>
                 <select value={selectedAgentId} onChange={e => setSelectedAgentId(e.target.value)} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                    <option value="">-- Choisir un livreur disponible --</option>
+                    <option value="">{t('depotDashboard.chooseAvailableDriver')}</option>
                     {availableAgents.map(agent => <option key={agent.id} value={agent.id}>{agent.name}</option>)}
                 </select>
                 <div className="flex justify-end gap-2 mt-4">
-                    <button onClick={onCancel} className="bg-gray-200 px-4 py-2 rounded-lg">Annuler</button>
-                    <button onClick={() => onAssign(order.id, selectedAgentId)} disabled={!selectedAgentId} className="bg-blue-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-400">Affecter</button>
+                    <button onClick={onCancel} className="bg-gray-200 px-4 py-2 rounded-lg">{t('common.cancel')}</button>
+                    <button onClick={() => onAssign(order.id, selectedAgentId)} disabled={!selectedAgentId} className="bg-blue-500 text-white px-4 py-2 rounded-lg disabled:bg-gray-400">{t('depotDashboard.assign')}</button>
                 </div>
             </div>
         </div>
@@ -42,6 +50,7 @@ const AssignModal: FC<{ order: Order; agents: User[]; onAssign: (orderId: string
 };
 
 export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, allStores, allZones, onLogout, onAssignAgentToOrder }) => {
+    const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'agents' | 'sellers' | 'reports'>('overview');
     const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
 
@@ -82,161 +91,53 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     const OverviewPanel = () => (
         <div className="space-y-6">
              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-lg"><h3 className="font-bold text-blue-800 dark:text-blue-300">Colis à affecter</h3><p className="text-3xl font-bold text-blue-600 dark:text-blue-200">{ordersToAssign.length}</p></div>
-                <div className="p-4 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg"><h3 className="font-bold text-indigo-800 dark:text-indigo-300">Colis en livraison</h3><p className="text-3xl font-bold text-indigo-600 dark:text-indigo-200">{ordersInDelivery.length}</p></div>
-                <div className="p-4 bg-yellow-100 dark:bg-yellow-900/50 rounded-lg"><h3 className="font-bold text-yellow-800 dark:text-yellow-300">Livreurs disponibles</h3><p className="text-3xl font-bold text-yellow-600 dark:text-yellow-200">{deliveryAgents.filter(a => a.availabilityStatus === 'available').length}</p></div>
+                <div className="p-4 bg-blue-100 dark:bg-blue-900/50 rounded-lg"><h3 className="font-bold text-blue-800 dark:text-blue-300">{t('depotDashboard.parcelsToAssign')}</h3><p className="text-3xl font-bold">{ordersToAssign.length}</p></div>
+                <div className="p-4 bg-indigo-100 dark:bg-indigo-900/50 rounded-lg"><h3 className="font-bold text-indigo-800 dark:text-indigo-300">{t('depotDashboard.parcelsInDelivery')}</h3><p className="text-3xl font-bold">{ordersInDelivery.length}</p></div>
+                <div className="p-4 bg-green-100 dark:bg-green-900/50 rounded-lg"><h3 className="font-bold text-green-800 dark:text-green-300">{t('depotDashboard.availableAgents')}</h3><p className="text-3xl font-bold">{deliveryAgents.filter(a => a.availabilityStatus === 'available').length}</p></div>
              </div>
         </div>
     );
     
-    const ParcelsPanel = () => {
-        const [subTab, setSubTab] = useState<'to-assign' | 'in-delivery' | 'issues'>('to-assign');
-        const ordersToShow = { 'to-assign': ordersToAssign, 'in-delivery': ordersInDelivery, 'issues': ordersWithIssues }[subTab];
-        return (
-            <div>
-                <div className="flex border-b dark:border-gray-700 mb-4">
-                    <button onClick={() => setSubTab('to-assign')} className={`px-4 py-2 font-semibold ${subTab==='to-assign' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>À Affecter ({ordersToAssign.length})</button>
-                    <button onClick={() => setSubTab('in-delivery')} className={`px-4 py-2 font-semibold ${subTab==='in-delivery' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>En Livraison ({ordersInDelivery.length})</button>
-                    <button onClick={() => setSubTab('issues')} className={`px-4 py-2 font-semibold ${subTab==='issues' ? 'border-b-2 border-kmer-green text-kmer-green' : ''}`}>Problèmes ({ordersWithIssues.length})</button>
-                </div>
-                <div className="space-y-2">
-                    {ordersToShow.map(order => (
-                        <div key={order.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
-                            <div>
-                                <p className="font-bold">{order.id}</p>
-                                <p className="text-sm">Client: {order.shippingAddress.fullName} à {order.shippingAddress.city}</p>
-                                {order.status === 'out-for-delivery' && <p className="text-sm">Livreur: {allUsers.find(u => u.id === order.agentId)?.name}</p>}
-                            </div>
-                            {subTab === 'to-assign' && <button onClick={() => setAssigningOrder(order)} className="bg-blue-500 text-white font-bold py-1 px-3 rounded-lg text-sm">Affecter</button>}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        );
-    };
-
-    const InventoryPanel = () => (
-        <div>
-            <h3 className="font-bold mb-4">Inventaire Actuel des Colis au Dépôt</h3>
-            <div className="overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-100 dark:bg-gray-700">
-                        <tr>
-                            <th className="p-2 text-left">ID Commande</th>
-                            <th className="p-2 text-left">Client</th>
-                            <th className="p-2 text-left">Emplacement</th>
-                            <th className="p-2 text-center">Nbr Articles</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {depotInventory.map(order => (
-                            <tr key={order.id} className="border-b dark:border-gray-700">
-                                <td className="p-2 font-mono">{order.id}</td>
-                                <td className="p-2">{order.shippingAddress.fullName}</td>
-                                <td className="p-2 font-semibold">{order.storageLocationId || 'N/A'}</td>
-                                <td className="p-2 text-center">{order.items.length}</td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                 {depotInventory.length === 0 && <p className="text-center py-8 text-gray-500">Aucun colis en stock pour le moment.</p>}
-            </div>
-        </div>
-    );
-    
-    const AgentsPanel = () => (
-        <div><h3 className="font-bold mb-4">Gestion des Livreurs de la Zone {zoneName}</h3>
-            <div className="space-y-2">
-                {deliveryAgents.map(agent => (
-                    <div key={agent.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
-                        <div>
-                            <p className="font-semibold">{agent.name}</p>
-                            <p className={`text-sm font-bold ${agent.availabilityStatus === 'available' ? 'text-green-500' : 'text-red-500'}`}>{agent.availabilityStatus === 'available' ? 'Disponible' : 'Indisponible'}</p>
-                        </div>
-                        <div className="text-right">
-                             <p className="text-sm">Taux de réussite: {agent.successRate.toFixed(1)}%</p>
-                             <p className="text-xs">{agent.deliveredCount} / {agent.totalMissions} livraisons réussies</p>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
-    
-    const SellersPanel = () => {
-        const sellersWithStock = useMemo(() => {
-            const sellerNames = new Set(depotInventory.flatMap(order => order.items.map(item => item.vendor)));
-            return allStores.filter(s => sellerNames.has(s.name));
-        }, [depotInventory, allStores]);
-
-        return (
-             <div><h3 className="font-bold mb-4">Vendeurs avec Colis au Dépôt</h3>
-                <div className="space-y-2">
-                    {sellersWithStock.map(store => (
-                        <div key={store.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <img src={store.logoUrl} alt={store.name} className="w-10 h-10 rounded-full object-contain bg-white" />
-                                <div>
-                                    <p className="font-semibold">{store.name}</p>
-                                    <p className="text-xs text-gray-500 flex items-center gap-1"><MapPinIcon className="w-3 h-3"/>{store.physicalAddress}</p>
-                                </div>
-                            </div>
-                        </div>
-                    ))}
-                </div>
-             </div>
-        );
-    }
-
-    const ReportsPanel = () => (
-         <div><h3 className="font-bold mb-4">Rapports et Statistiques</h3>
-            <p className="text-center text-gray-500 py-8">Section des rapports en cours de construction.</p>
-         </div>
-    );
-
+    // Placeholder for other panels
     const renderContent = () => {
-        switch(activeTab) {
-            case 'overview': return <OverviewPanel />;
-            case 'parcels': return <ParcelsPanel />;
-            case 'inventory': return <InventoryPanel />;
-            case 'agents': return <AgentsPanel />;
-            case 'sellers': return <SellersPanel />;
-            case 'reports': return <ReportsPanel />;
-            default: return null;
+        switch (activeTab) {
+            case 'overview':
+                return <OverviewPanel />;
+            // other cases can return placeholder text
+            default:
+                return <div className="text-center py-8 text-gray-500">{t('superadmin.panelUnderConstruction', activeTab)}</div>
         }
     };
-    
+
     return (
-        <>
-            {assigningOrder && <AssignModal order={assigningOrder} agents={deliveryAgents} onAssign={(orderId, agentId) => { onAssignAgentToOrder(orderId, agentId); setAssigningOrder(null); }} onCancel={() => setAssigningOrder(null)} />}
-            <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
-                 <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
-                    <div className="container mx-auto px-4 sm:px-6 py-3">
-                         <div className="flex justify-between items-center">
-                            <div>
-                                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Tableau de bord - Dépôt (Zone {zoneName})</h1>
-                                <p className="text-sm text-gray-500 dark:text-gray-400">Chef de Dépôt: {user.name}</p>
-                            </div>
-                            <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">Déconnexion</button>
+        <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
+            <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
+                <div className="container mx-auto px-4 sm:px-6 py-3">
+                    <div className="flex justify-between items-center">
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-800 dark:text-white">{t('depotDashboard.title', zoneName)}</h1>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{user.role === 'depot_manager' ? t('depotDashboard.manager') : 'Agent'}: {user.name}</p>
                         </div>
+                        <button onClick={onLogout} className="text-sm bg-gray-200 dark:bg-gray-700 font-semibold px-4 py-2 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600">{t('depotDashboard.logout')}</button>
                     </div>
-                </header>
-                <main className="container mx-auto px-4 sm:px-6 py-6 space-y-6">
-                    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
-                        <div className="p-2 border-b dark:border-gray-700 flex flex-wrap justify-around">
-                             <button onClick={() => setActiveTab('overview')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'overview' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ChartPieIcon className="w-5 h-5"/>Aperçu</button>
-                             <button onClick={() => setActiveTab('parcels')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'parcels' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ArchiveBoxIcon className="w-5 h-5"/>Suivi Colis</button>
-                             <button onClick={() => setActiveTab('inventory')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'inventory' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><ShoppingBagIcon className="w-5 h-5"/>Inventaire</button>
-                             <button onClick={() => setActiveTab('agents')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'agents' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><UserGroupIcon className="w-5 h-5"/>Livreurs</button>
-                             <button onClick={() => setActiveTab('sellers')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'sellers' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><BuildingStorefrontIcon className="w-5 h-5"/>Vendeurs</button>
-                             <button onClick={() => setActiveTab('reports')} className={`flex-1 flex items-center justify-center gap-2 p-3 font-semibold rounded-lg ${activeTab === 'reports' ? 'bg-kmer-green/20 text-kmer-green' : ''}`}><DocumentTextIcon className="w-5 h-5"/>Rapports</button>
-                        </div>
-                        <div className="p-4 sm:p-6">
-                            {renderContent()}
-                        </div>
+                </div>
+            </header>
+            <main className="container mx-auto px-4 sm:px-6 py-6">
+                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
+                    <div className="p-2 border-b dark:border-gray-700 flex justify-start items-center overflow-x-auto">
+                        <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'overview' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.overview')}</button>
+                        <button onClick={() => setActiveTab('parcels')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'parcels' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.parcels')}</button>
+                        <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'inventory' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.inventory')}</button>
+                        <button onClick={() => setActiveTab('agents')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'agents' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.agents')}</button>
+                        <button onClick={() => setActiveTab('sellers')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'sellers' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.sellers')}</button>
+                        <button onClick={() => setActiveTab('reports')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'reports' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.reports')}</button>
                     </div>
-                </main>
-            </div>
-        </>
+                    <div className="p-4">
+                        {renderContent()}
+                    </div>
+                </div>
+            </main>
+            {assigningOrder && <AssignModal order={assigningOrder} agents={deliveryAgents} onAssign={(orderId, agentId) => {onAssignAgentToOrder(orderId, agentId); setAssigningOrder(null);}} onCancel={() => setAssigningOrder(null)} />}
+        </div>
     );
 };

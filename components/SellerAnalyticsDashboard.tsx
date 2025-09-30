@@ -3,6 +3,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Product, Order, FlashSale, CartItem } from '../types';
 import { ArrowLeftIcon, BarChartIcon, CurrencyDollarIcon, ShoppingBagIcon, ArchiveBoxIcon, StarIcon } from './Icons';
+import { useLanguage } from '../contexts/LanguageContext';
 
 // Utility functions specific to this component
 const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): number | null => {
@@ -67,6 +68,7 @@ export const SellerAnalyticsDashboard: React.FC<{
     flashSales: FlashSale[];
 }> = ({ onBack, sellerOrders, sellerProducts, flashSales }) => {
     const [timeRange, setTimeRange] = useState<'week' | 'month' | 'quarter' | 'all'>('all');
+    const { t } = useLanguage();
     
     const { analytics, comparisonAnalytics } = useMemo(() => {
         const getFinalPrice = (item: CartItem) => {
@@ -216,38 +218,40 @@ export const SellerAnalyticsDashboard: React.FC<{
 
     return (
         <div className="container mx-auto p-4 sm:p-8 bg-gray-50 dark:bg-gray-900">
-            <button onClick={onBack} className="text-kmer-green font-semibold mb-6 inline-flex items-center gap-2">
-                <ArrowLeftIcon className="w-5 h-5"/>
-                Retour au tableau de bord
-            </button>
+            {onBack.toString() !== '() => {}' && (
+                <button onClick={onBack} className="text-kmer-green font-semibold mb-6 inline-flex items-center gap-2">
+                    <ArrowLeftIcon className="w-5 h-5"/>
+                    {t('sellerDashboard.analytics.backToDashboard')}
+                </button>
+            )}
             <div className="flex items-center gap-3 mb-4">
                 <BarChartIcon className="w-8 h-8"/>
-                <h1 className="text-3xl font-bold">Analyse des Ventes</h1>
+                <h1 className="text-3xl font-bold">{t('sellerDashboard.analytics.title')}</h1>
             </div>
              <div className="flex items-center gap-2 mb-8 flex-wrap">
-                <p className="font-semibold text-sm">Période :</p>
-                <TimeRangeButton label="7 jours" value="week" />
-                <TimeRangeButton label="30 jours" value="month" />
-                <TimeRangeButton label="90 jours" value="quarter" />
-                <TimeRangeButton label="Tout" value="all" />
+                <p className="font-semibold text-sm">{t('sellerDashboard.analytics.period')}</p>
+                <TimeRangeButton label={t('common.days7')} value="week" />
+                <TimeRangeButton label={t('common.days30')} value="month" />
+                <TimeRangeButton label={t('common.days90')} value="quarter" />
+                <TimeRangeButton label={t('common.all')} value="all" />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                 <StatCard 
                     icon={<CurrencyDollarIcon className="w-7 h-7"/>} 
-                    label={`Revenu Total (Livré)${timeRange !== 'all' ? ' - vs période précédente' : ''}`}
+                    label={`${t('sellerDashboard.analytics.totalRevenue')}${timeRange !== 'all' ? ` ${t('sellerDashboard.analytics.vsPrevious')}` : ''}`}
                     value={`${analytics.totalRevenue.toLocaleString('fr-CM')} FCFA`} 
                     color="bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300"
                     change={comparisonAnalytics.revenueChangePercentage}
                 />
-                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label="Commandes Livrées" value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
-                <StatCard icon={<ArchiveBoxIcon className="w-7 h-7"/>} label="Articles Vendus" value={analytics.totalItemsSold} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" />
-                <StatCard icon={<StarIcon className="w-7 h-7"/>} label="Panier Moyen" value={`${analytics.averageOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
+                <StatCard icon={<ShoppingBagIcon className="w-7 h-7"/>} label={t('sellerDashboard.analytics.deliveredOrders')} value={analytics.totalOrders} color="bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-300" />
+                <StatCard icon={<ArchiveBoxIcon className="w-7 h-7"/>} label={t('sellerDashboard.analytics.itemsSold')} value={analytics.totalItemsSold} color="bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-300" />
+                <StatCard icon={<StarIcon className="w-7 h-7"/>} label={t('sellerDashboard.analytics.averageBasket')} value={`${analytics.averageOrderValue.toLocaleString('fr-CM', { maximumFractionDigits: 0 })} FCFA`} color="bg-purple-100 dark:bg-purple-900/50 text-purple-600 dark:text-purple-300" />
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6 h-full">
-                    <h2 className="text-xl font-bold mb-4">Évolution des Ventes</h2>
+                    <h2 className="text-xl font-bold mb-4">{t('sellerDashboard.analytics.salesEvolution')}</h2>
                     <div className="flex justify-around items-end h-64 border-l border-b border-gray-200 dark:border-gray-700 pl-4 pb-4">
                         {analytics.salesChartData.map(({ label, revenue }) => (
                              <div key={label} className="flex flex-col items-center h-full justify-end" title={`${revenue.toLocaleString('fr-CM')} FCFA`}>
@@ -259,30 +263,30 @@ export const SellerAnalyticsDashboard: React.FC<{
                 </div>
                 <div className="space-y-6">
                     <div className="bg-white dark:bg-gray-800/50 rounded-lg shadow-sm p-6">
-                        <h2 className="text-xl font-bold mb-4">Top 5 Produits (par revenu)</h2>
+                        <h2 className="text-xl font-bold mb-4">{t('sellerDashboard.analytics.top5Products')}</h2>
                         <ul className="space-y-3">
                             {analytics.topProducts.map((product) => (
                                 <li key={product.id} className="flex justify-between items-center text-sm">
                                     <div>
                                         <span className="font-medium dark:text-gray-200">{product.name}</span>
-                                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({product.quantitySold} vendus)</span>
+                                        <span className="text-xs text-gray-500 dark:text-gray-400 ml-2">({product.quantitySold} {t('sellerDashboard.analytics.sold')})</span>
                                     </div>
                                     <span className="font-bold text-kmer-green">{product.revenue.toLocaleString('fr-CM')} FCFA</span>
                                 </li>
                             ))}
-                             {analytics.topProducts.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">Aucune donnée de vente pour cette période.</p>}
+                             {analytics.topProducts.length === 0 && <p className="text-sm text-gray-500 dark:text-gray-400">{t('sellerDashboard.analytics.noSalesData')}</p>}
                         </ul>
                     </div>
                      <div className="bg-orange-50 dark:bg-orange-900/50 rounded-lg shadow-sm p-6 border-l-4 border-orange-400">
-                        <h2 className="text-xl font-bold mb-4 text-orange-800 dark:text-orange-200">Alertes Stock Faible (&lt; 5)</h2>
+                        <h2 className="text-xl font-bold mb-4 text-orange-800 dark:text-orange-200">{t('sellerDashboard.analytics.lowStockAlerts')}</h2>
                         <ul className="space-y-2">
                             {lowStockProducts.map(p => (
                                 <li key={p.id} className="flex justify-between items-center text-sm">
                                     <span className="font-medium text-orange-700 dark:text-orange-300">{p.name}</span>
-                                    <span className="font-bold text-orange-600 dark:text-orange-400">{p.stock} restant(s)</span>
+                                    <span className="font-bold text-orange-600 dark:text-orange-400">{p.stock} {t('sellerDashboard.analytics.remaining')}</span>
                                 </li>
                             ))}
-                            {lowStockProducts.length === 0 && <p className="text-sm text-orange-700 dark:text-orange-300">Aucun produit en stock faible.</p>}
+                            {lowStockProducts.length === 0 && <p className="text-sm text-orange-700 dark:text-orange-300">{t('sellerDashboard.analytics.noLowStock')}</p>}
                         </ul>
                     </div>
                 </div>

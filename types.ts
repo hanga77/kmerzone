@@ -5,6 +5,8 @@
 
 
 
+
+
 export interface Zone {
   id: string;
   name: string;
@@ -423,6 +425,7 @@ export interface SiteSettings {
   rentAmount: number;
   canSellersCreateCategories: boolean;
   commissionRate: number;
+  standardPlan: SellerPlanSettings;
   premiumPlan: SellerPlanSettings;
   superPremiumPlan: SellerPlanSettings;
   customerLoyaltyProgram: CustomerLoyaltySettings;

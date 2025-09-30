@@ -1,6 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Category } from '../../types';
 import { PlusIcon, TrashIcon, CheckCircleIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface CatalogPanelProps {
     allCategories: Category[];
@@ -10,6 +11,7 @@ interface CatalogPanelProps {
 }
 
 export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdminAddCategory, onAdminDeleteCategory, onAdminUpdateCategory }) => {
+    const { t } = useLanguage();
     const [newCategoryName, setNewCategoryName] = useState('');
     const [selectedParent, setSelectedParent] = useState('');
     const [editingCategories, setEditingCategories] = useState<Record<string, Partial<Omit<Category, 'id'>>>>({});
@@ -54,7 +56,7 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
     return (
         <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-                <h2 className="text-xl font-bold mb-4">Gestion du Catalogue</h2>
+                <h2 className="text-xl font-bold mb-4">{t('superadmin.catalog.title')}</h2>
                 <div className="space-y-4 max-h-[70vh] overflow-y-auto">
                     {categoryTree.map(mainCat => (
                         <div key={mainCat.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
@@ -69,7 +71,7 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
                             </div>
                              <div className="flex items-center gap-2 mt-2">
                                 <input 
-                                    placeholder="URL de l'image"
+                                    placeholder={t('superadmin.catalog.imageUrl')}
                                     value={editingCategories[mainCat.id]?.imageUrl ?? mainCat.imageUrl} 
                                     onChange={(e) => handleCategoryChange(mainCat.id, 'imageUrl', e.target.value)} 
                                     className="text-xs p-1 border rounded w-full bg-transparent dark:border-gray-600"
@@ -95,20 +97,20 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
                 </div>
             </div>
             <div>
-                <h3 className="text-lg font-bold mb-4">Ajouter une Catégorie</h3>
+                <h3 className="text-lg font-bold mb-4">{t('superadmin.catalog.addCategory')}</h3>
                 <form onSubmit={handleAddCategory} className="p-4 bg-gray-100 dark:bg-gray-700/50 rounded-lg space-y-4">
                     <div>
-                        <label htmlFor="catName" className="block text-sm font-medium">Nom de la catégorie</label>
+                        <label htmlFor="catName" className="block text-sm font-medium">{t('superadmin.catalog.categoryName')}</label>
                         <input type="text" id="catName" value={newCategoryName} onChange={e => setNewCategoryName(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
                     </div>
                     <div>
-                        <label htmlFor="catParent" className="block text-sm font-medium">Catégorie parente (optionnel)</label>
+                        <label htmlFor="catParent" className="block text-sm font-medium">{t('superadmin.catalog.parentCategory')}</label>
                         <select id="catParent" value={selectedParent} onChange={e => setSelectedParent(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                            <option value="">-- Catégorie principale --</option>
+                            <option value="">{t('superadmin.catalog.mainCategory')}</option>
                             {allCategories.filter(c => !c.parentId).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                         </select>
                     </div>
-                    <button type="submit" className="w-full bg-blue-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2"><PlusIcon className="w-5 h-5"/> Ajouter</button>
+                    <button type="submit" className="w-full bg-blue-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2"><PlusIcon className="w-5 h-5"/> {t('superadmin.catalog.add')}</button>
                 </form>
             </div>
         </div>

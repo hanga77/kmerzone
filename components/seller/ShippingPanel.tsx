@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { Store, ShippingPartner, ShippingSettings } from '../../types';
 import { TruckIcon, CheckCircleIcon } from '../Icons';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ShippingPanelProps {
   store: Store;
@@ -9,6 +10,7 @@ interface ShippingPanelProps {
 }
 
 const ShippingPanel: React.FC<ShippingPanelProps> = ({ store, allShippingPartners, onUpdate }) => {
+    const { t } = useLanguage();
     const [settings, setSettings] = useState<ShippingSettings>(
         store.shippingSettings || {
             enabledPartners: [],
@@ -55,12 +57,12 @@ const ShippingPanel: React.FC<ShippingPanelProps> = ({ store, allShippingPartner
 
     return (
         <div className="p-6">
-            <h2 className="text-2xl font-bold mb-4 flex items-center gap-3"><TruckIcon className="w-6 h-6"/> Paramètres de Livraison</h2>
+            <h2 className="text-2xl font-bold mb-4 flex items-center gap-3"><TruckIcon className="w-6 h-6"/> {t('sellerDashboard.shipping.title')}</h2>
             
             <div className="space-y-6">
                 <div>
-                    <h3 className="font-semibold text-lg mb-2">Transporteurs Partenaires</h3>
-                    <p className="text-sm text-gray-500 mb-4">Sélectionnez les transporteurs que vous souhaitez proposer à vos clients.</p>
+                    <h3 className="font-semibold text-lg mb-2">{t('sellerDashboard.shipping.partnersTitle')}</h3>
+                    <p className="text-sm text-gray-500 mb-4">{t('sellerDashboard.shipping.partnersDescription')}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {allShippingPartners.map(partner => (
                             <label key={partner.id} className="flex items-center gap-3 p-3 border rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
@@ -71,18 +73,18 @@ const ShippingPanel: React.FC<ShippingPanelProps> = ({ store, allShippingPartner
                                     className="h-5 w-5 rounded border-gray-300 text-kmer-green focus:ring-kmer-green"
                                 />
                                 <span className="font-medium">{partner.name}</span>
-                                {partner.isPremium && <span className="text-xs font-bold bg-kmer-yellow/20 text-kmer-yellow px-2 py-0.5 rounded-full">Premium</span>}
+                                {partner.isPremium && <span className="text-xs font-bold bg-kmer-yellow/20 text-kmer-yellow px-2 py-0.5 rounded-full">{t('sellerDashboard.shipping.premium')}</span>}
                             </label>
                         ))}
                     </div>
                 </div>
 
                 <div>
-                    <h3 className="font-semibold text-lg mb-2">Tarifs d'expédition personnalisés</h3>
-                    <p className="text-sm text-gray-500 mb-4">Laissez vide pour utiliser les tarifs par défaut de la plateforme.</p>
+                    <h3 className="font-semibold text-lg mb-2">{t('sellerDashboard.shipping.customRatesTitle')}</h3>
+                    <p className="text-sm text-gray-500 mb-4">{t('sellerDashboard.shipping.customRatesDescription')}</p>
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div>
-                            <label className="block text-sm font-medium mb-1">Livraison locale (même ville) (FCFA)</label>
+                            <label className="block text-sm font-medium mb-1">{t('sellerDashboard.shipping.localRate')}</label>
                             <input
                                 type="number"
                                 name="local"
@@ -93,7 +95,7 @@ const ShippingPanel: React.FC<ShippingPanelProps> = ({ store, allShippingPartner
                             />
                         </div>
                         <div>
-                            <label className="block text-sm font-medium mb-1">Livraison nationale (autre ville) (FCFA)</label>
+                            <label className="block text-sm font-medium mb-1">{t('sellerDashboard.shipping.nationalRate')}</label>
                             <input
                                 type="number"
                                 name="national"
@@ -107,10 +109,10 @@ const ShippingPanel: React.FC<ShippingPanelProps> = ({ store, allShippingPartner
                 </div>
 
                 <div>
-                    <h3 className="font-semibold text-lg mb-2">Livraison gratuite</h3>
-                    <p className="text-sm text-gray-500 mb-4">Offrez la livraison gratuite pour les commandes de votre boutique dépassant un certain montant.</p>
+                    <h3 className="font-semibold text-lg mb-2">{t('sellerDashboard.shipping.freeShippingTitle')}</h3>
+                    <p className="text-sm text-gray-500 mb-4">{t('sellerDashboard.shipping.freeShippingDescription')}</p>
                     <div>
-                        <label className="block text-sm font-medium mb-1">Seuil de livraison gratuite (FCFA)</label>
+                        <label className="block text-sm font-medium mb-1">{t('sellerDashboard.shipping.freeShippingThreshold')}</label>
                         <input
                             type="number"
                             value={settings.freeShippingThreshold ?? ''}
@@ -123,12 +125,12 @@ const ShippingPanel: React.FC<ShippingPanelProps> = ({ store, allShippingPartner
             </div>
 
             <div className="mt-8 pt-6 border-t dark:border-gray-700 flex justify-end items-center gap-4">
-                {saved && <span className="text-green-600 flex items-center gap-1 text-sm"><CheckCircleIcon className="w-5 h-5"/> Enregistré !</span>}
+                {saved && <span className="text-green-600 flex items-center gap-1 text-sm"><CheckCircleIcon className="w-5 h-5"/> {t('sellerDashboard.shipping.saved')}</span>}
                 <button
                     onClick={handleSave}
                     className="bg-kmer-green text-white font-bold py-2 px-6 rounded-lg hover:bg-green-700 transition-colors"
                 >
-                    Enregistrer les modifications
+                    {t('sellerDashboard.shipping.saveChanges')}
                 </button>
             </div>
         </div>
