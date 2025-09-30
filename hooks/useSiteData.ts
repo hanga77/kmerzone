@@ -4,7 +4,7 @@ import type {
     Product, Category, Store, FlashSale, Order, SiteSettings, SiteContent, Advertisement, 
     PaymentMethod, SiteActivityLog, PickupPoint, Payout, PromoCode, OrderStatus, 
     NewOrderData, Review, User, DocumentStatus, Warning, Story, ProductCollection, 
-    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus, UserAvailabilityStatus 
+    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus, UserAvailabilityStatus, AgentSchedule 
 } from '../types';
 import { 
     initialCategories, initialProducts, initialStores, initialFlashSales, initialPickupPoints, 
@@ -159,6 +159,7 @@ export const useSiteData = () => {
                     trackingHistory: [...(o.trackingHistory || []), newTrackingHistory],
                     departureProcessedByAgentId: user.id,
                     processedForDepartureAt: new Date().toISOString(),
+                    storageLocationId: undefined, // Libère l'emplacement de stockage (check-out)
                 };
             }
             return o;
@@ -493,6 +494,13 @@ export const useSiteData = () => {
         
         return newStore;
     }, [setAllStores, setAllNotifications, logActivity, siteSettings.requiredSellerDocuments]);
+    
+    const handleUpdateSchedule = useCallback((depotId: string, newSchedule: AgentSchedule, user: User) => {
+        setAllPickupPoints(prevPoints => prevPoints.map(point => 
+            point.id === depotId ? { ...point, schedule: newSchedule } : point
+        ));
+        logActivity(user, 'SCHEDULE_UPDATED', `Planning mis à jour pour le dépôt ${depotId}.`);
+    }, [setAllPickupPoints, logActivity]);
 
     return {
         allProducts, setAllProducts,
@@ -550,6 +558,7 @@ export const useSiteData = () => {
         handleUpdateDocumentStatus,
         handleResolveDispute,
         handleDepotCheckIn,
+        handleUpdateSchedule,
         // Seller actions
         handleSellerUpdateOrderStatus,
         handleCreateOrUpdateCollection,

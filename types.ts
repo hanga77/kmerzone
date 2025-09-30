@@ -1,14 +1,5 @@
 
 
-
-
-
-
-
-
-
-
-
 export interface Zone {
   id: string;
   name: string;
@@ -354,6 +345,15 @@ export interface PaymentMethod {
   imageUrl: string;
 }
 
+export type Shift = 'Matin' | 'Après-midi' | 'Nuit' | 'Repos';
+
+export interface AgentSchedule {
+  [agentId: string]: {
+    // Using string for day to be flexible, e.g., 'Lundi', 'Mardi'
+    [day: string]: Shift;
+  };
+}
+
 export interface PickupPoint {
   id: string;
   name: string;
@@ -371,6 +371,7 @@ export interface PickupPoint {
     shelves: number;
     locations: number;
   };
+  schedule?: AgentSchedule;
 }
 
 

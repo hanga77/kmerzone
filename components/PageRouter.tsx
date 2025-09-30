@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails } from '../types';
+import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails, AgentSchedule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
@@ -74,6 +74,7 @@ interface PageRouterProps {
     // Delivery actions
     onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
     onUpdateDeliveryStatus: (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => void;
+    onUpdateSchedule: (depotId: string, schedule: AgentSchedule) => void;
 }
 
 const PageRouter: React.FC<PageRouterProps> = (props) => {
@@ -87,7 +88,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         onAdminReplyToTicket, onAdminUpdateTicketStatus, onReviewModeration, onCreateUserByAdmin,
         onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onUpdateOrderStatus, onResolveDispute,
         onSellerUpdateOrderStatus, onCreateOrUpdateCollection, onDeleteCollection, onUpdateStoreProfile,
-        onUpdateUserAvailability, onUpdateDeliveryStatus
+        onUpdateUserAvailability, onUpdateDeliveryStatus, onUpdateSchedule
     } = props;
     
     const { user, allUsers, setAllUsers, logout } = useAuth();
@@ -366,6 +367,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onLogout={logout}
                 onAssignAgentToOrder={(orderId, agentId) => user && siteData.handleAssignAgentToOrder(orderId, agentId, user, allUsers)}
                 handleDepotCheckIn={(orderId, location) => user && siteData.handleDepotCheckIn(orderId, location, user)}
+                onUpdateSchedule={onUpdateSchedule}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'account':
             return <AccountPage 

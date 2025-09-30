@@ -1,7 +1,7 @@
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
-import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus, Zone } from '../types';
+import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus, Zone, AgentSchedule, Shift } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { QrCodeIcon, ArchiveBoxIcon, ShoppingBagIcon, UserGroupIcon, BuildingStorefrontIcon, XIcon, CheckIcon } from './Icons';
+import { QrCodeIcon, ArchiveBoxIcon, ShoppingBagIcon, UserGroupIcon, BuildingStorefrontIcon, XIcon, CheckIcon, CheckCircleIcon, ChartPieIcon, TruckIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 declare namespace L {
@@ -25,6 +25,7 @@ interface DepotAgentDashboardProps {
   onLogout: () => void;
   onAssignAgentToOrder: (orderId: string, agentId: string) => void;
   handleDepotCheckIn: (orderId: string, storageLocationId: string, user: User) => void;
+  onUpdateSchedule: (depotId: string, newSchedule: AgentSchedule) => void;
 }
 
 const StatCard: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
@@ -159,8 +160,9 @@ const ParcelsPanel: React.FC<{
     ordersToAssign: Order[];
     ordersInDelivery: Order[];
     ordersWithIssues: Order[];
+    deliveryAgents: User[];
     setAssigningOrder: (order: Order | null) => void;
-}> = ({ ordersToAssign, ordersInDelivery, ordersWithIssues, setAssigningOrder }) => {
+}> = ({ ordersToAssign, ordersInDelivery, ordersWithIssues, deliveryAgents, setAssigningOrder }) => {
     const { t } = useLanguage();
     const [subTab, setSubTab] = useState<'toAssign' | 'inDelivery' | 'issues'>('toAssign');
     
@@ -170,7 +172,7 @@ const ParcelsPanel: React.FC<{
                 <thead className="bg-gray-100 dark:bg-gray-700"><tr><th className="p-2 text-left">{t('depotDashboard.table.orderId')}</th><th className="p-2 text-left">{t('depotDashboard.table.customer')}</th><th className="p-2 text-left">{subTab === 'inDelivery' ? t('depotDashboard.table.agent') : t('depotDashboard.table.numItems')}</th><th className="p-2 text-center">{t('common.actions')}</th></tr></thead>
                 <tbody>
                     {orders.map(order => (<tr key={order.id} className="border-b dark:border-gray-700">
-                        <td className="p-2 font-mono">{order.id}</td><td className="p-2">{order.shippingAddress.fullName}</td><td className="p-2">{subTab === 'inDelivery' ? order.agentId : order.items.length}</td>
+                        <td className="p-2 font-mono">{order.id}</td><td className="p-2">{order.shippingAddress.fullName}</td><td className="p-2">{subTab === 'inDelivery' ? (deliveryAgents.find(a => a.id === order.agentId)?.name || order.agentId) : order.items.length}</td>
                         <td className="p-2 text-center">{subTab === 'toAssign' && <button onClick={() => setAssigningOrder(order)} className="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md">{t('depotDashboard.assign')}</button>}</td>
                     </tr>))}
                 </tbody>
@@ -193,20 +195,116 @@ const ParcelsPanel: React.FC<{
     );
 };
 
-const AgentsPanel: React.FC<{ agents: any[] }> = ({ agents }) => {
+const AgentsPanel: React.FC<{ 
+    agents: any[];
+    depot: PickupPoint;
+    onSaveSchedule: (depotId: string, schedule: AgentSchedule) => void;
+}> = ({ agents, depot, onSaveSchedule }) => {
     const { t } = useLanguage();
-    return (<div>
-        <h3 className="font-bold mb-4">{t('depotDashboard.manageAgents', 'A')}</h3>
-        <table className="w-full text-sm">
-            <thead className="bg-gray-100 dark:bg-gray-700"><tr><th className="p-2 text-left">{t('depotDashboard.table.agent')}</th><th className="p-2 text-left">{t('depotDashboard.table.availability')}</th><th className="p-2 text-left">{t('depotDashboard.table.performance')}</th></tr></thead>
-            <tbody>
-                {agents.map(agent => (<tr key={agent.id} className="border-b dark:border-gray-700">
-                    <td className="p-2 font-semibold">{agent.name}</td><td className="p-2"><span className={`px-2 py-0.5 text-xs rounded-full ${agent.availabilityStatus === 'available' ? 'bg-green-200 text-green-800' : 'bg-red-200 text-red-800'}`}>{agent.availabilityStatus}</span></td><td className="p-2">{t('depotDashboard.deliveriesSucceeded', agent.deliveredCount, agent.totalMissions)} ({agent.successRate.toFixed(0)}% {t('depotDashboard.successRate')})</td>
-                </tr>))}
-            </tbody>
-        </table>
+    const [schedule, setSchedule] = useState<AgentSchedule>(depot.schedule || {});
+    const [saved, setSaved] = useState(false);
+
+    useEffect(() => {
+        setSchedule(depot.schedule || {});
+    }, [depot.schedule]);
+
+    const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    const shifts: Shift[] = ['Matin', 'Après-midi', 'Nuit', 'Repos'];
+    
+    const translatedShifts: Record<Shift, string> = {
+        'Matin': t('depotDashboard.shifts.morning'),
+        'Après-midi': t('depotDashboard.shifts.afternoon'),
+        'Nuit': t('depotDashboard.shifts.night'),
+        'Repos': t('depotDashboard.shifts.off'),
+    };
+
+    const handleScheduleChange = (agentId: string, day: string, value: Shift) => {
+        setSchedule(prev => ({
+            ...prev,
+            [agentId]: {
+                ...(prev[agentId] || {}),
+                [day]: value,
+            },
+        }));
+    };
+    
+    const handleSave = () => {
+        onSaveSchedule(depot.id, schedule);
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3000);
+    };
+
+    return (
+    <div className="space-y-6">
+        <div>
+            <h3 className="font-bold mb-4">{t('depotDashboard.schedule')}</h3>
+            <div className="overflow-x-auto">
+                <table className="w-full text-sm border dark:border-gray-700">
+                    <thead className="bg-gray-100 dark:bg-gray-700">
+                        <tr>
+                            <th className="p-2 text-left">{t('depotDashboard.table.agent')}</th>
+                            {days.map(day => <th key={day} className="p-2 text-center">{t(`depotDashboard.weekdays.${day}`)}</th>)}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {agents.map(agent => (
+                            <tr key={agent.id} className="border-b dark:border-gray-700">
+                                <td className="p-2 font-semibold">{agent.name}</td>
+                                {days.map(day => (
+                                    <td key={day} className="p-1">
+                                        <select
+                                            value={schedule[agent.id]?.[day] || 'Repos'}
+                                            onChange={e => handleScheduleChange(agent.id, day, e.target.value as Shift)}
+                                            className="w-full p-1 border rounded-md text-xs dark:bg-gray-600 dark:border-gray-500"
+                                        >
+                                            {shifts.map(shift => (
+                                                <option key={shift} value={shift}>{translatedShifts[shift]}</option>
+                                            ))}
+                                        </select>
+                                    </td>
+                                ))}
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+             <div className="mt-4 flex justify-end items-center gap-4">
+                {saved && <span className="text-green-600 flex items-center gap-1 text-sm"><CheckCircleIcon className="w-5 h-5"/> {t('depotDashboard.scheduleSaved')}</span>}
+                <button onClick={handleSave} className="bg-blue-500 text-white font-bold py-2 px-4 rounded-lg">{t('depotDashboard.saveSchedule')}</button>
+            </div>
+        </div>
     </div>);
 }
+
+const DriversPanel: React.FC<{ deliveryAgents: any[] }> = ({ deliveryAgents }) => {
+    const { t } = useLanguage();
+    return (
+        <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+                <thead className="bg-gray-100 dark:bg-gray-700">
+                    <tr>
+                        <th className="p-2 text-left">{t('depotDashboard.table.agent')}</th>
+                        <th className="p-2 text-left">{t('depotDashboard.table.availability')}</th>
+                        <th className="p-2 text-left">{t('depotDashboard.table.performance')}</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {deliveryAgents.map(agent => (
+                        <tr key={agent.id} className="border-b dark:border-gray-700">
+                            <td className="p-2 font-semibold">{agent.name}</td>
+                            <td className="p-2">
+                                <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${agent.availabilityStatus === 'available' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                    {agent.availabilityStatus === 'available' ? t('deliveryDashboard.available') : t('deliveryDashboard.unavailable')}
+                                </span>
+                            </td>
+                            <td>{t('depotDashboard.successRate')}: {agent.successRate.toFixed(1)}% ({t('depotDashboard.deliveriesSucceeded', agent.deliveredCount, agent.totalMissions)})</td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+    );
+};
 
 const SellersPanel: React.FC<{ depotInventory: Order[], allStores: Store[] }> = ({ depotInventory, allStores }) => {
     const { t } = useLanguage();
@@ -238,28 +336,32 @@ const ReportsPanel: React.FC = () => {
     return <div className="text-center py-8 text-gray-500">{t('depotDashboard.reportsWIP')}</div>
 };
 
-export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, allStores, allZones, allPickupPoints, onLogout, onAssignAgentToOrder, handleDepotCheckIn }) => {
+export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, allStores, allZones, allPickupPoints, onLogout, onAssignAgentToOrder, handleDepotCheckIn, onUpdateSchedule }) => {
     const { t } = useLanguage();
-    const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'agents' | 'sellers' | 'reports'>('overview');
+    const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'drivers' | 'agents' | 'sellers' | 'reports'>('overview');
     const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [checkingInOrder, setCheckingInOrder] = useState<Order | null>(null);
 
-    const { ordersToAssign, ordersInDelivery, ordersWithIssues, depotInventory, deliveryAgents, zoneName } = useMemo(() => {
+    const isManager = user.role === 'depot_manager';
+
+    const { ordersToAssign, ordersInDelivery, ordersWithIssues, depotInventory, deliveryAgents, depotAgents, zoneName } = useMemo(() => {
         const userZoneId = user.zoneId; const _zoneName = allZones.find(z => z.id === userZoneId)?.name || 'Inconnue';
-        if (!userZoneId || !user.depotId) return { ordersToAssign: [], ordersInDelivery: [], ordersWithIssues: [], depotInventory: [], deliveryAgents: [], zoneName: _zoneName };
+        if (!userZoneId || !user.depotId) return { ordersToAssign: [], ordersInDelivery: [], ordersWithIssues: [], depotInventory: [], deliveryAgents: [], depotAgents: [], zoneName: _zoneName };
         const _depotInventory = allOrders.filter(o => o.pickupPointId === user.depotId && o.status === 'at-depot');
         const _ordersToAssign = _depotInventory.filter(o => o.deliveryMethod === 'home-delivery' && !o.agentId);
         const _ordersInDelivery = allOrders.filter(o => o.status === 'out-for-delivery' && allUsers.find(u => u.id === o.agentId)?.zoneId === userZoneId);
         const _ordersWithIssues = allOrders.filter(o => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status) && (o.pickupPointId === user.depotId || allUsers.find(u => u.id === o.agentId)?.zoneId === userZoneId));
         const _deliveryAgents = allUsers.filter(u => u.role === 'delivery_agent' && u.zoneId === userZoneId);
+        const _depotAgents = allUsers.filter(u => u.role === 'depot_agent' && u.depotId === user.depotId);
+        
         const agentsWithPerf = _deliveryAgents.map(agent => {
             const agentOrders = allOrders.filter(o => o.agentId === agent.id);
             const deliveredCount = agentOrders.filter(o => o.status === 'delivered').length;
             const successRate = agentOrders.length > 0 ? (deliveredCount / agentOrders.length) * 100 : 0;
             return { ...agent, deliveredCount, successRate, totalMissions: agentOrders.length };
         });
-        return { ordersToAssign: _ordersToAssign, ordersInDelivery: _ordersInDelivery, ordersWithIssues: _ordersWithIssues, depotInventory: _depotInventory, deliveryAgents: agentsWithPerf, zoneName: _zoneName };
+        return { ordersToAssign: _ordersToAssign, ordersInDelivery: _ordersInDelivery, ordersWithIssues: _ordersWithIssues, depotInventory: _depotInventory, deliveryAgents: agentsWithPerf, depotAgents: _depotAgents, zoneName: _zoneName };
     }, [allOrders, allUsers, user, allZones]);
 
     const handleScanSuccess = useCallback((decodedText: string) => {
@@ -276,6 +378,8 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
 
     const renderContent = () => {
         const depot = allPickupPoints.find(p => p.id === user.depotId);
+        if (!depot) return <p>Erreur: Dépôt non trouvé.</p>;
+
         switch (activeTab) {
             case 'overview': return (
                 <div className="space-y-6">
@@ -286,14 +390,26 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                     </div>
                 </div>
             );
-            case 'parcels': return <ParcelsPanel ordersToAssign={ordersToAssign} ordersInDelivery={ordersInDelivery} ordersWithIssues={ordersWithIssues} setAssigningOrder={setAssigningOrder} />;
+            case 'parcels': return <ParcelsPanel ordersToAssign={ordersToAssign} ordersInDelivery={ordersInDelivery} ordersWithIssues={ordersWithIssues} deliveryAgents={deliveryAgents} setAssigningOrder={setAssigningOrder} />;
             case 'inventory': return <InventoryPanel inventory={depotInventory} depot={depot} />;
-            case 'agents': return <AgentsPanel agents={deliveryAgents} />;
-            case 'sellers': return <SellersPanel depotInventory={depotInventory} allStores={allStores} />;
-            case 'reports': return <ReportsPanel />;
+            case 'drivers': return isManager ? <DriversPanel deliveryAgents={deliveryAgents} /> : null;
+            case 'agents': return isManager ? <AgentsPanel agents={[user, ...depotAgents]} depot={depot} onSaveSchedule={(depotId, schedule) => onUpdateSchedule(depotId, schedule)} /> : null;
+            case 'sellers': return isManager ? <SellersPanel depotInventory={depotInventory} allStores={allStores} /> : null;
+            case 'reports': return isManager ? <ReportsPanel /> : null;
             default: return <div className="text-center py-8 text-gray-500">{t('superadmin.panelUnderConstruction', activeTab)}</div>;
         }
     };
+
+    const TABS = [
+        { id: 'overview', label: t('depotDashboard.overview'), icon: <ChartPieIcon className="w-5 h-5"/>, managerOnly: false },
+        { id: 'parcels', label: t('depotDashboard.parcels'), icon: <ShoppingBagIcon className="w-5 h-5"/>, managerOnly: false },
+        { id: 'inventory', label: t('depotDashboard.inventory'), icon: <ArchiveBoxIcon className="w-5 h-5"/>, managerOnly: false },
+        { id: 'drivers', label: t('header.deliveryDashboard'), icon: <TruckIcon className="w-5 h-5"/>, managerOnly: true },
+        { id: 'agents', label: t('depotDashboard.agents'), icon: <UserGroupIcon className="w-5 h-5"/>, managerOnly: true },
+        { id: 'sellers', label: t('depotDashboard.sellers'), icon: <BuildingStorefrontIcon className="w-5 h-5"/>, managerOnly: true },
+        { id: 'reports', label: t('depotDashboard.reports'), icon: <ChartPieIcon className="w-5 h-5"/>, managerOnly: true },
+    ].filter(tab => !tab.managerOnly || isManager);
+
 
     return (
         <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
@@ -304,7 +420,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                     <div className="flex justify-between items-center flex-wrap gap-4">
                         <div>
                             <h1 className="text-xl font-bold text-gray-800 dark:text-white">{t('depotDashboard.title', zoneName)}</h1>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">{user.role === 'depot_manager' ? t('depotDashboard.manager') : 'Agent'}: {user.name}</p>
+                            <p className="text-sm text-gray-500 dark:text-gray-400">{isManager ? t('depotDashboard.manager') : 'Agent'}: {user.name}</p>
                         </div>
                         <div className="flex items-center gap-4">
                             <button onClick={() => setIsScannerOpen(true)} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
@@ -318,14 +434,11 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
             <main className="container mx-auto px-4 sm:px-6 py-6">
                 <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md">
                     <div className="p-2 border-b dark:border-gray-700 flex justify-start items-center overflow-x-auto">
-                        <button onClick={() => setActiveTab('overview')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'overview' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.overview')}</button>
-                        <button onClick={() => setActiveTab('parcels')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'parcels' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.parcels')}</button>
-                        <button onClick={() => setActiveTab('inventory')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'inventory' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.inventory')}</button>
-                        {user.role === 'depot_manager' && <>
-                            <button onClick={() => setActiveTab('agents')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'agents' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.agents')}</button>
-                            <button onClick={() => setActiveTab('sellers')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'sellers' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.sellers')}</button>
-                            <button onClick={() => setActiveTab('reports')} className={`px-4 py-2 font-semibold flex-shrink-0 ${activeTab === 'reports' ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>{t('depotDashboard.reports')}</button>
-                        </>}
+                         {TABS.map(tab => (
+                             <button key={tab.id} onClick={() => setActiveTab(tab.id as any)} className={`px-4 py-2 font-semibold flex-shrink-0 flex items-center gap-2 ${activeTab === tab.id ? 'border-b-2 border-kmer-green text-kmer-green' : 'text-gray-500'}`}>
+                                 {tab.icon} {tab.label}
+                             </button>
+                         ))}
                     </div>
                     <div className="p-4">
                         {renderContent()}

@@ -410,7 +410,7 @@ export const translations = {
       overview: "Aperçu",
       parcels: "Suivi Colis",
       inventory: "Inventaire",
-      agents: "Livreurs",
+      agents: "Agents",
       sellers: "Vendeurs",
       reports: "Rapports",
       parcelsToAssign: "Colis à affecter",
@@ -433,7 +433,7 @@ export const translations = {
         performance: "Performance",
       },
       noParcelsInStock: "Aucun colis en stock pour le moment.",
-      manageAgents: "Gestion des Livreurs de la Zone {0}",
+      manageAgents: "Gestion des Agents de la Zone {0}",
       successRate: "Taux de réussite",
       deliveriesSucceeded: "{0} / {1} livraisons réussies",
       sellersWithParcels: "Vendeurs avec Colis au Dépôt",
@@ -453,6 +453,24 @@ export const translations = {
         noLayout: "La configuration de l'entrepôt n'est pas définie.",
       },
       noData: "Aucune donnée à afficher.",
+      schedule: "Planning de travail",
+      saveSchedule: "Enregistrer le planning",
+      scheduleSaved: "Planning enregistré !",
+      weekdays: {
+        monday: "Lundi",
+        tuesday: "Mardi",
+        wednesday: "Mercredi",
+        thursday: "Jeudi",
+        friday: "Vendredi",
+        saturday: "Samedi",
+        sunday: "Dimanche"
+      },
+      shifts: {
+        morning: "Matin",
+        afternoon: "Après-midi",
+        night: "Nuit",
+        off: "Repos"
+      }
     },
     superadmin: {
       tabs: {

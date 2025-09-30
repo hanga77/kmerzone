@@ -3,7 +3,7 @@ import { XIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import { useUI } from './contexts/UIContext';
-import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint, Store, Warning, DocumentStatus, UserAvailabilityStatus, OrderStatus, Order } from './types';
+import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint, Store, Warning, DocumentStatus, UserAvailabilityStatus, OrderStatus, Order, AgentSchedule } from './types';
 import { Header } from './components/Header';
 import Footer from './components/Footer';
 import MaintenancePage from './components/MaintenancePage';
@@ -254,6 +254,7 @@ export default function App() {
             onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
             onUpdateUserAvailability={handleUpdateUserAvailability}
             onUpdateDeliveryStatus={handleUpdateDeliveryStatus}
+            onUpdateSchedule={(depotId: string, schedule: AgentSchedule) => user && siteData.handleUpdateSchedule(depotId, schedule, user)}
           />
         </main>
 
