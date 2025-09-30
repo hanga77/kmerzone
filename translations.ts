@@ -421,12 +421,16 @@ export const translations = {
       issues: "Problèmes ({0})",
       client: "Client",
       assign: "Affecter",
-      currentInventory: "Inventaire Actuel des Colis au Dépôt",
       table: {
         orderId: "ID Commande",
         customer: "Client",
         location: "Emplacement",
         numItems: "Nbr Articles",
+        agent: "Livreur",
+        seller: "Vendeur",
+        parcels: "Colis",
+        availability: "Disponibilité",
+        performance: "Performance",
       },
       noParcelsInStock: "Aucun colis en stock pour le moment.",
       manageAgents: "Gestion des Livreurs de la Zone {0}",
@@ -440,6 +444,15 @@ export const translations = {
       checkInParcel: "Enregistrer un Colis",
       storageLocation: "Emplacement de stockage (Ex: A3-S2)",
       checkIn: "Enregistrer",
+      inventoryPanel: {
+        totalSlots: "Emplacements Totals",
+        occupiedSlots: "Emplacements Occupés",
+        freeSlots: "Emplacements Libres",
+        currentInventory: "Inventaire Actuel des Colis",
+        freeLocations: "Emplacements Libres",
+        noLayout: "La configuration de l'entrepôt n'est pas définie.",
+      },
+      noData: "Aucune donnée à afficher.",
     },
     superadmin: {
       tabs: {
@@ -726,23 +739,23 @@ export const translations = {
       }
     },
     forbidden: {
-      title: "Access Denied",
-      description: "Sorry, you do not have the necessary permissions to access this page.",
-      backHome: "Back to Home"
+      title: "Accès Interdit",
+      description: "Désolé, vous n'avez pas les autorisations nécessaires pour accéder à cette page.",
+      backHome: "Retour à l'accueil"
     },
     notFound: {
-      title: "Page Not Found",
-      description: "Sorry, the page you are looking for does not exist or has been moved.",
-      backHome: "Back to Home"
+      title: "Page non trouvée",
+      description: "Désolé, la page que vous recherchez n'existe pas ou a été déplacée.",
+      backHome: "Retour à l'accueil"
     },
     forgotPassword: {
-      title: "Forgot Password",
-      description: "Don't worry. Enter your email and we'll send you a reset link.",
-      emailLabel: "Email address",
-      sendLink: "Send Link",
-      checkEmailTitle: "Check your email",
-      checkEmailDescription: "If an account exists for {0}, you will find a link to reset your password there.",
-      close: "Close"
+      title: "Mot de passe oublié",
+      description: "Ne vous inquiétez pas. Entrez votre email et nous vous enverrons un lien de réinitialisation.",
+      emailLabel: "Adresse e-mail",
+      sendLink: "Envoyer le lien",
+      checkEmailTitle: "Vérifiez votre messagerie",
+      checkEmailDescription: "Si un compte existe pour {0}, vous y trouverez un lien pour réinitialiser votre mot de passe.",
+      close: "Fermer"
     }
   }
 };

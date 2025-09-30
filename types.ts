@@ -7,6 +7,8 @@
 
 
 
+
+
 export interface Zone {
   id: string;
   name: string;
@@ -364,6 +366,11 @@ export interface PickupPoint {
   longitude?: number;
   managerId?: string;
   zoneId?: string; // Add zoneId
+  layout?: {
+    aisles: number;
+    shelves: number;
+    locations: number;
+  };
 }
 
 

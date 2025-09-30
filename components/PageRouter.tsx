@@ -362,8 +362,10 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 allOrders={siteData.allOrders}
                 allStores={siteData.allStores}
                 allZones={siteData.allZones}
+                allPickupPoints={siteData.allPickupPoints}
                 onLogout={logout}
                 onAssignAgentToOrder={(orderId, agentId) => user && siteData.handleAssignAgentToOrder(orderId, agentId, user, allUsers)}
+                handleDepotCheckIn={(orderId, location) => user && siteData.handleDepotCheckIn(orderId, location, user)}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'account':
             return <AccountPage 

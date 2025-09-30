@@ -278,7 +278,7 @@ export const initialFlashSales: FlashSale[] = [
 ];
 
 export const initialPickupPoints: PickupPoint[] = [
-    { id: 'pp1', name: 'Relais KMER ZONE - Akwa', city: 'Douala', neighborhood: 'Akwa', street: 'Rue de la Joie', latitude: 4.047, longitude: 9.704, managerId: 'depot-manager-1', zoneId: 'zone-dla-a' },
+    { id: 'pp1', name: 'Relais KMER ZONE - Akwa', city: 'Douala', neighborhood: 'Akwa', street: 'Rue de la Joie', latitude: 4.047, longitude: 9.704, managerId: 'depot-manager-1', zoneId: 'zone-dla-a', layout: { aisles: 5, shelves: 10, locations: 10 } },
     { id: 'pp2', name: 'Relais KMER ZONE - Bonamoussadi', city: 'Douala', neighborhood: 'Bonamoussadi', street: 'Carrefour Kotto', latitude: 4.09, longitude: 9.74, zoneId: 'zone-dla-b' },
     { id: 'pp3', name: 'Relais KMER ZONE - Bastos', city: 'Yaoundé', neighborhood: 'Bastos', street: 'Avenue des Banques', latitude: 3.89, longitude: 11.52, zoneId: 'zone-yde-a' },
 ];
