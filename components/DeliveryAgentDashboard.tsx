@@ -1,5 +1,11 @@
 
 
+
+
+
+
+
+
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -72,7 +78,10 @@ const ScannerModal: React.FC<{
                             (decodedText: string) => {
                                onScanSuccess(decodedText);
                             },
-                            () => {}
+                            // FIX: The scanner's error callback expects at least one argument, but was provided an empty function.
+                            (errorMessage: string) => {
+                                // This callback is called frequently when no QR code is found and can be ignored.
+                            }
                         );
                     }
                 } else {
@@ -222,7 +231,6 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
             }
         }
          // Invalidate map size after a short delay to ensure it renders correctly
-        // FIX: The `invalidateSize` method on a Leaflet map instance expects a boolean argument.
         setTimeout(() => leafletMap.current?.invalidateSize(true), 100);
     }, [start, end]);
 

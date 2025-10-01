@@ -1,4 +1,4 @@
-import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod, ShippingPartner, SiteActivityLog, Zone } from './types';
+import type { Category, Product, Order, Store, FlashSale, PickupPoint, SiteSettings, SiteContent, Advertisement, PaymentMethod, ShippingPartner, SiteActivityLog, Zone, EmailTemplate } from './types';
 
 export const initialZones: Zone[] = [
     { id: 'zone-dla-a', name: 'Zone A', city: 'Douala' },
@@ -240,275 +240,90 @@ export const initialStores: Store[] = [
     },
     { 
         id: 'store-7', sellerId: 'seller-7', name: 'Limbe Arts & Crafts', logoUrl: 'https://i.pinimg.com/736x/8a/9e-12/8a9e-1261a8779728283575647585355e.jpg', category: 'Artisanat & Décoration', warnings: [], status: 'active', premiumStatus: 'premium',
-        location: 'Limbe', neighborhood: 'Down Beach', sellerFirstName: 'Sarah', sellerLastName: 'Eko', sellerPhone: '678901234',
-        physicalAddress: 'Bord de mer, Limbe', latitude: 4.0165, longitude: 9.2131, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-25T00:00:00.000Z',
-        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }, { name: "Registre de Commerce", status: 'verified', fileUrl: '...' }],
-        stories: [{id: 's2', imageUrl: 'https://i.pinimg.com/564x/c7/2b/42/c72b429158221c97a552e67a145cb1d6.jpg', createdAt: new Date().toISOString() }],
-        visits: 159,
+        location: 'Limbe', neighborhood: 'Down Beach', sellerFirstName: 'Sarah', sellerLastName: 'Eko', sellerPhone: '695432109',
+        physicalAddress: 'Down Beach, Limbe', latitude: 4.0145, longitude: 9.2133, subscriptionStatus: 'active', subscriptionDueDate: '2024-09-10T00:00:00.000Z',
+        documents: [{ name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' }],
+        visits: 120,
         collections: [],
-        shippingSettings: {
-            enabledPartners: ['sp1', 'sp2', 'sp3', 'sp4'],
-            customRates: { local: null, national: null },
-            freeShippingThreshold: null,
-        },
-    },
-    { 
-        id: 'store-8', sellerId: 'seller-8', name: 'Kribi Digital', logoUrl: 'https://static.vecteezy.com/system/resources/previews/007/618/856/non_2x/kd-logo-k-d-design-white-kd-letter-kd-letter-logo-design-initial-letter-kd-linked-circle-uppercase-monogram-logo-vector.jpg', category: 'Électronique', warnings: [], status: 'pending', premiumStatus: 'standard',
-        location: 'Kribi', neighborhood: 'Centre', sellerFirstName: 'David', sellerLastName: 'Lobe', sellerPhone: '654321098',
-        physicalAddress: 'Avenue des Banques, Kribi', latitude: 2.9431, longitude: 9.9077,
-        documents: [],
-        visits: 0,
-        collections: []
     },
 ];
 
 export const initialFlashSales: FlashSale[] = [
     {
-      id: 'fs1',
-      name: 'Vente Flash de la Rentrée',
-      startDate: '2024-07-20T00:00:00.000Z',
-      endDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(), // Ends in 3 days
-      products: [
-        { productId: '4', sellerShopName: 'Electro Plus', flashPrice: 68000, status: 'approved' },
-        { productId: '2', sellerShopName: 'Kmer Fashion', flashPrice: 12000, status: 'approved' },
-        { productId: '16', sellerShopName: 'Douala Soaps', flashPrice: 2000, status: 'pending' },
-        { productId: '5', sellerShopName: 'Mama Africa', flashPrice: 4500, status: 'rejected' },
-      ],
-    },
+        id: 'fs-1',
+        name: 'Vente Flash de la Rentrée',
+        startDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        endDate: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+        products: [
+            { productId: '4', sellerShopName: 'Electro Plus', flashPrice: 65000, status: 'approved' },
+            { productId: '27', sellerShopName: 'Electro Plus', flashPrice: 2000, status: 'approved' }
+        ]
+    }
 ];
 
 export const initialPickupPoints: PickupPoint[] = [
-    { id: 'pp1', name: 'Relais KMER ZONE - Akwa', city: 'Douala', neighborhood: 'Akwa', street: 'Rue de la Joie', latitude: 4.047, longitude: 9.704, managerId: 'depot-manager-1', zoneId: 'zone-dla-a', layout: { aisles: 5, shelves: 10, locations: 10 } },
-    { id: 'pp2', name: 'Relais KMER ZONE - Bonamoussadi', city: 'Douala', neighborhood: 'Bonamoussadi', street: 'Carrefour Kotto', latitude: 4.09, longitude: 9.74, zoneId: 'zone-dla-b' },
-    { id: 'pp3', name: 'Relais KMER ZONE - Bastos', city: 'Yaoundé', neighborhood: 'Bastos', street: 'Avenue des Banques', latitude: 3.89, longitude: 11.52, zoneId: 'zone-yde-a' },
+    { id: 'pp1', name: 'Dépôt Akwa', city: 'Douala', neighborhood: 'Akwa', street: 'Rue de la Joie', latitude: 4.0454, longitude: 9.7028, managerId: 'depot-manager-1', zoneId: 'zone-dla-a', layout: {aisles: 10, shelves: 5, locations: 10} },
+    { id: 'pp2', name: 'Dépôt Bastos', city: 'Yaoundé', neighborhood: 'Bastos', street: 'Avenue des Ambassades', latitude: 3.8968, longitude: 11.5213, zoneId: 'zone-yde-a' },
 ];
 
 export const initialSiteSettings: SiteSettings = {
-  logoUrl: '',
-  bannerUrl: 'https://images.unsplash.com/photo-1542838132-92c53300491e?q=80&w=1974&auto=format&fit=crop',
-  companyName: 'KMER ZONE',
+  logoUrl: 'https://kmer-zone-logo.svg',
+  bannerUrl: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=2070&auto=format&fit=crop',
+  companyName: "KMER ZONE Inc.",
   isStoriesEnabled: true,
-  isChatEnabled: true,
-  isComparisonEnabled: true,
-  customerLoyaltyProgram: {
-    isEnabled: true,
-    premium: {
-      thresholds: { orders: 10, spending: 50000 },
-      cautionAmount: 10000,
-      benefits: [
-        "Badge de confiance sur votre profil",
-        "Support client prioritaire",
-        "Accès exclusif aux ventes privées",
-        "Accès aux ventes flash 24h en avance",
-        "Remises sur les frais de livraison",
-      ],
-    },
-    premiumPlus: {
-      isEnabled: true,
-      annualFee: 25000,
-      benefits: [
-        "Tous les avantages Premium",
-        "Livraison gratuite sur les articles éligibles",
-        "Offres et promotions personnalisées",
-        "Retour de produits facilité",
-      ],
-    },
-  },
-  requiredSellerDocuments: {
-      "CNI (Carte Nationale d'Identité)": true,
-      "Registre de Commerce": true,
-      "Photo du gérant": false,
-      "Plan de localisation": false,
-  },
-  isRentEnabled: true,
-  rentAmount: 5000,
-  canSellersCreateCategories: true,
-  commissionRate: 10,
-  standardPlan: {
-    price: 10000,
-    durationDays: 30,
-    productLimit: 20,
-    commissionRate: 10,
-    photoServiceIncluded: false,
-    featuredOnHomepage: false,
-    prioritySupport: false,
-  },
-  premiumPlan: {
-    price: 25000,
-    durationDays: 30,
-    productLimit: 100,
-    commissionRate: 8,
-    photoServiceIncluded: true,
-    featuredOnHomepage: false,
-    prioritySupport: true,
-  },
-  superPremiumPlan: {
-    price: 50000,
-    durationDays: 30,
-    productLimit: 500,
-    commissionRate: 5,
-    photoServiceIncluded: true,
-    featuredOnHomepage: true,
-    prioritySupport: true,
-  },
-  deliverySettings: {
-    intraUrbanBaseFee: 1000,
-    interUrbanBaseFee: 2500,
-    costPerKg: 500,
-    premiumDeliveryDiscountPercentage: 25,
-  },
-  maintenanceMode: {
-    isEnabled: false,
-    message: "Nous effectuons une mise à jour. Nous serons de retour très bientôt !",
-    reopenDate: new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(), // 2 hours from now
-  },
-  seo: {
-    metaTitle: 'KMER ZONE - Le meilleur du Cameroun, livré chez vous.',
-    metaDescription: 'Achetez et vendez des produits locaux et internationaux sur la première place de marché en ligne du Cameroun. Mode, électronique, alimentation et plus encore.',
-    ogImageUrl: 'https://images.unsplash.com/photo-1593359677879-a4bb92f82acb?q=80&w=2070&auto=format&fit=crop'
-  },
-  socialLinks: {
-    facebook: {
-        linkUrl: 'https://facebook.com/kmerzone',
-        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNOSA4aC0zdjRoM3YxMmg1di0xMmgzLjY0MmwzNTgtNGgtNHYtMS42NjdjMC0uOTU1LjE5Mi0xLjMzMyAxLjExNS0xLjMzM2gyLjg4NXYtNWgtMy44MDhjLTMuNTk2IDAtNS4xOTIgMS41ODMtNS4xOTIgNC42MTV2My4zODV6IiAvPjwvc3ZnPg=='
-    },
-    twitter: {
-        linkUrl: 'https://twitter.com/kmerzone',
-        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNMjQgNC41NTdjLS44ODMuMzkyLTEuODMyLjY1Ni0yLjgyOC43NzUgMS4wMTctLjYwOSAxLjc5OC0xLjU3NCAyLjE2NS0yLjcyNC0uOTUxLjU2NC0yLjAwNS45NzQtMy4xMjcgMS4xOTUtLjg5Ny0uOTU3LTIuMTc4LTEuNTU1LTMuNTk0LTEuNTU1LTMuMTc5IDAtNS41MTUgMi45NjYtNC43OTcgNi4wNDUtNC4wOTEtLjIwNS03LjcxOS0yLjE2NS0xMC4xNDgtNS4xNDQtMS4yOSAyLjIxMy0uNjY5IDUuMTA4IDEuNTIzIDYuNTc0LS44MDYtLjAyNi0xLjU2Ni0uMjQ3LTIuMjI5LS42MTZ2LjA2NGMwIDIuMjk4IDEuNjM4IDQuMjE4IDMuODIgNC42NTQtLjczLjE5Ny0xLjQ5Mi4yMjMtMi4yMi4wODQuNjE2IDEuOTI0IDIuMzk2IDMuMzE2IDQuNDkxIDMuMzU0LTEuNzIyIDEuMzU0LTMuODg1IDUuMTYtNi4yMjQgNS4xNi0uNDA0IDAtLjc5OS0uMDI0LTEuMTg2LS4wNzEgMi4yMjQgMS40MjggNC44NjMgMi4yNjMgNy43MTIgMi4yNjMgOS4yNjEgMCAxNC4zMjgtNy42ODMgMTQuMDQ1LTE0LjM0Ni45NjItLjY5MyAxLjc5NS0xLjU2MiAyLjQ1Ny0yLjU0eiIgLz48L3N2Zz4='
-    },
-    instagram: {
-        linkUrl: 'https://instagram.com/kmerzone',
-        iconUrl: 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iY3VycmVudENvbG9yIj48cGF0aCBkPSJNMTIgMi4xNjNjMy4yMDQgMCAzLjU4NC4wMTIgNC44NS4wNyAzLjI1Mi4xNDggNC43NzEgMS42OTEgNC45MTkgNC45MTkuMDU4IDEuMjY1LjA2OSAxLjY0NS4wNjkgNC44NXMtLjAxMSAzLjU4NC0uMDY5IDQuODVjLS4xNDkgMy4yMjUtMS42NjQgNC43NzEtNC45MTkgNC45MTktMS4yNjYuMDU4LTEuNjQ0LjA2OS00Ljg1LjA2OXMtMy41ODUtLjAxMS00Ljg1LS4wNjljLTMuMjUyLS4xNDktNC43NzEtMS42OTktNC45MTktNC45Mi0uMDU4LTEuMjY1LS4wNy0xLjY0NC0uMDctNC44NXMuMDEyLTMuNTg0LjA3LTQuODVjLjE0OC0zLjIyNSAxLjY2NC00Ljc3MSA0LjkxOS00LjkxOSAxLjI2Ni0uMDU3IDEuNjQ1LS4wNjkgNC44NS0uMDY5em0wLTIuMTYzYy0zLjI1OSAwLTMuNjY3LjAxNC00Ljk0Ny4wNzItNC4zNTguMi02Ljc4IDIuNjE4LTYuOTggNi45OC0uMDU5IDEuMjgxLS4wNzMgMS42ODktLjA3MyA0Ljk0OHMuMDE0IDMuNjY3LjA3MiA0Ljk0N2MuMiA0LjM1OSAyLjYxOCA2Ljc4IDYuOTggNi45OCAxLjI4MS4wNTggMS42ODkuMDcyIDQuOTQ4LjA3MnMzLjY2Ny0uMDE0IDQuOTQ3LS4wNzJjNC4zNTQtLjIgNi43ODItMi42MTggNi45NzktNi45OC4wNTktMS4yOC4wNzMtMS42ODkuMDczLTQuOTQ3cy0uMDE0LTMuNjY3LS4wNzItNC45NDdjLS4xOTctNC4zNTQtMi42MTctNi43OC02Ljk3OS02Ljk4LTEuMjgxLS4wNTktMS42ODktLjA3My00Ljk0OC0uMDczem0wIDUuODM4Yy0zLjQwMyAwLTYuMTYyIDIuNzU5LTYuMTYyIDYuMTYyczIuNzU5IDYuMTYyIDYuMTYyIDYuMTYyIDYuMTYyLTIuNzU5IDYuMTYyLTYuMTYyLTIuNzU5LTYuMTYyLTYuMTYyLTYuMTYyem0wIDEwLjE2MmMtMi4yMDkgMC00LTEuNzktNC00czEuNzkxLTQgNC00IDQgMS43OSA0IDQtMS43OTEgNC00IDR6bTYuNDA2LTExLjg0NWMtLjc5NiAwLTEuNDQxLjY0NS0xLjQ0MSAxLjQ0cy42NDUgMS40NCAxLjQ0MSAxLjQ0IDEuNDQtLjY0NiAxLjQ0LTEuNDQtLjY0NS0xLjQ0LTEuNDQtMS40NHoiIC8+PC9zdmc+'
-    },
-  },
+  requiredSellerDocuments: { "CNI (Carte Nationale d'Identité)": true, "Registre de Commerce": true },
+  isRentEnabled: false,
+  rentAmount: 0,
+  canSellersCreateCategories: false,
+  commissionRate: 8.5,
+  standardPlan: { price: 10000, durationDays: 30, productLimit: 20, commissionRate: 8.5, photoServiceIncluded: false, featuredOnHomepage: false, prioritySupport: false },
+  premiumPlan: { price: 25000, durationDays: 30, productLimit: 100, commissionRate: 6, photoServiceIncluded: true, featuredOnHomepage: false, prioritySupport: true },
+  superPremiumPlan: { price: 50000, durationDays: 30, productLimit: 500, commissionRate: 4, photoServiceIncluded: true, featuredOnHomepage: true, prioritySupport: true },
+  customerLoyaltyProgram: { isEnabled: true, premium: { thresholds: { orders: 10, spending: 50000 }, cautionAmount: 10000, benefits: ["Livraison prioritaire", "Accès anticipé aux ventes flash"] }, premiumPlus: { isEnabled: true, annualFee: 25000, benefits: ["Tous les avantages Premium", "Livraison gratuite sur 5 commandes", "Support client dédié"] }},
+  deliverySettings: { intraUrbanBaseFee: 1000, interUrbanBaseFee: 2500, costPerKg: 500, premiumDeliveryDiscountPercentage: 15 },
+  maintenanceMode: { isEnabled: false, message: "Nous serons de retour bientôt !", reopenDate: "" },
+  seo: { metaTitle: "KMER ZONE - Le meilleur du Cameroun, livré chez vous.", metaDescription: "Achetez et vendez en ligne au Cameroun. Vêtements, électronique, alimentation et plus encore.", ogImageUrl: "" },
+  socialLinks: { facebook: { linkUrl: "#", iconUrl: "https://example.com/facebook.svg"}, twitter: { linkUrl: "#", iconUrl: "https://example.com/twitter.svg" }, instagram: { linkUrl: "#", iconUrl: "https://example.com/instagram.svg" } },
   emailTemplates: [
     {
-        id: 'order-confirmation',
-        name: 'Client - Confirmation de commande',
-        subject: 'Votre commande KMER ZONE #{orderId} est confirmée !',
-        body: 'Bonjour {customerName},\n\nMerci pour votre achat ! Votre commande #{orderId} a bien été reçue et est en cours de préparation.\n\nTotal : {orderTotal} FCFA\n\nNous vous informerons dès que votre colis sera expédié.\n\nL\'équipe KMER ZONE',
-        variables: '{customerName}, {orderId}, {orderTotal}, {trackingLink}'
+      id: 'welcome-customer',
+      name: 'Bienvenue au nouveau client',
+      subject: 'Bienvenue sur KMER ZONE !',
+      body: 'Bonjour {customerName},\n\nBienvenue sur KMER ZONE ! Nous sommes ravis de vous compter parmi nous.\n\nExplorez nos produits dès maintenant !\n\nL\'équipe KMER ZONE',
+      variables: '{customerName}'
     },
     {
-        id: 'order-shipped',
-        name: 'Client - Commande expédiée',
-        subject: 'Votre commande KMER ZONE #{orderId} a été expédiée !',
-        body: 'Bonjour {customerName},\n\nBonne nouvelle ! Votre commande #{orderId} est maintenant en route.\n\nVous pouvez suivre son avancement ici : {trackingLink}\n\nL\'équipe KMER ZONE',
-        variables: '{customerName}, {orderId}, {trackingLink}'
+      id: 'order-shipped',
+      name: 'Commande expédiée',
+      subject: 'Votre commande KMER ZONE a été expédiée !',
+      body: 'Bonjour {customerName},\n\nBonne nouvelle ! Votre commande #{orderId} a été expédiée et est en route.\n\nVous pouvez suivre son avancement depuis votre compte.\n\nMerci pour votre confiance,\nL\'équipe KMER ZONE',
+      variables: '{customerName}, {orderId}'
     },
     {
-        id: 'new-seller-welcome',
-        name: 'Vendeur - Bienvenue',
-        subject: 'Bienvenue sur KMER ZONE, {sellerName} !',
-        body: 'Bonjour {sellerName},\n\nFélicitations ! Votre boutique "{storeName}" est maintenant active sur KMER ZONE.\n\nConnectez-vous à votre tableau de bord pour commencer à ajouter vos produits : {dashboardLink}\n\nNous sommes ravis de vous compter parmi nous.\n\nL\'équipe KMER ZONE',
-        variables: '{sellerName}, {storeName}, {dashboardLink}'
-    },
-    {
-        id: 'new-order-for-seller',
-        name: 'Vendeur - Nouvelle commande',
-        subject: 'Nouvelle commande #{orderId} pour votre boutique {storeName}',
-        body: 'Bonjour {sellerName},\n\nVous avez une nouvelle commande ! Connectez-vous à votre tableau de bord pour la préparer.\n\nID Commande: #{orderId}\n\nLien: {dashboardLink}\n\nL\'équipe KMER ZONE',
-        variables: '{sellerName}, {storeName}, {orderId}, {dashboardLink}'
-    },
-    {
-        id: 'password-reset',
-        name: 'Utilisateur - Réinitialisation de mot de passe',
-        subject: 'Réinitialisation de votre mot de passe KMER ZONE',
-        body: 'Bonjour {customerName},\n\nPour réinitialiser votre mot de passe, veuillez cliquer sur le lien suivant : {resetLink}\n\nSi vous n\'êtes pas à l\'origine de cette demande, veuillez ignorer cet email.\n\nL\'équipe KMER ZONE',
-        variables: '{customerName}, {resetLink}'
-    },
-    {
-        id: 'admin-bulk-marketing',
-        name: 'Admin - Email Marketing Groupé',
-        subject: 'Une nouvelle annonce de KMER ZONE',
-        body: 'Bonjour {customerName},\n\nNous avons une annonce importante pour vous :\n\n{emailContent}\n\nMerci de votre confiance,\nL\'équipe KMER ZONE',
-        variables: '{customerName}, {emailContent}'
+      id: 'promo-newsletter',
+      name: 'Newsletter promotionnelle',
+      subject: '🔥 Ne manquez pas nos offres spéciales !',
+      body: 'Bonjour {customerName},\n\n{emailContent}\n\nProfitez-en vite sur KMER ZONE !\n\nCordialement,\nL\'équipe Marketing',
+      variables: '{customerName}, {emailContent}'
     }
-  ]
+  ],
+  isChatEnabled: true,
+  isComparisonEnabled: true,
 };
 
 export const initialSiteContent: SiteContent[] = [
-  {
-    slug: 'about',
-    title: "À propos de KMER ZONE",
-    content: "KMER ZONE est la première plateforme e-commerce camerounaise dédiée à la mise en relation directe des commerçants locaux et des consommateurs. Notre mission est de démocratiser l'accès au commerce en ligne, de valoriser les produits locaux et de simplifier l'expérience d'achat pour tous les Camerounais."
-  },
-  {
-    slug: 'contact',
-    title: "Contactez-nous",
-    content: "Pour toute question, partenariat ou assistance, veuillez nous contacter à l'adresse suivante : support@kmerzone.com. Notre équipe est disponible 24/7 pour vous aider."
-  },
-  {
-    slug: 'faq',
-    title: "Foire Aux Questions (FAQ)",
-    content: "Q: Quels sont les délais de livraison ?\nR: Les délais varient entre 24h et 72h en fonction de votre localisation et de celle du vendeur.\n\nQ: Les paiements sont-ils sécurisés ?\nR: Oui, nous utilisons les plateformes de paiement mobile les plus fiables du pays pour garantir la sécurité de vos transactions."
-  },
-  {
-    slug: 'careers',
-    title: "Carrières",
-    content: "Rejoignez une équipe dynamique et passionnée qui révolutionne le e-commerce au Cameroun ! Consultez nos offres d'emploi sur notre page LinkedIn ou envoyez votre candidature spontanée à careers@kmerzone.com."
-  },
-  {
-    slug: 'sell',
-    title: "Vendre sur KMER ZONE",
-    content: "Augmentez votre visibilité et vos ventes en rejoignant notre marketplace. L'inscription est simple et rapide. Cliquez sur 'Devenir vendeur' en haut de la page pour commencer votre aventure avec nous !"
-  },
-  {
-    slug: 'training-center',
-    title: "Centre de formation",
-    content: "Bientôt disponible : des tutoriels et des guides pour vous aider à maximiser vos ventes."
-  },
-  {
-    slug: 'logistics',
-    title: "Logistique & Livraison",
-    content: "Notre réseau de livreurs est à votre disposition pour garantir des livraisons rapides et fiables à vos clients."
-  },
-  {
-    slug: 'terms-of-service',
-    title: "Conditions d'utilisation",
-    content: "En utilisant KMER ZONE, vous acceptez nos conditions. La vente de produits illégaux est strictement interdite. Nous nous réservons le droit de suspendre tout compte qui ne respecte pas nos règles."
-  },
-  {
-    slug: 'privacy-policy',
-    title: "Politique de confidentialité",
-    content: "Nous respectons votre vie privée. Vos données sont utilisées uniquement pour le traitement des commandes et l'amélioration de nos services. Nous ne partageons jamais vos informations avec des tiers sans votre consentement."
-  }
+    { slug: 'about', title: 'À Propos de Nous', content: 'Contenu de la page à propos...' },
+    { slug: 'contact', title: 'Contactez-Nous', content: 'Contenu de la page de contact...' },
+    { slug: 'faq', title: 'Foire Aux Questions', content: 'Contenu de la page FAQ...' },
 ];
 
 export const initialAdvertisements: Advertisement[] = [
-    { id: 'ad1', imageUrl: 'https://images.unsplash.com/photo-1555529771-835f59fc5efe?q=80&w=1920&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
-    { id: 'ad2', imageUrl: 'https://images.unsplash.com/photo-1598327105151-586673437584?q=80&w=1920&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
+    { id: 'ad-1', imageUrl: 'https://images.unsplash.com/photo-1511556532299-8f662fc26c06?q=80&w=2070&auto=format&fit=crop', linkUrl: '#', location: 'homepage-banner', isActive: true },
 ];
 
 export const initialPaymentMethods: PaymentMethod[] = [
-    { id: 'pm1', name: 'Orange Money', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Orange Money Logo"><rect width="64" height="40" rx="4" fill="%23FF7900"/><text x="32" y="22" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="white" text-anchor="middle">ORANGE</text><text x="32" y="31" font-family="Helvetica, Arial, sans-serif" font-size="9" font-weight="bold" fill="white" text-anchor="middle">MONEY</text><rect x="8" y="8" width="10" height="7" rx="2" fill="white" fill-opacity="0.8"/></svg>' },
-    { id: 'pm2', name: 'MTN MoMo', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="MTN Mobile Money Logo"><rect width="64" height="40" rx="4" fill="%23FFCC00"/><text x="32" y="26" font-family="Helvetica, Arial, sans-serif" font-size="14" font-weight="bold" fill="#004F9F" text-anchor="middle">MoMo</text><rect x="8" y="8" width="10" height="7" rx="2" fill="#004F9F" fill-opacity="0.8"/></svg>' },
-    { id: 'pm3', name: 'Visa', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Visa Logo"><rect width="64" height="40" rx="4" fill="white" stroke="#E0E0E0" /><path d="M24.7,25.8h-3.4L17.6,14h3.8l2,7.1c0.4,1.6,0.6,2.7,0.8,3.6h0.1c0.2-0.9,0.5-2.1,0.8-3.6l2-7.1h3.7L24.7,25.8z M45.1,14.2c-0.8-0.2-1.9-0.5-3.1-0.5c-3.1,0-5.4,1.7-5.4,4.2c0,2.1,1.7,3.4,3.1,4.1c1.4,0.6,1.9,1,1.9,1.6c0,0.8-0.9,1.2-2.1,1.2c-1.6,0-2.4-0.3-3.3-0.6l-0.5-0.2l-0.6,3.2c0.8,0.3,2.3,0.5,4,0.5c3.3,0,5.6-1.7,5.6-4.4c0-2.6-1.9-3.7-3.4-4.4c-1.3-0.6-1.7-1-1.7-1.5c0-0.5,0.6-1.1,2-1.1c1.3,0,2.1,0.3,2.8,0.6l0.4,0.2L45.1,14.2z M47,14h-3.1l-2.1,11.8h3.8L47,14z M14.8,14.2l-3,11.6h3.7l3-11.6H14.8z" fill="#142688" /></svg>' },
-    { id: 'pm4', name: 'Mastercard', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="Mastercard Logo"><rect width="64" height="40" rx="4" fill="white" stroke="#E0E0E0"/><circle cx="26" cy="20" r="8" fill="#EA001B"/><circle cx="38" cy="20" r="8" fill="#F79E1B"/><path d="M32,20 a8,8 0 0,1 -6,-1.41a8,8 0 0,0 0,2.82a8,8 0 0,1 6,1.41a8,8 0 0,0 6,-1.41a8,8 0 0,1 0,-2.82A8,8 0 0,0 32,20Z" fill="#FF5F00" /></svg>' },
-    { id: 'pm5', name: 'Paypal', imageUrl: 'data:image/svg+xml;utf8,<svg viewBox="0 0 64 40" xmlns="http://www.w3.org/2000/svg" aria-label="PayPal Logo"><rect width="64" height="40" rx="4" fill="#003087"/><path fill="white" d="M32.12,12.62c-2.28-.1-4.2,1.3-4.72,3.42-.64,2.58.74,4.52,2.7,5.2,2.16.76,4.48.3,5.92-1.32,1.26-1.42,1.68-3.32,1-5.12-1.02-3.1-3.6-4.5-5-4.2h.1Z"/><path fill="#009cde" d="M29.1,19.2c-.52,2.12,1.02,4,2.94,4.54,2.14.6,4.5.1,5.9-1.52.92-1.04,1.2-2.38.74-3.6-.82-2.18-3-3.44-4.9-2.92h.22Z"/></svg>' },
+    { id: 'pm1', name: 'Orange Money', imageUrl: '/om.png' },
+    { id: 'pm2', name: 'MTN Mobile Money', imageUrl: '/momo.png' },
 ];
 
-// FIX: Export initialSiteActivityLogs to be used in useSiteData hook.
-export const initialSiteActivityLogs: SiteActivityLog[] = [
-    {
-        id: 'log-1',
-        timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
-        user: { id: 'customer-1', name: 'Client Test', role: 'customer' },
-        action: 'USER_LOGIN',
-        details: 'User logged in successfully.',
-    },
-    {
-        id: 'log-2',
-        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-        user: { id: 'seller-1', name: 'Kmer Fashion', role: 'seller' },
-        action: 'PRODUCT_UPDATE',
-        details: 'Updated product: Robe en Tissu Pagne (ID: 2)',
-    },
-    {
-        id: 'log-3',
-        timestamp: new Date(Date.now() - 10 * 60 * 1000).toISOString(),
-        user: { id: 'admin-1', name: 'Super Admin', role: 'superadmin' },
-        action: 'STORE_APPROVAL',
-        details: 'Approved store: Kmer Fashion (ID: store-1)',
-    },
-];
+export const initialSiteActivityLogs: SiteActivityLog[] = [];

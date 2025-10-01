@@ -70,14 +70,33 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
                                 <button onClick={() => onAdminDeleteCategory(mainCat.id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
                             </div>
                              <div className="flex items-center gap-2 mt-2">
+                                <img src={editingCategories[mainCat.id]?.imageUrl ?? mainCat.imageUrl} alt={mainCat.name} className="w-10 h-10 object-cover rounded-sm"/>
                                 <input 
                                     placeholder={t('superadmin.catalog.imageUrl')}
                                     value={editingCategories[mainCat.id]?.imageUrl ?? mainCat.imageUrl} 
                                     onChange={(e) => handleCategoryChange(mainCat.id, 'imageUrl', e.target.value)} 
                                     className="text-xs p-1 border rounded w-full bg-transparent dark:border-gray-600"
                                 />
+                                <label htmlFor={`cat-img-upload-${mainCat.id}`} className="cursor-pointer bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap">
+                                    {t('superadmin.settings.identity.upload')}
+                                    <input 
+                                        id={`cat-img-upload-${mainCat.id}`} 
+                                        type="file" 
+                                        className="sr-only" 
+                                        onChange={(e) => {
+                                            if (e.target.files && e.target.files[0]) {
+                                                const reader = new FileReader();
+                                                reader.onloadend = () => {
+                                                    handleCategoryChange(mainCat.id, 'imageUrl', reader.result as string);
+                                                };
+                                                reader.readAsDataURL(e.target.files[0]);
+                                            }
+                                        }} 
+                                        accept="image/*" 
+                                    />
+                                </label>
                             </div>
-                            <ul className="list-disc list-inside pl-4 mt-2 space-y-1">
+                            <ul className="list-disc list-inside pl-4 mt-2 space-y-2">
                                 {mainCat.subCategories.map(subCat => (
                                     <li key={subCat.id} className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
@@ -88,6 +107,33 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
                                             />
                                             {editingCategories[subCat.id] && <button onClick={() => handleSaveCategory(subCat.id)} className="text-green-500"><CheckCircleIcon className="w-5 h-5"/></button>}
                                             <button onClick={() => onAdminDeleteCategory(subCat.id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 pl-4">
+                                            <img src={editingCategories[subCat.id]?.imageUrl ?? subCat.imageUrl} alt={subCat.name} className="w-8 h-8 object-cover rounded-sm"/>
+                                            <input 
+                                                placeholder={t('superadmin.catalog.imageUrl')}
+                                                value={editingCategories[subCat.id]?.imageUrl ?? subCat.imageUrl} 
+                                                onChange={(e) => handleCategoryChange(subCat.id, 'imageUrl', e.target.value)} 
+                                                className="text-xs p-1 border rounded w-full bg-transparent dark:border-gray-600"
+                                            />
+                                            <label htmlFor={`cat-img-upload-${subCat.id}`} className="cursor-pointer bg-gray-200 dark:bg-gray-600 px-2 py-1 rounded-md text-xs font-medium whitespace-nowrap">
+                                                {t('superadmin.settings.identity.upload')}
+                                                <input 
+                                                    id={`cat-img-upload-${subCat.id}`} 
+                                                    type="file" 
+                                                    className="sr-only" 
+                                                    onChange={(e) => {
+                                                        if (e.target.files && e.target.files[0]) {
+                                                            const reader = new FileReader();
+                                                            reader.onloadend = () => {
+                                                                handleCategoryChange(subCat.id, 'imageUrl', reader.result as string);
+                                                            };
+                                                            reader.readAsDataURL(e.target.files[0]);
+                                                        }
+                                                    }} 
+                                                    accept="image/*" 
+                                                />
+                                            </label>
                                         </div>
                                     </li>
                                 ))}

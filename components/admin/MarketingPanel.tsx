@@ -75,6 +75,16 @@ const AdForm: React.FC<{ ad?: Advertisement | null, onSave: (data: Omit<Advertis
         const { name, value, type, checked } = e.target;
         setData(d => ({ ...d, [name]: type === 'checkbox' ? checked : value }));
     };
+    
+    const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files[0]) {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                setData(d => ({ ...d, imageUrl: reader.result as string }));
+            };
+            reader.readAsDataURL(e.target.files[0]);
+        }
+    };
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
@@ -83,7 +93,17 @@ const AdForm: React.FC<{ ad?: Advertisement | null, onSave: (data: Omit<Advertis
 
     return (
         <form onSubmit={handleSubmit} className="p-4 space-y-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-            <input name="imageUrl" value={data.imageUrl} onChange={handleChange} placeholder={t('superadmin.marketing.adForm.imageUrl')} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required />
+            <div>
+                <label className="block text-sm font-medium">{t('superadmin.marketing.adForm.imageUrl')}</label>
+                <div className="flex items-center gap-2 mt-1">
+                    <input name="imageUrl" value={data.imageUrl} onChange={handleChange} placeholder="https://... ou téléverser" className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required />
+                    <label htmlFor="ad-image-upload" className="cursor-pointer bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap">
+                        {t('superadmin.settings.identity.upload')}
+                        <input id="ad-image-upload" type="file" className="sr-only" onChange={handleFileChange} accept="image/*" />
+                    </label>
+                </div>
+                {data.imageUrl && <img src={data.imageUrl} alt="Aperçu" className="h-20 mt-2 object-contain rounded"/>}
+            </div>
             <input name="linkUrl" value={data.linkUrl} onChange={handleChange} placeholder={t('superadmin.marketing.adForm.linkUrl')} className="w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" required />
             <label className="flex items-center gap-2"><input type="checkbox" name="isActive" checked={data.isActive} onChange={handleChange} /> {t('superadmin.marketing.adForm.activate')}</label>
             <div className="flex justify-end gap-2">
@@ -134,7 +154,7 @@ export const MarketingPanel: React.FC<MarketingPanelProps> = (props) => {
                         {advertisements.map(ad => (
                             <div key={ad.id} className="p-3 bg-gray-50 dark:bg-gray-700/50 rounded-md flex justify-between items-center">
                                 <div className="flex items-center gap-4">
-                                    <img src={ad.imageUrl} alt="Ad preview" className="w-24 h-12 object-cover rounded"/>
+                                    <img src={ad.imageUrl} alt="Ad preview" className="w-24 h-12 object-contain rounded"/>
                                     <div>
                                         <a href={ad.linkUrl} target="_blank" rel="noopener noreferrer" className="font-semibold hover:underline">{ad.linkUrl}</a>
                                         <p className={`text-xs px-2 py-0.5 rounded-full inline-block mt-1 ${ad.isActive ? 'bg-green-200 text-green-800' : 'bg-gray-200 text-gray-800'}`}>{ad.isActive ? 'Active' : 'Inactive'}</p>

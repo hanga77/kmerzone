@@ -15,7 +15,7 @@ import { SupportPanel } from './admin/SupportPanel';
 import { LogsPanel } from './admin/LogsPanel';
 import { SettingsPanel } from './admin/SettingsPanel';
 import ReviewModerationPanel from './admin/ReviewModerationPanel';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 interface SuperAdminDashboardProps {
@@ -59,7 +59,6 @@ interface SuperAdminDashboardProps {
     onDeleteAdvertisement: (id: string) => void;
     onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => void;
     onSanctionAgent: () => void;
-    // FIX: Renamed 'onResolveRefund' to 'onResolveDispute' and corrected its signature to match what PageRouter passes and OrdersPanel expects.
     onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => void;
     onAdminStoreMessage: () => void;
     onAdminCustomerMessage: () => void;
@@ -76,7 +75,6 @@ interface SuperAdminDashboardProps {
     onUpdatePaymentMethods: (methods: PaymentMethod[]) => void;
     allZones: Zone[];
     onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => void;
-    // FIX: Added missing props required by child components.
     onWarnUser: (userId: string, reason: string) => void;
     onAdminUpdateCategory: (categoryId: string, updates: Partial<Omit<Category, 'id'>>) => void;
     onUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason?: string) => void;
@@ -113,14 +111,10 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) =
     const renderContent = () => {
         switch (activeTab) {
             case 'overview': return <OverviewPanel {...props} />;
-            // FIX: Pass required `onWarnUser` prop to UsersPanel.
             case 'users': return <UsersPanel allUsers={props.allUsers} onUpdateUser={props.onUpdateUser} onCreateUserByAdmin={props.onCreateUserByAdmin} onWarnUser={props.onWarnUser} allPickupPoints={props.allPickupPoints} allZones={props.allZones} onSendBulkEmail={props.onSendBulkEmail} siteSettings={props.siteSettings} />;
-            // FIX: Explicitly pass props to CatalogPanel to fix missing prop error.
             case 'catalog': return <CatalogPanel allCategories={props.allCategories} onAdminAddCategory={props.onAdminAddCategory} onAdminDeleteCategory={props.onAdminDeleteCategory} onAdminUpdateCategory={props.onAdminUpdateCategory} />;
             case 'marketing': return <MarketingPanel {...props} />;
-            // FIX: Explicitly pass props to StoresPanel to fix missing prop error.
             case 'stores': return <StoresPanel allStores={props.allStores} onApproveStore={props.onApproveStore} onRejectStore={props.onRejectStore} onToggleStoreStatus={props.onToggleStoreStatus} onWarnStore={props.onWarnStore} onUpdateDocumentStatus={props.onUpdateDocumentStatus} />;
-            // FIX: Explicitly pass props to OrdersPanel to fix missing prop error.
             case 'orders': return <OrdersPanel allOrders={props.allOrders} onUpdateOrderStatus={props.onUpdateOrderStatus} onResolveDispute={props.onResolveDispute} />;
             case 'logistics': return <LogisticsPanel {...props} />;
             case 'payouts': return <PayoutsPanel {...props} />;

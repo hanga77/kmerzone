@@ -52,8 +52,8 @@ const VisualSearchPage: React.FC<VisualSearchPageProps> = ({ onSearch }) => {
       const imagePart = await fileToGenerativePart(image);
       const prompt = "Décris cet objet en 3 à 5 mots-clés pertinents pour une recherche e-commerce. Sépare les mots-clés par des virgules. Ne retourne que les mots-clés. Exemple : robe, pagne, élégante, soirée, coton";
       
+      // FIX: Use ai.models.generateContent with the correct model and response parsing.
       const response = await ai.models.generateContent({
-        // FIX: Use 'gemini-2.5-flash' model as per guidelines.
         model: 'gemini-2.5-flash',
         contents: { parts: [imagePart, { text: prompt }] },
       });

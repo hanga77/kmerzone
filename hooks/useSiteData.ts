@@ -401,6 +401,13 @@ export const useSiteData = () => {
         logActivity(user, 'DEPOT_CHECK_IN', `Colis ${orderId} enregistré à l'emplacement ${storageLocationId}.`);
     }, [setAllOrders, logActivity]);
     
+    const handleUpdateSchedule = useCallback((depotId: string, newSchedule: AgentSchedule, user: User) => {
+        setAllPickupPoints(prevPoints => prevPoints.map(point => 
+            point.id === depotId ? { ...point, schedule: newSchedule } : point
+        ));
+        logActivity(user, 'SCHEDULE_UPDATED', `Planning mis à jour pour le dépôt ${depotId}.`);
+    }, [setAllPickupPoints, logActivity]);
+
     // Seller-specific actions
     const handleSellerUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus, user: User) => {
         setAllOrders(prev => prev.map(o => {
@@ -494,13 +501,6 @@ export const useSiteData = () => {
         
         return newStore;
     }, [setAllStores, setAllNotifications, logActivity, siteSettings.requiredSellerDocuments]);
-    
-    const handleUpdateSchedule = useCallback((depotId: string, newSchedule: AgentSchedule, user: User) => {
-        setAllPickupPoints(prevPoints => prevPoints.map(point => 
-            point.id === depotId ? { ...point, schedule: newSchedule } : point
-        ));
-        logActivity(user, 'SCHEDULE_UPDATED', `Planning mis à jour pour le dépôt ${depotId}.`);
-    }, [setAllPickupPoints, logActivity]);
 
     return {
         allProducts, setAllProducts,

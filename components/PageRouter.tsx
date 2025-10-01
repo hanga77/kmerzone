@@ -97,64 +97,68 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
 
     const sellerStore = useMemo(() => {
         if (!user) return undefined;
-        // FIX: Find store by sellerId instead of shopName for robustness
         return siteData.allStores.find((s: Store) => s.sellerId === user.id);
     }, [user, siteData.allStores]);
 
     const sellerProducts = user?.role === 'seller' && sellerStore ? siteData.allProducts.filter((p: Product) => p.vendor === sellerStore.name) : [];
     const sellerOrders = user?.role === 'seller' && sellerStore ? siteData.allOrders.filter((o: Order) => o.items.some(i => i.vendor === sellerStore.name)) : [];
-    const sellerNotifications = user?.role === 'seller' && sellerStore ? siteData.allNotifications.filter((n: Notification) => n.userId === user.id) : [];
+    const sellerNotifications = user?.role === 'seller' && sellerStore ? siteData.allNotifications.filter((n: Notification) => n.userId === user?.id) : [];
 
     const onBecomeSeller = (
         shopName: string, location: string, neighborhood: string, sellerFirstName: string,
         sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string,
         latitude?: number, longitude?: number
     ) => {
-        if (user) {
-            // FIX: Ensure user role is set to seller before creating store
-            const userWithSellerRole = { ...user, role: 'seller' as const };
-            
-            const newStore = siteData.createStoreAndNotifyAdmin({
-                name: shopName,
-                category: 'Non classé',
-                location,
-                neighborhood,
-                sellerFirstName,
-                sellerLastName,
-                sellerPhone,
-                physicalAddress,
-                logoUrl,
-                latitude,
-                longitude
-            }, userWithSellerRole, allUsers);
+        if (!user) {
+            alert("Erreur: Utilisateur non connecté.");
+            return;
+        }
 
-            if (newStore) {
-                 // Update the user in the global state to link them to their new store
-                setAllUsers((prevUsers: User[]) => prevUsers.map(u =>
-                    u.id === user.id ? { ...u, role: 'seller', shopName: newStore.name } : u
-                ));
-                // After creating the store, navigate to the subscription page
-                navigation.setPage('seller-subscription');
-            }
+        const newStore = siteData.createStoreAndNotifyAdmin({
+            name: shopName,
+            category: 'Non classé',
+            location,
+            neighborhood,
+            sellerFirstName,
+            sellerLastName,
+            sellerPhone,
+            physicalAddress,
+            logoUrl,
+            latitude,
+            longitude
+        }, user, allUsers);
+
+        if (newStore) {
+             // Update the user in the global state to become a seller linked to the new store
+            setAllUsers((prevUsers: User[]) => prevUsers.map(u =>
+                u.id === user.id ? { ...u, role: 'seller', shopName: newStore.name } : u
+            ));
+            // After creating the store, navigate to the subscription page
+            navigation.setPage('seller-subscription');
+        } else {
+             alert("Erreur: La création de la boutique a échoué. Veuillez réessayer.");
         }
     };
     
     const onSelectSubscription = (status: 'standard' | 'premium' | 'super_premium') => {
-        // FIX: Find store by sellerId, which is more reliable than checking user.shopName immediately after creation
-        const currentSellerStore = siteData.allStores.find((s: Store) => s.sellerId === user?.id);
+        if (!user) return;
+    
+        const sellerStoreForSubscription = siteData.allStores.find((s: Store) => s.sellerId === user.id);
 
-        if (currentSellerStore) {
-            const plan = status === 'standard' ? siteData.siteSettings.standardPlan : (status === 'premium' ? siteData.siteSettings.premiumPlan : siteData.siteSettings.superPremiumPlan);
+        if (sellerStoreForSubscription) {
+            const plan = status === 'standard' 
+                ? siteData.siteSettings.standardPlan 
+                : (status === 'premium' ? siteData.siteSettings.premiumPlan : siteData.siteSettings.superPremiumPlan);
             
             setPaymentRequest({
                 amount: plan.price,
-                reason: `Abonnement au plan ${status}`,
+                reason: `Abonnement au plan ${status} pour ${sellerStoreForSubscription.name}`,
                 onSuccess: () => {
                     siteData.setAllStores((prevStores: Store[]) => prevStores.map((s: Store) => 
-                        s.id === currentSellerStore.id ? { 
+                        s.id === sellerStoreForSubscription.id ? { 
                             ...s, 
                             premiumStatus: status, 
-                            subscriptionStatus: 'active',
+                            subscriptionStatus: 'active' as const,
                             subscriptionDueDate: new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000).toISOString()
                         } : s
                     ));
@@ -162,7 +166,8 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 }
             });
         } else {
-            alert("Erreur: Impossible de trouver les informations de votre boutique. Veuillez contacter le support.");
+            console.error("CRITICAL: Store not found for user ID " + user.id + " after seller registration.");
+            alert("Erreur critique : Impossible de trouver votre boutique nouvellement créée pour y appliquer l'abonnement. Veuillez contacter le support.");
             navigation.navigateToHome();
         }
     };

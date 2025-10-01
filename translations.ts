@@ -410,6 +410,7 @@ export const translations = {
       overview: "Aperçu",
       parcels: "Suivi Colis",
       inventory: "Inventaire",
+      drivers: "Livreurs",
       agents: "Agents",
       sellers: "Vendeurs",
       reports: "Rapports",
@@ -451,6 +452,15 @@ export const translations = {
         currentInventory: "Inventaire Actuel des Colis",
         freeLocations: "Emplacements Libres",
         noLayout: "La configuration de l'entrepôt n'est pas définie.",
+        searchPlaceholder: "Rechercher par ID, client ou emplacement...",
+        recentMovements: "Mouvements Récents de l'Inventaire",
+        table: {
+          action: "Action",
+          details: "Détails",
+          timestamp: "Horodatage",
+          entry: "Entrée",
+          exit: "Sortie"
+        }
       },
       noData: "Aucune donnée à afficher.",
       schedule: "Planning de travail",
@@ -470,6 +480,22 @@ export const translations = {
         afternoon: "Après-midi",
         night: "Nuit",
         off: "Repos"
+      },
+      reportsPanel: {
+        title: "Rapports de Performance du Dépôt",
+        selectPeriod: "Sélectionner une période :",
+        parcelsCheckedIn: "Colis Enregistrés (Entrées)",
+        parcelsShippedOut: "Colis Expédiés (Sorties)",
+        avgProcessingTime: "Temps de Traitement Moyen",
+        deliverySuccessRate: "Taux de Succès des Livraisons",
+        dailyFlow: "Flux Journalier (Entrées/Sorties)",
+        in: "Entrées",
+        out: "Sorties",
+        topDrivers: "Top Livreurs (par livraisons réussies)",
+        driver: "Livreur",
+        successfulDeliveries: "Livraisons Réussies",
+        noData: "Pas assez de données pour cette période.",
+        hours: "heures"
       }
     },
     superadmin: {

@@ -237,8 +237,8 @@ Please provide a helpful response as the KMER ZONE assistant.
             [chatId]: [...(prev[chatId] || []), initialAssistantMessage]
         }));
         
+        // FIX: Use ai.models.generateContentStream with the correct model.
         const response = await ai.models.generateContentStream({
-            // FIX: Use 'gemini-2.5-flash' model as per guidelines.
             model: 'gemini-2.5-flash',
             contents: prompt,
         });

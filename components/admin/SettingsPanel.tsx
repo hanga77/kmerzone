@@ -51,7 +51,7 @@ const ImageUrlOrUpload: React.FC<{
                     placeholder="https://... ou téléverser"
                     className="mt-1 block w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"
                 />
-                 <label htmlFor={`${name}-upload`} className="cursor-pointer bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-md text-sm font-medium">
+                 <label htmlFor={`${name}-upload`} className="cursor-pointer bg-gray-200 dark:bg-gray-600 px-3 py-2 rounded-md text-sm font-medium whitespace-nowrap">
                     {t('superadmin.settings.identity.upload')}
                     <input id={`${name}-upload`} type="file" className="sr-only" onChange={handleFileChange} accept="image/*" />
                 </label>
@@ -194,6 +194,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                         <Field label={t('superadmin.settings.plans.duration')}><input type="number" name="standardPlan.durationDays" value={settings.standardPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
                         <Field label={t('superadmin.settings.plans.limit')}><input type="number" name="standardPlan.productLimit" value={settings.standardPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
                         <Field label={t('superadmin.settings.plans.commission')}><input type="number" name="standardPlan.commissionRate" value={settings.standardPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
+                        <label className="flex items-center gap-2 pt-2"><input type="checkbox" name="standardPlan.photoServiceIncluded" checked={settings.standardPlan.photoServiceIncluded} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.photoService')}</label>
                     </div>
                     <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
                         <h4 className="font-bold text-md">{t('superadmin.settings.plans.premium')}</h4>
@@ -201,7 +202,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                         <Field label={t('superadmin.settings.plans.duration')}><input type="number" name="premiumPlan.durationDays" value={settings.premiumPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
                         <Field label={t('superadmin.settings.plans.limit')}><input type="number" name="premiumPlan.productLimit" value={settings.premiumPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
                         <Field label={t('superadmin.settings.plans.commission')}><input type="number" name="premiumPlan.commissionRate" value={settings.premiumPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <label className="flex items-center gap-2"><input type="checkbox" name="premiumPlan.photoServiceIncluded" checked={settings.premiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.photoService')}</label>
+                        <label className="flex items-center gap-2 pt-2"><input type="checkbox" name="premiumPlan.photoServiceIncluded" checked={settings.premiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.photoService')}</label>
                     </div>
                      <div className="p-4 border dark:border-gray-600 rounded-md space-y-4">
                         <h4 className="font-bold text-md">{t('superadmin.settings.plans.superPremium')}</h4>
@@ -209,7 +210,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                         <Field label={t('superadmin.settings.plans.duration')}><input type="number" name="superPremiumPlan.durationDays" value={settings.superPremiumPlan.durationDays} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
                         <Field label={t('superadmin.settings.plans.limit')}><input type="number" name="superPremiumPlan.productLimit" value={settings.superPremiumPlan.productLimit} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
                         <Field label={t('superadmin.settings.plans.commission')}><input type="number" name="superPremiumPlan.commissionRate" value={settings.superPremiumPlan.commissionRate} onChange={handleSettingsChange} className="mt-1 w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" /></Field>
-                        <label className="flex items-center gap-2"><input type="checkbox" name="superPremiumPlan.photoServiceIncluded" checked={settings.superPremiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.photoService')}</label>
+                        <label className="flex items-center gap-2 pt-2"><input type="checkbox" name="superPremiumPlan.photoServiceIncluded" checked={settings.superPremiumPlan.photoServiceIncluded} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.photoService')}</label>
                         <label className="flex items-center gap-2"><input type="checkbox" name="superPremiumPlan.featuredOnHomepage" checked={settings.superPremiumPlan.featuredOnHomepage} onChange={handleSettingsChange} /> {t('superadmin.settings.plans.homepageFeature')}</label>
                     </div>
                 </div>
