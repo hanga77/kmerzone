@@ -15,7 +15,7 @@ import { SupportPanel } from './admin/SupportPanel';
 import { LogsPanel } from './admin/LogsPanel';
 import { SettingsPanel } from './admin/SettingsPanel';
 import ReviewModerationPanel from './admin/ReviewModerationPanel';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 
 interface SuperAdminDashboardProps {

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { XIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
@@ -66,7 +66,7 @@ export default function App() {
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
   
-  const handleLoginSuccess = (loggedInUser: User) => {
+  const handleLoginSuccess = useCallback((loggedInUser: User) => {
     setIsLoginModalOpen(false);
     switch (loggedInUser.role) {
         case 'superadmin':
@@ -92,45 +92,45 @@ export default function App() {
             navigation.navigateToAccount('dashboard');
             break;
     }
-  };
+  }, [navigation]);
 
-    const handleAdminUpdateUser = (userId: string, updates: Partial<User>) => {
+    const handleAdminUpdateUser = useCallback((userId: string, updates: Partial<User>) => {
         const updatedUsers = siteData.handleAdminUpdateUser(userId, updates, allUsers);
         setAllUsers(updatedUsers);
-    };
+    }, [siteData, allUsers, setAllUsers]);
     
-    const handleWarnUser = (userId: string, reason: string) => {
+    const handleWarnUser = useCallback((userId: string, reason: string) => {
         if (!user) return;
         const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason };
         setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, warnings: [...(u.warnings || []), newWarning] } : u));
         siteData.logActivity(user, 'USER_WARNED', `Avertissement envoyé à l'utilisateur ${userId}. Motif: ${reason}`);
-    };
+    }, [user, setAllUsers, siteData]);
     
-    const handleUpdateDocumentStatus = (storeId: string, documentName: string, status: DocumentStatus, rejectionReason: string | undefined) => {
+    const handleUpdateDocumentStatus = useCallback((storeId: string, documentName: string, status: DocumentStatus, rejectionReason: string | undefined) => {
         if (!user) return;
         siteData.handleUpdateDocumentStatus(storeId, documentName, status, rejectionReason, user);
-    };
+    }, [user, siteData]);
 
-    const handleSendBulkEmail = (recipientIds: string[], subject: string, body: string) => {
+    const handleSendBulkEmail = useCallback((recipientIds: string[], subject: string, body: string) => {
         if (user) {
             siteData.handleSendBulkEmail(recipientIds, subject, body, user);
         }
-    };
+    }, [user, siteData]);
 
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         authLogout();
         navigation.navigateToHome();
-    };
+    }, [authLogout, navigation]);
 
-    const handleUpdateUserAvailability = (userId: string, newStatus: UserAvailabilityStatus) => {
+    const handleUpdateUserAvailability = useCallback((userId: string, newStatus: UserAvailabilityStatus) => {
         updateUserInfo(userId, { availabilityStatus: newStatus });
-    };
+    }, [updateUserInfo]);
     
-    const handleUpdateDeliveryStatus = (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => {
+    const handleUpdateDeliveryStatus = useCallback((orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => {
         if (user) {
             siteData.handleUpdateDeliveryStatus(orderId, status, user, details);
         }
-    };
+    }, [user, siteData]);
 
 
   // Connect allProducts to comparison context
