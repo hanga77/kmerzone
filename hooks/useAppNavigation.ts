@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import type { Page, Product, Category, Store, Order, Notification, SiteContent } from '../types';
 
 export const useAppNavigation = (allCategories: Category[], allStores: Store[], allOrders: Order[], allSiteContent: SiteContent[]) => {
@@ -12,6 +12,10 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const [viewingStoriesFor, setViewingStoriesFor] = useState<Store | null>(null);
     const [accountPageTab, setAccountPageTab] = useState<string>('dashboard');
     const [sellerDashboardTab, setSellerDashboardTab] = useState<string>('overview');
+
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, [page]);
 
     const navigateToHome = useCallback(() => setPage('home'), []);
     const navigateToCart = useCallback(() => setPage('cart'), []);

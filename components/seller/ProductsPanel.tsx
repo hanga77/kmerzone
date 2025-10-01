@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Product } from '../../types';
-import { PlusIcon, PencilSquareIcon, TrashIcon, TagIcon, BoltIcon } from '../Icons';
+import { PlusIcon, PencilSquareIcon, TrashIcon, TagIcon, BoltIcon, SparklesIcon } from '../Icons';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface ProductsPanelProps {
@@ -10,9 +10,10 @@ interface ProductsPanelProps {
     onDeleteProduct: (productId: string) => void;
     onUpdateProductStatus: (productId: string, status: Product['status']) => void;
     onSetPromotion: (product: Product) => void;
+    onAddProductToStory: (productId: string) => void;
 }
 
-const ProductsPanel: React.FC<ProductsPanelProps> = ({ products, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onSetPromotion }) => {
+const ProductsPanel: React.FC<ProductsPanelProps> = ({ products, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onSetPromotion, onAddProductToStory }) => {
     const { t } = useLanguage();
     
     return (
@@ -53,6 +54,7 @@ const ProductsPanel: React.FC<ProductsPanelProps> = ({ products, onAddProduct, o
                                 </td>
                                 <td className="p-2">
                                     <div className="flex justify-center gap-2">
+                                        <button onClick={() => onAddProductToStory(p.id)} className="text-purple-500" title="Ajouter à la story"><SparklesIcon className="w-5 h-5"/></button>
                                         <button onClick={() => onSetPromotion(p)} className="text-yellow-500" title={t('sellerDashboard.products.actions.promote')}><TagIcon className="w-5 h-5"/></button>
                                         <button onClick={() => onEditProduct(p)} className="text-blue-500" title={t('sellerDashboard.products.actions.edit')}><PencilSquareIcon className="w-5 h-5"/></button>
                                         <button onClick={() => onDeleteProduct(p.id)} className="text-red-500" title={t('sellerDashboard.products.actions.delete')}><TrashIcon className="w-5 h-5"/></button>

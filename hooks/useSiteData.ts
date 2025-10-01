@@ -425,6 +425,36 @@ export const useSiteData = () => {
         logActivity(user, 'SELLER_ORDER_UPDATE', `Le vendeur a mis à jour le statut de la commande ${orderId} à ${status}.`);
     }, [setAllOrders, logActivity]);
 
+    const handleSellerCancelOrder = useCallback((orderId: string, user: User) => {
+        let orderToCancel: Order | undefined;
+        setAllOrders(prev => {
+            const updatedOrders = [...prev];
+            const orderIndex = updatedOrders.findIndex(o => o.id === orderId);
+            if (orderIndex === -1) return prev;
+            
+            orderToCancel = updatedOrders[orderIndex];
+
+            if (orderToCancel.status === 'confirmed') {
+                const newTrackingEvent: TrackingEvent = {
+                    status: 'cancelled',
+                    date: new Date().toISOString(),
+                    location: user.shopName || 'Vendeur',
+                    details: 'Commande annulée par le vendeur.'
+                };
+                updatedOrders[orderIndex] = { 
+                    ...orderToCancel, 
+                    status: 'cancelled',
+                    trackingHistory: [...(orderToCancel.trackingHistory || []), newTrackingEvent]
+                };
+                 logActivity(user, 'SELLER_ORDER_CANCEL', `Le vendeur a annulé la commande ${orderId}.`);
+                return updatedOrders;
+            } else {
+                alert("Cette commande ne peut pas être annulée à ce stade.");
+                return prev;
+            }
+        });
+    }, [setAllOrders, logActivity]);
+
     const handleCreateOrUpdateCollection = useCallback((storeId: string, collection: ProductCollection, user: User) => {
         setAllStores(prev => prev.map(s => {
             if (s.id === storeId) {
@@ -502,6 +532,63 @@ export const useSiteData = () => {
         return newStore;
     }, [setAllStores, setAllNotifications, logActivity, siteSettings.requiredSellerDocuments]);
 
+    const handleAddProductToStory = useCallback((productId: string, user: User) => {
+        if (user.role !== 'seller' || !user.shopName) {
+            alert("Seuls les vendeurs peuvent ajouter des produits à leur story.");
+            return;
+        }
+
+        const product = allProducts.find(p => p.id === productId);
+        if (!product || !product.imageUrls || product.imageUrls.length === 0) {
+            alert("Le produit sélectionné n'a pas d'image pour créer une story.");
+            return;
+        }
+        
+        const newStory: Story = {
+            id: `story-${Date.now()}`,
+            imageUrl: product.imageUrls[0],
+            createdAt: new Date().toISOString(),
+            productId: productId,
+        };
+
+        setAllStores(prevStores => prevStores.map(store => {
+            if (store.name === user.shopName) {
+                // Prepend new story and keep only the last N stories if needed
+                const updatedStories = [newStory, ...(store.stories || [])].slice(0, 20);
+                return { ...store, stories: updatedStories };
+            }
+            return store;
+        }));
+
+        logActivity(user, 'STORY_CREATED', `Story created for product ${productId} in store ${user.shopName}.`);
+        alert("Produit ajouté à votre story pour 24h !");
+    }, [allProducts, setAllStores, logActivity]);
+
+    const handleAddStory = useCallback((imageUrl: string, user: User) => {
+        if (user.role !== 'seller' || !user.shopName) {
+            alert("Seuls les vendeurs peuvent ajouter des stories.");
+            return;
+        }
+    
+        const newStory: Story = {
+            id: `story-${Date.now()}`,
+            imageUrl: imageUrl,
+            createdAt: new Date().toISOString(),
+        };
+    
+        setAllStores(prevStores => prevStores.map(store => {
+            if (store.name === user.shopName) {
+                const updatedStories = [newStory, ...(store.stories || [])].slice(0, 20);
+                return { ...store, stories: updatedStories };
+            }
+            return store;
+        }));
+    
+        logActivity(user, 'STORY_CREATED', `Story created for store ${user.shopName}.`);
+        alert("Story ajoutée pour 24h !");
+    }, [setAllStores, logActivity]);
+
+
     return {
         allProducts, setAllProducts,
         allCategories, setAllCategories,
@@ -561,10 +648,13 @@ export const useSiteData = () => {
         handleUpdateSchedule,
         // Seller actions
         handleSellerUpdateOrderStatus,
+        handleSellerCancelOrder,
         handleCreateOrUpdateCollection,
         handleDeleteCollection,
         handleUpdateStoreProfile,
         handleUpdateDeliveryStatus,
         createStoreAndNotifyAdmin,
+        handleAddProductToStory,
+        handleAddStory,
     };
 };

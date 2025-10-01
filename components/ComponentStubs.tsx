@@ -13,5 +13,4 @@ const Stub: React.FC<{ name: string; props: any }> = ({ name, props }) => (
 export const ComparisonPage: React.FC<any> = (props) => <Stub name="ComparisonPage" props={props} />;
 export const ComparisonBar: React.FC<any> = (props) => <Stub name="ComparisonBar" props={props} />;
 export const InfoPage: React.FC<any> = (props) => <Stub name="InfoPage" props={props} />;
-export const StoryViewer: React.FC<any> = (props) => <Stub name="StoryViewer" props={props} />;
 export const StoresMapPage: React.FC<any> = (props) => <Stub name="StoresMapPage" props={props} />

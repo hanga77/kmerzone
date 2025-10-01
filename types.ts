@@ -139,6 +139,7 @@ export interface Story {
   id: string;
   imageUrl: string;
   createdAt: string; // ISO String
+  productId?: string; // Link to a product
 }
 
 export interface ProductCollection {

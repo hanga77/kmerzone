@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection } from '../types';
+import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
 import { 
     ChartPieIcon, ShoppingBagIcon, TruckIcon, StarIcon, TagIcon, BoltIcon, 
     BarChartIcon, BanknotesIcon, BuildingStorefrontIcon, DocumentTextIcon, 
     ChatBubbleLeftRightIcon, ChatBubbleBottomCenterTextIcon, SparklesIcon, 
-    BookmarkSquareIcon, StarPlatinumIcon 
+    BookmarkSquareIcon, StarPlatinumIcon, MegaphoneIcon
 } from './Icons';
 import OverviewPanel from './seller/OverviewPanel';
 import ProductsPanel from './seller/ProductsPanel';
@@ -24,6 +24,7 @@ import UpgradePanel from './seller/UpgradePanel';
 import AnalyticsPanel from './seller/AnalyticsPanel';
 import ProfilePanel from './seller/ProfilePanel';
 import ChatPanel from './seller/ChatPanel';
+import StoriesPanel from './seller/StoriesPanel';
 
 interface SellerDashboardProps {
   store?: Store;
@@ -45,6 +46,7 @@ interface SellerDashboardProps {
   onProposeForFlashSale: (flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => void;
   onUploadDocument: (storeId: string, documentName: string, fileUrl: string) => void;
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
+  onSellerCancelOrder: (orderId: string, user: User) => void;
   onCreatePromoCode: (codeData: Omit<PromoCode, 'uses'>) => void;
   onDeletePromoCode: (code: string) => void;
   siteSettings: SiteSettings;
@@ -60,6 +62,8 @@ interface SellerDashboardProps {
   onRequestUpgrade: (storeId: string, level: 'premium' | 'super_premium') => void;
   isChatEnabled: boolean;
   onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
+  onAddProductToStory: (productId: string) => void;
+  onAddStory: (imageUrl: string) => void;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number, isLocked?: boolean }> = ({ icon, label, isActive, onClick, count, isLocked }) => {
@@ -86,8 +90,9 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
 
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade } = props;
+    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade, onSellerCancelOrder } = props;
     const [activeTab, setActiveTab] = useState(initialTab || 'overview');
+    const { user } = useAuth();
     const { t } = useLanguage();
     
     useEffect(() => {
@@ -115,6 +120,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
       { id: 'profile', label: t('sellerDashboard.tabs.profile'), icon: <BuildingStorefrontIcon className="w-5 h-5"/>, isLocked: false },
       { id: 'subscription', label: t('sellerDashboard.tabs.subscription'), icon: <StarPlatinumIcon className="w-5 h-5" />, isLocked: false },
       { id: 'documents', label: t('sellerDashboard.tabs.documents'), icon: <DocumentTextIcon className="w-5 h-5"/>, isLocked: false },
+      { id: 'stories', label: t('sellerDashboard.tabs.stories'), icon: <MegaphoneIcon className="w-5 h-5"/>, isLocked: false },
       { id: 'chat', label: t('sellerDashboard.tabs.chat'), icon: <ChatBubbleLeftRightIcon className="w-5 h-5"/>, isLocked: false },
       { id: 'support', label: t('sellerDashboard.tabs.support'), icon: <ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>, isLocked: false },
     ];
@@ -129,7 +135,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'overview': return <OverviewPanel {...props} store={store} setActiveTab={setActiveTab} />;
             case 'products': return <ProductsPanel {...props} />;
             case 'collections': return <CollectionsPanel {...props} store={store} />;
-            case 'orders': return <OrdersPanel {...props} />;
+            case 'orders': return <OrdersPanel {...props} store={store} onSellerCancelOrder={(orderId) => user && onSellerCancelOrder(orderId, user)} />;
             case 'reviews': return <ReviewsPanel {...props} />;
             case 'promotions': return <PromotionsPanel {...props} />;
             case 'flash-sales': return <FlashSalesPanel {...props} store={store} />;
@@ -139,6 +145,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'profile': return <ProfilePanel store={store} onUpdateProfile={props.onUpdateStoreProfile} />;
             case 'subscription': return <SubscriptionPanel store={store} siteSettings={siteSettings} onUpgrade={(level) => onRequestUpgrade(store.id, level)} />;
             case 'documents': return <DocumentsPanel {...props} store={store} />;
+            case 'stories': return <StoriesPanel store={store} onAddStory={props.onAddStory} />;
             case 'chat': return <ChatPanel />;
             case 'support': return <SupportPanel {...props} />;
             default:

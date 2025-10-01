@@ -68,6 +68,7 @@ interface PageRouterProps {
     onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => void;
     // Seller actions
     onSellerUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+    onSellerCancelOrder: (orderId: string, user: User) => void;
     onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => void;
     onDeleteCollection: (storeId: string, collectionId: string) => void;
     onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
@@ -75,6 +76,8 @@ interface PageRouterProps {
     onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
     onUpdateDeliveryStatus: (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => void;
     onUpdateSchedule: (depotId: string, schedule: AgentSchedule) => void;
+    onAddProductToStory: (productId: string) => void;
+    onAddStory: (imageUrl: string) => void;
 }
 
 const PageRouter: React.FC<PageRouterProps> = (props) => {
@@ -87,8 +90,8 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         onBatchUpdateFlashSaleStatus, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint,
         onAdminReplyToTicket, onAdminUpdateTicketStatus, onReviewModeration, onCreateUserByAdmin,
         onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onUpdateOrderStatus, onResolveDispute,
-        onSellerUpdateOrderStatus, onCreateOrUpdateCollection, onDeleteCollection, onUpdateStoreProfile,
-        onUpdateUserAvailability, onUpdateDeliveryStatus, onUpdateSchedule
+        onSellerUpdateOrderStatus, onSellerCancelOrder, onCreateOrUpdateCollection, onDeleteCollection, onUpdateStoreProfile,
+        onUpdateUserAvailability, onUpdateDeliveryStatus, onUpdateSchedule, onAddProductToStory, onAddStory
     } = props;
     
     const { user, allUsers, setAllUsers, logout } = useAuth();
@@ -263,6 +266,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onProposeForFlashSale={() => {}}
                 onUploadDocument={() => {}}
                 onUpdateOrderStatus={onSellerUpdateOrderStatus}
+                onSellerCancelOrder={(orderId) => user && onSellerCancelOrder(orderId, user)}
                 onCreatePromoCode={() => {}}
                 onDeletePromoCode={() => {}}
                 isChatEnabled={siteData.siteSettings.isChatEnabled}
@@ -278,6 +282,8 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onUpdateShippingSettings={() => {}}
                 onRequestUpgrade={() => {}}
                 onUpdateStoreProfile={onUpdateStoreProfile}
+                onAddProductToStory={onAddProductToStory}
+                onAddStory={onAddStory}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'superadmin-dashboard':
             if (user?.role !== 'superadmin') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;

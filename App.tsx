@@ -13,7 +13,8 @@ import PromotionModal from './components/PromotionModal';
 import ChatWidget from './components/ChatWidget';
 import AddToCartModal from './components/AddToCartModal';
 import PaymentModal from './components/PaymentModal';
-import { ComparisonBar, StoryViewer } from './components/ComponentStubs';
+import { ComparisonBar } from './components/ComponentStubs';
+import StoryViewer from './components/StoryViewer';
 import { useSiteData } from './hooks/useSiteData';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import PageRouter from './components/PageRouter';
@@ -249,12 +250,15 @@ export default function App() {
             onUpdateOrderStatus={(orderId, status) => user && siteData.handleUpdateOrderStatus(orderId, status, user)}
             onResolveDispute={(orderId, resolution) => user && siteData.handleResolveDispute(orderId, resolution, user)}
             onSellerUpdateOrderStatus={(orderId, status) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user)}
+            onSellerCancelOrder={(orderId, user) => siteData.handleSellerCancelOrder(orderId, user)}
             onCreateOrUpdateCollection={(storeId, collection) => user && siteData.handleCreateOrUpdateCollection(storeId, collection, user)}
             onDeleteCollection={(storeId, collectionId) => user && siteData.handleDeleteCollection(storeId, collectionId, user)}
             onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
             onUpdateUserAvailability={handleUpdateUserAvailability}
             onUpdateDeliveryStatus={handleUpdateDeliveryStatus}
             onUpdateSchedule={(depotId: string, schedule: AgentSchedule) => user && siteData.handleUpdateSchedule(depotId, schedule, user)}
+            onAddProductToStory={(productId: string) => user && siteData.handleAddProductToStory(productId, user)}
+            onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
           />
         </main>
 
@@ -291,7 +295,7 @@ export default function App() {
 
         {user && siteData.siteSettings.isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={siteData.allProducts} allCategories={siteData.allCategories} />}
 
-        {navigation.viewingStoriesFor && <StoryViewer store={navigation.viewingStoriesFor} onClose={navigation.handleCloseStories} />}
+        {navigation.viewingStoriesFor && <StoryViewer store={navigation.viewingStoriesFor} onClose={navigation.handleCloseStories} allProducts={siteData.allProducts} onProductClick={navigation.navigateToProduct} />}
     </div>
   );
 }

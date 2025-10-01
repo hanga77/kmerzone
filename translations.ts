@@ -220,6 +220,7 @@ export const translations = {
         profile: "Profil Boutique",
         subscription: "Abonnement",
         documents: "Documents",
+        stories: "Stories",
         chat: "Messages",
         support: "Support",
       },
@@ -275,6 +276,13 @@ export const translations = {
           status: "Statut",
           action: "Action"
         },
+        details: "Détails",
+        printSlip: "Imprimer le bon",
+        customerInfo: "Informations Client",
+        items: "Articles",
+        cancelOrder: "Annuler la commande",
+        cancelConfirm: "Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.",
+        disputeNotice: "Cette commande fait l'objet d'un litige. Un administrateur examine la situation.",
         markReady: "Marquer comme prêt pour l'expédition"
       },
       reviews: {
@@ -646,9 +654,9 @@ export const translations = {
       },
       logistics: {
         title: "Gestion Logistique",
-        addPickupPoint: "Ajouter un Point Relais",
+        addPickupPoint: "Ajouter un Point de Dépôt",
         form: {
-          name: "Nom du point relais",
+          name: "Nom du point de dépôt",
           city: "Ville",
           neighborhood: "Quartier",
           street: "Rue / Repère"
