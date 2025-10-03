@@ -221,7 +221,7 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
                  leafletMap.current.setView(end, 14);
             }
         }
-        setTimeout(() => leafletMap.current?.invalidateSize(false), 100);
+        setTimeout(() => leafletMap.current?.invalidateSize(), 100);
     }, [start, end]);
 
     return <div ref={mapRef} className="h-48 w-full rounded-md mt-4 z-0"></div>;

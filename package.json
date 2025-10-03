@@ -4,7 +4,8 @@
   "description": "A comprehensive e-commerce platform for Cameroonian merchants",
   "main": "index.tsx",
   "scripts": {
-    "start": "node build.js"
+    "start": "node build.js --serve",
+    "build": "node build.js"
   },
   "dependencies": {
     "@google/genai": "^1.21.0",

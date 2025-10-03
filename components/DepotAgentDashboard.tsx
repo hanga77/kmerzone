@@ -41,6 +41,9 @@ const ScannerModal: React.FC<{
     t: (key: string) => string;
 }> = ({ onClose, onScanSuccess, t }) => {
     const html5QrCodeRef = useRef<any>(null);
+    const onScanSuccessRef = useRef(onScanSuccess);
+    onScanSuccessRef.current = onScanSuccess;
+    
     useEffect(() => {
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCodeRef.current = html5QrCode;
@@ -50,7 +53,7 @@ const ScannerModal: React.FC<{
                     await html5QrCode.start(
                         { facingMode: "environment" },
                         { fps: 10, qrbox: { width: 250, height: 250 } },
-                        (decodedText: string) => onScanSuccess(decodedText),
+                        (decodedText: string) => onScanSuccessRef.current(decodedText),
                         (errorMessage: string) => {}
                     );
                 }
@@ -65,7 +68,7 @@ const ScannerModal: React.FC<{
                 html5QrCodeRef.current.stop().catch((err: any) => console.error("Scanner stop error", err));
             }
         };
-    }, [onScanSuccess]);
+    }, []);
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
             <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full text-white">
