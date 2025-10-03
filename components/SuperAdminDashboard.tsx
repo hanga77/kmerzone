@@ -2,6 +2,7 @@ import React, { useState, useMemo } from 'react';
 import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, PickupPoint, User, SiteSettings, Payout, Advertisement, SiteContent, Ticket, Announcement, PaymentMethod, Zone, EmailTemplate, DocumentStatus } from '../types';
 
 import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, TruckIcon, BanknotesIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, Cog8ToothIcon, ChartPieIcon } from './Icons';
+import { useAuth } from '../contexts/AuthContext';
 
 import { OverviewPanel } from './admin/OverviewPanel';
 import { UsersPanel } from './admin/UsersPanel';
@@ -19,65 +20,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 
 
 interface SuperAdminDashboardProps {
-    allUsers: User[];
-    allOrders: Order[];
-    allCategories: Category[];
-    allStores: Store[];
-    allProducts: Product[];
-    siteActivityLogs: SiteActivityLog[];
-    onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
-    onUpdateCategoryImage: () => void;
-    onWarnStore: (storeId: string, reason: string) => void;
-    onToggleStoreStatus: (storeId: string, currentStatus: 'active' | 'suspended') => void;
-    onApproveStore: (storeToApprove: Store) => void;
-    onRejectStore: (storeToReject: Store) => void;
-    onSaveFlashSale: (flashSale: Omit<FlashSale, 'id' | 'products'>) => void;
-    flashSales: FlashSale[];
-    onUpdateFlashSaleSubmissionStatus: (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => void;
-    onBatchUpdateFlashSaleStatus: (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => void;
-    onRequestDocument: () => void;
-    onVerifyDocumentStatus: () => void;
-    allPickupPoints: PickupPoint[];
-    onAddPickupPoint: (point: Omit<PickupPoint, 'id'>) => void;
-    onUpdatePickupPoint: (point: PickupPoint) => void;
-    onDeletePickupPoint: (pointId: string) => void;
-    onAssignAgent: () => void;
-    isChatEnabled: boolean;
-    isComparisonEnabled: boolean;
-    onToggleChatFeature: () => void;
-    onToggleComparisonFeature: () => void;
-    siteSettings: SiteSettings;
-    onUpdateSiteSettings: (settings: SiteSettings) => void;
-    onAdminAddCategory: (name: string, parentId?: string) => void;
-    onAdminDeleteCategory: (categoryId: string) => void;
-    onUpdateUser: (userId: string, updates: Partial<User>) => void;
-    payouts: Payout[];
-    onPayoutSeller: (storeId: string, amount: number) => void;
-    advertisements: Advertisement[];
-    onAddAdvertisement: (data: Omit<Advertisement, 'id'>) => void;
-    onUpdateAdvertisement: (id: string, data: Partial<Omit<Advertisement, 'id'>>) => void;
-    onDeleteAdvertisement: (id: string) => void;
-    onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => void;
-    onSanctionAgent: () => void;
-    onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => void;
-    onAdminStoreMessage: () => void;
-    onAdminCustomerMessage: () => void;
-    siteContent: SiteContent[];
-    onUpdateSiteContent: (content: SiteContent[]) => void;
-    allTickets: Ticket[];
-    allAnnouncements: Announcement[];
-    onAdminReplyToTicket: (ticketId: string, message: string) => void;
-    onAdminUpdateTicketStatus: (ticketId: string, status: 'Ouvert' | 'En cours' | 'Résolu') => void;
-    onCreateOrUpdateAnnouncement: (data: Omit<Announcement, 'id'> | Announcement) => void;
-    onDeleteAnnouncement: (id: string) => void;
-    onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => void;
-    paymentMethods: PaymentMethod[];
-    onUpdatePaymentMethods: (methods: PaymentMethod[]) => void;
-    allZones: Zone[];
-    onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => void;
-    onWarnUser: (userId: string, reason: string) => void;
-    onAdminUpdateCategory: (categoryId: string, updates: Partial<Omit<Category, 'id'>>) => void;
-    onUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason?: string) => void;
+    siteData: any;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number }> = ({ icon, label, isActive, onClick, count }) => (
@@ -98,30 +41,91 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
 );
 
 
-export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = (props) => {
-    const { allStores, allOrders, allProducts, allTickets } = props;
+export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ siteData }) => {
+    const { user, allUsers, setAllUsers } = useAuth();
     const [activeTab, setActiveTab] = useState('overview');
     const { t } = useLanguage();
     
-    const pendingStoresCount = useMemo(() => allStores.filter(s => s.status === 'pending').length, [allStores]);
-    const refundRequestsCount = useMemo(() => allOrders.filter(o => o.status === 'refund-requested').length, [allOrders]);
-    const pendingReviewsCount = useMemo(() => allProducts.flatMap(p => p.reviews).filter(r => r.status === 'pending').length, [allProducts]);
-    const openTicketsCount = useMemo(() => allTickets.filter(t => t.status === 'Ouvert').length, [allTickets]);
+    const pendingStoresCount = useMemo(() => siteData.allStores.filter((s: Store) => s.status === 'pending').length, [siteData.allStores]);
+    const refundRequestsCount = useMemo(() => siteData.allOrders.filter((o: Order) => o.status === 'refund-requested').length, [siteData.allOrders]);
+    const pendingReviewsCount = useMemo(() => siteData.allProducts.flatMap((p: Product) => p.reviews).filter((r: any) => r.status === 'pending').length, [siteData.allProducts]);
+    const openTicketsCount = useMemo(() => siteData.allTickets.filter((t: Ticket) => t.status === 'Ouvert').length, [siteData.allTickets]);
 
     const renderContent = () => {
+        // Prepare props for sub-panels
+        const panelProps = {
+            allUsers: allUsers,
+            allOrders: siteData.allOrders,
+            allCategories: siteData.allCategories,
+            allStores: siteData.allStores,
+            allProducts: siteData.allProducts,
+            siteActivityLogs: siteData.siteActivityLogs,
+            flashSales: siteData.flashSales,
+            allPickupPoints: siteData.allPickupPoints,
+            siteSettings: siteData.siteSettings,
+            payouts: siteData.payouts,
+            advertisements: siteData.allAdvertisements,
+            siteContent: siteData.siteContent,
+            allTickets: siteData.allTickets,
+            allAnnouncements: siteData.allAnnouncements,
+            paymentMethods: siteData.allPaymentMethods,
+            allZones: siteData.allZones,
+            isChatEnabled: siteData.siteSettings.isChatEnabled,
+            isComparisonEnabled: siteData.siteSettings.isComparisonEnabled,
+            
+            // Functions with user context
+            onUpdateUser: (userId: string, updates: Partial<User>) => user && siteData.handleAdminUpdateUser(userId, updates, allUsers, user),
+            onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => {
+                if (user) {
+                    const newUsers = siteData.handleCreateUserByAdmin(data, user, allUsers);
+                    setAllUsers(newUsers);
+                }
+            },
+            onWarnUser: (userId: string, reason: string) => user && siteData.logActivity(user, 'USER_WARNED', `Avertissement envoyé à l'utilisateur ${userId}. Motif: ${reason}`),
+            onApproveStore: (store: Store) => user && siteData.handleApproveStore(store, user),
+            onRejectStore: (store: Store) => user && siteData.handleRejectStore(store, user),
+            onToggleStoreStatus: (storeId: string, currentStatus: 'active' | 'suspended') => user && siteData.handleToggleStoreStatus(storeId, currentStatus, user),
+            onWarnStore: (storeId: string, reason: string) => user && siteData.handleWarnStore(storeId, reason, user),
+            onUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason?: string) => user && siteData.handleUpdateDocumentStatus(storeId, documentName, status, reason, user),
+            onAdminAddCategory: (name: string, parentId?: string) => user && siteData.handleAdminAddCategory(name, parentId, user),
+            onAdminDeleteCategory: (categoryId: string) => user && siteData.handleAdminDeleteCategory(categoryId, user),
+            onAdminUpdateCategory: (categoryId: string, updates: Partial<Omit<Category, 'id'>>) => user && siteData.handleAdminUpdateCategory(categoryId, updates, user),
+            onSaveFlashSale: (flashSale: Omit<FlashSale, 'id' | 'products'>) => user && siteData.handleSaveFlashSale(flashSale, user),
+            onUpdateFlashSaleSubmissionStatus: (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => user && siteData.handleUpdateFlashSaleSubmissionStatus(flashSaleId, productId, status, user),
+            onBatchUpdateFlashSaleStatus: (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => user && siteData.handleBatchUpdateFlashSaleStatus(flashSaleId, productIds, status, user),
+            onAddPickupPoint: (point: Omit<PickupPoint, 'id'>) => user && siteData.handleAddPickupPoint(point, user),
+            onUpdatePickupPoint: (point: PickupPoint) => user && siteData.handleUpdatePickupPoint(point, user),
+            onDeletePickupPoint: (pointId: string) => user && siteData.handleDeletePickupPoint(pointId, user),
+            onPayoutSeller: (storeId: string, amount: number) => user && siteData.handlePayoutSeller(storeId, amount, user),
+            onAddAdvertisement: (data: Omit<Advertisement, 'id'>) => user && siteData.handleAddAdvertisement(data, user),
+            onUpdateAdvertisement: (id: string, data: Partial<Omit<Advertisement, 'id'>>) => user && siteData.handleUpdateAdvertisement(id, data, user),
+            onDeleteAdvertisement: (id: string) => user && siteData.handleDeleteAdvertisement(id, user),
+            onCreateOrUpdateAnnouncement: (data: Omit<Announcement, 'id'> | Announcement) => user && siteData.handleCreateOrUpdateAnnouncement(data, user),
+            onDeleteAnnouncement: (id: string) => user && siteData.handleDeleteAnnouncement(id, user),
+            onAdminReplyToTicket: (ticketId: string, message: string) => user && siteData.handleAdminReplyToTicket(ticketId, message, user),
+            onAdminUpdateTicketStatus: (ticketId: string, status: Ticket['status']) => user && siteData.handleAdminUpdateTicketStatus(ticketId, status, user),
+            onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => user && siteData.handleReviewModeration(productId, reviewIdentifier, newStatus, user),
+            onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => user && siteData.handleSendBulkEmail(recipientIds, subject, body, user),
+            onUpdateOrderStatus: (orderId: string, status: OrderStatus) => user && siteData.handleUpdateOrderStatus(orderId, status, user),
+            onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => user && siteData.handleResolveDispute(orderId, resolution, user),
+            onUpdateSiteSettings: siteData.setSiteSettings,
+            onUpdateSiteContent: siteData.setSiteContent,
+            onUpdatePaymentMethods: siteData.setAllPaymentMethods,
+        };
+
         switch (activeTab) {
-            case 'overview': return <OverviewPanel {...props} />;
-            case 'users': return <UsersPanel allUsers={props.allUsers} onUpdateUser={props.onUpdateUser} onCreateUserByAdmin={props.onCreateUserByAdmin} onWarnUser={props.onWarnUser} allPickupPoints={props.allPickupPoints} allZones={props.allZones} onSendBulkEmail={props.onSendBulkEmail} siteSettings={props.siteSettings} />;
-            case 'catalog': return <CatalogPanel allCategories={props.allCategories} onAdminAddCategory={props.onAdminAddCategory} onAdminDeleteCategory={props.onAdminDeleteCategory} onAdminUpdateCategory={props.onAdminUpdateCategory} />;
-            case 'marketing': return <MarketingPanel {...props} />;
-            case 'stores': return <StoresPanel allStores={props.allStores} onApproveStore={props.onApproveStore} onRejectStore={props.onRejectStore} onToggleStoreStatus={props.onToggleStoreStatus} onWarnStore={props.onWarnStore} onUpdateDocumentStatus={props.onUpdateDocumentStatus} />;
-            case 'orders': return <OrdersPanel allOrders={props.allOrders} onUpdateOrderStatus={props.onUpdateOrderStatus} onResolveDispute={props.onResolveDispute} />;
-            case 'logistics': return <LogisticsPanel {...props} />;
-            case 'payouts': return <PayoutsPanel {...props} />;
-            case 'support': return <SupportPanel {...props} />;
-            case 'reviews': return <ReviewModerationPanel allProducts={allProducts} onReviewModeration={props.onReviewModeration} />;
-            case 'logs': return <LogsPanel {...props} />;
-            case 'settings': return <SettingsPanel {...props} />;
+            case 'overview': return <OverviewPanel {...panelProps} />;
+            case 'users': return <UsersPanel {...panelProps} />;
+            case 'catalog': return <CatalogPanel {...panelProps} />;
+            case 'marketing': return <MarketingPanel {...panelProps} />;
+            case 'stores': return <StoresPanel {...panelProps} />;
+            case 'orders': return <OrdersPanel {...panelProps} />;
+            case 'logistics': return <LogisticsPanel {...panelProps} />;
+            case 'payouts': return <PayoutsPanel {...panelProps} />;
+            case 'support': return <SupportPanel {...panelProps} />;
+            case 'reviews': return <ReviewModerationPanel {...panelProps} />;
+            case 'logs': return <LogsPanel {...panelProps} />;
+            case 'settings': return <SettingsPanel {...panelProps} />;
             default: return <div className="p-6">{t('superadmin.panelUnderConstruction', activeTab)}</div>;
         }
     };

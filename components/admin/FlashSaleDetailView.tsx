@@ -78,12 +78,18 @@ const FlashSaleDetailView: React.FC<FlashSaleDetailViewProps> = ({ sale, allProd
                     }`}>{sp.status}</span>
                   </td>
                   <td className="px-4 py-2 text-center">
-                    {sp.status === 'pending' ? (
-                      <div className="flex justify-center gap-2">
-                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'approved')} className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-full" aria-label={t('common.approve')}><CheckIcon className="w-5 h-5"/></button>
-                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'rejected')} className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full" aria-label={t('common.reject')}><XIcon className="w-5 h-5"/></button>
-                      </div>
-                    ) : '-'}
+                    <div className="flex justify-center gap-2">
+                      {sp.status !== 'approved' && (
+                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'approved')} className="p-1 text-green-600 hover:bg-green-100 dark:hover:bg-green-900/50 rounded-full" aria-label={t('common.approve')}>
+                          <CheckIcon className="w-5 h-5"/>
+                        </button>
+                      )}
+                      {sp.status !== 'rejected' && (
+                        <button onClick={() => onUpdateStatus(sale.id, sp.productId, 'rejected')} className="p-1 text-red-600 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full" aria-label={t('common.reject')}>
+                          <XIcon className="w-5 h-5"/>
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

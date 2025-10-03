@@ -2,6 +2,8 @@ import React, { useState, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, PickupPoint, DisputeMessage, User } from '../types';
 import { ArrowLeftIcon, CheckIcon, TruckIcon, ExclamationTriangleIcon, XIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useAuth } from '../contexts/AuthContext';
+import { useSiteData } from '../hooks/useSiteData';
 
 declare const QRCode: any;
 
@@ -10,9 +12,6 @@ interface OrderDetailPageProps {
   onBack: () => void;
   allPickupPoints: PickupPoint[];
   allUsers: User[];
-  onCancelOrder: (orderId: string) => void;
-  onRequestRefund: (orderId: string, reason: string, evidenceUrls: string[]) => void;
-  onCustomerDisputeMessage: (orderId: string, message: string) => void;
 }
 
 const RefundRequestModal: React.FC<{
@@ -110,8 +109,10 @@ const RefundRequestModal: React.FC<{
 
 const statusSteps: OrderStatus[] = ['confirmed', 'ready-for-pickup', 'picked-up', 'at-depot', 'out-for-delivery', 'delivered'];
 
-const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
+const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
+  const siteData = useSiteData();
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
   const currentStatusIndex = statusSteps.indexOf(order.status);
@@ -149,9 +150,28 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
   }, [order.trackingNumber]);
 
   const handleRefundSubmit = (reason: string, evidenceUrls: string[]) => {
-    onRequestRefund(order.id, reason, evidenceUrls);
+    if (user) {
+        siteData.handleRequestRefund(order.id, reason, evidenceUrls, user);
+    }
     setIsRefundModalOpen(false);
   };
+  
+  const handleCancelOrder = () => {
+    if(window.confirm("Êtes-vous sûr de vouloir annuler cette commande ?")) {
+        if(user) {
+            siteData.handleCancelOrder(order.id, user);
+        }
+    }
+  }
+
+  const handleDisputeMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    const input = (e.target as any).message;
+    if (user) {
+        siteData.handleCustomerDisputeMessage(order.id, input.value, user);
+    }
+    input.value = '';
+  }
   
   const getStepIcon = (step: OrderStatus) => {
     switch(step) {
@@ -283,7 +303,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                             );
                         })}
                     </div>
-                    <form onSubmit={e => { e.preventDefault(); const input = (e.target as any).message; onCustomerDisputeMessage(order.id, input.value); input.value=''; }}>
+                    <form onSubmit={handleDisputeMessage}>
                         <div className="flex gap-2">
                             <input name="message" placeholder="Envoyer un message..." className="flex-grow text-sm p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600"/>
                             <button type="submit" className="p-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"><PaperAirplaneIcon className="w-5 h-5"/></button>
@@ -304,7 +324,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
               </address>
               {order.deliveryMethod === 'pickup' && pickupPoint && (
                 <div className="mt-4 p-3 bg-blue-50 dark:bg-blue-900/50 rounded-lg">
-                  <p className="font-bold text-sm text-blue-800 dark:text-blue-200">Point de retrait:</p>
+                  <p className="font-bold text-sm text-blue-800 dark:text-blue-200">Point de dépôt:</p>
                   <p className="text-sm text-blue-700 dark:text-blue-300">{pickupPoint.name}, {pickupPoint.neighborhood}</p>
                 </div>
               )}
@@ -349,7 +369,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                  </button>
               )}
               {canCancel && (
-                 <button onClick={() => onCancelOrder(order.id)} className="flex-1 w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 flex items-center justify-center gap-2">
+                 <button onClick={handleCancelOrder} className="flex-1 w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 flex items-center justify-center gap-2">
                      <XIcon className="w-5 h-5"/> Annuler la commande
                  </button>
               )}

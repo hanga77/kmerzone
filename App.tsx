@@ -3,7 +3,7 @@ import { XIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import { useUI } from './contexts/UIContext';
-import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product, Category, UserRole, PickupPoint, Store, Warning, DocumentStatus, UserAvailabilityStatus, OrderStatus, Order, AgentSchedule } from './types';
+import type { User, SiteSettings, Announcement, Page, Notification, PaymentRequest, Product } from './types';
 import { Header } from './components/Header';
 import Footer from './components/Footer';
 import MaintenancePage from './components/MaintenancePage';
@@ -13,7 +13,7 @@ import PromotionModal from './components/PromotionModal';
 import ChatWidget from './components/ChatWidget';
 import AddToCartModal from './components/AddToCartModal';
 import PaymentModal from './components/PaymentModal';
-import { ComparisonBar, InfoPage } from './components/ComponentStubs';
+import { ComparisonBar } from './components/ComponentStubs';
 import StoryViewer from './components/StoryViewer';
 import { useSiteData } from './hooks/useSiteData';
 import { useAppNavigation } from './hooks/useAppNavigation';
@@ -51,7 +51,7 @@ const AnnouncementBanner: React.FC<{
 
 
 export default function App() {
-  const { user, logout: authLogout, allUsers, setAllUsers, resetPassword, updateUserInfo } = useAuth();
+  const { user, logout: authLogout, allUsers } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
   const { comparisonList, setProducts: setComparisonProducts } = useComparison();
   const { t } = useLanguage();
@@ -94,45 +94,10 @@ export default function App() {
     }
   }, [navigation]);
 
-    const handleAdminUpdateUser = useCallback((userId: string, updates: Partial<User>) => {
-        if (user) { // user is admin here
-            const updatedUsers = siteData.handleAdminUpdateUser(userId, updates, allUsers, user);
-            setAllUsers(updatedUsers);
-        }
-    }, [siteData, allUsers, setAllUsers, user]);
-    
-    const handleWarnUser = useCallback((userId: string, reason: string) => {
-        if (!user) return;
-        const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason };
-        setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, warnings: [...(u.warnings || []), newWarning] } : u));
-        siteData.logActivity(user, 'USER_WARNED', `Avertissement envoyé à l'utilisateur ${userId}. Motif: ${reason}`);
-    }, [user, setAllUsers, siteData]);
-    
-    const handleUpdateDocumentStatus = useCallback((storeId: string, documentName: string, status: DocumentStatus, rejectionReason: string | undefined) => {
-        if (!user) return;
-        siteData.handleUpdateDocumentStatus(storeId, documentName, status, rejectionReason, user);
-    }, [user, siteData]);
-
-    const handleSendBulkEmail = useCallback((recipientIds: string[], subject: string, body: string) => {
-        if (user) {
-            siteData.handleSendBulkEmail(recipientIds, subject, body, user);
-        }
-    }, [user, siteData]);
-
     const handleLogout = useCallback(() => {
         authLogout();
         navigation.navigateToHome();
     }, [authLogout, navigation]);
-
-    const handleUpdateUserAvailability = useCallback((userId: string, newStatus: UserAvailabilityStatus) => {
-        updateUserInfo(userId, { availabilityStatus: newStatus });
-    }, [updateUserInfo]);
-    
-    const handleUpdateDeliveryStatus = useCallback((orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => {
-        if (user) {
-            siteData.handleUpdateDeliveryStatus(orderId, status, user, details);
-        }
-    }, [user, siteData]);
 
 
   // Connect allProducts to comparison context
@@ -156,7 +121,7 @@ export default function App() {
 
     switch(page) {
       case 'product': if (selectedProduct) { title = `${selectedProduct.name} | KMER ZONE`; description = selectedProduct.description.substring(0, 160); ogImageUrl = selectedProduct.imageUrls[0] || ogImageUrl; } break;
-      case 'category': const category = siteData.allCategories.find((c: Category) => c.id === selectedCategoryId); if (category) { title = `${category.name} | KMER ZONE`; ogImageUrl = category.imageUrl || ogImageUrl; } break;
+      case 'category': const category = siteData.allCategories.find(c => c.id === selectedCategoryId); if (category) { title = `${category.name} | KMER ZONE`; ogImageUrl = category.imageUrl || ogImageUrl; } break;
       case 'vendor-page': const store = selectedStore; if (store) { title = `${store.name} - Boutique sur KMER ZONE`; ogImageUrl = store.logoUrl || ogImageUrl; } break;
       default: break;
     }
@@ -222,49 +187,10 @@ export default function App() {
 
         <main className="flex-grow">
           <PageRouter 
-            navigation={navigation} 
-            siteData={siteData} 
+            navigation={navigation}
+            siteData={siteData}
             setPromotionModalProduct={setPromotionModalProduct}
             setPaymentRequest={setPaymentRequest}
-            onAdminUpdateUser={handleAdminUpdateUser}
-            onSendBulkEmail={handleSendBulkEmail}
-            onApproveStore={(store: Store) => user && siteData.handleApproveStore(store, user)}
-            onRejectStore={(store: Store) => user && siteData.handleRejectStore(store, user)}
-            onToggleStoreStatus={(storeId: string, currentStatus: 'active' | 'suspended') => user && siteData.handleToggleStoreStatus(storeId, currentStatus, user)}
-            onWarnStore={(storeId: string, reason: string) => user && siteData.handleWarnStore(storeId, reason, user)}
-            onAdminAddCategory={(name, parentId) => user && siteData.handleAdminAddCategory(name, parentId, user)}
-            onAdminDeleteCategory={(categoryId) => user && siteData.handleAdminDeleteCategory(categoryId, user)}
-            onAdminUpdateCategory={(categoryId, updates) => user && siteData.handleAdminUpdateCategory(categoryId, updates, user)}
-            onUpdateDocumentStatus={handleUpdateDocumentStatus}
-            onWarnUser={handleWarnUser}
-            onSaveFlashSale={(saleData) => user && siteData.handleSaveFlashSale(saleData, user)}
-            onUpdateFlashSaleSubmissionStatus={(flashSaleId, productId, status) => user && siteData.handleUpdateFlashSaleSubmissionStatus(flashSaleId, productId, status, user)}
-            onBatchUpdateFlashSaleStatus={(flashSaleId, productIds, status) => user && siteData.handleBatchUpdateFlashSaleStatus(flashSaleId, productIds, status, user)}
-            onAddPickupPoint={(point) => user && siteData.handleAddPickupPoint(point, user)}
-            onUpdatePickupPoint={(point) => user && siteData.handleUpdatePickupPoint(point, user)}
-            onDeletePickupPoint={(pointId) => user && siteData.handleDeletePickupPoint(pointId, user)}
-            onAdminReplyToTicket={(ticketId, message) => user && siteData.handleAdminReplyToTicket(ticketId, message, user)}
-            onAdminUpdateTicketStatus={(ticketId, status) => user && siteData.handleAdminUpdateTicketStatus(ticketId, status, user)}
-            onReviewModeration={(productId, reviewIdentifier, newStatus) => user && siteData.handleReviewModeration(productId, reviewIdentifier, newStatus, user)}
-            onCreateUserByAdmin={(data) => { if (user) { const newUsers = siteData.handleCreateUserByAdmin(data, user, allUsers); setAllUsers(newUsers); }}}
-            onCreateOrUpdateAnnouncement={(data) => user && siteData.handleCreateOrUpdateAnnouncement(data, user)}
-            onDeleteAnnouncement={(id) => user && siteData.handleDeleteAnnouncement(id, user)}
-            onUpdateOrderStatus={(orderId, status) => user && siteData.handleUpdateOrderStatus(orderId, status, user)}
-            onResolveDispute={(orderId, resolution) => user && siteData.handleResolveDispute(orderId, resolution, user)}
-            onSellerUpdateOrderStatus={(orderId, status) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user)}
-            onSellerCancelOrder={(orderId, user) => siteData.handleSellerCancelOrder(orderId, user)}
-            onCreateOrUpdateCollection={(storeId, collection) => user && siteData.handleCreateOrUpdateCollection(storeId, collection, user)}
-            onDeleteCollection={(storeId, collectionId) => user && siteData.handleDeleteCollection(storeId, collectionId, user)}
-            onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
-            onUpdateUserAvailability={handleUpdateUserAvailability}
-            onUpdateDeliveryStatus={handleUpdateDeliveryStatus}
-            onUpdateSchedule={(depotId: string, schedule: AgentSchedule) => user && siteData.handleUpdateSchedule(depotId, schedule, user)}
-            onAddProductToStory={(productId: string) => user && siteData.handleAddProductToStory(productId, user)}
-            onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
-            // FIX: Pass the onCancelOrder prop to PageRouter, wrapping it to include the current user.
-            onCancelOrder={(orderId) => user && siteData.handleCancelOrder(orderId, user)}
-            onRequestRefund={(orderId, reason, evidence) => user && siteData.handleRequestRefund(orderId, reason, evidence, user)}
-            onCustomerDisputeMessage={(orderId, message) => user && siteData.handleCustomerDisputeMessage(orderId, message, user)}
           />
         </main>
 

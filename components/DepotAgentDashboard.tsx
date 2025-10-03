@@ -17,15 +17,8 @@ declare const Html5Qrcode: any;
 
 interface DepotAgentDashboardProps {
   user: User;
-  allUsers: User[];
-  allOrders: Order[];
-  allStores: Store[];
-  allZones: Zone[];
-  allPickupPoints: PickupPoint[];
   onLogout: () => void;
-  onAssignAgentToOrder: (orderId: string, agentId: string) => void;
-  handleDepotCheckIn: (orderId: string, storageLocationId: string, user: User) => void;
-  onUpdateSchedule: (depotId: string, newSchedule: AgentSchedule) => void;
+  siteData: any;
 }
 
 const StatCard: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
@@ -497,8 +490,9 @@ const ReportsPanel: React.FC<{ depotOrders: Order[], deliveryAgents: User[] }> =
 };
 
 
-export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, allUsers, allOrders, allStores, allZones, allPickupPoints, onLogout, onAssignAgentToOrder, handleDepotCheckIn, onUpdateSchedule }) => {
+export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, onLogout, siteData }) => {
     const { t } = useLanguage();
+    const { allUsers, allOrders, allStores, allZones, allPickupPoints } = siteData;
     const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'drivers' | 'agents' | 'sellers' | 'reports'>('overview');
     const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -506,27 +500,39 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
 
     const isManager = user.role === 'depot_manager';
 
+    const onAssignAgentToOrder = (orderId: string, agentId: string) => {
+        siteData.handleAssignAgentToOrder(orderId, agentId, user, allUsers);
+    };
+
+    const handleDepotCheckIn = (orderId: string, location: string) => {
+        siteData.handleDepotCheckIn(orderId, location, user);
+    };
+    
+    const onUpdateSchedule = (depotId: string, schedule: AgentSchedule) => {
+        siteData.handleUpdateSchedule(depotId, schedule, user);
+    };
+
     const { ordersToAssign, ordersInDelivery, ordersWithIssues, depotInventory, deliveryAgents, depotAgents, zoneName, recentMovements, depotOrders } = useMemo(() => {
-        const userZoneId = user.zoneId; const _zoneName = allZones.find(z => z.id === userZoneId)?.name || 'Inconnue';
+        const userZoneId = user.zoneId; const _zoneName = allZones.find((z: Zone) => z.id === userZoneId)?.name || 'Inconnue';
         if (!userZoneId || !user.depotId) return { ordersToAssign: [], ordersInDelivery: [], ordersWithIssues: [], depotInventory: [], deliveryAgents: [], depotAgents: [], zoneName: _zoneName, recentMovements: [], depotOrders: [] };
         
-        const _depotOrders = allOrders.filter(o => o.pickupPointId === user.depotId || allUsers.find(u => u.id === o.agentId)?.zoneId === userZoneId);
+        const _depotOrders = allOrders.filter((o: Order) => o.pickupPointId === user.depotId || allUsers.find((u: User) => u.id === o.agentId)?.zoneId === userZoneId);
         
-        const _depotInventory = _depotOrders.filter(o => o.status === 'at-depot' && o.storageLocationId);
-        const _ordersToAssign = _depotInventory.filter(o => o.deliveryMethod === 'home-delivery' && !o.agentId);
-        const _ordersInDelivery = _depotOrders.filter(o => o.status === 'out-for-delivery');
-        const _ordersWithIssues = _depotOrders.filter(o => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status));
-        const _deliveryAgents = allUsers.filter(u => u.role === 'delivery_agent' && u.zoneId === userZoneId);
-        const _depotAgents = allUsers.filter(u => u.role === 'depot_agent' && u.depotId === user.depotId);
+        const _depotInventory = _depotOrders.filter((o: Order) => o.status === 'at-depot' && o.storageLocationId);
+        const _ordersToAssign = _depotInventory.filter((o: Order) => o.deliveryMethod === 'home-delivery' && !o.agentId);
+        const _ordersInDelivery = _depotOrders.filter((o: Order) => o.status === 'out-for-delivery');
+        const _ordersWithIssues = _depotOrders.filter((o: Order) => ['returned', 'depot-issue', 'delivery-failed'].includes(o.status));
+        const _deliveryAgents = allUsers.filter((u: User) => u.role === 'delivery_agent' && u.zoneId === userZoneId);
+        const _depotAgents = allUsers.filter((u: User) => u.role === 'depot_agent' && u.depotId === user.depotId);
         
         const agentsWithPerf = _deliveryAgents.map(agent => {
-            const agentOrders = allOrders.filter(o => o.agentId === agent.id);
-            const deliveredCount = agentOrders.filter(o => o.status === 'delivered').length;
+            const agentOrders = allOrders.filter((o: Order) => o.agentId === agent.id);
+            const deliveredCount = agentOrders.filter((o: Order) => o.status === 'delivered').length;
             const successRate = agentOrders.length > 0 ? (deliveredCount / agentOrders.length) * 100 : 0;
             return { ...agent, deliveredCount, successRate, totalMissions: agentOrders.length };
         });
 
-        const movements = _depotOrders.flatMap(order =>
+        const movements = _depotOrders.flatMap((order: Order) =>
             order.trackingHistory
                 .filter(event =>
                     (event.status === 'at-depot' && event.details.includes('emplacement')) ||
@@ -539,25 +545,25 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
                     details: event.details.split('. ').pop() || event.details, // Get the relevant part
                 }))
         );
-        const sortedMovements = movements.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 50);
+        const sortedMovements = movements.sort((a: any, b: any) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()).slice(0, 50);
 
         return { ordersToAssign: _ordersToAssign, ordersInDelivery: _ordersInDelivery, ordersWithIssues: _ordersWithIssues, depotInventory: _depotInventory, deliveryAgents: agentsWithPerf, depotAgents: _depotAgents, zoneName: _zoneName, recentMovements: sortedMovements, depotOrders: _depotOrders };
     }, [allOrders, allUsers, user, allZones]);
 
     const handleScanSuccess = useCallback((decodedText: string) => {
         setIsScannerOpen(false);
-        const order = allOrders.find(o => o.trackingNumber === decodedText);
+        const order = allOrders.find((o: Order) => o.trackingNumber === decodedText);
         if (!order) { alert('Commande non trouvée.'); return; }
         setCheckingInOrder(order);
     }, [allOrders]);
 
     const handleConfirmCheckIn = useCallback((orderId: string, location: string) => {
-        handleDepotCheckIn(orderId, location, user);
+        handleDepotCheckIn(orderId, location);
         setCheckingInOrder(null);
-    }, [handleDepotCheckIn, user]);
+    }, [handleDepotCheckIn]);
 
     const renderContent = () => {
-        const depot = allPickupPoints.find(p => p.id === user.depotId);
+        const depot = allPickupPoints.find((p: PickupPoint) => p.id === user.depotId);
         if (!depot) return <p>Erreur: Dépôt non trouvé.</p>;
 
         switch (activeTab) {

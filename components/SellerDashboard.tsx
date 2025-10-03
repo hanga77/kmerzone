@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useSiteData } from '../hooks/useSiteData';
 import { 
     ChartPieIcon, ShoppingBagIcon, TruckIcon, StarIcon, TagIcon, BoltIcon, 
     BarChartIcon, BanknotesIcon, BuildingStorefrontIcon, DocumentTextIcon, 
@@ -27,7 +28,7 @@ import ChatPanel from './seller/ChatPanel';
 import StoriesPanel from './seller/StoriesPanel';
 
 interface SellerDashboardProps {
-  store?: Store;
+  store: Store;
   products: Product[];
   categories: Category[];
   flashSales: FlashSale[];
@@ -45,25 +46,17 @@ interface SellerDashboardProps {
   onRemovePromotion: (productId: string) => void;
   onProposeForFlashSale: (flashSaleId: string, productId: string, flashPrice: number, sellerShopName: string) => void;
   onUploadDocument: (storeId: string, documentName: string, fileUrl: string) => void;
-  onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
-  onSellerCancelOrder: (orderId: string, user: User) => void;
   onCreatePromoCode: (codeData: Omit<PromoCode, 'uses'>) => void;
   onDeletePromoCode: (code: string) => void;
   siteSettings: SiteSettings;
   payouts: Payout[];
   onReplyToReview: (productId: string, reviewIdentifier: { author: string; date: string }, replyText: string) => void;
-  onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => void;
-  onDeleteCollection: (storeId: string, collectionId: string) => void;
   initialTab: string;
   sellerNotifications: Notification[];
   onCreateTicket: (subject: string, message: string, orderId?: string) => void;
   allShippingPartners: ShippingPartner[];
-  onUpdateShippingSettings: (storeId: string, settings: any) => void;
   onRequestUpgrade: (storeId: string, level: 'premium' | 'super_premium') => void;
   isChatEnabled: boolean;
-  onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
-  onAddProductToStory: (productId: string) => void;
-  onAddStory: (imageUrl: string) => void;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number, isLocked?: boolean }> = ({ icon, label, isActive, onClick, count, isLocked }) => {
@@ -90,9 +83,10 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
 
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade, onSellerCancelOrder } = props;
+    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade } = props;
     const [activeTab, setActiveTab] = useState(initialTab || 'overview');
     const { user } = useAuth();
+    const siteData = useSiteData();
     const { t } = useLanguage();
     
     useEffect(() => {
@@ -125,6 +119,18 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
       { id: 'support', label: t('sellerDashboard.tabs.support'), icon: <ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>, isLocked: false },
     ];
     
+    const panelProps = {
+        ...props,
+        onUpdateOrderStatus: (orderId: string, status: Order['status']) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user),
+        onSellerCancelOrder: (orderId: string) => user && siteData.handleSellerCancelOrder(orderId, user),
+        onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => user && siteData.handleCreateOrUpdateCollection(storeId, collection, user),
+        onDeleteCollection: (storeId: string, collectionId: string) => user && siteData.handleDeleteCollection(storeId, collectionId, user),
+        onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => user && siteData.handleUpdateStoreProfile(storeId, data, user),
+        onUpdateShippingSettings: (storeId: string, settings: any) => {}, // Placeholder, should be implemented in useSiteData
+        onAddProductToStory: (productId: string) => user && siteData.handleAddProductToStory(productId, user),
+        onAddStory: (imageUrl: string) => user && siteData.handleAddStory(imageUrl, user),
+    };
+
     const renderContent = () => {
         const selectedTab = TABS.find(t => t.id === activeTab);
         if (selectedTab?.isLocked) {
@@ -132,24 +138,24 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
         }
 
         switch(activeTab) {
-            case 'overview': return <OverviewPanel {...props} store={store} setActiveTab={setActiveTab} />;
-            case 'products': return <ProductsPanel {...props} />;
-            case 'collections': return <CollectionsPanel {...props} store={store} />;
-            case 'orders': return <OrdersPanel {...props} store={store} onSellerCancelOrder={(orderId) => user && onSellerCancelOrder(orderId, user)} />;
-            case 'reviews': return <ReviewsPanel {...props} />;
-            case 'promotions': return <PromotionsPanel {...props} />;
-            case 'flash-sales': return <FlashSalesPanel {...props} store={store} />;
+            case 'overview': return <OverviewPanel {...panelProps} setActiveTab={setActiveTab} />;
+            case 'products': return <ProductsPanel {...panelProps} />;
+            case 'collections': return <CollectionsPanel {...panelProps} />;
+            case 'orders': return <OrdersPanel {...panelProps} />;
+            case 'reviews': return <ReviewsPanel {...panelProps} />;
+            case 'promotions': return <PromotionsPanel {...panelProps} />;
+            case 'flash-sales': return <FlashSalesPanel {...panelProps} />;
             case 'analytics': return <AnalyticsPanel sellerOrders={props.sellerOrders} sellerProducts={props.products} flashSales={props.flashSales} />;
-            case 'payouts': return <PayoutsPanel {...props} />;
-            case 'livraison': return <ShippingPanel store={store} allShippingPartners={props.allShippingPartners} onUpdate={props.onUpdateShippingSettings} />;
-            case 'profile': return <ProfilePanel store={store} onUpdateProfile={props.onUpdateStoreProfile} />;
-            case 'subscription': return <SubscriptionPanel store={store} siteSettings={siteSettings} onUpgrade={(level) => onRequestUpgrade(store.id, level)} />;
-            case 'documents': return <DocumentsPanel {...props} store={store} />;
-            case 'stories': return <StoriesPanel store={store} onAddStory={props.onAddStory} />;
+            case 'payouts': return <PayoutsPanel {...panelProps} />;
+            case 'livraison': return <ShippingPanel {...panelProps} />;
+            case 'profile': return <ProfilePanel {...panelProps} />;
+            case 'subscription': return <SubscriptionPanel {...panelProps} />;
+            case 'documents': return <DocumentsPanel {...panelProps} />;
+            case 'stories': return <StoriesPanel {...panelProps} />;
             case 'chat': return <ChatPanel />;
-            case 'support': return <SupportPanel {...props} />;
+            case 'support': return <SupportPanel {...panelProps} />;
             default:
-                return <OverviewPanel {...props} store={store} setActiveTab={setActiveTab} />;
+                return <OverviewPanel {...panelProps} setActiveTab={setActiveTab} />;
         }
     };
     

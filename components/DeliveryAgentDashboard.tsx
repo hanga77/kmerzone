@@ -17,12 +17,8 @@ declare const L: any; // Leaflet is loaded from a script tag in index.html
 declare const Html5Qrcode: any;
 
 interface DeliveryAgentDashboardProps {
-  allOrders: Order[];
-  allStores: Store[];
-  allPickupPoints: PickupPoint[];
   onLogout: () => void;
-  onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
-  onUpdateDeliveryStatus: (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => void;
+  siteData: any;
 }
 
 const statusTranslations: { [key in OrderStatus]: string } = {
@@ -227,19 +223,30 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
     return <div ref={mapRef} className="h-48 w-full rounded-md mt-4 z-0"></div>;
 };
 
-export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ allOrders, allStores, allPickupPoints, onLogout, onUpdateUserAvailability, onUpdateDeliveryStatus }) => {
-    const { user } = useAuth();
+export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ onLogout, siteData }) => {
+    const { user, updateUserInfo } = useAuth();
     const { t } = useLanguage();
     const [view, setView] = useState<'missions' | 'history'>('missions');
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [modalState, setModalState] = useState<{ type: 'signature' | 'failure'; order: Order } | null>(null);
     const [openMapOrderId, setOpenMapOrderId] = useState<string | null>(null);
+    const { allOrders, allStores, allPickupPoints } = siteData;
+    
+    const onUpdateUserAvailability = (userId: string, newStatus: UserAvailabilityStatus) => {
+        updateUserInfo(userId, { availabilityStatus: newStatus });
+    };
+
+    const onUpdateDeliveryStatus = (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => {
+        if (user) {
+            siteData.handleUpdateDeliveryStatus(orderId, status, user, details);
+        }
+    };
 
     const { missions, history } = useMemo(() => {
         if (!user) return { missions: [], history: [] };
-        const agentOrders = allOrders.filter(o => o.agentId === user.id);
-        const _missions = agentOrders.filter(o => ['picked-up', 'at-depot', 'out-for-delivery', 'ready-for-pickup'].includes(o.status));
-        const _history = agentOrders.filter(o => ['delivered', 'delivery-failed', 'returned'].includes(o.status));
+        const agentOrders = allOrders.filter((o: Order) => o.agentId === user.id);
+        const _missions = agentOrders.filter((o: Order) => ['picked-up', 'at-depot', 'out-for-delivery', 'ready-for-pickup'].includes(o.status));
+        const _history = agentOrders.filter((o: Order) => ['delivered', 'delivery-failed', 'returned'].includes(o.status));
         return { missions: _missions, history: _history };
     }, [allOrders, user]);
 
@@ -258,7 +265,7 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
     }, []);
     const handleScanSuccess = useCallback((decodedText: string) => {
         setIsScannerOpen(false);
-        const order = allOrders.find(o => o.trackingNumber === decodedText);
+        const order = allOrders.find((o: Order) => o.trackingNumber === decodedText);
         if (!order) {
             alert('Commande non trouvée.');
             return;
@@ -278,14 +285,14 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
         let end: L.LatLng | undefined;
         let destinationLabel = '';
 
-        const agentZoneDepot = allPickupPoints.find(p => p.zoneId === user?.zoneId);
+        const agentZoneDepot = allPickupPoints.find((p: PickupPoint) => p.zoneId === user?.zoneId);
         if (agentZoneDepot?.latitude && agentZoneDepot?.longitude) {
             start = L.latLng(agentZoneDepot.latitude, agentZoneDepot.longitude);
         }
 
         if (order.status === 'ready-for-pickup') {
             const vendorName = order.items[0]?.vendor;
-            const store = allStores.find(s => s.name === vendorName);
+            const store = allStores.find((s: Store) => s.name === vendorName);
             if (store?.latitude && store?.longitude) {
                 end = L.latLng(store.latitude, store.longitude);
                 destinationLabel = `Récupérer chez : ${store.name}`;
