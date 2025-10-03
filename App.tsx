@@ -13,7 +13,7 @@ import PromotionModal from './components/PromotionModal';
 import ChatWidget from './components/ChatWidget';
 import AddToCartModal from './components/AddToCartModal';
 import PaymentModal from './components/PaymentModal';
-import { ComparisonBar } from './components/ComponentStubs';
+import { ComparisonBar, InfoPage } from './components/ComponentStubs';
 import StoryViewer from './components/StoryViewer';
 import { useSiteData } from './hooks/useSiteData';
 import { useAppNavigation } from './hooks/useAppNavigation';
@@ -95,9 +95,11 @@ export default function App() {
   }, [navigation]);
 
     const handleAdminUpdateUser = useCallback((userId: string, updates: Partial<User>) => {
-        const updatedUsers = siteData.handleAdminUpdateUser(userId, updates, allUsers);
-        setAllUsers(updatedUsers);
-    }, [siteData, allUsers, setAllUsers]);
+        if (user) { // user is admin here
+            const updatedUsers = siteData.handleAdminUpdateUser(userId, updates, allUsers, user);
+            setAllUsers(updatedUsers);
+        }
+    }, [siteData, allUsers, setAllUsers, user]);
     
     const handleWarnUser = useCallback((userId: string, reason: string) => {
         if (!user) return;
@@ -244,7 +246,7 @@ export default function App() {
             onAdminReplyToTicket={(ticketId, message) => user && siteData.handleAdminReplyToTicket(ticketId, message, user)}
             onAdminUpdateTicketStatus={(ticketId, status) => user && siteData.handleAdminUpdateTicketStatus(ticketId, status, user)}
             onReviewModeration={(productId, reviewIdentifier, newStatus) => user && siteData.handleReviewModeration(productId, reviewIdentifier, newStatus, user)}
-            onCreateUserByAdmin={(data) => user && siteData.handleCreateUserByAdmin(data, user)}
+            onCreateUserByAdmin={(data) => { if (user) { const newUsers = siteData.handleCreateUserByAdmin(data, user, allUsers); setAllUsers(newUsers); }}}
             onCreateOrUpdateAnnouncement={(data) => user && siteData.handleCreateOrUpdateAnnouncement(data, user)}
             onDeleteAnnouncement={(id) => user && siteData.handleDeleteAnnouncement(id, user)}
             onUpdateOrderStatus={(orderId, status) => user && siteData.handleUpdateOrderStatus(orderId, status, user)}
@@ -259,6 +261,10 @@ export default function App() {
             onUpdateSchedule={(depotId: string, schedule: AgentSchedule) => user && siteData.handleUpdateSchedule(depotId, schedule, user)}
             onAddProductToStory={(productId: string) => user && siteData.handleAddProductToStory(productId, user)}
             onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
+            // FIX: Pass the onCancelOrder prop to PageRouter, wrapping it to include the current user.
+            onCancelOrder={(orderId) => user && siteData.handleCancelOrder(orderId, user)}
+            onRequestRefund={(orderId, reason, evidence) => user && siteData.handleRequestRefund(orderId, reason, evidence, user)}
+            onCustomerDisputeMessage={(orderId, message) => user && siteData.handleCustomerDisputeMessage(orderId, message, user)}
           />
         </main>
 

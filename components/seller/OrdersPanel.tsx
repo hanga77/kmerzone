@@ -1,10 +1,14 @@
+
+
 import React from 'react';
-import type { Order, OrderStatus } from '../../types';
+import type { Order, OrderStatus, Store } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface OrdersPanelProps {
     sellerOrders: Order[];
     onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
+    store: Store;
+    onSellerCancelOrder: (orderId: string) => void;
 }
 
 const statusTranslations: { [key in OrderStatus]: string } = {
@@ -22,7 +26,7 @@ const statusTranslations: { [key in OrderStatus]: string } = {
     'delivery-failed': 'Échec de livraison'
 };
 
-const OrdersPanel: React.FC<OrdersPanelProps> = ({ sellerOrders, onUpdateOrderStatus }) => {
+const OrdersPanel: React.FC<OrdersPanelProps> = ({ sellerOrders, onUpdateOrderStatus, store, onSellerCancelOrder }) => {
     const { t } = useLanguage();
     return (
         <div className="p-6">
@@ -46,11 +50,18 @@ const OrdersPanel: React.FC<OrdersPanelProps> = ({ sellerOrders, onUpdateOrderSt
                                 <td className="p-2 text-right font-semibold">{order.total.toLocaleString('fr-CM')} FCFA</td>
                                 <td className="p-2 text-center capitalize">{statusTranslations[order.status] || order.status}</td>
                                 <td className="p-2 text-center">
-                                    {order.status === 'confirmed' && (
-                                        <button onClick={() => onUpdateOrderStatus(order.id, 'ready-for-pickup')} className="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600">
-                                            {t('sellerDashboard.orders.markReady')}
-                                        </button>
-                                    )}
+                                    <div className="flex justify-center items-center gap-2">
+                                        {order.status === 'confirmed' && (
+                                            <button onClick={() => onUpdateOrderStatus(order.id, 'ready-for-pickup')} className="bg-blue-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-blue-600">
+                                                {t('sellerDashboard.orders.markReady')}
+                                            </button>
+                                        )}
+                                        {order.status === 'confirmed' && (
+                                            <button onClick={() => {if(window.confirm(t('sellerDashboard.orders.cancelConfirm'))) {onSellerCancelOrder(order.id)}}} className="bg-red-500 text-white text-xs font-bold py-1 px-2 rounded-md hover:bg-red-600">
+                                                {t('sellerDashboard.orders.cancelOrder')}
+                                            </button>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                         ))}

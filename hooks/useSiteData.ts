@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { usePersistentState } from './usePersistentState';
 import type { 
     Product, Category, Store, FlashSale, Order, SiteSettings, SiteContent, Advertisement, 
@@ -46,7 +46,7 @@ export const useSiteData = () => {
         setSiteActivityLogs(prev => [newLog, ...prev].slice(0, 100)); // Keep last 100 logs
     }, [setSiteActivityLogs]);
 
-    const handleAdminUpdateUser = useCallback((userId: string, updates: Partial<User>, allUsers: User[]) => {
+    const handleAdminUpdateUser = useCallback((userId: string, updates: Partial<User>, allUsers: User[], adminUser: User) => {
         let oldUser: User | undefined;
         const userToUpdate = allUsers.find(u => u.id === userId);
         if(userToUpdate) {
@@ -80,8 +80,10 @@ export const useSiteData = () => {
                 ));
             }
         }
+
+        logActivity(adminUser, 'USER_UPDATED', `Informations de l'utilisateur ${userId} mises à jour.`);
         return updatedUsers;
-    }, [setAllPickupPoints]);
+    }, [setAllPickupPoints, logActivity]);
 
 
     const handleDismissAnnouncement = useCallback((id: string) => {
@@ -358,7 +360,12 @@ export const useSiteData = () => {
         logActivity(user, 'REVIEW_MODERATED', `Avis sur le produit ${productId} modéré à ${newStatus}.`);
     }, [setAllProducts, logActivity]);
 
-    const handleCreateUserByAdmin = useCallback((data: { name: string, email: string, role: UserRole }, adminUser: User) => {
+    const handleCreateUserByAdmin = useCallback((data: { name: string, email: string, role: UserRole }, adminUser: User, allUsers: User[]): User[] => {
+        const existingUser = allUsers.find(u => u.email.toLowerCase() === data.email.toLowerCase());
+        if (existingUser) {
+            alert("Un utilisateur avec cet email existe déjà.");
+            return allUsers;
+        }
         const newUser: User = {
             id: `user-${Date.now()}`,
             name: data.name,
@@ -367,10 +374,8 @@ export const useSiteData = () => {
             password: 'password', // Default password
             loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
         };
-        // This is a simplified way to handle this; useAuth's setAllUsers should be used.
-        // For now, we'll log it. This logic should be moved to AuthContext.
         logActivity(adminUser, 'USER_CREATED', `Utilisateur créé : ${data.name} (${data.email}) avec le rôle ${data.role}.`);
-        alert("La création d'utilisateur est simulée et logguée. La gestion des utilisateurs devrait être centralisée dans AuthContext pour un état persistant.");
+        return [...allUsers, newUser];
     }, [logActivity]);
 
      const handleUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus, user: User) => {
@@ -426,15 +431,20 @@ export const useSiteData = () => {
     }, [setAllOrders, logActivity]);
 
     const handleSellerCancelOrder = useCallback((orderId: string, user: User) => {
-        let orderToCancel: Order | undefined;
         setAllOrders(prev => {
-            const updatedOrders = [...prev];
-            const orderIndex = updatedOrders.findIndex(o => o.id === orderId);
+            const orderIndex = prev.findIndex(o => o.id === orderId);
             if (orderIndex === -1) return prev;
             
-            orderToCancel = updatedOrders[orderIndex];
+            const orderToCancel = prev[orderIndex];
+
+            const isSellerForOrder = orderToCancel.items.some(item => item.vendor === user.shopName);
+            if (!isSellerForOrder) {
+                alert("Vous n'êtes pas le vendeur pour cette commande.");
+                return prev;
+            }
 
             if (orderToCancel.status === 'confirmed') {
+                const updatedOrders = [...prev];
                 const newTrackingEvent: TrackingEvent = {
                     status: 'cancelled',
                     date: new Date().toISOString(),
@@ -446,7 +456,7 @@ export const useSiteData = () => {
                     status: 'cancelled',
                     trackingHistory: [...(orderToCancel.trackingHistory || []), newTrackingEvent]
                 };
-                 logActivity(user, 'SELLER_ORDER_CANCEL', `Le vendeur a annulé la commande ${orderId}.`);
+                logActivity(user, 'SELLER_ORDER_CANCEL', `Le vendeur a annulé la commande ${orderId}.`);
                 return updatedOrders;
             } else {
                 alert("Cette commande ne peut pas être annulée à ce stade.");
@@ -531,6 +541,53 @@ export const useSiteData = () => {
         
         return newStore;
     }, [setAllStores, setAllNotifications, logActivity, siteSettings.requiredSellerDocuments]);
+    
+    const handleCancelOrder = useCallback((orderId: string, user: User) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId && o.userId === user.id && ['confirmed', 'ready-for-pickup'].includes(o.status)) {
+                logActivity(user, 'ORDER_CANCELLED', `Le client a annulé la commande ${orderId}.`);
+                return { ...o, status: 'cancelled' };
+            }
+            return o;
+        }));
+    }, [setAllOrders, logActivity]);
+
+    const handleRequestRefund = useCallback((orderId: string, reason: string, evidenceUrls: string[], user: User) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId && o.userId === user.id && o.status === 'delivered') {
+                logActivity(user, 'REFUND_REQUESTED', `Le client a demandé un remboursement pour la commande ${orderId}. Motif : ${reason}`);
+                setAllNotifications(prevN => [...prevN, {
+                    id: `notif-${Date.now()}`,
+                    userId: 'admin-1', // Simplified: notify first admin
+                    message: `Nouveau litige pour la commande ${orderId}.`,
+                    link: { page: 'superadmin-dashboard' },
+                    isRead: false,
+                    timestamp: new Date().toISOString(),
+                }]);
+                return {
+                    ...o,
+                    status: 'refund-requested',
+                    refundReason: reason,
+                    refundEvidenceUrls: evidenceUrls,
+                    disputeLog: [{ author: 'customer', message: reason, date: new Date().toISOString() }],
+                };
+            }
+            return o;
+        }));
+    }, [setAllOrders, logActivity, setAllNotifications]);
+    
+    const handleCustomerDisputeMessage = useCallback((orderId: string, message: string, user: User) => {
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId && o.userId === user.id) {
+                logActivity(user, 'DISPUTE_MESSAGE_SENT', `Nouveau message de litige pour la commande ${orderId}.`);
+                return {
+                    ...o,
+                    disputeLog: [...(o.disputeLog || []), { author: 'customer', message, date: new Date().toISOString() }],
+                };
+            }
+            return o;
+        }));
+    }, [setAllOrders, logActivity]);
 
     const handleAddProductToStory = useCallback((productId: string, user: User) => {
         if (user.role !== 'seller' || !user.shopName) {
@@ -588,8 +645,7 @@ export const useSiteData = () => {
         alert("Story ajoutée pour 24h !");
     }, [setAllStores, logActivity]);
 
-
-    return {
+    const memoizedValue = useMemo(() => ({
         allProducts, setAllProducts,
         allCategories, setAllCategories,
         allStores, setAllStores,
@@ -656,5 +712,29 @@ export const useSiteData = () => {
         createStoreAndNotifyAdmin,
         handleAddProductToStory,
         handleAddStory,
-    };
+        // Customer actions
+        handleCancelOrder,
+        handleRequestRefund,
+        handleCustomerDisputeMessage,
+    }), [
+        allProducts, setAllProducts, allCategories, setAllCategories, allStores, setAllStores, allOrders, setAllOrders,
+        flashSales, setFlashSales, allPickupPoints, setAllPickupPoints, siteSettings, setSiteSettings, siteContent, setSiteContent,
+        allAdvertisements, setAllAdvertisements, allPaymentMethods, setAllPaymentMethods, allShippingPartners, setAllShippingPartners,
+        siteActivityLogs, setSiteActivityLogs, payouts, setPayouts, allPromoCodes, setAllPromoCodes, allNotifications, setAllNotifications,
+        allTickets, setAllTickets, allAnnouncements, setAllAnnouncements, dismissedAnnouncements, setDismissedAnnouncements,
+        recentlyViewedIds, setRecentlyViewedIds, allZones, setAllZones,
+        handleAdminUpdateUser, handleDismissAnnouncement, handleSetPromotion, handleConfirmOrder, handleMarkNotificationAsRead,
+        handlePayoutSeller, handleAddAdvertisement, handleUpdateAdvertisement, handleDeleteAdvertisement, handleAssignAgentToOrder,
+        handleSendBulkEmail, logActivity, handleApproveStore, handleRejectStore, handleToggleStoreStatus, handleWarnStore,
+        handleAdminAddCategory, handleAdminDeleteCategory, handleSaveFlashSale, handleUpdateFlashSaleSubmissionStatus,
+        handleBatchUpdateFlashSaleStatus, handleCreateOrUpdateAnnouncement, handleDeleteAnnouncement, handleAddPickupPoint,
+        handleUpdatePickupPoint, handleDeletePickupPoint, handleAdminReplyToTicket, handleAdminUpdateTicketStatus,
+        handleReviewModeration, handleCreateUserByAdmin, handleUpdateOrderStatus, handleAdminUpdateCategory,
+        handleUpdateDocumentStatus, handleResolveDispute, handleDepotCheckIn, handleUpdateSchedule,
+        handleSellerUpdateOrderStatus, handleSellerCancelOrder, handleCreateOrUpdateCollection, handleDeleteCollection,
+        handleUpdateStoreProfile, handleUpdateDeliveryStatus, createStoreAndNotifyAdmin, handleAddProductToStory, handleAddStory,
+        handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage
+    ]);
+
+    return memoizedValue;
 };

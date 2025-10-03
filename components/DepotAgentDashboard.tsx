@@ -46,21 +46,21 @@ const ScannerModal: React.FC<{
         html5QrCodeRef.current = html5QrCode;
         const startScanner = async () => {
             try {
-                await html5QrCode.start(
-                    { facingMode: "environment" },
-                    { fps: 10, qrbox: { width: 250, height: 250 } },
-                    // FIX: Wrap onScanSuccess to avoid type mismatch between scanner library and component prop.
-                    (decodedText: string) => onScanSuccess(decodedText),
-                    // FIX: The scanner's error callback expects at least one argument.
-                    (errorMessage: string) => {
-                        // This callback is called frequently when no QR code is found.
-                        // We can ignore it to avoid spamming the console.
-                    } // Ignored error callback
-                );
+                if (!html5QrCodeRef.current?.isScanning) {
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        { fps: 10, qrbox: { width: 250, height: 250 } },
+                        (decodedText: string) => onScanSuccess(decodedText),
+                        (errorMessage: string) => {}
+                    );
+                }
             } catch (err) { console.error("Scanner start error", err); }
         };
-        startScanner();
+        
+        const timer = setTimeout(startScanner, 100);
+
         return () => {
+            clearTimeout(timer);
             if (html5QrCodeRef.current?.isScanning) {
                 html5QrCodeRef.current.stop().catch((err: any) => console.error("Scanner stop error", err));
             }

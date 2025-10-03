@@ -1,3 +1,5 @@
+
+
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, Category, Variant, VariantDetail, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -346,13 +348,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
 
         Génère uniquement la description du produit.`;
         
-        // FIX: Use ai.models.generateContent with the correct model and response parsing.
         const response = await ai.models.generateContent({
             model: 'gemini-2.5-flash',
             contents: prompt
         });
 
-        // FIX: Access the 'text' property directly.
         const description = response.text;
         setProduct(prev => ({ ...prev, description }));
     } catch (error) {

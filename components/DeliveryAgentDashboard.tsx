@@ -1,11 +1,3 @@
-
-
-
-
-
-
-
-
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,6 +47,11 @@ const ScannerModal: React.FC<{
 }> = ({ onClose, onScanSuccess, t }) => {
     const html5QrCodeRef = useRef<any>(null);
     const [scannerError, setScannerError] = useState<string | null>(null);
+    
+    const onScanSuccessRef = useRef(onScanSuccess);
+    onScanSuccessRef.current = onScanSuccess;
+    const tRef = useRef(t);
+    tRef.current = t;
 
     useEffect(() => {
         if (typeof Html5Qrcode === 'undefined') {
@@ -64,32 +61,26 @@ const ScannerModal: React.FC<{
 
         const html5QrCode = new Html5Qrcode("reader");
         html5QrCodeRef.current = html5QrCode;
-        const config = { fps: 10, qrbox: { width: 250, height: 250 }, aspectRatio: 1.0 };
+        const config = { fps: 10, qrbox: { width: 250, height: 250 } };
 
         const startScanner = async () => {
             try {
-                const cameras = await Html5Qrcode.getCameras();
-                if (cameras && cameras.length) {
-                    if (!html5QrCodeRef.current?.isScanning) {
-                        setScannerError(null);
-                        await html5QrCode.start(
-                            { facingMode: "environment" },
-                            config,
-                            (decodedText: string) => {
-                               onScanSuccess(decodedText);
-                            },
-                            // FIX: The scanner's error callback expects at least one argument, but was provided an empty function.
-                            (errorMessage: string) => {
-                                // This callback is called frequently when no QR code is found and can be ignored.
-                            }
-                        );
-                    }
-                } else {
-                     setScannerError(t('deliveryDashboard.noCamera'));
+                if (!html5QrCodeRef.current?.isScanning) {
+                    setScannerError(null);
+                    await html5QrCode.start(
+                        { facingMode: "environment" },
+                        config,
+                        (decodedText: string) => {
+                           onScanSuccessRef.current(decodedText);
+                        },
+                        (errorMessage: string) => {
+                            // This callback is called frequently when no QR code is found and can be ignored.
+                        }
+                    );
                 }
             } catch (err) {
                 console.error("Failed to start scanner", err);
-                setScannerError(t('deliveryDashboard.scannerError'));
+                setScannerError(tRef.current('deliveryDashboard.scannerError'));
             }
         };
 
@@ -101,7 +92,7 @@ const ScannerModal: React.FC<{
                 html5QrCodeRef.current.stop().catch((err: any) => console.error("Error stopping scanner", err));
             }
         };
-    }, [onClose, onScanSuccess, t]);
+    }, []);
 
     return (
         <div className="fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4">
@@ -220,18 +211,17 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
             }
             if(start) {
                 routingControlRef.current = L.Routing.control({
-                    waypoints: [L.latLng(start), L.latLng(end)],
+                    waypoints: [start, end],
                     routeWhileDragging: false,
                     show: false,
-                    createMarker: function() { return null; }
+                    createMarker: () => null
                 }).addTo(leafletMap.current);
             } else {
                  L.marker(end).addTo(leafletMap.current);
                  leafletMap.current.setView(end, 14);
             }
         }
-         // Invalidate map size after a short delay to ensure it renders correctly
-        setTimeout(() => leafletMap.current?.invalidateSize(true), 100);
+        setTimeout(() => leafletMap.current?.invalidateSize(false), 100);
     }, [start, end]);
 
     return <div ref={mapRef} className="h-48 w-full rounded-md mt-4 z-0"></div>;
@@ -263,6 +253,9 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
         setModalState(null);
     }, [onUpdateDeliveryStatus]);
     
+    const handleScannerClose = useCallback(() => {
+        setIsScannerOpen(false);
+    }, []);
     const handleScanSuccess = useCallback((decodedText: string) => {
         setIsScannerOpen(false);
         const order = allOrders.find(o => o.trackingNumber === decodedText);
@@ -279,10 +272,6 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
              alert(`Action non valide pour le statut actuel de la commande (${statusTranslations[order.status]}).`);
         }
     }, [allOrders, onUpdateDeliveryStatus]);
-
-    const handleScannerClose = useCallback(() => {
-        setIsScannerOpen(false);
-    }, []);
 
     const getRouteDetails = useCallback((order: Order) => {
         let start: L.LatLng | undefined;

@@ -349,7 +349,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                  </button>
               )}
               {canCancel && (
-                 <button onClick={() => onCancelOrder(order.id)} className="flex-1 w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 flex items-center justify-center gap-2">
+                 <button onClick={() => { if(window.confirm("Êtes-vous sûr de vouloir annuler cette commande ?")) onCancelOrder(order.id) }} className="flex-1 w-full bg-red-500 text-white font-bold py-3 rounded-lg hover:bg-red-600 flex items-center justify-center gap-2">
                      <XIcon className="w-5 h-5"/> Annuler la commande
                  </button>
               )}

@@ -1,3 +1,7 @@
+
+
+
+
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
@@ -237,7 +241,6 @@ Please provide a helpful response as the KMER ZONE assistant.
             [chatId]: [...(prev[chatId] || []), initialAssistantMessage]
         }));
         
-        // FIX: Use ai.models.generateContentStream with the correct model.
         const response = await ai.models.generateContentStream({
             model: 'gemini-2.5-flash',
             contents: prompt,
@@ -245,7 +248,6 @@ Please provide a helpful response as the KMER ZONE assistant.
 
         let fullText = '';
         for await (const chunk of response) {
-            // FIX: Access the 'text' property directly instead of calling it as a function.
             const chunkText = chunk.text;
             if (chunkText) {
                 fullText += chunkText;

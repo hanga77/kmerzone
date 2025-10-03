@@ -7,7 +7,7 @@ interface AuthContextType {
   allUsers: User[];
   login: (email: string, password?: string) => User | null;
   logout: () => void;
-  register: (name: string, email: string, password?: string, accountType?: 'customer' | 'seller') => User | null;
+  register: (name: string, email: string, password?: string, accountType?: 'customer' | 'seller', phone?: string, birthDate?: string, address?: Omit<Address, 'id' | 'isDefault'>) => User | null;
   updateUser: (updates: Partial<Omit<User, 'id' | 'email' | 'role' | 'loyalty'>>) => void;
   resetPassword: (email: string, newPassword: string) => void;
   updateUserInfo: (userId: string, updates: Partial<User>) => void;
@@ -104,7 +104,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     return null;
   }, [allUsers, setLoggedInUserId]);
 
-  const register = useCallback((name: string, email: string, password?: string, accountType: 'customer' | 'seller' = 'customer'): User | null => {
+  const register = useCallback((name: string, email: string, password?: string, accountType: 'customer' | 'seller' = 'customer', phone?: string, birthDate?: string, address?: Omit<Address, 'id'|'isDefault'>): User | null => {
       const existingUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
       if (existingUser) {
           alert("Un utilisateur avec cet email existe déjà.");
@@ -122,7 +122,13 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           role: accountType,
           loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
           password: password,
-          addresses: [],
+          phone,
+          birthDate,
+          addresses: address ? [{
+            ...address,
+            id: `addr_${Date.now()}`,
+            isDefault: true
+          }] : [],
           followedStores: [],
           notificationPreferences: defaultNotificationPrefs,
       };

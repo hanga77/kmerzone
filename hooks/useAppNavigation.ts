@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import type { Page, Product, Category, Store, Order, Notification, SiteContent } from '../types';
 
 export const useAppNavigation = (allCategories: Category[], allStores: Store[], allOrders: Order[], allSiteContent: SiteContent[]) => {
@@ -8,7 +8,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const [selectedStore, setSelectedStore] = useState<Store | null>(null);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
-    const [infoPageContent, setInfoPageContent] = useState<{ title: string; content: string } | null>(null);
+    const [infoPageContent, setInfoPageContent] = useState<{ title: string; content: string; slug?: string; } | null>(null);
     const [viewingStoriesFor, setViewingStoriesFor] = useState<Store | null>(null);
     const [accountPageTab, setAccountPageTab] = useState<string>('dashboard');
     const [sellerDashboardTab, setSellerDashboardTab] = useState<string>('overview');
@@ -76,15 +76,23 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     }, []);
 
     const navigateToInfoPage = useCallback((slug: string) => {
+        if (slug === 'sell') {
+            navigateToBecomeSeller();
+            return;
+        }
+
         const content = allSiteContent.find(c => c.slug === slug);
         if (content) {
             setInfoPageContent(content);
         } else {
             console.warn(`Info page content for slug '${slug}' not found.`);
-            setInfoPageContent(null);
+            setInfoPageContent({ 
+                title: 'Page en construction', 
+                content: '<h2>Contenu bientôt disponible</h2><p>Cette page est actuellement en cours de construction. Revenez bientôt !</p>' 
+            });
         }
         setPage('info');
-    }, [allSiteContent]);
+    }, [allSiteContent, navigateToBecomeSeller]);
     
     const handleNavigateFromNotification = useCallback((link: Notification['link']) => {
         if (!link) return;
@@ -106,7 +114,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     
     const handleCloseStories = useCallback(() => setViewingStoriesFor(null), []);
 
-    return {
+    return useMemo(() => ({
         page,
         setPage,
         selectedProduct,
@@ -147,5 +155,16 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         handleNavigateFromNotification,
         handleCloseStories,
         navigateToVisualSearch
-    };
+    }), [
+        page, selectedProduct, selectedCategoryId, selectedStore, selectedOrder, searchQuery,
+        infoPageContent, viewingStoriesFor, accountPageTab, sellerDashboardTab,
+        navigateToHome, navigateToCart, navigateToCheckout, navigateToStores, navigateToStoresMap,
+        navigateToBecomeSeller, navigateToSellerDashboard, navigateToSellerProfile,
+        navigateToSuperAdminDashboard, navigateToOrderHistory, navigateToPromotions,
+        navigateToFlashSales, navigateToWishlist, navigateToDeliveryAgentDashboard,
+        navigateToDepotAgentDashboard, navigateToComparison, navigateToBecomePremium,
+        navigateToProduct, navigateToCategory, navigateToVendorPage, navigateToOrderDetail,
+        navigateToAccount, handleSearch, navigateToInfoPage, handleNavigateFromNotification,
+        handleCloseStories, navigateToVisualSearch, setSelectedOrder, setViewingStoriesFor
+    ]);
 };

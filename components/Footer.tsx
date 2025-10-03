@@ -34,6 +34,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, so
               <li><button onClick={() => onNavigate('careers')} className="text-gray-400 hover:text-white">{t('footer.careers')}</button></li>
               <li><button onClick={() => onNavigate('terms-of-service')} className="text-gray-400 hover:text-white">{t('footer.terms')}</button></li>
               <li><button onClick={() => onNavigate('privacy-policy')} className="text-gray-400 hover:text-white">{t('footer.privacy')}</button></li>
+              <li><button onClick={() => onNavigate('sitemap')} className="text-gray-400 hover:text-white">Plan du site</button></li>
             </ul>
           </div>
 

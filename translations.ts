@@ -809,5 +809,816 @@ export const translations = {
       checkEmailDescription: "Si un compte existe pour {0}, vous y trouverez un lien pour réinitialiser votre mot de passe.",
       close: "Fermer"
     }
+  },
+  en: {
+    app: {
+        passwordResetEmailSent: "If an account exists for {0}, you will find a link to reset your password there.",
+    },
+    common: {
+      backToHome: "Back to Home",
+      save: "Save",
+      cancel: "Cancel",
+      actions: "Actions",
+      status: "Status",
+      price: "Price",
+      stock: "Stock",
+      product: "Product",
+      date: "Date",
+      total: "Total",
+      customer: "Customer",
+      orderId: "Order ID",
+      edit: "Edit",
+      delete: "Delete",
+      warn: "Warn",
+      approve: "Approve",
+      reject: "Reject",
+      all: "All",
+      days7: "7 days",
+      days30: "30 days",
+      days90: "90 days",
+    },
+    orderStatus: {
+      confirmed: 'Confirmed',
+      'ready-for-pickup': 'Ready for Pickup',
+      'picked-up': 'Picked Up',
+      'at-depot': 'At Depot',
+      'out-for-delivery': 'Out for Delivery',
+      delivered: 'Delivered',
+      cancelled: 'Cancelled',
+      'refund-requested': 'Dispute',
+      refunded: 'Refunded',
+      returned: 'Returned',
+      'depot-issue': 'Depot Issue',
+      'delivery-failed': 'Delivery Failed'
+    },
+    header: {
+      searchPlaceholder: "Search for a product...",
+      login: "Login",
+      myAccount: "My Account",
+      myOrders: "My Orders",
+      wishlist: "Wishlist",
+      messages: "Messages",
+      cart: "Cart",
+      categories: "Categories",
+      promotions: "Promotions",
+      flashSales: "Flash Sales",
+      stores: "Stores",
+      becomeSeller: "Become a Seller",
+      becomePremium: "Go Premium",
+      notifications: "Notifications",
+      superadminDashboard: "Superadmin Dashboard",
+      sellerDashboard: "Seller Dashboard",
+      sellerProfile: "Store Profile",
+      deliveryDashboard: "Delivery Dashboard",
+      depotDashboard: "Depot Dashboard",
+      logout: "Logout",
+      noNotifications: "No notifications.",
+      visualSearch: "Visual Search",
+      followedStores: "Followed Stores",
+      support: "Support",
+      backToHome: "Back to Home"
+    },
+    footer: {
+      aboutUs: "About Us",
+      contact: "Contact",
+      faq: "FAQ",
+      careers: "Careers",
+      terms: "Terms of Service",
+      privacy: "Privacy Policy",
+      forSellers: "For Sellers",
+      sellOnKmerZone: "Sell on KMER ZONE",
+      trainingCenter: "Training Center",
+      logistics: "Logistics & Delivery",
+      followUs: "Follow Us",
+      paymentMethods: "Payment Methods",
+      copyright: "© {0} {1}. All rights reserved.",
+      quickLinks: "Quick Links",
+      aboutKmerZone: "The best of Cameroon, at your fingertips. Our mission is to connect local merchants with consumers."
+    },
+    home: {
+        heroTitle: "The Best of Cameroon, Delivered to You.",
+        heroSubtitle: "The largest selection of local and international products, just a click away.",
+        startShopping: "Start Shopping",
+        storiesTitle: "Store Stories",
+        recommendedForYou: "Recommended for You",
+        promotionsTitle: "Current Promotions",
+        categoriesTitle: "Browse by Category",
+        popularProducts: "Our Popular Products",
+        madeInCameroonTitle: "Local Pride: Support \"Made in Cameroon\"",
+        madeInCameroonSubtitle: "Discover authentic products, crafted with passion by our local artisans and producers. Every purchase supports our economy.",
+        recentlyViewed: "Recently Viewed",
+        howItWorksTitle: "Simple, Fast, and Reliable",
+        howItWorksStep1Title: "1. Order",
+        howItWorksStep1Text: "Choose from thousands of products and add them to your cart.",
+        howItWorksStep2Title: "2. Pay Securely",
+        howItWorksStep2Text: "Use Orange Money or MTN Mobile Money for a 100% secure payment.",
+        howItWorksStep3Title: "3. Track Your Delivery",
+        howItWorksStep3Text: "Follow your delivery driver in real-time to your door.",
+        howItWorksStep4Title: "4. Give Feedback",
+        howItWorksStep4Text: "Rate products and sellers to help the community.",
+        featuredStores: "Our Partner Stores"
+    },
+     accountPage: {
+      dashboard: "Dashboard",
+      profile: "My Profile",
+      addresses: "My Addresses",
+      orders: "My Orders",
+      followedStores: "Followed Stores",
+      support: "Customer Support",
+      notifications: "Notifications",
+      security: "Security",
+      back: "Back",
+      welcome: "Welcome, {0}!",
+      loyaltyStatus: "Loyalty Status",
+      loyaltyMember: "You are a {0} member.",
+      totalOrders: "Total orders",
+      lastOrder: "Last Order",
+      noRecentOrder: "No recent orders.",
+      viewDetails: "View details",
+      followedStoresTitle: "Followed Stores",
+      noFollowedStores: "You are not following any stores.",
+      manageStores: "Manage my stores",
+      editProfile: "Edit Profile",
+      save: "Save",
+      fullName: "Full Name",
+      phone: "Main Phone",
+      birthDate: "Date of Birth",
+      gender: "Gender",
+      preferNotToSay: "Prefer not to say",
+      male: "Male",
+      female: "Female",
+      other: "Other",
+      addNewAddress: "Add a new address",
+      default: "Default",
+      changePassword: "Change my password",
+      oldPassword: "Old password",
+      newPassword: "New password",
+      confirmNewPassword: "Confirm new password",
+      update: "Update",
+      passwordMismatch: "New passwords do not match.",
+      passwordIncorrect: "Old password is incorrect.",
+      passwordSuccess: "Password updated successfully!",
+      notificationsTitle: "Notifications",
+      orderUpdates: "My order updates",
+      promotions: "Promotions and flash sales",
+      newsletters: "KMER ZONE Newsletters",
+      savePreferences: "Save preferences",
+      preferencesSaved: "Preferences saved!",
+      createTicket: "Create a new ticket",
+      ticketSubject: "Subject",
+      linkToOrder: "(Optional) Link to an order",
+      describeProblem: "Describe your issue...",
+      send: "Send",
+      backToList: "< Back to list",
+      yourReply: "Your reply...",
+    },
+    becomeSeller: {
+      title: "Become a Seller on KMER ZONE",
+      subtitle: "Join our community of merchants and grow your business online.",
+      step1Title: "1. Your Store Information",
+      shopNameLabel: "Store Name*",
+      shopLogoLabel: "Store Logo*",
+      upload: "Upload",
+      step2Title: "2. Your Contact Information",
+      firstNameLabel: "First Name*",
+      lastNameLabel: "Last Name*",
+      phoneLabel: "Phone*",
+      step3Title: "3. Store Address",
+      cityLabel: "City*",
+      neighborhoodLabel: "Neighborhood",
+      addressLabel: "Full Physical Address (with landmark)*",
+      gpsLabel: "GPS Location",
+      gpsDescription: "Click on the map to place a marker at your store's exact location.",
+      findMyPosition: "Find my position",
+      requiredDocsTitle: "Required Documents",
+      requiredDocsDescription: "After submitting your application, you will need to upload the following documents from your seller dashboard:",
+      submitCandidacy: "Submit my application",
+      errors: {
+        shopName: "Store name is required.",
+        firstName: "First name is required.",
+        lastName: "Last name is required.",
+        phone: "Phone number is required.",
+        address: "Physical address is required.",
+        logo: "A logo is required."
+      }
+    },
+    sellerSubscription: {
+      title: "Congratulations and Welcome!",
+      subtitle: "Your store is almost ready. Choose the plan that best fits your ambitions to finalize your registration.",
+      standardTitle: "Standard Seller",
+      standardDescription: "Ideal for artisans and small shops just starting out.",
+      premiumTitle: "Premium Seller",
+      premiumDescription: "For established stores looking to accelerate their growth.",
+      superPremiumTitle: "Super Premium (Enterprise)",
+      superPremiumDescription: "Designed for large businesses and well-known brands.",
+      standardFeatures: "Standard visibility|Basic catalog management ({0} products)|{1}% commission|Email support",
+      premiumFeatures: "All Standard benefits|Featured in categories|{0} products|Commission reduced to {1}%|Priority support|Advanced analytics",
+      superPremiumFeatures: "All Premium benefits|Maximum visibility on homepage|{0} products|Commission reduced to {1}%|Dedicated assistance|Photo service included",
+      selectPlan: "Choose This Plan"
+    },
+    sellerDashboard: {
+      tabs: {
+        overview: "Overview",
+        products: "Products",
+        collections: "Collections",
+        orders: "Orders",
+        reviews: "Customer Reviews",
+        promotions: "Promotions",
+        flashSales: "Flash Sales",
+        analytics: "Analytics",
+        payouts: "Payouts",
+        delivery: "Shipping",
+        profile: "Store Profile",
+        subscription: "Subscription",
+        documents: "Documents",
+        stories: "Stories",
+        chat: "Messages",
+        support: "Support",
+      },
+      premiumFeatureTooltip: "Upgrade to a Premium plan to unlock this feature",
+      overview: {
+        title: "Store Overview: {0}",
+        totalRevenue: "Total Revenue (Delivered)",
+        pendingOrders: "Pending Orders",
+        status: "Status",
+        warnings: "Recent Warnings",
+        notifications: "Notifications",
+        noNotifications: "No new notifications.",
+      },
+       products: {
+        title: "My Products ({0})",
+        addProduct: "Add Product",
+        table: {
+          product: "Product",
+          price: "Price",
+          stock: "Stock",
+          status: "Status",
+          actions: "Actions",
+        },
+        statusOptions: {
+          published: "Published",
+          draft: "Draft",
+          archived: "Archived"
+        },
+        actions: {
+          promote: "Set promotion",
+          edit: "Edit",
+          delete: "Delete"
+        },
+        noProducts: "You don't have any products. Click \"Add Product\" to get started."
+      },
+      collections: {
+        title: "My Collections",
+        create: "Create Collection",
+        edit: "Edit",
+        createTitle: "Create a Collection",
+        editTitle: "Edit Collection",
+        name: "Collection name",
+        description: "Description (optional)",
+        selectProducts: "Select products",
+        noCollections: "You don't have any collections. Create one to group your products!",
+      },
+      orders: {
+        title: "My Orders ({0})",
+        table: {
+          orderId: "Order ID",
+          customer: "Customer",
+          total: "Total",
+          status: "Status",
+          action: "Action"
+        },
+        details: "Details",
+        printSlip: "Print Slip",
+        customerInfo: "Customer Information",
+        items: "Items",
+        cancelOrder: "Cancel Order",
+        cancelConfirm: "Are you sure you want to cancel this order? This action is irreversible.",
+        disputeNotice: "This order is under dispute. An administrator is reviewing the situation.",
+        markReady: "Mark as Ready for Pickup"
+      },
+      reviews: {
+        title: "Customer Reviews",
+        rating: "{0}/5 by {1}",
+        yourReply: "Your reply:",
+        reply: "Reply",
+        send: "Send",
+      },
+      promotions: {
+        title: "Promo Codes",
+        createForm: {
+          code: "PROMOCODE",
+          value: "Value (10 or 1000)",
+          type_percentage: "%",
+          type_fixed: "FCFA",
+          create: "Create Code"
+        }
+      },
+       flashSales: {
+        title: "Flash Sales",
+        endsOn: "Ends on: {0}",
+        submitProduct: "Submit a product",
+        chooseProduct: "Choose a product",
+        flashPrice: "Flash Price",
+        submit: "Submit"
+      },
+      payouts: {
+        title: "Payout History",
+        table: {
+          date: "Date",
+          amount: "Amount"
+        }
+      },
+      documents: {
+        title: "My Documents",
+        replace: "Replace",
+        upload: "Upload",
+        rejectionReason: "Rejection reason: {0}"
+      },
+      support: {
+        title: "Seller Support",
+        subject: "Subject of your request",
+        describe: "Describe your issue...",
+        linkOrder: "Link to an order (optional)",
+        sendTicket: "Send Ticket"
+      },
+      shipping: {
+        title: "Shipping Settings",
+        partnersTitle: "Partner Carriers",
+        partnersDescription: "Select the carriers you want to offer to your customers.",
+        premium: "Premium",
+        customRatesTitle: "Custom Shipping Rates",
+        customRatesDescription: "Leave empty to use the platform's default rates.",
+        localRate: "Local delivery (same city) (FCFA)",
+        nationalRate: "National delivery (other city) (FCFA)",
+        freeShippingTitle: "Free Shipping",
+        freeShippingDescription: "Offer free shipping for orders from your store above a certain amount.",
+        freeShippingThreshold: "Free shipping threshold (FCFA)",
+        saveChanges: "Save Changes",
+        saved: "Saved!",
+      },
+      subscription: {
+        title: "Manage your subscription",
+        subtitle: "Upgrade to a higher plan to unlock new features and boost your sales.",
+        currentPlan: "Your current plan",
+        upgrade: "Upgrade",
+        lowerPlan: "Lower plan",
+      },
+       upgrade: {
+        title: "Unlock the \"{0}\" feature",
+        description: "Upgrade to Premium to access advanced tools and boost your visibility.",
+        button: "I want to go Premium"
+      },
+      analytics: {
+        backToDashboard: "Back to Dashboard",
+        title: "Sales Analytics",
+        period: "Period:",
+        totalRevenue: "Total Revenue (Delivered)",
+        vsPrevious: "- vs previous period",
+        deliveredOrders: "Delivered Orders",
+        itemsSold: "Items Sold",
+        averageBasket: "Average Basket",
+        salesEvolution: "Sales Evolution",
+        top5Products: "Top 5 Products (by revenue)",
+        sold: "sold",
+        noSalesData: "No sales data for this period.",
+        lowStockAlerts: "Low Stock Alerts (< 5)",
+        remaining: "remaining",
+        noLowStock: "No products with low stock.",
+      },
+      profile: {
+        change: "Change"
+      }
+    },
+    deliveryDashboard: {
+      title: "Delivery Dashboard",
+      agent: "Agent",
+      logout: "Logout",
+      status: "Status",
+      available: "Available",
+      unavailable: "Unavailable",
+      setUnavailable: "Go unavailable",
+      setAvailable: "Go available",
+      activeMissions: "Active Missions",
+      scanPackage: "Scan a Package",
+      currentMissions: "Current Missions",
+      history: "History",
+      showMap: "Show Map",
+      hideMap: "Hide Map",
+      pickedUpFromSeller: "Picked up from seller",
+      delivered: "Delivered",
+      deliveryFailed: "Delivery Failed",
+      scannerError: "Could not activate camera. Please check permissions.",
+      noCamera: "No camera found.",
+      cancel: "Cancel",
+      confirmDelivery: "Confirm Delivery",
+      order: "Order",
+      recipientName: "Recipient's name*",
+      confirm: "Confirm",
+      reportFailure: "Report Delivery Failure",
+      reason: "Reason*",
+      clientAbsent: "Client absent",
+      wrongAddress: "Wrong address",
+      packageRefused: "Package refused",
+      details: "Additional details*",
+      confirmFailure: "Confirm Failure",
+    },
+    depotDashboard: {
+      title: "Depot Dashboard - Zone {0}",
+      manager: "Depot Manager",
+      logout: "Logout",
+      overview: "Overview",
+      parcels: "Parcel Tracking",
+      inventory: "Inventory",
+      drivers: "Drivers",
+      agents: "Agents",
+      sellers: "Sellers",
+      reports: "Reports",
+      parcelsToAssign: "Parcels to Assign",
+      parcelsInDelivery: "Parcels in Delivery",
+      availableAgents: "Available Drivers",
+      toAssign: "To Assign ({0})",
+      inDelivery: "In Delivery ({0})",
+      issues: "Issues ({0})",
+      client: "Client",
+      assign: "Assign",
+      table: {
+        orderId: "Order ID",
+        customer: "Customer",
+        location: "Location",
+        numItems: "# Items",
+        agent: "Driver",
+        seller: "Seller",
+        parcels: "Parcels",
+        availability: "Availability",
+        performance: "Performance",
+      },
+      noParcelsInStock: "No parcels in stock at the moment.",
+      manageAgents: "Manage Agents for Zone {0}",
+      successRate: "Success rate",
+      deliveriesSucceeded: "{0} / {1} successful deliveries",
+      sellersWithParcels: "Sellers with Parcels at Depot",
+      reportsWIP: "Reports section is under construction.",
+      assignDriver: "Assign a Driver",
+      chooseAvailableDriver: "-- Choose an available driver --",
+      scanAndCheckIn: "Scan & Check-In a Parcel",
+      checkInParcel: "Check-In a Parcel",
+      storageLocation: "Storage Location (e.g., A3-S2)",
+      checkIn: "Check-In",
+      inventoryPanel: {
+        totalSlots: "Total Slots",
+        occupiedSlots: "Occupied Slots",
+        freeSlots: "Free Slots",
+        currentInventory: "Current Parcel Inventory",
+        freeLocations: "Free Locations",
+        noLayout: "Warehouse layout is not configured.",
+        searchPlaceholder: "Search by ID, customer, or location...",
+        recentMovements: "Recent Inventory Movements",
+        table: {
+          action: "Action",
+          details: "Details",
+          timestamp: "Timestamp",
+          entry: "Entry",
+          exit: "Exit"
+        }
+      },
+      noData: "No data to display.",
+      schedule: "Work Schedule",
+      saveSchedule: "Save Schedule",
+      scheduleSaved: "Schedule saved!",
+      weekdays: {
+        monday: "Monday",
+        tuesday: "Tuesday",
+        wednesday: "Wednesday",
+        thursday: "Thursday",
+        friday: "Friday",
+        saturday: "Saturday",
+        sunday: "Sunday"
+      },
+      shifts: {
+        morning: "Morning",
+        afternoon: "Afternoon",
+        night: "Night",
+        off: "Off"
+      },
+      reportsPanel: {
+        title: "Depot Performance Reports",
+        selectPeriod: "Select period:",
+        parcelsCheckedIn: "Parcels Checked-In",
+        parcelsShippedOut: "Parcels Shipped Out",
+        avgProcessingTime: "Avg. Processing Time",
+        deliverySuccessRate: "Delivery Success Rate",
+        dailyFlow: "Daily Flow (In/Out)",
+        in: "In",
+        out: "Out",
+        topDrivers: "Top Drivers (by successful deliveries)",
+        driver: "Driver",
+        successfulDeliveries: "Successful Deliveries",
+        noData: "Not enough data for this period.",
+        hours: "hours"
+      }
+    },
+    superadmin: {
+      tabs: {
+        overview: "Overview",
+        orders: "Orders",
+        stores: "Stores",
+        users: "Users",
+        catalog: "Catalog",
+        marketing: "Marketing",
+        logistics: "Logistics",
+        payouts: "Payouts",
+        support: "Support",
+        reviews: "Reviews",
+        logs: "Logs",
+        settings: "Settings"
+      },
+      panelUnderConstruction: "The panel for \"{0}\" is under construction.",
+      overview: {
+        totalRevenue: "Total Revenue (Delivered)",
+        totalOrders: "Total Orders",
+        totalUsers: "Total Users",
+        pendingStores: "Pending Stores",
+        revenueLast7Days: "Revenue Last 7 Days",
+        orderStatuses: "Order Statuses",
+        recentOrders: "Recent Orders",
+        newUsers: "New Users"
+      },
+      users: {
+        title: "User Management ({0})",
+        searchPlaceholder: "Search by name or email...",
+        sendEmail: "Send Email ({0})",
+        create: "Create User",
+        table: {
+          name: "Name",
+          email: "Email",
+          role: "Role",
+          action: "Action"
+        },
+        form: {
+          editTitle: "Edit User",
+          createTitle: "Create User",
+          name: "Full Name",
+          role_customer: "Customer",
+          role_seller: "Seller",
+          role_delivery_agent: "Delivery Agent",
+          role_depot_agent: "Depot Agent",
+          role_depot_manager: "Depot Manager",
+          role_superadmin: "Super Admin",
+          assignedDepot: "Assigned Depot Point",
+          deliveryZone: "Delivery Zone",
+          noDepot: "-- Unassigned --",
+          noZone: "-- No zone --"
+        }
+      },
+      emailModal: {
+        title: "Send Bulk Email",
+        recipients: "Recipients: {0} selected user(s)",
+        useTemplate: "Use a template (optional)",
+        customEmail: "-- Write a custom email --",
+        subject: "Subject",
+        body: "Message Body",
+        variableInfo: "You can use the variable `{customerName}` which will be replaced with each recipient's name.",
+        send: "Send Email"
+      },
+      catalog: {
+        title: "Catalog Management",
+        addCategory: "Add a Category",
+        categoryName: "Category name",
+        parentCategory: "Parent category (optional)",
+        mainCategory: "-- Main category --",
+        add: "Add",
+        imageUrl: "Image URL"
+      },
+      marketing: {
+        tabs: {
+          flashSales: "Flash Sales",
+          ads: "Advertisements",
+          announcements: "Announcements"
+        },
+        createFlashSale: "Create Flash Sale",
+        addAd: "Add Advertisement",
+        createAnnouncement: "Create Announcement",
+        flashSaleForm: {
+          title: "Create Flash Sale Event",
+          name: "Event Name (e.g., Black Friday)",
+          startDate: "Start Date & Time",
+          endDate: "End Date & Time",
+          error_name: "Event name is required.",
+          error_startDate: "Start date and time are required.",
+          error_endDate: "End date and time are required.",
+          error_endDateAfterStart: "End date must be after the start date.",
+          error_endDatePast: "End date cannot be in the past.",
+          create: "Create Event"
+        },
+        flashSaleDetail: {
+          submissions: "Product Submissions",
+          approveAll: "Approve All",
+          rejectAll: "Reject All",
+          product: "Product",
+          seller: "Seller",
+          originalPrice: "Original Price",
+          flashPrice: "Flash Price"
+        },
+        adForm: {
+          imageUrl: "Image URL",
+          linkUrl: "Link URL",
+          activate: "Activate advertisement"
+        },
+        announcementForm: {
+          title: "Announcement Title",
+          content: "Announcement Content",
+          target_all: "All users",
+          target_customers: "Customers only",
+          target_sellers: "Sellers only",
+          activate: "Activate announcement"
+        }
+      },
+      stores: {
+        title: "Store Management",
+        tabs: {
+          pending: "Pending",
+          active: "Active",
+          suspended: "Suspended"
+        },
+        table: {
+          store: "Store",
+          seller: "Seller",
+          documents: "Documents",
+          location: "Location"
+        },
+        noStores: "No stores in this category.",
+        rejectionReason: "Reason for rejection:",
+        warnReason: "Reason for warning:"
+      },
+      orders: {
+        title: "Order Management",
+        tabs: {
+          all: "All Orders",
+          disputes: "Disputes"
+        },
+        searchPlaceholder: "Search by ID or customer...",
+        allStatuses: "All statuses",
+        noDisputes: "No ongoing disputes.",
+        evidence: "Evidence:",
+        rejectRequest: "Reject Request",
+        approveRefund: "Approve Refund"
+      },
+      logistics: {
+        title: "Logistics Management",
+        addPickupPoint: "Add Depot Point",
+        form: {
+          name: "Depot point name",
+          city: "City",
+          neighborhood: "Neighborhood",
+          street: "Street / Landmark"
+        },
+        staffModal: {
+          title: "Staff - {0}",
+          manager: "Manager",
+          noManager: "No manager assigned.",
+          staff: "Staff",
+          noStaff: "No agents assigned to this depot."
+        },
+        viewStaff: "View Staff"
+      },
+      payouts: {
+        title: "Seller Payouts",
+        commissionInfo: "Current commission rate: {0}% (Standard)",
+        balanceInfo: "Balance due is calculated on delivered orders, minus commission and previous payouts.",
+        table: {
+          store: "Store",
+          totalRevenue: "Total Revenue",
+          commissionDue: "Commission Due",
+          paidAmount: "Already Paid",
+          balanceDue: "Balance Due"
+        },
+        markAsPaid: "Mark as Paid",
+        noPending: "No pending payouts."
+      },
+      support: {
+        title: "Support Tickets ({0})",
+        detail: {
+          back: "< Back to list",
+          user: "User:",
+          replyPlaceholder: "Your reply...",
+          reply: "Reply"
+        },
+        status: {
+          open: "Open",
+          inProgress: "In Progress",
+          resolved: "Resolved"
+        }
+      },
+      reviews: {
+        title: "Review Moderation ({0})",
+        noPending: "No pending reviews for moderation.",
+        goodJob: "Great job!",
+        product: "Product:",
+        by: "By:",
+        on: "on"
+      },
+      logs: {
+        title: "Activity Logs",
+        filterPlaceholder: "Filter logs...",
+        performedAction: "performed action:",
+        details: "Details:",
+        noLogs: "No logs match your search."
+      },
+      settings: {
+        title: "Site Settings",
+        save: "Save Settings",
+        sections: {
+          identity: "Visual Identity",
+          features: "Features",
+          delivery: "Delivery",
+          sellerDocs: "Required Seller Documents",
+          sellerPlans: "Seller Plans",
+          loyalty: "Customer Loyalty Program",
+          seo: "SEO & Metadata",
+          content: "Page Content Management",
+          emails: "Email Templates",
+          maintenance: "Maintenance Mode",
+          footer: "Footer"
+        },
+        identity: {
+          logo: "Site Logo",
+          banner: "Homepage Banner",
+          upload: "Choose"
+        },
+        features: {
+          chat: "Enable customer-seller chat",
+          comparison: "Enable product comparison"
+        },
+        delivery: {
+          intraUrban: "Intra-urban base fee (FCFA)",
+          interUrban: "Inter-urban base fee (FCFA)",
+          perKg: "Additional cost per Kg (FCFA)",
+          premiumDiscount: "Premium delivery discount (%)"
+        },
+        plans: {
+          standard: "Standard Plan",
+          premium: "Premium Plan",
+          superPremium: "Super Premium Plan",
+          price: "Price (FCFA)",
+          duration: "Duration (days)",
+          limit: "Product limit",
+          commission: "Commission (%)",
+          photoService: "Photo service included",
+          homepageFeature: "Featured on homepage"
+        },
+        loyalty: {
+          enable: "Enable customer loyalty program",
+          premium: "Premium Customer Plan",
+          ordersRequired: "Number of orders required",
+          spendingRequired: "Total amount spent required (FCFA)",
+          caution: "Deposit amount (FCFA)",
+          benefits: "Benefits (one per line)",
+          premiumPlus: "Premium+ Customer Plan",
+          enablePremiumPlus: "Enable Premium+ plan",
+          annualFee: "Annual fee (FCFA)"
+        },
+        seo: {
+          defaultTitle: "Default Meta Title",
+          defaultDesc: "Default Meta Description",
+          ogImage: "Sharing Image URL (OpenGraph)"
+        },
+        content: {
+          pageTitle: "Page Title: {0}",
+          content: "Content"
+        },
+        emails: {
+          subject: "Email Subject",
+          body: "Email Body",
+          variables: "Available variables: {0}"
+        },
+        maintenance: {
+          enable: "Enable maintenance mode",
+          message: "Maintenance message"
+        },
+        footer: {
+          companyName: "Company Name (Copyright)",
+          iconUrl: "Icon URL"
+        }
+      }
+    },
+    forbidden: {
+      title: "Access Denied",
+      description: "Sorry, you do not have the necessary permissions to access this page.",
+      backHome: "Back to Home"
+    },
+    notFound: {
+      title: "Page Not Found",
+      description: "Sorry, the page you are looking for does not exist or has been moved.",
+      backHome: "Back to Home"
+    },
+    forgotPassword: {
+      title: "Forgot Password",
+      description: "Don't worry. Enter your email and we'll send you a reset link.",
+      emailLabel: "Email address",
+      sendLink: "Send Link",
+      checkEmailTitle: "Check your email",
+      checkEmailDescription: "If an account exists for {0}, you will find a link to reset your password there.",
+      close: "Close"
+    }
   }
 };
