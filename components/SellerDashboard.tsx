@@ -1,7 +1,8 @@
+
 import React, { useState, useEffect } from 'react';
-import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection, User } from '../types';
+import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection, User, ShippingSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { 
     ChartPieIcon, ShoppingBagIcon, TruckIcon, StarIcon, TagIcon, BoltIcon, 
     BarChartIcon, BanknotesIcon, BuildingStorefrontIcon, DocumentTextIcon, 
@@ -140,9 +141,12 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'flash-sales': return <FlashSalesPanel {...panelProps} />;
             case 'analytics': return <AnalyticsPanel sellerOrders={props.sellerOrders} sellerProducts={props.products} flashSales={props.flashSales} />;
             case 'payouts': return <PayoutsPanel {...panelProps} />;
-            case 'livraison': return <ShippingPanel onUpdate={props.onUpdateStoreProfile} {...panelProps} />;
-            case 'profile': return <ProfilePanel {...panelProps} />;
-            case 'subscription': return <SubscriptionPanel {...panelProps} />;
+// FIX: Wrap the onUpdateStoreProfile prop to match the expected signature of ShippingPanel's onUpdate prop.
+            case 'livraison': return <ShippingPanel onUpdate={(storeId, settings) => props.onUpdateStoreProfile(storeId, { shippingSettings: settings })} {...panelProps} />;
+// FIX: Pass the onUpdateStoreProfile prop as onUpdateProfile to the ProfilePanel.
+            case 'profile': return <ProfilePanel onUpdateProfile={props.onUpdateStoreProfile} {...panelProps} />;
+// FIX: Pass a wrapped onRequestUpgrade prop to SubscriptionPanel as onUpgrade.
+            case 'subscription': return <SubscriptionPanel onUpgrade={(level) => props.onRequestUpgrade(store.id, level)} {...panelProps} />;
             case 'documents': return <DocumentsPanel {...panelProps} />;
             case 'stories': return <StoriesPanel {...panelProps} />;
             case 'chat': return <ChatPanel />;

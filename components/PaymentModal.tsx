@@ -70,17 +70,23 @@ const PaymentModal: React.FC<PaymentModalProps> = ({ paymentRequest, paymentMeth
                 Choisissez un moyen de paiement
               </label>
               <div className="grid grid-cols-2 gap-3">
-                {paymentMethods.map(method => (
-                  <button
-                    key={method.id}
-                    onClick={() => setSelectedMethodId(method.id)}
-                    className={`p-3 border-2 rounded-lg flex items-center justify-center transition-colors ${
-                      selectedMethodId === method.id ? 'border-kmer-green' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
-                    }`}
-                  >
-                    {getPaymentIcon(method.id)}
-                  </button>
-                ))}
+                {paymentMethods.map(method => {
+                    const IconComponent = getPaymentIcon(method.id);
+                    return (
+                        <button
+                            key={method.id}
+                            onClick={() => setSelectedMethodId(method.id)}
+                            className={`p-3 border-2 rounded-lg flex items-center justify-center transition-colors h-16 ${
+                            selectedMethodId === method.id ? 'border-kmer-green' : 'border-gray-200 dark:border-gray-600 hover:border-gray-300'
+                            }`}
+                        >
+                            {method.imageUrl ? 
+                                <img src={method.imageUrl} alt={method.name} className="h-10 object-contain"/> : 
+                                IconComponent
+                            }
+                        </button>
+                    )
+                })}
               </div>
             </div>
 

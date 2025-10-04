@@ -1,5 +1,5 @@
 import React from 'react';
-import { LogoIcon } from './Icons';
+import { LogoIcon, OrangeMoneyLogo, MtnMomoLogo, VisaIcon, MastercardIcon, PaypalIcon } from './Icons';
 import type { PaymentMethod, SiteSettings } from '../types';
 import { useLanguage } from '../contexts/LanguageContext';
 
@@ -10,6 +10,14 @@ interface FooterProps {
   socialLinks: SiteSettings['socialLinks'];
   companyName: string;
 }
+
+const paymentIconMap: { [key: string]: React.FC<any> } = {
+    pm1: OrangeMoneyLogo,
+    pm2: MtnMomoLogo,
+    pm3: VisaIcon,
+    pm4: MastercardIcon,
+    pm5: PaypalIcon,
+};
 
 const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, socialLinks, companyName }) => {
   const { t } = useLanguage();
@@ -58,9 +66,16 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, so
             </div>
             <h3 className="text-lg font-bold mb-4 text-white">{t('footer.paymentMethods')}</h3>
             <div className="flex items-center space-x-2 flex-wrap gap-y-2">
-              {paymentMethods.map(method => (
-                  <img key={method.id} src={method.imageUrl} alt={method.name} title={method.name} className="h-8 bg-white rounded-md p-1" />
-              ))}
+              {paymentMethods.map(method => {
+                  const IconComponent = paymentIconMap[method.id];
+                  if (method.imageUrl) {
+                    return <img key={method.id} src={method.imageUrl} alt={method.name} title={method.name} className="h-8 bg-white rounded-md p-1" />;
+                  }
+                  if (IconComponent) {
+                    return <IconComponent key={method.id} className="h-8 w-auto" title={method.name} />;
+                  }
+                  return null;
+              })}
             </div>
           </div>
         </div>

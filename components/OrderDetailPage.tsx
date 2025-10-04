@@ -1,9 +1,8 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, PickupPoint, DisputeMessage, User } from '../types';
 import { ArrowLeftIcon, CheckIcon, TruckIcon, ExclamationTriangleIcon, XIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useAuth } from '../contexts/AuthContext';
-import { useSiteData } from '../hooks/useSiteData';
 
 declare const QRCode: any;
 
@@ -12,6 +11,9 @@ interface OrderDetailPageProps {
   onBack: () => void;
   allPickupPoints: PickupPoint[];
   allUsers: User[];
+  onCancelOrder: (orderId: string) => void;
+  onRequestRefund: (orderId: string, reason: string, evidenceUrls: string[]) => void;
+  onCustomerDisputeMessage: (orderId: string, message: string) => void;
 }
 
 const RefundRequestModal: React.FC<{
@@ -109,10 +111,8 @@ const RefundRequestModal: React.FC<{
 
 const statusSteps: OrderStatus[] = ['confirmed', 'ready-for-pickup', 'picked-up', 'at-depot', 'out-for-delivery', 'delivered'];
 
-const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers }) => {
+const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPickupPoints, allUsers, onCancelOrder, onRequestRefund, onCustomerDisputeMessage }) => {
   const { t } = useLanguage();
-  const { user } = useAuth();
-  const siteData = useSiteData();
   const [isRefundModalOpen, setIsRefundModalOpen] = useState(false);
   const qrCodeRef = useRef<HTMLCanvasElement>(null);
   const currentStatusIndex = statusSteps.indexOf(order.status);
@@ -150,26 +150,20 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
   }, [order.trackingNumber]);
 
   const handleRefundSubmit = (reason: string, evidenceUrls: string[]) => {
-    if (user) {
-        siteData.handleRequestRefund(order.id, reason, evidenceUrls, user);
-    }
+    onRequestRefund(order.id, reason, evidenceUrls);
     setIsRefundModalOpen(false);
   };
   
   const handleCancelOrder = () => {
     if(window.confirm("Êtes-vous sûr de vouloir annuler cette commande ?")) {
-        if(user) {
-            siteData.handleCancelOrder(order.id, user);
-        }
+        onCancelOrder(order.id);
     }
   }
 
   const handleDisputeMessage = (e: React.FormEvent) => {
     e.preventDefault();
     const input = (e.target as any).message;
-    if (user) {
-        siteData.handleCustomerDisputeMessage(order.id, input.value, user);
-    }
+    onCustomerDisputeMessage(order.id, input.value);
     input.value = '';
   }
   
@@ -294,7 +288,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                             const authorName = msg.author.charAt(0).toUpperCase() + msg.author.slice(1);
                             return (
                                <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-md p-3 rounded-xl text-sm ${isMe ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                <div className={`max-w-sm p-3 rounded-xl text-sm ${isMe ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
                                     <p className="font-bold mb-1">{isMe ? 'Vous' : authorName}</p>
                                     <p>{msg.message}</p>
                                     <p className="text-xs opacity-70 mt-1 text-right">{new Date(msg.date).toLocaleTimeString('fr-FR')}</p>

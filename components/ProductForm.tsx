@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, Category, Variant, VariantDetail, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -10,7 +11,8 @@ interface ProductFormProps {
   onCancel: () => void;
   productToEdit: Product | null;
   categories: Category[];
-  onAddCategory: (categoryName: string) => Category;
+// FIX: The onAddCategory prop should return void, not a Category object.
+  onAddCategory: (categoryName: string) => void;
   siteSettings: SiteSettings;
 }
 

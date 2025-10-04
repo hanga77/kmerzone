@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import type { SiteSettings, SiteContent, PaymentMethod, EmailTemplate } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { TrashIcon } from '../Icons';
 
 interface SettingsPanelProps {
     siteSettings: SiteSettings;
@@ -61,10 +62,11 @@ const ImageUrlOrUpload: React.FC<{
     )
 }
 
-export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUpdateSiteSettings, siteContent, onUpdateSiteContent }) => {
+export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUpdateSiteSettings, siteContent, onUpdateSiteContent, paymentMethods, onUpdatePaymentMethods }) => {
     const { t } = useLanguage();
     const [settings, setSettings] = useState(siteSettings);
     const [content, setContent] = useState(siteContent);
+    const [localPaymentMethods, setLocalPaymentMethods] = useState(paymentMethods);
 
     const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
@@ -127,11 +129,29 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
             return { ...prev, emailTemplates: updatedTemplates };
         });
     };
+    
+    const handlePaymentMethodChange = (index: number, field: 'name' | 'imageUrl', value: string) => {
+        setLocalPaymentMethods(prev => {
+            const newMethods = JSON.parse(JSON.stringify(prev));
+            newMethods[index][field] = value;
+            return newMethods;
+        });
+    };
+
+    const handleRemovePaymentMethod = (index: number) => {
+        setLocalPaymentMethods(prev => prev.filter((_, i) => i !== index));
+    };
+
+    const handleAddPaymentMethod = () => {
+        setLocalPaymentMethods(prev => [...prev, { id: `pm-${Date.now()}`, name: '', imageUrl: '' }]);
+    };
+
 
     const handleSave = () => {
         onUpdateSiteSettings(settings);
         onUpdateSiteContent(content);
-        alert('Paramètres sauvegardés !');
+        onUpdatePaymentMethods(localPaymentMethods);
+        alert(t('superadmin.settings.save'));
     };
 
     return (
@@ -242,6 +262,28 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                             <textarea value={settings.customerLoyaltyProgram.premiumPlus.benefits.join('\n')} onChange={e => handleBenefitsChange('premiumPlus', e.target.value)} rows={5} className="mt-1 block w-full p-2 border rounded dark:bg-gray-700 dark:border-gray-600" />
                         </Field>
                     </div>
+                </div>
+            </details>
+
+             <details className="p-4 border dark:border-gray-700 rounded-md">
+                <summary className="font-semibold text-lg cursor-pointer">{t('footer.paymentMethods')}</summary>
+                <div className="mt-4 space-y-4">
+                    {localPaymentMethods.map((method, index) => (
+                        <div key={method.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md flex items-end gap-2">
+                            <div className="flex-grow">
+                                <Field label={t('superadmin.settings.payment.name')}>
+                                    <input type="text" value={method.name} onChange={(e) => handlePaymentMethodChange(index, 'name', e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                                </Field>
+                            </div>
+                            <div className="flex-grow">
+                                 <Field label={t('superadmin.settings.payment.logoUrl')}>
+                                    <input type="url" value={method.imageUrl} placeholder="https://example.com/logo.png" onChange={(e) => handlePaymentMethodChange(index, 'imageUrl', e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
+                                </Field>
+                            </div>
+                            <button onClick={() => handleRemovePaymentMethod(index)} className="p-2 text-red-500 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-full"><TrashIcon className="w-5 h-5"/></button>
+                        </div>
+                    ))}
+                    <button onClick={handleAddPaymentMethod} className="text-sm font-semibold text-kmer-green hover:underline">{t('superadmin.settings.payment.add')}</button>
                 </div>
             </details>
 

@@ -1,3 +1,4 @@
+
 import React, { useMemo } from 'react';
 import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails, AgentSchedule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -271,7 +272,8 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                     user && siteData.handleAddOrUpdateProduct(product, user);
                     navigation.navigateToSellerDashboard('products');
                 }}
-                onAddCategory={() => {}}
+// FIX: Update the onAddCategory prop to match the new signature (string) => void.
+                onAddCategory={(categoryName: string) => {}}
             />;
         case 'superadmin-dashboard':
             if (user?.role !== 'superadmin') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
@@ -281,6 +283,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'order-history':
             return <OrderHistoryPage userOrders={user ? siteData.allOrders.filter((o: Order) => o.userId === user.id) : []} onBack={navigation.navigateToHome} onSelectOrder={navigation.navigateToOrderDetail} onRepeatOrder={() => {}} />;
         case 'order-detail':
+// FIX: Pass the required event handler props (onCancelOrder, onRequestRefund, onCustomerDisputeMessage) to OrderDetailPage.
             return navigation.selectedOrder ? <OrderDetailPage 
                 order={navigation.selectedOrder} 
                 onBack={navigation.navigateToOrderHistory} 
@@ -288,7 +291,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 allUsers={allUsers} 
                 onCancelOrder={(orderId) => user && siteData.handleCancelOrder(orderId, user)}
                 onRequestRefund={(orderId, reason, evidenceUrls) => user && siteData.handleRequestRefund(orderId, reason, evidenceUrls, user)}
-                onCustomerDisputeMessage={(orderId, message) => user && siteData.handleCustomerDisputeMessage(orderId, message)}
+                onCustomerDisputeMessage={(orderId, message) => user && siteData.handleCustomerDisputeMessage(orderId, message, user)}
             /> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'search-results':
             return <SearchResultsPage searchQuery={navigation.searchQuery} products={siteData.allProducts} stores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled} />;

@@ -328,8 +328,11 @@ export const initialAdvertisements: Advertisement[] = [
 ];
 
 export const initialPaymentMethods: PaymentMethod[] = [
-    { id: 'pm1', name: 'Orange Money', imageUrl: '/om.png' },
-    { id: 'pm2', name: 'MTN Mobile Money', imageUrl: '/momo.png' },
+    { id: 'pm1', name: 'Orange Money', imageUrl: '' },
+    { id: 'pm2', name: 'MTN Mobile Money', imageUrl: '' },
+    { id: 'pm3', name: 'Visa', imageUrl: '' },
+    { id: 'pm4', name: 'Mastercard', imageUrl: '' },
+    { id: 'pm5', name: 'PayPal', imageUrl: '' },
 ];
 
 export const initialSiteActivityLogs: SiteActivityLog[] = [];

@@ -19,6 +19,7 @@ import { useSiteData } from './hooks/useSiteData';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import PageRouter from './components/PageRouter';
 import { useLanguage } from './contexts/LanguageContext';
+import StructuredData from './components/StructuredData';
 
 
 const updateMetaTag = (name: string, content: string, isProperty: boolean = false) => {
@@ -54,7 +55,7 @@ export default function App() {
   const { user, logout: authLogout, allUsers } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
   const { comparisonList, setProducts: setComparisonProducts } = useComparison();
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
@@ -114,6 +115,12 @@ export default function App() {
         }
     }, [siteData.siteSettings.logoUrl]);
 
+    // Update document language for SEO and accessibility
+    useEffect(() => {
+        document.documentElement.lang = language;
+    }, [language]);
+
+
   // Update SEO meta tags based on current page/selection
   useEffect(() => {
     let { metaTitle: title, metaDescription: description, ogImageUrl } = siteData.siteSettings.seo;
@@ -121,7 +128,7 @@ export default function App() {
 
     switch(page) {
       case 'product': if (selectedProduct) { title = `${selectedProduct.name} | KMER ZONE`; description = selectedProduct.description.substring(0, 160); ogImageUrl = selectedProduct.imageUrls[0] || ogImageUrl; } break;
-      case 'category': const category = siteData.allCategories.find(c => c.id === selectedCategoryId); if (category) { title = `${category.name} | KMER ZONE`; ogImageUrl = category.imageUrl || ogImageUrl; } break;
+      case 'category': const category = siteData.allCategories.find(c => c.id === selectedCategoryId); if (category) { title = `${t(category.name)} | KMER ZONE`; ogImageUrl = category.imageUrl || ogImageUrl; } break;
       case 'vendor-page': const store = selectedStore; if (store) { title = `${store.name} - Boutique sur KMER ZONE`; ogImageUrl = store.logoUrl || ogImageUrl; } break;
       default: break;
     }
@@ -135,7 +142,7 @@ export default function App() {
     updateMetaTag('twitter:description', description, false);
     updateMetaTag('twitter:image', ogImageUrl, false);
 
-  }, [navigation.page, navigation.selectedProduct, navigation.selectedCategoryId, navigation.selectedStore, siteData.siteSettings.seo, siteData.allCategories]);
+  }, [navigation.page, navigation.selectedProduct, navigation.selectedCategoryId, navigation.selectedStore, siteData.siteSettings.seo, siteData.allCategories, t]);
 
   const activeAnnouncement = siteData.allAnnouncements
       .filter((a: Announcement) => a.isActive && !siteData.dismissedAnnouncements.includes(a.id) && new Date(a.startDate) <= new Date() && new Date(a.endDate) >= new Date())
@@ -153,6 +160,7 @@ export default function App() {
 
   return (
     <div className="flex flex-col min-h-screen">
+        <StructuredData navigation={navigation} siteData={siteData} t={t} />
         {activeAnnouncement && <AnnouncementBanner announcement={activeAnnouncement} onDismiss={siteData.handleDismissAnnouncement} />}
       
         <Header

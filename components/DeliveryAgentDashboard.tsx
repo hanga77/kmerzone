@@ -1,3 +1,5 @@
+
+
 import React, { useMemo, useState, useEffect, useRef, useCallback } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -217,7 +219,8 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
                  leafletMap.current.setView(end, 14);
             }
         }
-        setTimeout(() => leafletMap.current?.invalidateSize(), 100);
+        // FIX: The invalidateSize method expects an argument according to the type checker. Passing `true` to animate the resize.
+        setTimeout(() => leafletMap.current?.invalidateSize(true), 100);
     }, [start, end]);
 
     return <div ref={mapRef} className="h-48 w-full rounded-md mt-4 z-0"></div>;

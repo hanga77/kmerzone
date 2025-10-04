@@ -148,7 +148,7 @@ export const translations = {
     productForm: {
       selectSubcategory: '-- Sélectionner une sous-catégorie --'
     },
-     accountPage: {
+    accountPage: {
       dashboard: "Tableau de bord",
       profile: "Mon Profil",
       addresses: "Mes Adresses",
@@ -475,7 +475,7 @@ export const translations = {
         orderId: "ID Commande",
         customer: "Client",
         location: "Emplacement",
-        numItems: "Nbr Articles",
+        numItems: "# Articles",
         agent: "Livreur",
         seller: "Vendeur",
         parcels: "Colis",
@@ -538,252 +538,269 @@ export const translations = {
         avgProcessingTime: "Temps de Traitement Moyen",
         deliverySuccessRate: "Taux de Succès des Livraisons",
         dailyFlow: "Flux Journalier (Entrées/Sorties)",
-        in: "Entrées",
-        out: "Sorties",
-        topDrivers: "Top Livreurs (par livraisons réussies)",
-        driver: "Livreur",
-        successfulDeliveries: "Livraisons Réussies",
-        noData: "Pas assez de données pour cette période.",
-        hours: "heures"
+        topDrivers: "Top Livreurs par Livraisons Réussies",
+        successfulDeliveries: "livraisons réussies",
+        hours: "heures",
+        noData: "Pas assez de données pour générer un rapport pour cette période."
       }
+    },
+    notFound: {
+      title: "Page non trouvée",
+      description: "Désolé, la page que vous recherchez n'existe pas ou a été déplacée.",
+      backHome: "Retourner à l'accueil"
+    },
+    forbidden: {
+        title: "Accès Refusé",
+        description: "Vous n'avez pas les permissions nécessaires pour accéder à cette page.",
+        backHome: "Retourner à l'accueil"
+    },
+    forgotPassword: {
+      title: "Mot de passe oublié ?",
+      description: "Entrez votre adresse e-mail et nous vous enverrons un lien pour réinitialiser votre mot de passe.",
+      emailLabel: "Adresse e-mail",
+      sendLink: "Envoyer le lien de réinitialisation",
+      checkEmailTitle: "Vérifiez vos e-mails",
+      checkEmailDescription: "Un e-mail a été envoyé à {0} avec des instructions pour réinitialiser votre mot de passe.",
+      close: "Fermer"
     },
     superadmin: {
       tabs: {
-        overview: "Aperçu",
-        orders: "Commandes",
-        stores: "Boutiques",
-        users: "Utilisateurs",
-        catalog: "Catalogue",
-        marketing: "Marketing",
-        logistics: "Logistique",
-        payouts: "Paiements",
-        support: "Support",
-        reviews: "Avis",
-        logs: "Logs",
-        settings: "Paramètres"
+          overview: "Aperçu",
+          orders: "Commandes",
+          stores: "Boutiques",
+          users: "Utilisateurs",
+          catalog: "Catalogue",
+          marketing: "Marketing",
+          logistics: "Logistique",
+          payouts: "Paiements",
+          support: "Support",
+          reviews: "Avis",
+          logs: "Logs d'Activité",
+          settings: "Paramètres"
       },
-      panelUnderConstruction: "Le panneau pour \"{0}\" est en cours de construction.",
+      panelUnderConstruction: "Panneau '{0}' en cours de construction.",
       overview: {
-        totalRevenue: "Revenu Total (Livré)",
-        totalOrders: "Commandes Totales",
-        totalUsers: "Utilisateurs Totals",
-        pendingStores: "Boutiques en Attente",
-        revenueLast7Days: "Revenus des 7 derniers jours",
-        orderStatuses: "Statuts des Commandes",
-        recentOrders: "Dernières Commandes",
-        newUsers: "Nouveaux Utilisateurs"
+          totalRevenue: "Revenu Total",
+          totalOrders: "Commandes Totales",
+          totalUsers: "Utilisateurs Totaux",
+          pendingStores: "Boutiques en Attente",
+          revenueLast7Days: "Revenu des 7 derniers jours",
+          orderStatuses: "Répartition des Statuts de Commande",
+          recentOrders: "Commandes Récentes",
+          newUsers: "Nouveaux Utilisateurs"
       },
       users: {
-        title: "Gestion des Utilisateurs ({0})",
-        searchPlaceholder: "Rechercher par nom ou email...",
-        sendEmail: "Envoyer un e-mail ({0})",
-        create: "Créer",
-        table: {
-          name: "Nom",
-          email: "Email",
-          role: "Rôle",
-          action: "Action"
-        },
-        form: {
-          editTitle: "Modifier l'utilisateur",
-          createTitle: "Créer un utilisateur",
-          name: "Nom complet",
-          role_customer: "Client",
-          role_seller: "Vendeur",
-          role_delivery_agent: "Livreur",
-          role_depot_agent: "Agent de dépôt",
-          role_depot_manager: "Chef de Dépôt",
-          role_superadmin: "Super Admin",
-          assignedDepot: "Point de Dépôt Assigné",
-          deliveryZone: "Zone de livraison",
-          noDepot: "-- Non assigné --",
-          noZone: "-- Aucune zone --"
-        }
-      },
-      emailModal: {
-        title: "Envoyer un e-mail groupé",
-        recipients: "Destinataires : {0} utilisateur(s) sélectionné(s)",
-        useTemplate: "Utiliser un modèle (optionnel)",
-        customEmail: "-- Rédiger un e-mail personnalisé --",
-        subject: "Sujet",
-        body: "Contenu du message",
-        variableInfo: "Vous pouvez utiliser la variable `{customerName}` qui sera remplacée par le nom de chaque destinataire.",
-        send: "Envoyer l'e-mail"
+          title: "Gestion des Utilisateurs ({0})",
+          searchPlaceholder: "Rechercher par nom ou email...",
+          sendEmail: "Envoyer un E-mail ({0})",
+          create: "Créer",
+          table: {
+              name: "Nom",
+              email: "Email",
+              role: "Rôle",
+              action: "Action"
+          },
+          form: {
+              editTitle: "Modifier l'utilisateur",
+              createTitle: "Créer un utilisateur",
+              name: "Nom",
+              role_customer: "Client",
+              role_seller: "Vendeur",
+              role_delivery_agent: "Agent de livraison",
+              role_depot_agent: "Agent de dépôt",
+              role_depot_manager: "Chef de dépôt",
+              role_superadmin: "Super Admin",
+              assignedDepot: "Dépôt Assigné",
+              noDepot: "Aucun dépôt",
+              deliveryZone: "Zone de Livraison",
+              noZone: "Aucune zone"
+          }
       },
       catalog: {
-        title: "Gestion du Catalogue",
-        addCategory: "Ajouter une Catégorie",
-        categoryName: "Nom de la catégorie",
-        parentCategory: "Catégorie parente (optionnel)",
-        mainCategory: "-- Catégorie principale --",
-        add: "Ajouter",
-        imageUrl: "URL de l'image"
+          title: "Gestion du Catalogue",
+          imageUrl: "URL de l'image",
+          addCategory: "Ajouter une Catégorie",
+          categoryName: "Nom de la catégorie",
+          parentCategory: "Catégorie Parente",
+          mainCategory: "Catégorie Principale",
+          add: "Ajouter"
       },
       marketing: {
-        tabs: {
-          flashSales: "Ventes Flash",
-          ads: "Publicités",
-          announcements: "Annonces"
-        },
-        createFlashSale: "Créer une Vente Flash",
-        addAd: "Ajouter une Publicité",
-        createAnnouncement: "Créer une Annonce",
-        flashSaleForm: {
-          title: "Créer un événement Vente Flash",
-          name: "Nom de l'événement (ex: Black Friday)",
-          startDate: "Date et heure de début",
-          endDate: "Date et heure de fin",
-          error_name: "Le nom de l'événement est requis.",
-          error_startDate: "La date et l'heure de début sont requises.",
-          error_endDate: "La date et l'heure de fin sont requises.",
-          error_endDateAfterStart: "La date de fin doit être postérieure à la date de début.",
-          error_endDatePast: "La date de fin ne peut pas être dans le passé.",
-          create: "Créer l'événement"
-        },
-        flashSaleDetail: {
-          submissions: "Soumissions de produits",
-          approveAll: "Tout Approuver",
-          rejectAll: "Tout Rejeter",
-          product: "Produit",
-          seller: "Vendeur",
-          originalPrice: "Prix Original",
-          flashPrice: "Prix Flash"
-        },
-        adForm: {
-          imageUrl: "URL de l'image",
-          linkUrl: "URL du lien",
-          activate: "Activer la publicité"
-        },
-        announcementForm: {
-          title: "Titre de l'annonce",
-          content: "Contenu de l'annonce",
-          target_all: "Tous les utilisateurs",
-          target_customers: "Clients seulement",
-          target_sellers: "Vendeurs seulement",
-          activate: "Activer l'annonce"
-        }
+          tabs: {
+              flashSales: "Ventes Flash",
+              ads: "Publicités",
+              announcements: "Annonces"
+          },
+          createFlashSale: "Créer une Vente Flash",
+          addAd: "Ajouter une Publicité",
+          createAnnouncement: "Créer une Annonce",
+          flashSaleDetail: {
+              submissions: "Soumissions des vendeurs",
+              approveAll: "Tout Approuver",
+              rejectAll: "Tout Rejeter",
+              product: "Produit",
+              seller: "Vendeur",
+              originalPrice: "Prix Original",
+              flashPrice: "Prix Flash"
+          },
+          flashSaleForm: {
+              title: "Créer une Nouvelle Vente Flash",
+              name: "Nom de la vente",
+              startDate: "Date de début",
+              endDate: "Date de fin",
+              create: "Créer la Vente",
+              error_name: "Le nom est requis.",
+              error_startDate: "La date de début est requise.",
+              error_endDate: "La date de fin est requise.",
+              error_endDateAfterStart: "La date de fin doit être après la date de début.",
+              error_endDatePast: "La date de fin ne peut pas être dans le passé."
+          },
+          adForm: {
+              imageUrl: "URL de l'image",
+              linkUrl: "URL du lien",
+              activate: "Activer cette publicité"
+          },
+          announcementForm: {
+              title: "Titre de l'annonce",
+              content: "Contenu",
+              target_all: "Tous les utilisateurs",
+              target_customers: "Clients uniquement",
+              target_sellers: "Vendeurs uniquement",
+              activate: "Activer cette annonce"
+          }
       },
       stores: {
-        title: "Gestion des Boutiques",
-        tabs: {
-          pending: "En attente",
-          active: "Actives",
-          suspended: "Suspendues"
-        },
-        table: {
-          store: "Boutique",
-          seller: "Vendeur",
-          documents: "Documents",
-          location: "Localisation"
-        },
-        noStores: "Aucune boutique dans cette catégorie.",
-        rejectionReason: "Motif du rejet :",
-        warnReason: "Motif de l'avertissement:"
+          title: "Gestion des Boutiques",
+          tabs: {
+              pending: "En attente",
+              active: "Actives",
+              suspended: "Suspendues"
+          },
+          table: {
+              store: "Boutique",
+              seller: "Vendeur",
+              documents: "Documents",
+              location: "Localisation"
+          },
+          rejectionReason: "Motif du rejet :",
+          warnReason: "Motif de l'avertissement",
+          noStores: "Aucune boutique dans cette catégorie."
       },
       orders: {
-        title: "Gestion des Commandes",
-        tabs: {
-          all: "Toutes les commandes",
-          disputes: "Litiges"
-        },
-        searchPlaceholder: "Rechercher par ID ou client...",
-        allStatuses: "Tous les statuts",
-        noDisputes: "Aucun litige en cours.",
-        evidence: "Preuves:",
-        rejectRequest: "Rejeter la demande",
-        approveRefund: "Approuver le remboursement"
+          title: "Gestion des Commandes",
+          searchPlaceholder: "Rechercher par ID ou nom client...",
+          allStatuses: "Tous les statuts",
+          tabs: {
+              all: "Toutes les commandes",
+              disputes: "Litiges"
+          },
+          evidence: "Preuves:",
+          rejectRequest: "Rejeter la demande",
+          approveRefund: "Approuver le remboursement",
+          noDisputes: "Aucun litige en cours."
       },
       logistics: {
-        title: "Gestion Logistique",
-        addPickupPoint: "Ajouter un Point de Dépôt",
-        form: {
-          name: "Nom du point de dépôt",
-          city: "Ville",
-          neighborhood: "Quartier",
-          street: "Rue / Repère"
-        },
-        staffModal: {
-          title: "Personnel - {0}",
-          manager: "Responsable",
-          noManager: "Aucun responsable assigné.",
-          staff: "Personnel",
-          noStaff: "Aucun agent assigné à ce dépôt."
-        },
-        viewStaff: "Voir personnel"
+          title: "Gestion de la Logistique",
+          addPickupPoint: "Ajouter un Point de Retrait",
+          viewStaff: "Voir le Personnel",
+          staffModal: {
+              title: "Personnel du Dépôt {0}",
+              manager: "Responsable",
+              noManager: "Aucun responsable assigné.",
+              staff: "Agents de Dépôt",
+              noStaff: "Aucun agent assigné à ce dépôt."
+          },
+          form: {
+              name: "Nom du point de retrait",
+              city: "Ville",
+              neighborhood: "Quartier",
+              street: "Rue/Adresse"
+          }
       },
       payouts: {
-        title: "Paiements des Vendeurs",
-        commissionInfo: "Taux de commission actuel : {0}% (Standard)",
-        balanceInfo: "Le solde dû est calculé sur les commandes livrées, moins la commission et les paiements déjà effectués.",
-        table: {
-          store: "Boutique",
-          totalRevenue: "Revenu Total",
-          commissionDue: "Commission Due",
-          paidAmount: "Déjà Payé",
-          balanceDue: "Solde Dû"
-        },
-        markAsPaid: "Marquer comme payé",
-        noPending: "Aucun paiement en attente."
+          title: "Gestion des Paiements Vendeurs",
+          commissionInfo: "Commission par défaut : {0}%. Les plans premium ont des taux réduits.",
+          balanceInfo: "Le solde dû est calculé sur les commandes livrées.",
+          table: {
+              store: "Boutique",
+              totalRevenue: "Revenu Total",
+              commissionDue: "Commission Due",
+              paidAmount: "Montant Payé",
+              balanceDue: "Solde Dû"
+          },
+          markAsPaid: "Marquer comme payé",
+          noPending: "Aucun paiement en attente."
       },
       support: {
-        title: "Tickets de Support ({0})",
-        detail: {
-          back: "< Retour à la liste",
-          user: "Utilisateur:",
-          replyPlaceholder: "Votre réponse...",
-          reply: "Répondre"
-        },
-        status: {
-          open: "Ouvert",
-          inProgress: "En cours",
-          resolved: "Résolu"
-        }
+          title: "Support ({0} tickets)",
+          detail: {
+              back: "< Retour à la liste",
+              user: "Utilisateur",
+              replyPlaceholder: "Votre réponse...",
+              reply: "Répondre"
+          },
+          status: {
+              open: "Ouvert",
+              inProgress: "En cours",
+              resolved: "Résolu"
+          }
       },
       reviews: {
-        title: "Modération des Avis ({0})",
-        noPending: "Aucun avis en attente de modération.",
-        goodJob: "Excellent travail !",
-        product: "Produit:",
-        by: "Par:",
-        on: "le"
+          title: "Modération des Avis ({0} en attente)",
+          noPending: "Aucun avis en attente de modération.",
+          goodJob: "Bon travail !",
+          product: "Produit:",
+          by: "Par",
+          on: "le"
       },
       logs: {
-        title: "Journaux d'Activité",
-        filterPlaceholder: "Filtrer les logs...",
-        performedAction: "a effectué l'action :",
-        details: "Détails :",
-        noLogs: "Aucun log correspondant à votre recherche."
+          title: "Logs d'Activité du Site",
+          filterPlaceholder: "Filtrer les logs...",
+          performedAction: "a effectué l'action",
+          details: "Détails :",
+          noLogs: "Aucun log correspondant au filtre."
+      },
+      emailModal: {
+          title: "Envoyer un E-mail en Masse",
+          recipients: "{0} destinataire(s) sélectionné(s).",
+          useTemplate: "Utiliser un modèle",
+          customEmail: "E-mail personnalisé",
+          subject: "Sujet",
+          body: "Corps du message",
+          variableInfo: "Vous pouvez utiliser {customerName} pour personnaliser le message.",
+          send: "Envoyer l'e-mail"
       },
       settings: {
-        title: "Paramètres du Site",
-        save: "Sauvegarder les Paramètres",
+        title: "Paramètres Généraux du Site",
+        save: "Sauvegarder les paramètres",
         sections: {
-          identity: "Identité Visuelle",
+          identity: "Identité du site & Apparence",
           features: "Fonctionnalités",
-          delivery: "Livraison",
-          sellerDocs: "Documents Vendeur Requis",
-          sellerPlans: "Plans Vendeurs",
-          loyalty: "Programme de Fidélité Client",
-          seo: "SEO & Métadonnées",
-          content: "Gestion du contenu des pages",
+          delivery: "Paramètres de livraison",
+          sellerDocs: "Documents requis pour les vendeurs",
+          sellerPlans: "Plans d'abonnement vendeur",
+          loyalty: "Programme de fidélité client",
+          payment: "Moyens de Paiement",
+          seo: "SEO par défaut",
+          content: "Contenu des pages d'information",
           emails: "Modèles d'e-mails",
           maintenance: "Mode Maintenance",
-          footer: "Pied de page (Footer)"
+          footer: "Pied de page & Liens Sociaux",
         },
         identity: {
           logo: "Logo du site",
-          banner: "Bannière de la page d'accueil",
-          upload: "Choisir"
+          banner: "Bannière principale de l'accueil",
+          upload: "Téléverser"
         },
         features: {
-          chat: "Activer le chat client-vendeur",
-          comparison: "Activer la comparaison de produits"
+          chat: "Activer le module de discussion entre clients et vendeurs",
+          comparison: "Activer le module de comparaison de produits",
         },
         delivery: {
-          intraUrban: "Frais de base intra-urbain (FCFA)",
-          interUrban: "Frais de base inter-urbain (FCFA)",
-          perKg: "Coût additionnel par Kg (FCFA)",
-          premiumDiscount: "Réduction livraison pour Premium (%)"
+          intraUrban: "Frais de base intra-urbain (même ville)",
+          interUrban: "Frais de base inter-urbain (villes différentes)",
+          perKg: "Coût supplémentaire par Kg",
+          premiumDiscount: "Réduction livraison pour clients Premium (%)",
         },
         plans: {
           standard: "Plan Standard",
@@ -794,61 +811,48 @@ export const translations = {
           limit: "Limite de produits",
           commission: "Commission (%)",
           photoService: "Service photo inclus",
-          homepageFeature: "Mise en avant sur l'accueil"
+          homepageFeature: "En vedette sur l'accueil",
         },
         loyalty: {
-          enable: "Activer le programme de fidélité pour les clients",
-          premium: "Plan Premium Client",
-          ordersRequired: "Nombre de commandes requises",
-          spendingRequired: "Montant total dépensé requis (FCFA)",
+          enable: "Activer le programme de fidélité",
+          premium: "Plan Premium",
+          thresholds: "Seuils",
+          ordersRequired: "Commandes requises",
+          spendingRequired: "Dépenses requises (FCFA)",
           caution: "Montant de la caution (FCFA)",
           benefits: "Avantages (un par ligne)",
-          premiumPlus: "Plan Premium+ Client",
+          premiumPlus: "Plan Premium+",
           enablePremiumPlus: "Activer le plan Premium+",
-          annualFee: "Frais annuels (FCFA)"
+          annualFee: "Frais annuels (FCFA)",
+        },
+        payment: {
+          name: "Nom",
+          logoUrl: "URL du logo",
+          add: "Ajouter un moyen de paiement",
         },
         seo: {
-          defaultTitle: "Titre Méta par défaut",
-          defaultDesc: "Description Méta par défaut",
-          ogImage: "URL de l'image de partage (OpenGraph)"
+          defaultTitle: "Titre par défaut (balise meta title)",
+          defaultDesc: "Description par défaut (balise meta description)",
+          ogImage: "URL de l'image pour le partage (Open Graph)",
         },
         content: {
-          pageTitle: "Titre de la page : {0}",
-          content: "Contenu"
+          pageTitle: "Titre de la page - {0}",
+          content: "Contenu (HTML autorisé)",
         },
         emails: {
-          subject: "Sujet de l'e-mail",
+          subject: "Sujet",
           body: "Corps de l'e-mail",
-          variables: "Variables disponibles : {0}"
+          variables: "Variables disponibles: {0}",
         },
         maintenance: {
           enable: "Activer le mode maintenance",
-          message: "Message de maintenance"
+          message: "Message de maintenance",
         },
         footer: {
-          companyName: "Nom de l'entreprise (Copyright)",
-          iconUrl: "URL de l'icône"
+          companyName: "Nom de l'entreprise",
+          iconUrl: "URL de l'icône",
         }
       }
-    },
-    forbidden: {
-      title: "Accès Interdit",
-      description: "Désolé, vous n'avez pas les autorisations nécessaires pour accéder à cette page.",
-      backHome: "Retour à l'accueil"
-    },
-    notFound: {
-      title: "Page non trouvée",
-      description: "Désolé, la page que vous recherchez n'existe pas ou a été déplacée.",
-      backHome: "Retour à l'accueil"
-    },
-    forgotPassword: {
-      title: "Mot de passe oublié",
-      description: "Ne vous inquiétez pas. Entrez votre email et nous vous enverrons un lien de réinitialisation.",
-      emailLabel: "Adresse e-mail",
-      sendLink: "Envoyer le lien",
-      checkEmailTitle: "Vérifiez votre messagerie",
-      checkEmailDescription: "Si un compte existe pour {0}, vous y trouverez un lien pour réinitialiser votre mot de passe.",
-      close: "Fermer"
     }
   },
   en: {
@@ -904,8 +908,8 @@ export const translations = {
       promotions: "Promotions",
       flashSales: "Flash Sales",
       stores: "Stores",
-      becomeSeller: "Become a Seller",
-      becomePremium: "Go Premium",
+      becomeSeller: "Become a seller",
+      becomePremium: "Become Premium",
       notifications: "Notifications",
       superadminDashboard: "Superadmin Dashboard",
       sellerDashboard: "Seller Dashboard",
@@ -917,7 +921,7 @@ export const translations = {
       visualSearch: "Visual Search",
       followedStores: "Followed Stores",
       support: "Support",
-      backToHome: "Back to Home"
+      backToHome: "Back to home"
     },
     footer: {
       aboutUs: "About Us",
@@ -941,7 +945,7 @@ export const translations = {
         heroSubtitle: "The largest selection of local and international products, just a click away.",
         startShopping: "Start Shopping",
         storiesTitle: "Store Stories",
-        recommendedForYou: "Recommended for You",
+        recommendedForYou: "Recommended For You",
         promotionsTitle: "Current Promotions",
         categoriesTitle: "Browse by Category",
         popularProducts: "Our Popular Products",
@@ -952,47 +956,47 @@ export const translations = {
         howItWorksStep1Title: "1. Order",
         howItWorksStep1Text: "Choose from thousands of products and add them to your cart.",
         howItWorksStep2Title: "2. Pay Securely",
-        howItWorksStep2Text: "Use Orange Money or MTN Mobile Money for a 100% secure payment.",
+        howItWorksStep2Text: "Use Orange Money or MTN Mobile Money for 100% secure payment.",
         howItWorksStep3Title: "3. Track Your Delivery",
-        howItWorksStep3Text: "Follow your delivery driver in real-time to your door.",
+        howItWorksStep3Text: "Follow your delivery person in real-time to your door.",
         howItWorksStep4Title: "4. Give Feedback",
         howItWorksStep4Text: "Rate products and sellers to help the community.",
         featuredStores: "Our Partner Stores"
     },
     categories: {
-      clothingShoes: 'Clothing and shoes',
-      accessoriesJewelry: 'Accessories & jewelry',
+      clothingShoes: 'Clothing and Shoes',
+      accessoriesJewelry: 'Accessories & Jewelry',
       beauty: 'Beauty',
       furniture: 'Furniture',
       electronics: 'Electronics',
-      homeTextiles: 'Home textiles',
-      officeSupplies: 'Office supplies',
-      petProducts: 'Pet products',
+      homeTextiles: 'Home Textiles',
+      officeSupplies: 'Office Supplies',
+      petProducts: 'Pet Products',
       hobbiesCreativity: 'Hobbies & Creativity',
       homeGarden: 'Home & Garden',
-      consumerElectronics: 'Consumer electronics',
-      kidsSchool: 'Kids & school products',
+      consumerElectronics: 'Consumer Electronics',
+      kidsSchool: 'Kids & School Supplies',
       clothing: 'Clothing',
       shoes: 'Shoes',
       bags: 'Bags',
       watches: 'Watches',
       glasses: 'Glasses',
       jewelry: 'Jewelry',
-      hairAccessories: 'Hair accessories',
+      hairAccessories: 'Hair Accessories',
       cosmetics: 'Cosmetics',
       perfumes: 'Perfumes',
       chairs: 'Chairs',
-      otherFurniture: 'Other furniture',
-      chargersCablesBatteries: 'Chargers, cables, batteries',
+      otherFurniture: 'Other Furniture',
+      chargersCablesBatteries: 'Chargers, Cables, Batteries',
       curtains: 'Curtains',
-      otherHomeTextiles: 'Other home textiles',
+      otherHomeTextiles: 'Other Home Textiles',
       stationery: 'Stationery',
-      officeGoods: 'Office goods',
-      petAccessories: 'Pet accessories',
-      hobbiesCraftsGames: 'Hobbies, crafts, games',
-      homeDecorLighting: 'Home decor, lighting, festive items',
-      phonesHeadphonesAppliances: 'Phones, headphones, appliances',
-      toysSchoolSupplies: 'Toys, school supplies'
+      officeGoods: 'Office Goods',
+      petAccessories: 'Pet Accessories',
+      hobbiesCraftsGames: 'Hobbies, Crafts, Games',
+      homeDecorLighting: 'Home Decor, Lighting, Festive Objects',
+      phonesHeadphonesAppliances: 'Phones, Headphones, Appliances',
+      toysSchoolSupplies: 'Toys, School Supplies'
     },
     categoryPage: {
       titlePrefix: 'Category: '
@@ -1000,7 +1004,7 @@ export const translations = {
     productForm: {
       selectSubcategory: '-- Select a sub-category --'
     },
-     accountPage: {
+    accountPage: {
       dashboard: "Dashboard",
       profile: "My Profile",
       addresses: "My Addresses",
@@ -1022,9 +1026,9 @@ export const translations = {
       manageStores: "Manage my stores",
       editProfile: "Edit Profile",
       save: "Save",
-      fullName: "Full Name",
-      phone: "Main Phone",
-      birthDate: "Date of Birth",
+      fullName: "Full name",
+      phone: "Main phone",
+      birthDate: "Date of birth",
       gender: "Gender",
       preferNotToSay: "Prefer not to say",
       male: "Male",
@@ -1037,13 +1041,13 @@ export const translations = {
       newPassword: "New password",
       confirmNewPassword: "Confirm new password",
       update: "Update",
-      passwordMismatch: "New passwords do not match.",
-      passwordIncorrect: "Old password is incorrect.",
+      passwordMismatch: "The new passwords do not match.",
+      passwordIncorrect: "The old password is incorrect.",
       passwordSuccess: "Password updated successfully!",
       notificationsTitle: "Notifications",
-      orderUpdates: "My order updates",
+      orderUpdates: "Updates on my orders",
       promotions: "Promotions and flash sales",
-      newsletters: "KMER ZONE Newsletters",
+      newsletters: "Newsletters from KMER ZONE",
       savePreferences: "Save preferences",
       preferencesSaved: "Preferences saved!",
       createTicket: "Create a new ticket",
@@ -1074,7 +1078,7 @@ export const translations = {
       findMyPosition: "Find my position",
       requiredDocsTitle: "Required Documents",
       requiredDocsDescription: "After submitting your application, you will need to upload the following documents from your seller dashboard:",
-      submitCandidacy: "Submit my application",
+      submitCandidacy: "Submit My Application",
       errors: {
         shopName: "Store name is required.",
         firstName: "First name is required.",
@@ -1086,7 +1090,7 @@ export const translations = {
     },
     sellerSubscription: {
       title: "Congratulations and Welcome!",
-      subtitle: "Your store is almost ready. Choose the plan that best fits your ambitions to finalize your registration.",
+      subtitle: "Your store is almost ready. Choose the plan that best fits your ambitions to complete your registration.",
       standardTitle: "Standard Seller",
       standardDescription: "Ideal for artisans and small shops just starting out.",
       premiumTitle: "Premium Seller",
@@ -1095,7 +1099,7 @@ export const translations = {
       superPremiumDescription: "Designed for large businesses and well-known brands.",
       standardFeatures: "Standard visibility|Basic catalog management ({0} products)|{1}% commission|Email support",
       premiumFeatures: "All Standard benefits|Featured in categories|{0} products|Commission reduced to {1}%|Priority support|Advanced analytics",
-      superPremiumFeatures: "All Premium benefits|Maximum visibility on homepage|{0} products|Commission reduced to {1}%|Dedicated assistance|Photo service included",
+      superPremiumFeatures: "All Premium benefits|Maximum visibility on homepage|{0} products|Commission reduced to {1}%|Dedicated support|Photo service included",
       selectPlan: "Choose This Plan"
     },
     sellerDashboard: {
@@ -1147,18 +1151,18 @@ export const translations = {
           edit: "Edit",
           delete: "Delete"
         },
-        noProducts: "You don't have any products. Click \"Add Product\" to get started."
+        noProducts: "You don't have any products. Click 'Add Product' to start."
       },
       collections: {
         title: "My Collections",
         create: "Create Collection",
         edit: "Edit",
-        createTitle: "Create a Collection",
+        createTitle: "Create Collection",
         editTitle: "Edit Collection",
         name: "Collection name",
         description: "Description (optional)",
         selectProducts: "Select products",
-        noCollections: "You don't have any collections. Create one to group your products!",
+        noCollections: "You have no collections. Create one to group your products!",
       },
       orders: {
         title: "My Orders ({0})",
@@ -1176,7 +1180,7 @@ export const translations = {
         cancelOrder: "Cancel Order",
         cancelConfirm: "Are you sure you want to cancel this order? This action is irreversible.",
         disputeNotice: "This order is under dispute. An administrator is reviewing the situation.",
-        markReady: "Mark as Ready for Pickup"
+        markReady: "Mark as Ready for Shipping"
       },
       reviews: {
         title: "Customer Reviews",
@@ -1191,14 +1195,14 @@ export const translations = {
           code: "PROMOCODE",
           value: "Value (10 or 1000)",
           type_percentage: "%",
-          type_fixed: "FCFA",
+          type_fixed: "XAF",
           create: "Create Code"
         }
       },
        flashSales: {
         title: "Flash Sales",
         endsOn: "Ends on: {0}",
-        submitProduct: "Submit a product",
+        submitProduct: "Submit a Product",
         chooseProduct: "Choose a product",
         flashPrice: "Flash Price",
         submit: "Submit"
@@ -1223,18 +1227,18 @@ export const translations = {
         linkOrder: "Link to an order (optional)",
         sendTicket: "Send Ticket"
       },
-      shipping: {
+       shipping: {
         title: "Shipping Settings",
-        partnersTitle: "Partner Carriers",
+        partnersTitle: "Shipping Partners",
         partnersDescription: "Select the carriers you want to offer to your customers.",
         premium: "Premium",
         customRatesTitle: "Custom Shipping Rates",
-        customRatesDescription: "Leave empty to use the platform's default rates.",
-        localRate: "Local delivery (same city) (FCFA)",
-        nationalRate: "National delivery (other city) (FCFA)",
+        customRatesDescription: "Leave blank to use the platform's default rates.",
+        localRate: "Local shipping (same city) (XAF)",
+        nationalRate: "National shipping (other city) (XAF)",
         freeShippingTitle: "Free Shipping",
         freeShippingDescription: "Offer free shipping for orders from your store above a certain amount.",
-        freeShippingThreshold: "Free shipping threshold (FCFA)",
+        freeShippingThreshold: "Free shipping threshold (XAF)",
         saveChanges: "Save Changes",
         saved: "Saved!",
       },
@@ -1243,12 +1247,12 @@ export const translations = {
         subtitle: "Upgrade to a higher plan to unlock new features and boost your sales.",
         currentPlan: "Your current plan",
         upgrade: "Upgrade",
-        lowerPlan: "Lower plan",
+        lowerPlan: "Lower Plan",
       },
        upgrade: {
-        title: "Unlock the \"{0}\" feature",
-        description: "Upgrade to Premium to access advanced tools and boost your visibility.",
-        button: "I want to go Premium"
+        title: "Unlock the \"{0}\" Feature",
+        description: "Upgrade to Premium status to access advanced tools and boost your visibility.",
+        button: "I want to become Premium"
       },
       analytics: {
         backToDashboard: "Back to Dashboard",
@@ -1258,7 +1262,7 @@ export const translations = {
         vsPrevious: "- vs previous period",
         deliveredOrders: "Delivered Orders",
         itemsSold: "Items Sold",
-        averageBasket: "Average Basket",
+        averageBasket: "Average Basket Value",
         salesEvolution: "Sales Evolution",
         top5Products: "Top 5 Products (by revenue)",
         sold: "sold",
@@ -1278,10 +1282,10 @@ export const translations = {
       status: "Status",
       available: "Available",
       unavailable: "Unavailable",
-      setUnavailable: "Go unavailable",
-      setAvailable: "Go available",
+      setUnavailable: "Go Unavailable",
+      setAvailable: "Go Available",
       activeMissions: "Active Missions",
-      scanPackage: "Scan a Package",
+      scanPackage: "Scan Package",
       currentMissions: "Current Missions",
       history: "History",
       showMap: "Show Map",
@@ -1294,22 +1298,22 @@ export const translations = {
       cancel: "Cancel",
       confirmDelivery: "Confirm Delivery",
       order: "Order",
-      recipientName: "Recipient's name*",
+      recipientName: "Recipient's Name *",
       confirm: "Confirm",
       reportFailure: "Report Delivery Failure",
-      reason: "Reason*",
+      reason: "Reason *",
       clientAbsent: "Client absent",
       wrongAddress: "Wrong address",
       packageRefused: "Package refused",
-      details: "Additional details*",
+      details: "Additional Details *",
       confirmFailure: "Confirm Failure",
     },
-    depotDashboard: {
+     depotDashboard: {
       title: "Depot Dashboard - Zone {0}",
       manager: "Depot Manager",
       logout: "Logout",
       overview: "Overview",
-      parcels: "Parcel Tracking",
+      parcels: "Parcels Tracking",
       inventory: "Inventory",
       drivers: "Drivers",
       agents: "Agents",
@@ -1321,7 +1325,7 @@ export const translations = {
       toAssign: "To Assign ({0})",
       inDelivery: "In Delivery ({0})",
       issues: "Issues ({0})",
-      client: "Client",
+      client: "Customer",
       assign: "Assign",
       table: {
         orderId: "Order ID",
@@ -1339,11 +1343,11 @@ export const translations = {
       successRate: "Success rate",
       deliveriesSucceeded: "{0} / {1} successful deliveries",
       sellersWithParcels: "Sellers with Parcels at Depot",
-      reportsWIP: "Reports section is under construction.",
-      assignDriver: "Assign a Driver",
+      reportsWIP: "Reports section is a work in progress.",
+      assignDriver: "Assign a driver",
       chooseAvailableDriver: "-- Choose an available driver --",
-      scanAndCheckIn: "Scan & Check-In a Parcel",
-      checkInParcel: "Check-In a Parcel",
+      scanAndCheckIn: "Scan & Check-In Parcel",
+      checkInParcel: "Check-In Parcel",
       storageLocation: "Storage Location (e.g., A3-S2)",
       checkIn: "Check-In",
       inventoryPanel: {
@@ -1359,8 +1363,8 @@ export const translations = {
           action: "Action",
           details: "Details",
           timestamp: "Timestamp",
-          entry: "Entry",
-          exit: "Exit"
+          entry: "In",
+          exit: "Out"
         }
       },
       noData: "No data to display.",
@@ -1390,317 +1394,321 @@ export const translations = {
         avgProcessingTime: "Avg. Processing Time",
         deliverySuccessRate: "Delivery Success Rate",
         dailyFlow: "Daily Flow (In/Out)",
-        in: "In",
-        out: "Out",
-        topDrivers: "Top Drivers (by successful deliveries)",
-        driver: "Driver",
-        successfulDeliveries: "Successful Deliveries",
-        noData: "Not enough data for this period.",
-        hours: "hours"
+        topDrivers: "Top Drivers by Successful Deliveries",
+        successfulDeliveries: "successful deliveries",
+        hours: "hours",
+        noData: "Not enough data to generate a report for this period."
       }
-    },
-    superadmin: {
-      tabs: {
-        overview: "Overview",
-        orders: "Orders",
-        stores: "Stores",
-        users: "Users",
-        catalog: "Catalog",
-        marketing: "Marketing",
-        logistics: "Logistics",
-        payouts: "Payouts",
-        support: "Support",
-        reviews: "Reviews",
-        logs: "Logs",
-        settings: "Settings"
-      },
-      panelUnderConstruction: "The panel for \"{0}\" is under construction.",
-      overview: {
-        totalRevenue: "Total Revenue (Delivered)",
-        totalOrders: "Total Orders",
-        totalUsers: "Total Users",
-        pendingStores: "Pending Stores",
-        revenueLast7Days: "Revenue Last 7 Days",
-        orderStatuses: "Order Statuses",
-        recentOrders: "Recent Orders",
-        newUsers: "New Users"
-      },
-      users: {
-        title: "User Management ({0})",
-        searchPlaceholder: "Search by name or email...",
-        sendEmail: "Send Email ({0})",
-        create: "Create User",
-        table: {
-          name: "Name",
-          email: "Email",
-          role: "Role",
-          action: "Action"
-        },
-        form: {
-          editTitle: "Edit User",
-          createTitle: "Create User",
-          name: "Full Name",
-          role_customer: "Customer",
-          role_seller: "Seller",
-          role_delivery_agent: "Delivery Agent",
-          role_depot_agent: "Depot Agent",
-          role_depot_manager: "Depot Manager",
-          role_superadmin: "Super Admin",
-          assignedDepot: "Assigned Depot Point",
-          deliveryZone: "Delivery Zone",
-          noDepot: "-- Unassigned --",
-          noZone: "-- No zone --"
-        }
-      },
-      emailModal: {
-        title: "Send Bulk Email",
-        recipients: "Recipients: {0} selected user(s)",
-        useTemplate: "Use a template (optional)",
-        customEmail: "-- Write a custom email --",
-        subject: "Subject",
-        body: "Message Body",
-        variableInfo: "You can use the variable `{customerName}` which will be replaced with each recipient's name.",
-        send: "Send Email"
-      },
-      catalog: {
-        title: "Catalog Management",
-        addCategory: "Add a Category",
-        categoryName: "Category name",
-        parentCategory: "Parent category (optional)",
-        mainCategory: "-- Main category --",
-        add: "Add",
-        imageUrl: "Image URL"
-      },
-      marketing: {
-        tabs: {
-          flashSales: "Flash Sales",
-          ads: "Advertisements",
-          announcements: "Announcements"
-        },
-        createFlashSale: "Create Flash Sale",
-        addAd: "Add Advertisement",
-        createAnnouncement: "Create Announcement",
-        flashSaleForm: {
-          title: "Create Flash Sale Event",
-          name: "Event Name (e.g., Black Friday)",
-          startDate: "Start Date & Time",
-          endDate: "End Date & Time",
-          error_name: "Event name is required.",
-          error_startDate: "Start date and time are required.",
-          error_endDate: "End date and time are required.",
-          error_endDateAfterStart: "End date must be after the start date.",
-          error_endDatePast: "End date cannot be in the past.",
-          create: "Create Event"
-        },
-        flashSaleDetail: {
-          submissions: "Product Submissions",
-          approveAll: "Approve All",
-          rejectAll: "Reject All",
-          product: "Product",
-          seller: "Seller",
-          originalPrice: "Original Price",
-          flashPrice: "Flash Price"
-        },
-        adForm: {
-          imageUrl: "Image URL",
-          linkUrl: "Link URL",
-          activate: "Activate advertisement"
-        },
-        announcementForm: {
-          title: "Announcement Title",
-          content: "Announcement Content",
-          target_all: "All users",
-          target_customers: "Customers only",
-          target_sellers: "Sellers only",
-          activate: "Activate announcement"
-        }
-      },
-      stores: {
-        title: "Store Management",
-        tabs: {
-          pending: "Pending",
-          active: "Active",
-          suspended: "Suspended"
-        },
-        table: {
-          store: "Store",
-          seller: "Seller",
-          documents: "Documents",
-          location: "Location"
-        },
-        noStores: "No stores in this category.",
-        rejectionReason: "Reason for rejection:",
-        warnReason: "Reason for warning:"
-      },
-      orders: {
-        title: "Order Management",
-        tabs: {
-          all: "All Orders",
-          disputes: "Disputes"
-        },
-        searchPlaceholder: "Search by ID or customer...",
-        allStatuses: "All statuses",
-        noDisputes: "No ongoing disputes.",
-        evidence: "Evidence:",
-        rejectRequest: "Reject Request",
-        approveRefund: "Approve Refund"
-      },
-      logistics: {
-        title: "Logistics Management",
-        addPickupPoint: "Add Depot Point",
-        form: {
-          name: "Depot point name",
-          city: "City",
-          neighborhood: "Neighborhood",
-          street: "Street / Landmark"
-        },
-        staffModal: {
-          title: "Staff - {0}",
-          manager: "Manager",
-          noManager: "No manager assigned.",
-          staff: "Staff",
-          noStaff: "No agents assigned to this depot."
-        },
-        viewStaff: "View Staff"
-      },
-      payouts: {
-        title: "Seller Payouts",
-        commissionInfo: "Current commission rate: {0}% (Standard)",
-        balanceInfo: "Balance due is calculated on delivered orders, minus commission and previous payouts.",
-        table: {
-          store: "Store",
-          totalRevenue: "Total Revenue",
-          commissionDue: "Commission Due",
-          paidAmount: "Already Paid",
-          balanceDue: "Balance Due"
-        },
-        markAsPaid: "Mark as Paid",
-        noPending: "No pending payouts."
-      },
-      support: {
-        title: "Support Tickets ({0})",
-        detail: {
-          back: "< Back to list",
-          user: "User:",
-          replyPlaceholder: "Your reply...",
-          reply: "Reply"
-        },
-        status: {
-          open: "Open",
-          inProgress: "In Progress",
-          resolved: "Resolved"
-        }
-      },
-      reviews: {
-        title: "Review Moderation ({0})",
-        noPending: "No pending reviews for moderation.",
-        goodJob: "Great job!",
-        product: "Product:",
-        by: "By:",
-        on: "on"
-      },
-      logs: {
-        title: "Activity Logs",
-        filterPlaceholder: "Filter logs...",
-        performedAction: "performed action:",
-        details: "Details:",
-        noLogs: "No logs match your search."
-      },
-      settings: {
-        title: "Site Settings",
-        save: "Save Settings",
-        sections: {
-          identity: "Visual Identity",
-          features: "Features",
-          delivery: "Delivery",
-          sellerDocs: "Required Seller Documents",
-          sellerPlans: "Seller Plans",
-          loyalty: "Customer Loyalty Program",
-          seo: "SEO & Metadata",
-          content: "Page Content Management",
-          emails: "Email Templates",
-          maintenance: "Maintenance Mode",
-          footer: "Footer"
-        },
-        identity: {
-          logo: "Site Logo",
-          banner: "Homepage Banner",
-          upload: "Choose"
-        },
-        features: {
-          chat: "Enable customer-seller chat",
-          comparison: "Enable product comparison"
-        },
-        delivery: {
-          intraUrban: "Intra-urban base fee (FCFA)",
-          interUrban: "Inter-urban base fee (FCFA)",
-          perKg: "Additional cost per Kg (FCFA)",
-          premiumDiscount: "Premium delivery discount (%)"
-        },
-        plans: {
-          standard: "Standard Plan",
-          premium: "Premium Plan",
-          superPremium: "Super Premium Plan",
-          price: "Price (FCFA)",
-          duration: "Duration (days)",
-          limit: "Product limit",
-          commission: "Commission (%)",
-          photoService: "Photo service included",
-          homepageFeature: "Featured on homepage"
-        },
-        loyalty: {
-          enable: "Enable customer loyalty program",
-          premium: "Premium Customer Plan",
-          ordersRequired: "Number of orders required",
-          spendingRequired: "Total amount spent required (FCFA)",
-          caution: "Deposit amount (FCFA)",
-          benefits: "Benefits (one per line)",
-          premiumPlus: "Premium+ Customer Plan",
-          enablePremiumPlus: "Enable Premium+ plan",
-          annualFee: "Annual fee (FCFA)"
-        },
-        seo: {
-          defaultTitle: "Default Meta Title",
-          defaultDesc: "Default Meta Description",
-          ogImage: "Sharing Image URL (OpenGraph)"
-        },
-        content: {
-          pageTitle: "Page Title: {0}",
-          content: "Content"
-        },
-        emails: {
-          subject: "Email Subject",
-          body: "Email Body",
-          variables: "Available variables: {0}"
-        },
-        maintenance: {
-          enable: "Enable maintenance mode",
-          message: "Maintenance message"
-        },
-        footer: {
-          companyName: "Company Name (Copyright)",
-          iconUrl: "Icon URL"
-        }
-      }
-    },
-    forbidden: {
-      title: "Access Denied",
-      description: "Sorry, you do not have the necessary permissions to access this page.",
-      backHome: "Back to Home"
     },
     notFound: {
       title: "Page Not Found",
       description: "Sorry, the page you are looking for does not exist or has been moved.",
       backHome: "Back to Home"
     },
+    forbidden: {
+      title: "Access Denied",
+      description: "You do not have the necessary permissions to access this page.",
+      backHome: "Back to Home"
+    },
     forgotPassword: {
-      title: "Forgot Password",
-      description: "Don't worry. Enter your email and we'll send you a reset link.",
+      title: "Forgot Password?",
+      description: "Enter your email address and we'll send you a link to reset your password.",
       emailLabel: "Email address",
-      sendLink: "Send Link",
+      sendLink: "Send Reset Link",
       checkEmailTitle: "Check your email",
-      checkEmailDescription: "If an account exists for {0}, you will find a link to reset your password there.",
+      checkEmailDescription: "An email has been sent to {0} with instructions to reset your password.",
       close: "Close"
+    },
+    superadmin: {
+      tabs: {
+          overview: "Overview",
+          orders: "Orders",
+          stores: "Stores",
+          users: "Users",
+          catalog: "Catalog",
+          marketing: "Marketing",
+          logistics: "Logistics",
+          payouts: "Payouts",
+          support: "Support",
+          reviews: "Reviews",
+          logs: "Activity Logs",
+          settings: "Settings"
+      },
+      panelUnderConstruction: "'{0}' panel is under construction.",
+      overview: {
+          totalRevenue: "Total Revenue",
+          totalOrders: "Total Orders",
+          totalUsers: "Total Users",
+          pendingStores: "Pending Stores",
+          revenueLast7Days: "Revenue Last 7 Days",
+          orderStatuses: "Order Status Distribution",
+          recentOrders: "Recent Orders",
+          newUsers: "New Users"
+      },
+      users: {
+          title: "User Management ({0})",
+          searchPlaceholder: "Search by name or email...",
+          sendEmail: "Send Email ({0})",
+          create: "Create User",
+          table: {
+              name: "Name",
+              email: "Email",
+              role: "Role",
+              action: "Action"
+          },
+          form: {
+              editTitle: "Edit User",
+              createTitle: "Create User",
+              name: "Name",
+              role_customer: "Customer",
+              role_seller: "Seller",
+              role_delivery_agent: "Delivery Agent",
+              role_depot_agent: "Depot Agent",
+              role_depot_manager: "Depot Manager",
+              role_superadmin: "Super Admin",
+              assignedDepot: "Assigned Depot",
+              noDepot: "No depot",
+              deliveryZone: "Delivery Zone",
+              noZone: "No zone"
+          }
+      },
+      catalog: {
+          title: "Catalog Management",
+          imageUrl: "Image URL",
+          addCategory: "Add Category",
+          categoryName: "Category name",
+          parentCategory: "Parent Category",
+          mainCategory: "Main Category",
+          add: "Add"
+      },
+      marketing: {
+          tabs: {
+              flashSales: "Flash Sales",
+              ads: "Advertisements",
+              announcements: "Announcements"
+          },
+          createFlashSale: "Create Flash Sale",
+          addAd: "Add Advertisement",
+          createAnnouncement: "Create Announcement",
+          flashSaleDetail: {
+              submissions: "Seller Submissions",
+              approveAll: "Approve All",
+              rejectAll: "Reject All",
+              product: "Product",
+              seller: "Seller",
+              originalPrice: "Original Price",
+              flashPrice: "Flash Price"
+          },
+          flashSaleForm: {
+              title: "Create New Flash Sale",
+              name: "Sale name",
+              startDate: "Start date",
+              endDate: "End date",
+              create: "Create Sale",
+              error_name: "Name is required.",
+              error_startDate: "Start date is required.",
+              error_endDate: "End date is required.",
+              error_endDateAfterStart: "End date must be after start date.",
+              error_endDatePast: "End date cannot be in the past."
+          },
+          adForm: {
+              imageUrl: "Image URL",
+              linkUrl: "Link URL",
+              activate: "Activate this ad"
+          },
+          announcementForm: {
+              title: "Announcement title",
+              content: "Content",
+              target_all: "All users",
+              target_customers: "Customers only",
+              target_sellers: "Sellers only",
+              activate: "Activate this announcement"
+          }
+      },
+      stores: {
+          title: "Store Management",
+          tabs: {
+              pending: "Pending",
+              active: "Active",
+              suspended: "Suspended"
+          },
+          table: {
+              store: "Store",
+              seller: "Seller",
+              documents: "Documents",
+              location: "Location"
+          },
+          rejectionReason: "Reason for rejection:",
+          warnReason: "Reason for warning",
+          noStores: "No stores in this category."
+      },
+      orders: {
+          title: "Order Management",
+          searchPlaceholder: "Search by ID or customer name...",
+          allStatuses: "All statuses",
+          tabs: {
+              all: "All Orders",
+              disputes: "Disputes"
+          },
+          evidence: "Evidence:",
+          rejectRequest: "Reject Request",
+          approveRefund: "Approve Refund",
+          noDisputes: "No disputes in progress."
+      },
+      logistics: {
+          title: "Logistics Management",
+          addPickupPoint: "Add Pickup Point",
+          viewStaff: "View Staff",
+          staffModal: {
+              title: "Staff for {0} Depot",
+              manager: "Manager",
+              noManager: "No manager assigned.",
+              staff: "Depot Agents",
+              noStaff: "No agents assigned to this depot."
+          },
+          form: {
+              name: "Pickup point name",
+              city: "City",
+              neighborhood: "Neighborhood",
+              street: "Street/Address"
+          }
+      },
+      payouts: {
+          title: "Seller Payout Management",
+          commissionInfo: "Default commission rate: {0}%. Premium plans have reduced rates.",
+          balanceInfo: "Balance due is calculated on delivered orders.",
+          table: {
+              store: "Store",
+              totalRevenue: "Total Revenue",
+              commissionDue: "Commission Due",
+              paidAmount: "Amount Paid",
+              balanceDue: "Balance Due"
+          },
+          markAsPaid: "Mark as Paid",
+          noPending: "No pending payouts."
+      },
+      support: {
+          title: "Support Tickets ({0})",
+          detail: {
+              back: "< Back to list",
+              user: "User",
+              replyPlaceholder: "Your reply...",
+              reply: "Reply"
+          },
+          status: {
+              open: "Open",
+              inProgress: "In Progress",
+              resolved: "Resolved"
+          }
+      },
+      reviews: {
+          title: "Review Moderation ({0} pending)",
+          noPending: "No pending reviews for moderation.",
+          goodJob: "Good job!",
+          product: "Product:",
+          by: "By",
+          on: "on"
+      },
+      logs: {
+          title: "Site Activity Logs",
+          filterPlaceholder: "Filter logs...",
+          performedAction: "performed action",
+          details: "Details:",
+          noLogs: "No logs match the filter."
+      },
+      emailModal: {
+          title: "Send Bulk Email",
+          recipients: "{0} recipient(s) selected.",
+          useTemplate: "Use a template",
+          customEmail: "Custom Email",
+          subject: "Subject",
+          body: "Message Body",
+          variableInfo: "You can use {customerName} to customize the message.",
+          send: "Send Email"
+      },
+      settings: {
+        title: "General Site Settings",
+        save: "Save Settings",
+        sections: {
+          identity: "Site Identity & Appearance",
+          features: "Features",
+          delivery: "Delivery Settings",
+          sellerDocs: "Required Seller Documents",
+          sellerPlans: "Seller Subscription Plans",
+          loyalty: "Customer Loyalty Program",
+          payment: "Payment Methods",
+          seo: "Default SEO",
+          content: "Information Pages Content",
+          emails: "Email Templates",
+          maintenance: "Maintenance Mode",
+          footer: "Footer & Social Links",
+        },
+        identity: {
+          logo: "Site Logo",
+          banner: "Main Homepage Banner",
+          upload: "Upload"
+        },
+        features: {
+          chat: "Enable chat module between customers and sellers",
+          comparison: "Enable product comparison module",
+        },
+        delivery: {
+          intraUrban: "Base intra-urban fee (same city)",
+          interUrban: "Base inter-urban fee (different cities)",
+          perKg: "Additional cost per Kg",
+          premiumDiscount: "Delivery discount for Premium customers (%)",
+        },
+        plans: {
+          standard: "Standard Plan",
+          premium: "Premium Plan",
+          superPremium: "Super Premium Plan",
+          price: "Price (XAF)",
+          duration: "Duration (days)",
+          limit: "Product limit",
+          commission: "Commission (%)",
+          photoService: "Photo service included",
+          homepageFeature: "Featured on homepage",
+        },
+        loyalty: {
+          enable: "Enable loyalty program",
+          premium: "Premium Plan",
+          thresholds: "Thresholds",
+          ordersRequired: "Orders required",
+          spendingRequired: "Spending required (XAF)",
+          caution: "Deposit amount (XAF)",
+          benefits: "Benefits (one per line)",
+          premiumPlus: "Premium+ Plan",
+          enablePremiumPlus: "Enable Premium+ plan",
+          annualFee: "Annual fee (XAF)",
+        },
+        payment: {
+          name: "Name",
+          logoUrl: "Logo URL",
+          add: "Add Payment Method",
+        },
+        seo: {
+          defaultTitle: "Default Title (meta title tag)",
+          defaultDesc: "Default Description (meta description tag)",
+          ogImage: "Image URL for sharing (Open Graph)",
+        },
+        content: {
+          pageTitle: "Page Title - {0}",
+          content: "Content (HTML allowed)",
+        },
+        emails: {
+          subject: "Subject",
+          body: "Email Body",
+          variables: "Available variables: {0}",
+        },
+        maintenance: {
+          enable: "Enable maintenance mode",
+          message: "Maintenance message",
+        },
+        footer: {
+          companyName: "Company Name",
+          iconUrl: "Icon URL",
+        }
+      }
     }
   }
 };
