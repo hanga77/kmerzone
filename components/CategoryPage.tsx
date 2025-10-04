@@ -4,6 +4,7 @@ import ProductCard from './ProductCard';
 import { ArrowLeftIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface CategoryPageProps {
   categoryId: string;
@@ -18,6 +19,7 @@ interface CategoryPageProps {
 }
 
 const CategoryPage: React.FC<CategoryPageProps> = ({ categoryId, allCategories, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
+  const { t } = useLanguage();
   const { selectedCategory, productsInCategory } = useMemo(() => {
     const selectedCat = allCategories.find(c => c.id === categoryId);
     if (!selectedCat) {
@@ -58,7 +60,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryId, allCategories, 
     <div className="container mx-auto px-4 sm:px-6 py-12">
       <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
         <ArrowLeftIcon className="w-5 h-5" />
-        Retour à l'accueil
+        {t('header.backToHome')}
       </button>
 
       <div className="lg:flex lg:gap-8">
@@ -71,7 +73,7 @@ const CategoryPage: React.FC<CategoryPageProps> = ({ categoryId, allCategories, 
         <main className="flex-grow">
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-gray-800 dark:text-white">
-              Catégorie: <span className="text-kmer-green">{selectedCategory.name}</span>
+              {t('categoryPage.titlePrefix')}<span className="text-kmer-green">{t(selectedCategory.name)}</span>
             </h1>
             <p className="text-gray-600 dark:text-gray-300">
               {filteredAndSortedProducts.length} sur {productsInCategory.length} produits affichés

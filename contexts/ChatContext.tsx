@@ -1,11 +1,8 @@
-
-
-
-
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
 import { GoogleGenAI } from '@google/genai';
+import { useLanguage } from './LanguageContext';
 
 interface ChatContextType {
   chats: Chat[];
@@ -58,6 +55,7 @@ const censorText = (text: string, storeInfo?: Chat['sellerStoreInfo']): string =
 
 export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [chats, setChats] = useState<Chat[]>(initialChats);
   const [messages, setMessages] = useState<{ [chatId: string]: Message[] }>(initialMessages);
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
@@ -192,7 +190,10 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         const chatHistory = messages[chatId] || [];
         const formattedHistory = chatHistory.map(msg => `${msg.senderId === user.id ? 'Customer' : 'Assistant'}: ${msg.text}`).join('\n');
 
-        const getCategoryName = (categoryId: string) => allCategories.find(c => c.id === categoryId)?.name || 'Unknown';
+        const getCategoryName = (categoryId: string) => {
+            const cat = allCategories.find(c => c.id === categoryId);
+            return cat ? t(cat.name) : 'Unknown';
+        };
 
         const simplifiedProducts = allProducts.map(p => ({
             id: p.id,
@@ -285,7 +286,7 @@ Please provide a helpful response as the KMER ZONE assistant.
         setIsTyping(prev => ({ ...prev, [chatId]: false }));
     }
 
-  }, [user, chats, messages, ai]);
+  }, [user, chats, messages, ai, t]);
 
   const handleSetActiveChat = useCallback((chatId: string | null) => {
      setActiveChatId(chatId);

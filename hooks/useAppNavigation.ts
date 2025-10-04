@@ -12,6 +12,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const [viewingStoriesFor, setViewingStoriesFor] = useState<Store | null>(null);
     const [accountPageTab, setAccountPageTab] = useState<string>('dashboard');
     const [sellerDashboardTab, setSellerDashboardTab] = useState<string>('overview');
+    const [productToEdit, setProductToEdit] = useState<Product | null>(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -38,6 +39,11 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const navigateToComparison = useCallback(() => setPage('comparison'), []);
     const navigateToBecomePremium = useCallback(() => setPage('become-premium'), []);
     const navigateToVisualSearch = useCallback(() => setPage('visual-search'), []);
+
+    const navigateToProductForm = useCallback((product: Product | null) => {
+        setProductToEdit(product);
+        setPage('product-form');
+    }, []);
 
     const navigateToProduct = useCallback((product: Product) => {
         setSelectedProduct(product);
@@ -128,6 +134,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         setViewingStoriesFor,
         accountPageTab,
         sellerDashboardTab,
+        productToEdit,
         navigateToHome,
         navigateToCart,
         navigateToCheckout,
@@ -154,10 +161,11 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         navigateToInfoPage,
         handleNavigateFromNotification,
         handleCloseStories,
-        navigateToVisualSearch
+        navigateToVisualSearch,
+        navigateToProductForm
     }), [
         page, selectedProduct, selectedCategoryId, selectedStore, selectedOrder, searchQuery,
-        infoPageContent, viewingStoriesFor, accountPageTab, sellerDashboardTab,
+        infoPageContent, viewingStoriesFor, accountPageTab, sellerDashboardTab, productToEdit,
         navigateToHome, navigateToCart, navigateToCheckout, navigateToStores, navigateToStoresMap,
         navigateToBecomeSeller, navigateToSellerDashboard, navigateToSellerProfile,
         navigateToSuperAdminDashboard, navigateToOrderHistory, navigateToPromotions,
@@ -165,6 +173,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         navigateToDepotAgentDashboard, navigateToComparison, navigateToBecomePremium,
         navigateToProduct, navigateToCategory, navigateToVendorPage, navigateToOrderDetail,
         navigateToAccount, handleSearch, navigateToInfoPage, handleNavigateFromNotification,
-        handleCloseStories, navigateToVisualSearch, setSelectedOrder, setViewingStoriesFor
+        handleCloseStories, navigateToVisualSearch, setSelectedOrder, setViewingStoriesFor,
+        navigateToProductForm
     ]);
 };

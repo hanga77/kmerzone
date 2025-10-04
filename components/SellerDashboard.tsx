@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection, User } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
-import { useSiteData } from '../hooks/useSiteData';
 import { 
     ChartPieIcon, ShoppingBagIcon, TruckIcon, StarIcon, TagIcon, BoltIcon, 
     BarChartIcon, BanknotesIcon, BuildingStorefrontIcon, DocumentTextIcon, 
@@ -40,7 +39,6 @@ interface SellerDashboardProps {
   onEditProduct: (product: Product) => void;
   onDeleteProduct: (productId: string) => void;
   onUpdateProductStatus: (productId: string, status: Product['status']) => void;
-  onNavigateToProfile: () => void;
   onNavigateToAnalytics: () => void;
   onSetPromotion: (product: Product) => void;
   onRemovePromotion: (productId: string) => void;
@@ -57,6 +55,13 @@ interface SellerDashboardProps {
   allShippingPartners: ShippingPartner[];
   onRequestUpgrade: (storeId: string, level: 'premium' | 'super_premium') => void;
   isChatEnabled: boolean;
+  onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
+  onSellerCancelOrder: (orderId: string) => void;
+  onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => void;
+  onDeleteCollection: (storeId: string, collectionId: string) => void;
+  onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
+  onAddProductToStory: (productId: string) => void;
+  onAddStory: (imageUrl: string) => void;
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number, isLocked?: boolean }> = ({ icon, label, isActive, onClick, count, isLocked }) => {
@@ -85,8 +90,6 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade } = props;
     const [activeTab, setActiveTab] = useState(initialTab || 'overview');
-    const { user } = useAuth();
-    const siteData = useSiteData();
     const { t } = useLanguage();
     
     useEffect(() => {
@@ -119,17 +122,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
       { id: 'support', label: t('sellerDashboard.tabs.support'), icon: <ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>, isLocked: false },
     ];
     
-    const panelProps = {
-        ...props,
-        onUpdateOrderStatus: (orderId: string, status: Order['status']) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user),
-        onSellerCancelOrder: (orderId: string) => user && siteData.handleSellerCancelOrder(orderId, user),
-        onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => user && siteData.handleCreateOrUpdateCollection(storeId, collection, user),
-        onDeleteCollection: (storeId: string, collectionId: string) => user && siteData.handleDeleteCollection(storeId, collectionId, user),
-        onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => user && siteData.handleUpdateStoreProfile(storeId, data, user),
-        onUpdateShippingSettings: (storeId: string, settings: any) => {}, // Placeholder, should be implemented in useSiteData
-        onAddProductToStory: (productId: string) => user && siteData.handleAddProductToStory(productId, user),
-        onAddStory: (imageUrl: string) => user && siteData.handleAddStory(imageUrl, user),
-    };
+    const panelProps = { ...props };
 
     const renderContent = () => {
         const selectedTab = TABS.find(t => t.id === activeTab);
@@ -147,7 +140,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'flash-sales': return <FlashSalesPanel {...panelProps} />;
             case 'analytics': return <AnalyticsPanel sellerOrders={props.sellerOrders} sellerProducts={props.products} flashSales={props.flashSales} />;
             case 'payouts': return <PayoutsPanel {...panelProps} />;
-            case 'livraison': return <ShippingPanel {...panelProps} />;
+            case 'livraison': return <ShippingPanel onUpdate={props.onUpdateStoreProfile} {...panelProps} />;
             case 'profile': return <ProfilePanel {...panelProps} />;
             case 'subscription': return <SubscriptionPanel {...panelProps} />;
             case 'documents': return <DocumentsPanel {...panelProps} />;

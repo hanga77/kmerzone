@@ -1,10 +1,9 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, Category, Variant, VariantDetail, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { PhotoIcon, XCircleIcon, TrashIcon, SparklesIcon } from './Icons';
 import { GoogleGenAI } from '@google/genai';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface ProductFormProps {
   onSave: (product: Product) => void;
@@ -185,6 +184,7 @@ const CategorySpecificFields: React.FC<{
 
 const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEdit, categories, onAddCategory, siteSettings }) => {
   const { user } = useAuth();
+  const { t } = useLanguage();
   const [product, setProduct] = useState<Partial<Product>>({
     name: '',
     price: 0,
@@ -411,11 +411,11 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                     </div>
                      <FieldWrapper label="Catégorie">
                         <select name="categoryId" id="categoryId" value={product.categoryId} onChange={handleChange} className="mt-1 block w-full border-gray-300 rounded-md shadow-sm dark:bg-gray-700 dark:border-gray-600">
-                            <option value="" disabled>-- Sélectionner une sous-catégorie --</option>
+                            <option value="" disabled>{t('productForm.selectSubcategory')}</option>
                             {categoryTree.map(mainCat => (
-                                <optgroup label={mainCat.name} key={mainCat.id}>
+                                <optgroup label={t(mainCat.name)} key={mainCat.id}>
                                 {mainCat.subCategories.map(subCat => (
-                                    <option key={subCat.id} value={subCat.id}>{subCat.name}</option>
+                                    <option key={subCat.id} value={subCat.id}>{t(subCat.name)}</option>
                                 ))}
                                 </optgroup>
                             ))}

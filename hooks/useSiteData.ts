@@ -414,6 +414,38 @@ export const useSiteData = () => {
     }, [setAllPickupPoints, logActivity]);
 
     // Seller-specific actions
+    const handleAddOrUpdateProduct = useCallback((product: Product, user: User) => {
+        setAllProducts(prev => {
+            const existingIndex = prev.findIndex(p => p.id === product.id);
+            if (existingIndex > -1) {
+                const newProducts = [...prev];
+                newProducts[existingIndex] = product;
+                logActivity(user, 'PRODUCT_UPDATED', `Produit mis à jour : ${product.name}`);
+                return newProducts;
+            } else {
+                logActivity(user, 'PRODUCT_CREATED', `Produit créé : ${product.name}`);
+                return [...prev, product];
+            }
+        });
+    }, [setAllProducts, logActivity]);
+
+    const handleDeleteProduct = useCallback((productId: string, user: User) => {
+        let productName = '';
+        setAllProducts(prev => prev.filter(p => {
+            if (p.id === productId) {
+                productName = p.name;
+                return false;
+            }
+            return true;
+        }));
+        logActivity(user, 'PRODUCT_DELETED', `Produit supprimé : ${productName} (ID: ${productId})`);
+    }, [setAllProducts, logActivity]);
+
+    const handleUpdateProductStatus = useCallback((productId: string, status: Product['status'], user: User) => {
+        setAllProducts(prev => prev.map(p => p.id === productId ? { ...p, status } : p));
+        logActivity(user, 'PRODUCT_STATUS_UPDATED', `Statut du produit ${productId} mis à jour à ${status}.`);
+    }, [setAllProducts, logActivity]);
+
     const handleSellerUpdateOrderStatus = useCallback((orderId: string, status: OrderStatus, user: User) => {
         setAllOrders(prev => prev.map(o => {
             if (o.id === orderId) {
@@ -703,6 +735,9 @@ export const useSiteData = () => {
         handleDepotCheckIn,
         handleUpdateSchedule,
         // Seller actions
+        handleAddOrUpdateProduct,
+        handleDeleteProduct,
+        handleUpdateProductStatus,
         handleSellerUpdateOrderStatus,
         handleSellerCancelOrder,
         handleCreateOrUpdateCollection,
@@ -731,6 +766,7 @@ export const useSiteData = () => {
         handleUpdatePickupPoint, handleDeletePickupPoint, handleAdminReplyToTicket, handleAdminUpdateTicketStatus,
         handleReviewModeration, handleCreateUserByAdmin, handleUpdateOrderStatus, handleAdminUpdateCategory,
         handleUpdateDocumentStatus, handleResolveDispute, handleDepotCheckIn, handleUpdateSchedule,
+        handleAddOrUpdateProduct, handleDeleteProduct, handleUpdateProductStatus,
         handleSellerUpdateOrderStatus, handleSellerCancelOrder, handleCreateOrUpdateCollection, handleDeleteCollection,
         handleUpdateStoreProfile, handleUpdateDeliveryStatus, createStoreAndNotifyAdmin, handleAddProductToStory, handleAddStory,
         handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage

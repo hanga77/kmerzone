@@ -1,5 +1,6 @@
 import React from 'react';
 import type { Category } from '../types';
+import { useLanguage } from '../contexts/LanguageContext';
 
 interface CategoryCardProps {
   category: Category;
@@ -7,6 +8,7 @@ interface CategoryCardProps {
 }
 
 const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick }) => {
+  const { t } = useLanguage();
   return (
     <button 
       onClick={() => onClick(category.id)}
@@ -14,11 +16,11 @@ const CategoryCard: React.FC<CategoryCardProps> = ({ category, onClick }) => {
     >
       <img 
         src={category.imageUrl} 
-        alt={category.name} 
+        alt={t(category.name)} 
         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
       />
       <div className="absolute inset-0 bg-black bg-opacity-40 group-hover:bg-opacity-50 transition-colors duration-300 flex items-center justify-center p-2">
-        <h3 className="text-white text-lg font-bold text-center" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.7)'}}>{category.name}</h3>
+        <h3 className="text-white text-lg font-bold text-center" style={{textShadow: '1px 1px 3px rgba(0,0,0,0.7)'}}>{t(category.name)}</h3>
       </div>
     </button>
   );

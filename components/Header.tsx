@@ -284,7 +284,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                                     onClick={() => { onNavigateToCategory(mainCat.id); setIsCategoryMenuOpen(false); }}
                                     className="font-bold text-md text-gray-800 dark:text-gray-100 hover:text-kmer-green mb-2 w-full text-left"
                                 >
-                                    {mainCat.name}
+                                    {t(mainCat.name)}
                                 </button>
                                 <div className="space-y-1">
                                     {mainCat.subCategories.map(subCat => (
@@ -293,7 +293,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                                         onClick={() => { onNavigateToCategory(subCat.id); setIsCategoryMenuOpen(false); }}
                                         className="w-full text-left block text-sm text-gray-600 dark:text-gray-300 hover:text-kmer-green"
                                     >
-                                        {subCat.name}
+                                        {t(subCat.name)}
                                     </button>
                                     ))}
                                 </div>
@@ -348,10 +348,10 @@ export const Header: React.FC<HeaderProps> = (props) => {
                      <div className="flex flex-col items-start">
                         {categoryTree.map(mainCat => (
                           <div key={mainCat.id} className="w-full">
-                            <button onClick={() => {onNavigateToCategory(mainCat.id); setIsMenuOpen(false);}} className="text-left block py-1.5 font-semibold">{mainCat.name}</button>
+                            <button onClick={() => {onNavigateToCategory(mainCat.id); setIsMenuOpen(false);}} className="text-left block py-1.5 font-semibold">{t(mainCat.name)}</button>
                             <div className="pl-4">
                               {mainCat.subCategories.map(subCat => (
-                                <button key={subCat.id} onClick={() => {onNavigateToCategory(subCat.id); setIsMenuOpen(false);}} className="text-left block py-1">{subCat.name}</button>
+                                <button key={subCat.id} onClick={() => {onNavigateToCategory(subCat.id); setIsMenuOpen(false);}} className="text-left block py-1">{t(subCat.name)}</button>
                               ))}
                             </div>
                           </div>
@@ -377,6 +377,15 @@ export const Header: React.FC<HeaderProps> = (props) => {
             </nav>
           </div>
           
+          <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0 flex justify-center items-center gap-4">
+              <button onClick={() => setLanguage(language === 'fr' ? 'en' : 'fr')} className="flex items-center gap-2 text-sm font-semibold text-gray-600 dark:text-gray-300 hover:text-kmer-green p-2 rounded-lg">
+                  <span>Langue: {language.toUpperCase()}</span>
+              </button>
+              <button onClick={toggleTheme} className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700">
+                  {theme === 'dark' ? <SunIcon className="h-6 w-6" /> : <MoonIcon className="h-6 w-6" />}
+              </button>
+          </div>
+
           {user && (
             <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
                 <button onClick={() => {onLogout(); setIsMenuOpen(false);}} className="w-full bg-gray-100 dark:bg-gray-700 font-bold py-2 rounded-lg flex items-center justify-center gap-2">

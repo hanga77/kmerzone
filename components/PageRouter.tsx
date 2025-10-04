@@ -15,7 +15,6 @@ import CategoryPage from './CategoryPage';
 import { SellerDashboard } from './SellerDashboard';
 import VendorPage from './VendorPage';
 import ProductForm from './ProductForm';
-import SellerProfile from './SellerProfile';
 import { SuperAdminDashboard } from './SuperAdminDashboard';
 import OrderHistoryPage from './OrderHistoryPage';
 import OrderDetailPage from './OrderDetailPage';
@@ -56,8 +55,29 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         return siteData.allStores.find((s: Store) => s.sellerId === user.id);
     }, [user, siteData.allStores]);
 
-    const sellerProducts = user?.role === 'seller' && sellerStore ? siteData.allProducts.filter((p: Product) => p.vendor === sellerStore.name) : [];
-    const sellerOrders = user?.role === 'seller' && sellerStore ? siteData.allOrders.filter((o: Order) => o.items.some(i => i.vendor === sellerStore.name)) : [];
+    const sellerProducts = useMemo(() => (
+        user?.role === 'seller' && sellerStore 
+            ? siteData.allProducts.filter((p: Product) => p.vendor === sellerStore.name) 
+            : []
+    ), [user, sellerStore, siteData.allProducts]);
+
+    const sellerOrders = useMemo(() => (
+        user?.role === 'seller' && sellerStore 
+            ? siteData.allOrders.filter((o: Order) => o.items.some(i => i.vendor === sellerStore.name)) 
+            : []
+    ), [user, sellerStore, siteData.allOrders]);
+
+    const sellerPromoCodes = useMemo(() => (
+        siteData.allPromoCodes.filter((p: PromoCode) => p.sellerId === user?.id)
+    ), [siteData.allPromoCodes, user]);
+
+    const sellerTickets = useMemo(() => (
+        siteData.allTickets.filter((t: Ticket) => t.userId === user?.id)
+    ), [siteData.allTickets, user]);
+
+    const sellerNotifications = useMemo(() => (
+        user ? siteData.allNotifications.filter((n: Notification) => n.userId === user.id) : []
+    ), [user, siteData.allNotifications]);
     
     const augmentedSiteData = useMemo(() => ({
         ...siteData,
@@ -209,17 +229,16 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 categories={siteData.allCategories}
                 flashSales={siteData.flashSales}
                 sellerOrders={sellerOrders}
-                promoCodes={siteData.allPromoCodes.filter((p: PromoCode) => p.sellerId === user?.id)}
-                allTickets={siteData.allTickets.filter((t: Ticket) => t.userId === user?.id)}
+                promoCodes={sellerPromoCodes}
+                allTickets={sellerTickets}
                 onBack={() => {}}
-                onAddProduct={() => navigation.setPage('product-form')}
-                onEditProduct={(p) => {}}
-                onDeleteProduct={() => {}}
-                onUpdateProductStatus={() => {}}
-                onNavigateToProfile={() => navigation.navigateToSellerDashboard('profile')}
+                onAddProduct={() => navigation.navigateToProductForm(null)}
+                onEditProduct={(p: Product) => navigation.navigateToProductForm(p)}
+                onDeleteProduct={(productId) => user && siteData.handleDeleteProduct(productId, user)}
+                onUpdateProductStatus={(productId, status) => user && siteData.handleUpdateProductStatus(productId, status, user)}
                 onNavigateToAnalytics={() => navigation.navigateToSellerDashboard('analytics')}
                 onSetPromotion={setPromotionModalProduct}
-                onRemovePromotion={() => {}}
+                onRemovePromotion={(productId) => siteData.handleSetPromotion(productId, null)}
                 onProposeForFlashSale={() => {}}
                 onUploadDocument={() => {}}
                 onCreatePromoCode={() => {}}
@@ -229,11 +248,31 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 payouts={siteData.payouts}
                 onReplyToReview={() => {}}
                 initialTab={navigation.sellerDashboardTab}
-                sellerNotifications={user ? siteData.allNotifications.filter((n: Notification) => n.userId === user?.id) : []}
+                sellerNotifications={sellerNotifications}
                 onCreateTicket={() => {}}
                 allShippingPartners={siteData.allShippingPartners}
                 onRequestUpgrade={() => {}}
+                onUpdateOrderStatus={(orderId, status) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user)}
+                onSellerCancelOrder={(orderId) => user && siteData.handleSellerCancelOrder(orderId, user)}
+                onCreateOrUpdateCollection={(storeId, collection) => user && siteData.handleCreateOrUpdateCollection(storeId, collection, user)}
+                onDeleteCollection={(storeId, collectionId) => user && siteData.handleDeleteCollection(storeId, collectionId, user)}
+                onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
+                onAddProductToStory={(productId: string) => user && siteData.handleAddProductToStory(productId, user)}
+                onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+        case 'product-form':
+            if (!user || user.role !== 'seller') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            return <ProductForm
+                productToEdit={navigation.productToEdit}
+                categories={siteData.allCategories}
+                siteSettings={siteData.siteSettings}
+                onCancel={() => navigation.navigateToSellerDashboard('products')}
+                onSave={(product) => {
+                    user && siteData.handleAddOrUpdateProduct(product, user);
+                    navigation.navigateToSellerDashboard('products');
+                }}
+                onAddCategory={() => {}}
+            />;
         case 'superadmin-dashboard':
             if (user?.role !== 'superadmin') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
             return <SuperAdminDashboard siteData={siteData} />;
@@ -247,6 +286,9 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onBack={navigation.navigateToOrderHistory} 
                 allPickupPoints={siteData.allPickupPoints} 
                 allUsers={allUsers} 
+                onCancelOrder={(orderId) => user && siteData.handleCancelOrder(orderId, user)}
+                onRequestRefund={(orderId, reason, evidenceUrls) => user && siteData.handleRequestRefund(orderId, reason, evidenceUrls, user)}
+                onCustomerDisputeMessage={(orderId, message) => user && siteData.handleCustomerDisputeMessage(orderId, message)}
             /> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'search-results':
             return <SearchResultsPage searchQuery={navigation.searchQuery} products={siteData.allProducts} stores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled} />;
@@ -277,7 +319,12 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                         onVendorClick={navigation.navigateToVendorPage}
                     />;
         case 'seller-analytics-dashboard':
-            return <SellerAnalyticsDashboard onBack={() => navigation.navigateToSellerDashboard('overview')} sellerOrders={sellerOrders} sellerProducts={sellerProducts} flashSales={siteData.flashSales}/>
+            return <SellerAnalyticsDashboard 
+                onBack={() => navigation.navigateToSellerDashboard('overview')} 
+                sellerOrders={sellerOrders} 
+                sellerProducts={sellerProducts} 
+                flashSales={siteData.flashSales}
+            />
         case 'seller-subscription':
             return <SellerSubscriptionPage 
                 siteSettings={siteData.siteSettings} 

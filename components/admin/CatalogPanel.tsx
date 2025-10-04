@@ -62,15 +62,15 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
                         <div key={mainCat.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
                             <div className="flex items-center gap-2">
                                 <input 
-                                    value={editingCategories[mainCat.id]?.name ?? mainCat.name} 
-                                    onChange={(e) => handleCategoryChange(mainCat.id, 'name', e.target.value)} 
-                                    className="font-bold p-1 border rounded w-full bg-transparent dark:border-gray-600"
+                                    value={t(mainCat.name)} 
+                                    disabled
+                                    className="font-bold p-1 border rounded w-full bg-gray-100 dark:bg-gray-800 dark:border-gray-600 cursor-not-allowed"
                                 />
                                 {editingCategories[mainCat.id] && <button onClick={() => handleSaveCategory(mainCat.id)} className="text-green-500"><CheckCircleIcon className="w-5 h-5"/></button>}
                                 <button onClick={() => onAdminDeleteCategory(mainCat.id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
                             </div>
                              <div className="flex items-center gap-2 mt-2">
-                                <img src={editingCategories[mainCat.id]?.imageUrl ?? mainCat.imageUrl} alt={mainCat.name} className="w-10 h-10 object-cover rounded-sm"/>
+                                <img src={editingCategories[mainCat.id]?.imageUrl ?? mainCat.imageUrl} alt={t(mainCat.name)} className="w-10 h-10 object-cover rounded-sm"/>
                                 <input 
                                     placeholder={t('superadmin.catalog.imageUrl')}
                                     value={editingCategories[mainCat.id]?.imageUrl ?? mainCat.imageUrl} 
@@ -101,15 +101,15 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
                                     <li key={subCat.id} className="flex flex-col gap-1">
                                         <div className="flex items-center gap-2">
                                             <input 
-                                                value={editingCategories[subCat.id]?.name ?? subCat.name} 
-                                                onChange={(e) => handleCategoryChange(subCat.id, 'name', e.target.value)}
-                                                className="p-1 border rounded w-full bg-transparent text-sm dark:border-gray-600"
+                                                value={t(subCat.name)} 
+                                                disabled
+                                                className="p-1 border rounded w-full bg-gray-100 dark:bg-gray-800 text-sm dark:border-gray-600 cursor-not-allowed"
                                             />
                                             {editingCategories[subCat.id] && <button onClick={() => handleSaveCategory(subCat.id)} className="text-green-500"><CheckCircleIcon className="w-5 h-5"/></button>}
                                             <button onClick={() => onAdminDeleteCategory(subCat.id)} className="text-red-500 hover:text-red-700"><TrashIcon className="w-4 h-4" /></button>
                                         </div>
                                         <div className="flex items-center gap-2 mt-1 pl-4">
-                                            <img src={editingCategories[subCat.id]?.imageUrl ?? subCat.imageUrl} alt={subCat.name} className="w-8 h-8 object-cover rounded-sm"/>
+                                            <img src={editingCategories[subCat.id]?.imageUrl ?? subCat.imageUrl} alt={t(subCat.name)} className="w-8 h-8 object-cover rounded-sm"/>
                                             <input 
                                                 placeholder={t('superadmin.catalog.imageUrl')}
                                                 value={editingCategories[subCat.id]?.imageUrl ?? subCat.imageUrl} 
@@ -153,7 +153,7 @@ export const CatalogPanel: React.FC<CatalogPanelProps> = ({ allCategories, onAdm
                         <label htmlFor="catParent" className="block text-sm font-medium">{t('superadmin.catalog.parentCategory')}</label>
                         <select id="catParent" value={selectedParent} onChange={e => setSelectedParent(e.target.value)} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
                             <option value="">{t('superadmin.catalog.mainCategory')}</option>
-                            {allCategories.filter(c => !c.parentId).map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                            {allCategories.filter(c => !c.parentId).map(c => <option key={c.id} value={c.id}>{t(c.name)}</option>)}
                         </select>
                     </div>
                     <button type="submit" className="w-full bg-blue-500 text-white font-bold py-2 rounded-lg flex items-center justify-center gap-2"><PlusIcon className="w-5 h-5"/> {t('superadmin.catalog.add')}</button>

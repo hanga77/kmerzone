@@ -75,7 +75,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-8 max-w-sm w-full relative">
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-sm w-full relative">
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
           <XIcon className="h-6 w-6" />
         </button>
@@ -128,23 +128,23 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                 <p className="text-center text-gray-500 dark:text-gray-400 text-sm mt-6">
                     Nouveau sur KMER ZONE? <button type="button" onClick={() => setView('register')} className="font-bold text-kmer-green hover:underline">Créer un compte</button>
                 </p>
-                 <div className="text-center text-gray-500 dark:text-gray-400 text-xs mt-4 space-y-1 bg-gray-100 dark:bg-gray-700 p-3 rounded-md w-full">
+                 <div className="text-center text-gray-500 dark:text-gray-400 text-xs mt-4 space-y-1 bg-gray-100 dark:bg-gray-700 p-3 rounded-md w-full max-h-40 overflow-y-auto">
                     <p className="font-bold">Comptes de test (mot de passe : "password")</p>
-                    <p className="text-left"><strong className="text-blue-500">Client:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">customer@example.com</code></p>
-                    <p className="text-left"><strong className="text-purple-500">Admin:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">superadmin@example.com</code></p>
+                    <p className="text-left"><strong className="text-blue-500">Client:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">customer@example.com</code></p>
+                    <p className="text-left"><strong className="text-purple-500">Admin:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">superadmin@example.com</code></p>
                     <p className="text-left"><strong className="text-green-500">Vendeurs:</strong></p>
                     <ul className="list-none text-left pl-2">
-                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">seller@example.com</code></li>
-                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">mamaafrica@example.com</code></li>
-                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">electro@example.com</code></li>
-                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">soaps@example.com</code></li>
+                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">seller@example.com</code></li>
+                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">mamaafrica@example.com</code></li>
+                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">electro@example.com</code></li>
+                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">soaps@example.com</code></li>
                     </ul>
                     <p className="text-left"><strong className="text-cyan-500">Livreurs:</strong></p>
                     <ul className="list-none text-left pl-2">
-                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">agent1@example.com</code></li>
-                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">agent2@example.com</code></li>
+                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">agent1@example.com</code></li>
+                        <li><code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">agent2@example.com</code></li>
                     </ul>
-                    <p className="text-left"><strong className="text-indigo-500">Agent Dépôt:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded">depot@example.com</code></p>
+                    <p className="text-left"><strong className="text-indigo-500">Agent Dépôt:</strong> <code className="bg-gray-200 dark:bg-gray-600 px-1 rounded break-all">depot@example.com</code></p>
                 </div>
               </div>
             </form>
@@ -163,7 +163,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
 
               {accountType === 'customer' ? (
                 <>
-                  <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
                       <div>
                           <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-firstName">Prénom</label>
                           <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-firstName" type="text" placeholder="Jean" value={firstName} onChange={(e) => setFirstName(e.target.value)} required />
