@@ -1,5 +1,6 @@
 
 
+
 import React, { useState, useEffect } from 'react';
 import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection, User, ShippingSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -142,11 +143,8 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'flash-sales': return <FlashSalesPanel {...panelProps} />;
             case 'analytics': return <AnalyticsPanel sellerOrders={props.sellerOrders} sellerProducts={props.products} flashSales={props.flashSales} />;
             case 'payouts': return <PayoutsPanel {...panelProps} />;
-// FIX: Wrap the onUpdateStoreProfile prop to match the expected signature of ShippingPanel's onUpdate prop.
             case 'livraison': return <ShippingPanel onUpdate={(storeId, settings) => props.onUpdateStoreProfile(storeId, { shippingSettings: settings })} {...panelProps} />;
-// FIX: Pass the onUpdateStoreProfile prop as onUpdateProfile to the ProfilePanel.
             case 'profile': return <ProfilePanel onUpdateProfile={props.onUpdateStoreProfile} {...panelProps} />;
-// FIX: Pass a wrapped onRequestUpgrade prop to SubscriptionPanel as onUpgrade.
             case 'subscription': return <SubscriptionPanel onUpgrade={(level) => props.onRequestUpgrade(store.id, level)} {...panelProps} />;
             case 'documents': return <DocumentsPanel {...panelProps} />;
             case 'stories': return <StoriesPanel {...panelProps} />;

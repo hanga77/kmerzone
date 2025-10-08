@@ -1,6 +1,8 @@
 
 
 
+
+
 export interface Zone {
   id: string;
   name: string;
@@ -221,6 +223,8 @@ export interface User {
     id: string;
     name: string;
     email: string;
+    // FIX: Add optional password property for simulation purposes.
+    // Storing plaintext passwords on the client is insecure and should not be done in a real application.
     password?: string;
     role: UserRole;
     shopName?: string;

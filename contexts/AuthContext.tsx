@@ -87,9 +87,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (foundUser) {
-        // SECURITY FIX: In a real app, password validation happens on the server.
-        // We simulate this by only checking for user existence.
-        // The password argument is kept for function signature consistency.
+        // SECURITY NOTE: In a real app, password validation happens on the server.
+        // This is a simulation that logs in the user if the email exists.
+        // The password argument is kept for UI consistency but is not checked.
         setLoggedInUserId(foundUser.id);
         return foundUser;
     }
@@ -105,14 +105,18 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return null;
       }
 
+      // Password is received for UI consistency but not stored.
+      if (!password || password.length < 6) {
+          alert("Le mot de passe est requis et doit contenir au moins 6 caractères.");
+          return null;
+      }
+
       const newUser: User = {
           id: new Date().getTime().toString(),
           name,
           email,
           role: accountType,
           loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
-          // SECURITY FIX: Do not store password in localStorage.
-          // password: password,
           phone,
           birthDate,
           addresses: address ? [{
@@ -152,7 +156,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   const resetPassword = useCallback((email: string, newPassword: string) => {
     // This is a simulation. In a real app, this would be a server-side operation.
-    // We are not storing passwords, so we don't need to do anything here for now.
+    // We are not storing passwords, so we don't need to do anything here.
     console.log(`Password for ${email} reset successfully (simulation).`);
   }, []);
 
@@ -163,21 +167,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const changePassword = useCallback((userId: string, oldPassword: string, newPassword: string): boolean => {
     // This is a simulation. In a real app, this would be a server-side operation.
     // We don't store passwords, so we can't check the old one. We'll just approve.
-    let success = false;
-    setAllUsers(prev => {
-        const userToUpdate = prev.find(u => u.id === userId);
-        if (!userToUpdate) {
-            success = false;
-            return prev;
-        }
-        success = true;
-        // In a real app, you would send the new password to the server, not update it here.
-        // We'll simulate by doing nothing to the local user object.
-        console.log(`Password for ${userId} changed successfully (simulation).`);
-        return prev;
-    });
-    return success;
-  }, [setAllUsers]);
+    console.log(`Password for ${userId} changed successfully (simulation).`);
+    return true;
+  }, []);
 
   const addAddress = useCallback((userId: string, address: Omit<Address, 'id'| 'isDefault'>) => {
     setAllUsers(prev => prev.map(u => {
