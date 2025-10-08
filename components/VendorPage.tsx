@@ -1,7 +1,7 @@
 import React, { useMemo } from 'react';
 import type { Product, Store, FlashSale } from '../types';
 import ProductCard from './ProductCard';
-import { ArrowLeftIcon, StarIcon, CheckCircleIcon, BookmarkSquareIcon } from './Icons';
+import { ArrowLeftIcon, StarIcon, CheckCircleIcon, BookmarkSquareIcon, ShieldCheckIcon } from './Icons';
 import { useProductFiltering } from '../hooks/useProductFiltering';
 import ProductFilters from './ProductFilters';
 import { useAuth } from '../contexts/AuthContext';
@@ -88,8 +88,9 @@ const VendorPage: React.FC<VendorPageProps> = ({ vendorName, allProducts, allSto
                   <div className="flex items-center gap-4">
                     <img src={store?.logoUrl} alt={store?.name} className="h-16 w-16 object-contain rounded-md bg-white p-1 shadow-sm"/>
                     <div>
-                      <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-2">
+                      <h1 className="text-3xl font-bold text-gray-800 dark:text-white flex items-center gap-3">
                           Boutique <span className="text-kmer-green">{vendorName}</span>
+                          {store?.isCertified && <ShieldCheckIcon className="w-8 h-8 text-green-500" title="Vendeur Certifié" />}
                       </h1>
                        {store && <p className="text-gray-500 dark:text-gray-400">{store.location}</p>}
                     </div>

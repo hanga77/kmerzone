@@ -75,7 +75,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-sm w-full relative">
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 w-full relative overflow-y-auto max-h-[90vh] ${view === 'register' ? 'max-w-xl' : 'max-w-sm'}`}>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
           <XIcon className="h-6 w-6" />
         </button>
@@ -173,28 +173,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                           <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-lastName" type="text" placeholder="Dupont" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                       </div>
                   </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-phone">Téléphone</label>
-                    <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-phone" type="tel" placeholder="690123456" value={phone} onChange={(e) => setPhone(e.target.value)} />
-                  </div>
-                  <div className="mb-4">
-                    <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-birthDate">Date de naissance</label>
-                    <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-birthDate" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
-                  </div>
-                   <div className="mb-4 p-4 border rounded-md dark:border-gray-600">
-                      <h4 className="font-bold text-sm mb-2 text-gray-700 dark:text-gray-300">Adresse de livraison principale</h4>
-                      <div className="space-y-4">
-                          <div>
-                              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-address">Adresse (Rue, quartier, repère)</label>
-                              <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-address" type="text" placeholder="123 Rue de la Liberté, Akwa" value={address} onChange={(e) => setAddress(e.target.value)} />
-                          </div>
-                          <div>
-                              <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-city">Ville</label>
-                              <select className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-city" value={city} onChange={(e) => setCity(e.target.value)}>
-                                  <option>Douala</option><option>Yaoundé</option><option>Bafoussam</option><option>Limbe</option><option>Kribi</option>
-                              </select>
-                          </div>
-                      </div>
+                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-phone">Téléphone</label>
+                      <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-phone" type="tel" placeholder="690123456" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                    </div>
+                    <div>
+                      <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-birthDate">Date de naissance</label>
+                      <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-birthDate" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+                    </div>
                   </div>
                 </>
               ) : (
@@ -242,8 +229,27 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                   required
                 />
               </div>
+
+              {accountType === 'customer' && (
+                <div className="mb-4 p-4 border rounded-md dark:border-gray-600 bg-gray-50 dark:bg-gray-700/50">
+                    <h4 className="font-bold text-sm mb-4 text-gray-700 dark:text-gray-300">Adresse de livraison principale (Optionnel)</h4>
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-address">Adresse (Rue, quartier, repère)</label>
+                            <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-address" type="text" placeholder="123 Rue de la Liberté, Akwa" value={address} onChange={(e) => setAddress(e.target.value)} />
+                        </div>
+                        <div>
+                            <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-city">Ville</label>
+                            <select className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-city" value={city} onChange={(e) => setCity(e.target.value)}>
+                                <option>Douala</option><option>Yaoundé</option><option>Bafoussam</option><option>Limbe</option><option>Kribi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+              )}
+
               {error && <p className="text-red-500 text-sm text-center mb-4">{error}</p>}
-              <div className="flex flex-col items-center justify-between">
+              <div className="flex flex-col items-center justify-between mt-6">
                 <button
                   className="bg-kmer-green hover:bg-green-700 text-white font-bold py-2 px-4 rounded-full focus:outline-none focus:shadow-outline w-full"
                   type="submit"

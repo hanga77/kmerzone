@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import type { Product, FlashSale, Store } from '../types';
-import { ShoppingCartIcon, HeartIcon, CalendarDaysIcon, MapPinIcon, BoltIcon, ScaleIcon, StarIcon, BookmarkSquareIcon } from './Icons';
+import { ShoppingCartIcon, HeartIcon, CalendarDaysIcon, MapPinIcon, BoltIcon, ScaleIcon, StarIcon, BookmarkSquareIcon, ShieldCheckIcon } from './Icons';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
 import { useAuth } from '../contexts/AuthContext';
@@ -59,6 +59,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
   
   const store = useMemo(() => stores.find(s => s.name === product.vendor), [stores, product.vendor]);
   const isFollowingStore = user?.followedStores?.includes(store?.id || '');
+  const isService = (product.type || 'product') === 'service';
 
 
   const handleAddToCart = (e: React.MouseEvent) => {
@@ -67,7 +68,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
         onProductClick(product);
         return;
     }
-    if (product.stock > 0) {
+    if (isService || product.stock > 0) {
       addToCart(product, 1);
     }
   };
@@ -170,12 +171,12 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
         <div className="absolute bottom-2 right-2">
             <button 
               onClick={handleAddToCart} 
-              disabled={totalStock === 0 || isMyProduct}
+              disabled={!isService && totalStock === 0 || isMyProduct}
               className={`flex items-center justify-center h-12 w-12 text-gray-900 rounded-full shadow-md transform transition-all duration-300 hover:scale-110 bg-kmer-yellow disabled:bg-gray-400 dark:disabled:bg-gray-600 disabled:cursor-not-allowed`}
-              aria-label={isMyProduct ? "Vous ne pouvez pas acheter votre propre produit" : (totalStock === 0 ? "Épuisé" : (hasVariants ? "Choisir options" : "Ajouter au panier"))}
-              title={isMyProduct ? "Vous ne pouvez pas acheter votre propre produit" : (hasVariants ? "Choisir les options" : "Ajouter au panier")}
+              aria-label={isMyProduct ? "Vous ne pouvez pas acheter votre propre produit" : (isService ? "Réserver le service" : (totalStock === 0 ? "Épuisé" : (hasVariants ? "Choisir options" : "Ajouter au panier")))}
+              title={isMyProduct ? "Vous ne pouvez pas acheter votre propre produit" : (isService ? "Réserver le service" : (hasVariants ? "Choisir les options" : "Ajouter au panier"))}
             >
-                {totalStock === 0 ? <span className="text-xs font-bold text-white">ÉPUISÉ</span> : <ShoppingCartIcon className="h-5 w-5" />}
+                {!isService && totalStock === 0 ? <span className="text-xs font-bold text-white">ÉPUISÉ</span> : (isService ? <CalendarDaysIcon className="h-5 w-5"/> : <ShoppingCartIcon className="h-5 w-5" />)}
             </button>
         </div>
       </div>
@@ -183,6 +184,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
         <div className="flex justify-between items-center gap-2">
           <button onClick={handleVendorClick} className="text-sm text-gray-500 dark:text-gray-400 mb-1 hover:text-kmer-green hover:underline text-left truncate flex items-center gap-1.5">
             <span>{product.vendor}</span>
+            {store?.isCertified && <ShieldCheckIcon className="w-4 h-4 text-green-500" title="Vendeur Certifié"/>}
           </button>
           {location && (
               <span className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1 flex-shrink-0">
@@ -238,7 +240,9 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
             )}
         </div>
         <div className="mt-2 text-sm font-bold">
-            {totalStock > 0 ? (
+            {isService ? (
+                 <p className="text-green-600">Service Disponible</p>
+            ) : totalStock > 0 ? (
                 <p className={totalStock < 5 ? 'text-orange-500 font-semibold' : 'text-green-600'}>
                     {totalStock} en stock
                 </p>

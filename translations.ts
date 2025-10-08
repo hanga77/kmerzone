@@ -52,6 +52,7 @@ export const translations = {
       promotions: "Promotions",
       flashSales: "Ventes Flash",
       stores: "Boutiques",
+      services: "Services",
       becomeSeller: "Devenir vendeur",
       becomePremium: "Devenir Premium",
       notifications: "Notifications",
@@ -106,6 +107,11 @@ export const translations = {
         howItWorksStep4Title: "4. Donnez votre avis",
         howItWorksStep4Text: "Notez les produits et les vendeurs pour aider la communauté.",
         featuredStores: "Nos boutiques partenaires"
+    },
+    servicesPage: {
+        title: "Nos Services",
+        noServices: "Aucun service disponible pour le moment.",
+        noServicesDescription: "Revenez bientôt pour découvrir nos offres de services !"
     },
     categories: {
       clothingShoes: 'Vêtements et chaussures',
@@ -318,13 +324,21 @@ export const translations = {
           action: "Action"
         },
         details: "Détails",
-        printSlip: "Imprimer le bon",
+        printSlip: "Imprimer le bon de livraison",
         customerInfo: "Informations Client",
         items: "Articles",
         cancelOrder: "Annuler la commande",
         cancelConfirm: "Êtes-vous sûr de vouloir annuler cette commande ? Cette action est irréversible.",
         disputeNotice: "Cette commande fait l'objet d'un litige. Un administrateur examine la situation.",
-        markReady: "Marquer comme prêt pour l'expédition"
+        markReady: "Marquer comme prêt",
+        noOrders: "Aucune commande dans cette catégorie.",
+        tabs: {
+            pending: "En attente",
+            ready: "Prêtes",
+            shipped: "Expédiées",
+            completed: "Terminées",
+            all: "Toutes"
+        }
       },
       reviews: {
         title: "Avis des Clients",
@@ -908,6 +922,7 @@ export const translations = {
       promotions: "Promotions",
       flashSales: "Flash Sales",
       stores: "Stores",
+      services: "Services",
       becomeSeller: "Become a seller",
       becomePremium: "Become Premium",
       notifications: "Notifications",
@@ -962,6 +977,11 @@ export const translations = {
         howItWorksStep4Title: "4. Give Feedback",
         howItWorksStep4Text: "Rate products and sellers to help the community.",
         featuredStores: "Our Partner Stores"
+    },
+    servicesPage: {
+        title: "Our Services",
+        noServices: "No services available at the moment.",
+        noServicesDescription: "Check back soon to discover our service offerings!"
     },
     categories: {
       clothingShoes: 'Clothing and Shoes',
@@ -1180,7 +1200,15 @@ export const translations = {
         cancelOrder: "Cancel Order",
         cancelConfirm: "Are you sure you want to cancel this order? This action is irreversible.",
         disputeNotice: "This order is under dispute. An administrator is reviewing the situation.",
-        markReady: "Mark as Ready for Shipping"
+        markReady: "Mark as Ready",
+        noOrders: "No orders in this category.",
+        tabs: {
+            pending: "Pending",
+            ready: "Ready",
+            shipped: "Shipped",
+            completed: "Completed",
+            all: "All"
+        }
       },
       reviews: {
         title: "Customer Reviews",

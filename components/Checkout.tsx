@@ -134,6 +134,12 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
         // Calculate fee for each vendor
         for (const vendorName in itemsByVendor) {
             const vendorItems = itemsByVendor[vendorName];
+            
+            // If all items from this vendor are services, skip shipping fee calculation for them
+            if (vendorItems.every(item => (item.type || 'product') === 'service')) {
+                continue;
+            }
+
             const store = allStores.find(s => s.name === vendorName);
             if (!store) continue;
 
@@ -253,14 +259,14 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
                                     <div className="flex items-center gap-3"><TruckIcon className="w-6 h-6"/> <span className="font-semibold">Livraison à domicile</span></div>
                                 </button>
                                 <button onClick={() => setDeliveryMethod('pickup')} className={`flex-1 p-4 border-2 rounded-lg text-left ${deliveryMethod === 'pickup' ? 'border-kmer-green' : 'dark:border-gray-700'}`}>
-                                    <div className="flex items-center gap-3"><BuildingStorefrontIcon className="w-6 h-6"/> <span className="font-semibold">Retrait en point relais</span></div>
+                                    <div className="flex items-center gap-3"><BuildingStorefrontIcon className="w-6 h-6"/> <span className="font-semibold">Retrait en point de dépôt</span></div>
                                 </button>
                             </div>
                         </div>
 
                         {/* Address/Pickup Point */}
                         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                            <h2 className="text-xl font-bold mb-4 dark:text-white">2. {deliveryMethod === 'home-delivery' ? 'Adresse de livraison' : 'Point de retrait'}</h2>
+                            <h2 className="text-xl font-bold mb-4 dark:text-white">2. {deliveryMethod === 'home-delivery' ? 'Adresse de livraison' : 'Point de dépôt'}</h2>
                             {deliveryMethod === 'home-delivery' ? (
                                 <div className="space-y-4">
                                     {user?.addresses?.map(addr => (

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import type { Store, DocumentStatus } from '../../types';
-import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, CheckIcon, XIcon, DocumentTextIcon } from '../Icons';
+import { CheckCircleIcon, XCircleIcon, ExclamationTriangleIcon, CheckIcon, XIcon, DocumentTextIcon, ShieldCheckIcon } from '../Icons';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface StoresPanelProps {
@@ -10,6 +10,7 @@ interface StoresPanelProps {
     onToggleStoreStatus: (storeId: string, currentStatus: 'active' | 'suspended') => void;
     onWarnStore: (storeId: string, reason: string) => void;
     onUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason?: string) => void;
+    onToggleStoreCertification: (storeId: string) => void;
 }
 
 const DocumentStatusBadge: React.FC<{status: DocumentStatus}> = ({ status }) => {
@@ -22,7 +23,7 @@ const DocumentStatusBadge: React.FC<{status: DocumentStatus}> = ({ status }) => 
     return <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${styles[status]}`}>{status}</span>;
 }
 
-export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onUpdateDocumentStatus }) => {
+export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onUpdateDocumentStatus, onToggleStoreCertification }) => {
     const { t } = useLanguage();
     const [activeTab, setActiveTab] = useState<'pending' | 'active' | 'suspended'>('pending');
     
@@ -56,6 +57,7 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                             <th className="p-2 text-left">{t('superadmin.stores.table.seller')}</th>
                             {activeTab === 'pending' && <th className="p-2 text-left">{t('superadmin.stores.table.documents')}</th>}
                             <th className="p-2 text-left">{t('superadmin.stores.table.location')}</th>
+                             <th className="p-2 text-center">Certifié</th>
                             <th className="p-2 text-center">{t('common.actions')}</th>
                         </tr>
                     </thead>
@@ -84,6 +86,12 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                                     </td>
                                 )}
                                 <td className="p-2">{store.location}</td>
+                                <td className="p-2 text-center">
+                                    {store.isCertified ? 
+                                        <CheckCircleIcon className="w-5 h-5 text-green-500 mx-auto" title="Certifié" /> : 
+                                        <span className="text-gray-400">-</span>
+                                    }
+                                </td>
                                 <td className="p-2">
                                     <div className="flex justify-center gap-2">
                                         {activeTab === 'pending' && (
@@ -94,6 +102,9 @@ export const StoresPanel: React.FC<StoresPanelProps> = ({ allStores, onApproveSt
                                         )}
                                         {activeTab === 'active' && (
                                             <>
+                                                <button onClick={() => onToggleStoreCertification(store.id)} className={`flex items-center gap-1 text-xs font-bold ${store.isCertified ? 'text-yellow-600' : 'text-green-600'}`} title={store.isCertified ? "Retirer la certification" : "Certifier la boutique"}>
+                                                    <ShieldCheckIcon className="w-4 h-4"/>
+                                                </button>
                                                 <button onClick={() => onToggleStoreStatus(store.id, 'active')} className="text-red-500 flex items-center gap-1 text-xs font-bold"><XCircleIcon className="w-4 h-4"/> {t('superadmin.stores.tabs.suspended')}</button>
                                                 <button onClick={() => { const reason = prompt(`${t('superadmin.stores.warnReason')}:`); if(reason) onWarnStore(store.id, reason); }} className="text-yellow-500 flex items-center gap-1 text-xs font-bold"><ExclamationTriangleIcon className="w-4 h-4"/> {t('common.warn')}</button>
                                             </>

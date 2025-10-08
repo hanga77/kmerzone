@@ -39,6 +39,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const navigateToComparison = useCallback(() => setPage('comparison'), []);
     const navigateToBecomePremium = useCallback(() => setPage('become-premium'), []);
     const navigateToVisualSearch = useCallback(() => setPage('visual-search'), []);
+    const navigateToServices = useCallback(() => setPage('services'), []);
 
     const navigateToProductForm = useCallback((product: Product | null) => {
         setProductToEdit(product);
@@ -162,7 +163,8 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         handleNavigateFromNotification,
         handleCloseStories,
         navigateToVisualSearch,
-        navigateToProductForm
+        navigateToProductForm,
+        navigateToServices
     }), [
         page, selectedProduct, selectedCategoryId, selectedStore, selectedOrder, searchQuery,
         infoPageContent, viewingStoriesFor, accountPageTab, sellerDashboardTab, productToEdit,
@@ -174,6 +176,6 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         navigateToProduct, navigateToCategory, navigateToVendorPage, navigateToOrderDetail,
         navigateToAccount, handleSearch, navigateToInfoPage, handleNavigateFromNotification,
         handleCloseStories, navigateToVisualSearch, setSelectedOrder, setViewingStoriesFor,
-        navigateToProductForm
+        navigateToProductForm, navigateToServices
     ]);
 };

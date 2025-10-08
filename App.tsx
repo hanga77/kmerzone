@@ -182,6 +182,7 @@ export default function App() {
           onNavigateToBecomePremium={navigation.navigateToBecomePremium}
           onNavigateToAccount={navigation.navigateToAccount}
           onNavigateToVisualSearch={navigation.navigateToVisualSearch}
+          onNavigateToServices={navigation.navigateToServices}
           onOpenLogin={() => setIsLoginModalOpen(true)}
           onLogout={handleLogout}
           onSearch={navigation.handleSearch}

@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, PickupPoint, User, SiteSettings, Payout, Advertisement, SiteContent, Ticket, Announcement, PaymentMethod, Zone, EmailTemplate, DocumentStatus } from '../types';
 
-import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, TruckIcon, BanknotesIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, Cog8ToothIcon, ChartPieIcon } from './Icons';
+import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, TruckIcon, BanknotesIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, Cog8ToothIcon, ChartPieIcon, ShieldCheckIcon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 
 import { OverviewPanel } from './admin/OverviewPanel';
@@ -111,6 +111,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ siteDa
             onUpdateSiteSettings: siteData.setSiteSettings,
             onUpdateSiteContent: siteData.setSiteContent,
             onUpdatePaymentMethods: siteData.setAllPaymentMethods,
+            onToggleStoreCertification: (storeId: string) => user && siteData.handleToggleStoreCertification(storeId, user),
         };
 
         switch (activeTab) {

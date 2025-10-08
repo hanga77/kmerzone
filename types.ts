@@ -1,5 +1,6 @@
 
 
+
 export interface Zone {
   id: string;
   name: string;
@@ -48,6 +49,15 @@ export interface Product {
   sku?: string;
   viewCount?: number;
   
+  // New fields for product vs service
+  type?: 'product' | 'service';
+
+  // New fields for services
+  duration?: string; // e.g., "1 hour", "per session"
+  locationType?: 'remote' | 'on-site' | 'flexible'; // Where the service is provided
+  serviceArea?: string; // e.g., "Douala only", "Nationwide"
+  availability?: string; // e.g., "Mon-Fri, 9am-5pm"
+
   // Generic / Shared fields
   brand?: string;
   weight?: number; // in kg
@@ -193,6 +203,7 @@ export interface Store {
   visits?: number;
   collections?: ProductCollection[];
   shippingSettings?: ShippingSettings;
+  isCertified?: boolean;
 }
 
 export type UserRole = 'customer' | 'seller' | 'superadmin' | 'delivery_agent' | 'depot_agent' | 'depot_manager' | 'enterprise';
@@ -577,4 +588,4 @@ export interface PaymentRequest {
   onSuccess: (details: PaymentDetails) => void;
 }
 
-export type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard' | 'visual-search' | 'seller-subscription';
+export type Page = 'home' | 'product' | 'cart' | 'checkout' | 'order-success' | 'stores' | 'stores-map' | 'become-seller' | 'category' | 'seller-dashboard' | 'vendor-page' | 'product-form' | 'seller-profile' | 'superadmin-dashboard' | 'order-history' | 'order-detail' | 'promotions' | 'flash-sales' | 'search-results' | 'wishlist' | 'delivery-agent-dashboard' | 'depot-agent-dashboard' | 'comparison' | 'become-premium' | 'info' | 'not-found' | 'forbidden' | 'server-error' | 'reset-password' | 'account' | 'seller-analytics-dashboard' | 'visual-search' | 'seller-subscription' | 'services';

@@ -1,4 +1,6 @@
 
+
+
 import React, { useMemo } from 'react';
 import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails, AgentSchedule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -35,6 +37,7 @@ import AccountPage from './AccountPage';
 import { SellerAnalyticsDashboard } from './SellerAnalyticsDashboard';
 import VisualSearchPage from './VisualSearchPage';
 import SellerSubscriptionPage from './SellerSubscriptionPage';
+import ServicesPage from './ServicesPage';
 
 interface PageRouterProps {
     navigation: any;
@@ -272,7 +275,6 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                     user && siteData.handleAddOrUpdateProduct(product, user);
                     navigation.navigateToSellerDashboard('products');
                 }}
-// FIX: Update the onAddCategory prop to match the new signature (string) => void.
                 onAddCategory={(categoryName: string) => {}}
             />;
         case 'superadmin-dashboard':
@@ -283,7 +285,6 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'order-history':
             return <OrderHistoryPage userOrders={user ? siteData.allOrders.filter((o: Order) => o.userId === user.id) : []} onBack={navigation.navigateToHome} onSelectOrder={navigation.navigateToOrderDetail} onRepeatOrder={() => {}} />;
         case 'order-detail':
-// FIX: Pass the required event handler props (onCancelOrder, onRequestRefund, onCustomerDisputeMessage) to OrderDetailPage.
             return navigation.selectedOrder ? <OrderDetailPage 
                 order={navigation.selectedOrder} 
                 onBack={navigation.navigateToOrderHistory} 
@@ -370,6 +371,16 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'reset-password': return <ResetPasswordPage onPasswordReset={() => {}} onNavigateLogin={() => {}}/>;
         case 'promotions': return <PromotionsPage allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled} />;
         case 'flash-sales': return <FlashSalesPage allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled} />;
+        case 'services':
+            return <ServicesPage
+                allProducts={siteData.allProducts}
+                allStores={siteData.allStores}
+                flashSales={siteData.flashSales}
+                onProductClick={navigation.navigateToProduct}
+                onBack={navigation.navigateToHome}
+                onVendorClick={navigation.navigateToVendorPage}
+                isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}
+            />;
         case 'stores': return <StoresPage stores={siteData.allStores} onBack={navigation.navigateToHome} onVisitStore={navigation.navigateToVendorPage} onNavigateToStoresMap={navigation.navigateToStoresMap} />;
         case 'stores-map': return <StoresMapPage stores={siteData.allStores} onBack={navigation.navigateToStores} />;
         case 'comparison': return <ComparisonPage />;
