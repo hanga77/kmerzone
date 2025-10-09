@@ -1,5 +1,3 @@
-
-
 import React, { useState, useEffect, useMemo } from 'react';
 import type { Product, Category, Variant, VariantDetail, SiteSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -507,7 +505,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
                     )}
                 </FieldWrapper>
 
-                <CategorySpecificFields product={product} categories={categories} handleChange={handleChange} />
+                {product.type !== 'service' && (
+                    <CategorySpecificFields product={product} categories={categories} handleChange={handleChange} />
+                )}
                 
                 {product.type === 'service' && (
                     <div className="pt-6 border-t dark:border-gray-700 col-span-1 md:col-span-2">

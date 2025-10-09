@@ -52,14 +52,13 @@ const AnnouncementBanner: React.FC<{
 
 
 export default function App() {
-  const { user, logout: authLogout, allUsers } = useAuth();
+  const { user, logout: authLogout, allUsers, resetPassword } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
   const { comparisonList, setProducts: setComparisonProducts } = useComparison();
   const { language, t } = useLanguage();
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
-  const [emailForPasswordReset, setEmailForPasswordReset] = useState<string | null>(null);
   
   const siteData = useSiteData();
   const navigation = useAppNavigation(siteData.allCategories, siteData.allStores, siteData.allOrders, siteData.siteContent);
@@ -74,6 +73,7 @@ export default function App() {
             navigation.navigateToSuperAdminDashboard();
             break;
         case 'seller':
+        case 'enterprise':
             // If new seller without a shop, guide them to create one.
             if (!loggedInUser.shopName) {
                 navigation.navigateToBecomeSeller();
@@ -150,7 +150,7 @@ export default function App() {
           if (a.target === 'all') return true;
           if (!user && (a.target === 'customers' || a.target === 'sellers')) return false;
           if (user && user.role === 'customer' && a.target === 'customers') return true;
-          if (user && user.role === 'seller' && a.target === 'sellers') return true;
+          if (user && (user.role === 'seller' || user.role === 'enterprise') && a.target === 'sellers') return true;
           return false;
       });
 
@@ -224,7 +224,12 @@ export default function App() {
         {isForgotPasswordModalOpen && (
           <ForgotPasswordModal
             onClose={() => setIsForgotPasswordModalOpen(false)}
-            onEmailSubmit={(email) => { setEmailForPasswordReset(email); alert(t('app.passwordResetEmailSent', email)); }}
+            onEmailSubmit={(email) => { 
+                const newPassword = 'password'; // Simulate password reset
+                resetPassword(email, newPassword);
+                alert(t('app.passwordResetEmailSent', email) + ` (Pour la démo, le nouveau mot de passe est "${newPassword}")`);
+                setIsForgotPasswordModalOpen(false);
+            }}
           />
         )}
 

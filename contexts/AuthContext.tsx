@@ -25,11 +25,12 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const defaultNotificationPrefs = { promotions: true, orderUpdates: true, newsletters: true };
 
 const initialUsers: User[] = [
-    { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
+    { id: 'assistant-id', name: 'Assistant KMER ZONE', email: 'assistant@kmerzone.com', password: 'password', role: 'customer', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
     { 
         id: 'customer-1', 
         name: 'Client Test', 
         email: 'customer@example.com', 
+        password: 'password', 
         role: 'customer', 
         loyalty: { status: 'premium', orderCount: 12, totalSpent: 62000, premiumStatusMethod: 'loyalty' }, 
         addresses: [
@@ -42,15 +43,16 @@ const initialUsers: User[] = [
         gender: 'Homme',
         notificationPreferences: { promotions: true, orderUpdates: true, newsletters: false }
     },
-    { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
-    { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
-    { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
-    { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
-    { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
-    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-dla-a' },
-    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-yde-a' },
-    { id: 'depot-agent-1', name: 'Agent Dépôt Akwa', email: 'depot@example.com', role: 'depot_agent', depotId: 'pp1', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-dla-a' },
-    { id: 'depot-manager-1', name: 'Chef de Dépôt Akwa', email: 'depot.manager@example.com', role: 'depot_manager', depotId: 'pp1', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-dla-a' },
+    { id: 'seller-1', name: 'Kmer Fashion', email: 'seller@example.com', password: 'password', role: 'seller', shopName: 'Kmer Fashion', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
+    { id: 'seller-2', name: 'Mama Africa', email: 'mamaafrica@example.com', password: 'password', role: 'seller', shopName: 'Mama Africa', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
+    { id: 'seller-3', name: 'Electro Plus', email: 'electro@example.com', password: 'password', role: 'seller', shopName: 'Electro Plus', location: 'Yaoundé', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
+    { id: 'seller-4', name: 'Douala Soaps', email: 'soaps@example.com', password: 'password', role: 'seller', shopName: 'Douala Soaps', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
+    { id: 'admin-1', name: 'Super Admin', email: 'superadmin@example.com', password: 'password', role: 'superadmin', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
+    { id: 'agent-1', name: 'Paul Atanga', email: 'agent1@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-dla-a' },
+    { id: 'agent-2', name: 'Brenda Biya', email: 'agent2@example.com', password: 'password', role: 'delivery_agent', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, availabilityStatus: 'available', addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-yde-a' },
+    { id: 'depot-agent-1', name: 'Agent Dépôt Akwa', email: 'depot@example.com', password: 'password', role: 'depot_agent', depotId: 'pp1', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-dla-a' },
+    { id: 'depot-manager-1', name: 'Chef de Dépôt Akwa', email: 'depot.manager@example.com', password: 'password', role: 'depot_manager', depotId: 'pp1', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs, zoneId: 'zone-dla-a' },
+    { id: 'enterprise-1', name: 'KMER Enterprise', email: 'enterprise@example.com', password: 'password', role: 'enterprise', shopName: 'KMER Enterprise', location: 'Douala', loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null }, addresses: [], followedStores: [], notificationPreferences: defaultNotificationPrefs },
 ];
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
@@ -87,9 +89,14 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     const foundUser = allUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
     
     if (foundUser) {
-        // SECURITY NOTE: In a real app, password validation happens on the server.
-        // This is a simulation that logs in the user if the email exists.
-        // The password argument is kept for UI consistency but is not checked.
+        if (!password) { 
+          alert('Mot de passe requis.');
+          return null;
+        }
+        if (foundUser.password !== password) {
+            alert('Mot de passe incorrect.');
+            return null;
+        }
         setLoggedInUserId(foundUser.id);
         return foundUser;
     }
@@ -105,7 +112,6 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           return null;
       }
 
-      // Password is received for UI consistency but not stored.
       if (!password || password.length < 6) {
           alert("Le mot de passe est requis et doit contenir au moins 6 caractères.");
           return null;
@@ -115,6 +121,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
           id: new Date().getTime().toString(),
           name,
           email,
+          password,
           role: accountType,
           loyalty: { status: 'standard', orderCount: 0, totalSpent: 0, premiumStatusMethod: null },
           phone,
@@ -155,21 +162,31 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   }, [setLoggedInUserId]);
 
   const resetPassword = useCallback((email: string, newPassword: string) => {
-    // This is a simulation. In a real app, this would be a server-side operation.
-    // We are not storing passwords, so we don't need to do anything here.
-    console.log(`Password for ${email} reset successfully (simulation).`);
-  }, []);
+    setAllUsers(prevUsers => 
+        prevUsers.map(u => 
+            u.email.toLowerCase() === email.toLowerCase() ? { ...u, password: newPassword } : u
+        )
+    );
+    console.log(`Password for ${email} reset successfully.`);
+  }, [setAllUsers]);
 
   const updateUserInfo = useCallback((userId: string, updates: Partial<User>) => {
     setAllUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
   }, [setAllUsers]);
 
   const changePassword = useCallback((userId: string, oldPassword: string, newPassword: string): boolean => {
-    // This is a simulation. In a real app, this would be a server-side operation.
-    // We don't store passwords, so we can't check the old one. We'll just approve.
-    console.log(`Password for ${userId} changed successfully (simulation).`);
-    return true;
-  }, []);
+    let success = false;
+    setAllUsers(prev => {
+        const userToUpdate = prev.find(u => u.id === userId);
+        if (!userToUpdate || userToUpdate.password !== oldPassword) {
+            success = false;
+            return prev;
+        }
+        success = true;
+        return prev.map(u => u.id === userId ? { ...u, password: newPassword } : u);
+    });
+    return success;
+  }, [setAllUsers]);
 
   const addAddress = useCallback((userId: string, address: Omit<Address, 'id'| 'isDefault'>) => {
     setAllUsers(prev => prev.map(u => {

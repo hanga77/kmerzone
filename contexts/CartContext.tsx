@@ -32,7 +32,7 @@ export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const { user } = useAuth();
 
   const addToCart = useCallback((product: Product, quantity: number = 1, selectedVariant?: Record<string, string>, options?: { suppressModal?: boolean }) => {
-    if (user && user.role === 'seller' && user.shopName === product.vendor) {
+    if (user && (user.role === 'seller' || user.role === 'enterprise') && user.shopName === product.vendor) {
         alert("Vous ne pouvez pas acheter des produits de votre propre boutique.");
         return;
     }

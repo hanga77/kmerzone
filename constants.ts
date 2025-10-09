@@ -246,6 +246,35 @@ export const initialStores: Store[] = [
         visits: 120,
         collections: [],
     },
+    { 
+        id: 'store-8',
+        sellerId: 'enterprise-1',
+        name: 'KMER Enterprise',
+        logoUrl: 'https://cdn.dribbble.com/users/1066839/screenshots/5423984/media/f95701a5119932a37335193796583925.png',
+        bannerUrl: 'https://images.unsplash.com/photo-1499951360447-b19be8fe80f5?q=80&w=2070&auto=format&fit=crop',
+        category: 'Services & Entreprise',
+        warnings: [],
+        status: 'active',
+        premiumStatus: 'super_premium',
+        location: 'Douala',
+        neighborhood: 'Bonanjo',
+        sellerFirstName: 'KMER',
+        sellerLastName: 'Enterprise',
+        sellerPhone: '691122334',
+        physicalAddress: '100 Boulevard de la Liberté, Bonanjo',
+        latitude: 4.044,
+        longitude: 9.691,
+        subscriptionStatus: 'active',
+        subscriptionDueDate: '2025-01-01T00:00:00.000Z',
+        documents: [
+            { name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' },
+            { name: "Registre de Commerce", status: 'verified', fileUrl: '...' },
+        ],
+        stories: [],
+        visits: 500,
+        collections: [],
+        isCertified: true,
+    }
 ];
 
 export const initialFlashSales: FlashSale[] = [

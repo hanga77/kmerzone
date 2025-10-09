@@ -107,7 +107,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
 
   const userMenuItems = [
     ...(user?.role === 'superadmin' ? [{ label: t('header.superadminDashboard'), action: onNavigateToSuperAdminDashboard, icon: <AcademicCapIcon className="h-5 w-5" /> }] : []),
-    ...(user?.role === 'seller' ? [
+    ...(user?.role === 'seller' || user?.role === 'enterprise' ? [
         { label: t('header.sellerDashboard'), action: onNavigateToSellerDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> },
         { label: t('header.sellerProfile'), action: onNavigateToSellerProfile, icon: <Cog8ToothIcon className="h-5 w-5" /> }
     ] : []),
@@ -117,7 +117,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
     ] : []),
     ...(user?.role === 'delivery_agent' ? [{ label: t('header.deliveryDashboard'), action: onNavigateToDeliveryAgentDashboard, icon: <TruckIcon className="h-5 w-5" /> }] : []),
     ...(user?.role === 'depot_agent' || user?.role === 'depot_manager' ? [{ label: t('header.depotDashboard'), action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
-    ...(user && (user.role === 'customer' || user.role === 'seller') ? [
+    ...(user && (user.role === 'customer' || user.role === 'seller' || user.role === 'enterprise') ? [
         { label: t('header.myOrders'), action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> },
         { label: t('header.support'), action: () => onNavigateToAccount('support'), icon: <ChatBubbleBottomCenterTextIcon className="h-5 w-5" /> }
     ] : [])
@@ -236,7 +236,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             
             {user?.role === 'customer' && <ActionButton onClick={onNavigateToOrderHistory} icon={<ClipboardDocumentListIcon className="h-6 w-6" />} label={t('header.myOrders')} />}
 
-            {user && (user.role === 'customer' || user.role === 'seller') && (
+            {user && (user.role === 'customer' || user.role === 'seller' || user.role === 'enterprise') && (
               <>
                 <ActionButton onClick={onNavigateToWishlist} icon={<HeartIcon className="h-6 w-6" />} label={t('header.wishlist')} count={wishlistItemCount} />
                 {isChatEnabled && <ActionButton onClick={() => setIsWidgetOpen(true)} icon={<ChatBubbleBottomCenterTextIcon className="h-6 w-6" />} label={t('header.messages')} count={totalUnreadCount} />}
@@ -308,7 +308,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
             <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>{t('header.flashSales')}</button>
             <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">{t('header.stores')}</button>
             <button onClick={onNavigateToServices} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><SparklesIcon className="w-5 h-5 text-purple-500"/>{t('header.services')}</button>
-            {isPremiumProgramEnabled && (
+            {isPremiumProgramEnabled && (!user || user.role === 'customer') && (
                 <button onClick={user ? onNavigateToBecomePremium : onOpenLogin} className="text-kmer-yellow hover:text-yellow-400 font-bold flex items-center gap-1">
                     <StarIcon className="w-5 h-5"/>{t('header.becomePremium')}
                 </button>
@@ -372,7 +372,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
                     )) : (
                       <button onClick={() => {onOpenLogin(); setIsMenuOpen(false);}} className="text-left font-semibold py-2">{t('header.login')}</button>
                     )}
-                    {isPremiumProgramEnabled && (
+                    {isPremiumProgramEnabled && (!user || user.role === 'customer') && (
                       <button onClick={() => { (user ? onNavigateToBecomePremium : onOpenLogin)(); setIsMenuOpen(false); }} className="text-left font-bold text-kmer-yellow py-2">{t('header.becomePremium')}</button>
                     )}
                  </div>

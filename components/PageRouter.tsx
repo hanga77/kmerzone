@@ -1,6 +1,3 @@
-
-
-
 import React, { useMemo } from 'react';
 import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails, AgentSchedule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -55,18 +52,18 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
     const { wishlist } = useWishlist();
 
     const sellerStore = useMemo(() => {
-        if (!user) return undefined;
+        if (!user || (user.role !== 'seller' && user.role !== 'enterprise')) return undefined;
         return siteData.allStores.find((s: Store) => s.sellerId === user.id);
     }, [user, siteData.allStores]);
 
     const sellerProducts = useMemo(() => (
-        user?.role === 'seller' && sellerStore 
+        (user?.role === 'seller' || user?.role === 'enterprise') && sellerStore 
             ? siteData.allProducts.filter((p: Product) => p.vendor === sellerStore.name) 
             : []
     ), [user, sellerStore, siteData.allProducts]);
 
     const sellerOrders = useMemo(() => (
-        user?.role === 'seller' && sellerStore 
+        (user?.role === 'seller' || user?.role === 'enterprise') && sellerStore 
             ? siteData.allOrders.filter((o: Order) => o.items.some(i => i.vendor === sellerStore.name)) 
             : []
     ), [user, sellerStore, siteData.allOrders]);
@@ -265,7 +262,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'product-form':
-            if (!user || user.role !== 'seller') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            if (!user || (user.role !== 'seller' && user.role !== 'enterprise')) return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
             return <ProductForm
                 productToEdit={navigation.productToEdit}
                 categories={siteData.allCategories}
@@ -341,7 +338,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 // Should not happen if entry point is protected, but as a safeguard.
                 return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
             }
-            if (user.role === 'seller' && sellerStore) {
+            if ((user.role === 'seller' || user.role === 'enterprise') && sellerStore) {
                  // User is already a seller, redirect them.
                  navigation.navigateToSellerDashboard('overview');
                  return null; // Return null while redirecting
