@@ -15,7 +15,6 @@ import CategoryPage from './CategoryPage';
 import { SellerDashboard } from './SellerDashboard';
 import VendorPage from './VendorPage';
 import ProductForm from './ProductForm';
-import SellerProfile from './SellerProfile';
 import { SuperAdminDashboard } from './SuperAdminDashboard';
 import OrderHistoryPage from './OrderHistoryPage';
 import OrderDetailPage from './OrderDetailPage';
@@ -35,83 +34,57 @@ import AccountPage from './AccountPage';
 import { SellerAnalyticsDashboard } from './SellerAnalyticsDashboard';
 import VisualSearchPage from './VisualSearchPage';
 import SellerSubscriptionPage from './SellerSubscriptionPage';
+import ServicesPage from './ServicesPage';
 
 interface PageRouterProps {
     navigation: any;
     siteData: any;
     setPromotionModalProduct: (product: Product | null) => void;
     setPaymentRequest: (request: PaymentRequest | null) => void;
-    onAdminUpdateUser: (userId: string, updates: Partial<User>) => void;
-    onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => void;
-    onApproveStore: (store: Store) => void;
-    onRejectStore: (store: Store) => void;
-    onToggleStoreStatus: (storeId: string, currentStatus: 'active' | 'suspended') => void;
-    onWarnStore: (storeId: string, reason: string) => void;
-    onWarnUser: (userId: string, reason: string) => void;
-    onAdminAddCategory: (name: string, parentId?: string) => void;
-    onAdminDeleteCategory: (categoryId: string) => void;
-    onAdminUpdateCategory: (categoryId: string, updates: Partial<Omit<Category, 'id'>>) => void;
-    onUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason?: string) => void;
-    onSaveFlashSale: (saleData: Omit<FlashSale, 'id'|'products'>) => void;
-    onUpdateFlashSaleSubmissionStatus: (flashSaleId: string, productId: string, status: 'approved' | 'rejected') => void;
-    onBatchUpdateFlashSaleStatus: (flashSaleId: string, productIds: string[], status: 'approved' | 'rejected') => void;
-    onAddPickupPoint: (point: Omit<PickupPoint, 'id'>) => void;
-    onUpdatePickupPoint: (point: PickupPoint) => void;
-    onDeletePickupPoint: (pointId: string) => void;
-    onAdminReplyToTicket: (ticketId: string, message: string) => void;
-    onAdminUpdateTicketStatus: (ticketId: string, status: Ticket['status']) => void;
-    onReviewModeration: (productId: string, reviewIdentifier: { author: string, date: string }, newStatus: 'approved' | 'rejected') => void;
-    onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => void;
-    onCreateOrUpdateAnnouncement: (data: Omit<Announcement, 'id'> | Announcement) => void;
-    onDeleteAnnouncement: (id: string) => void;
-    onUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
-    onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => void;
-    // Seller actions
-    onSellerUpdateOrderStatus: (orderId: string, status: OrderStatus) => void;
-    onSellerCancelOrder: (orderId: string, user: User) => void;
-    onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => void;
-    onDeleteCollection: (storeId: string, collectionId: string) => void;
-    onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
-    // Delivery actions
-    onUpdateUserAvailability: (userId: string, newStatus: UserAvailabilityStatus) => void;
-    onUpdateDeliveryStatus: (orderId: string, status: OrderStatus, details?: { signature?: string; failureReason?: Order['deliveryFailureReason'] }) => void;
-    onUpdateSchedule: (depotId: string, schedule: AgentSchedule) => void;
-    onAddProductToStory: (productId: string) => void;
-    onAddStory: (imageUrl: string) => void;
-    // Customer actions
-    onCancelOrder: (orderId: string) => void;
-    onRequestRefund: (orderId: string, reason: string, evidenceUrls: string[]) => void;
-    onCustomerDisputeMessage: (orderId: string, message: string) => void;
 }
 
 const PageRouter: React.FC<PageRouterProps> = (props) => {
-    const { 
-        navigation, siteData, setPromotionModalProduct, setPaymentRequest, 
-        onAdminUpdateUser, onSendBulkEmail,
-        onApproveStore, onRejectStore, onToggleStoreStatus, onWarnStore, onWarnUser,
-        onAdminAddCategory, onAdminDeleteCategory, onAdminUpdateCategory, onUpdateDocumentStatus,
-        onSaveFlashSale, onUpdateFlashSaleSubmissionStatus,
-        onBatchUpdateFlashSaleStatus, onAddPickupPoint, onUpdatePickupPoint, onDeletePickupPoint,
-        onAdminReplyToTicket, onAdminUpdateTicketStatus, onReviewModeration, onCreateUserByAdmin,
-        onCreateOrUpdateAnnouncement, onDeleteAnnouncement, onUpdateOrderStatus, onResolveDispute,
-        onSellerUpdateOrderStatus, onSellerCancelOrder, onCreateOrUpdateCollection, onDeleteCollection, onUpdateStoreProfile,
-        onUpdateUserAvailability, onUpdateDeliveryStatus, onUpdateSchedule, onAddProductToStory, onAddStory,
-        onCancelOrder, onRequestRefund, onCustomerDisputeMessage
-    } = props;
+    const { navigation, siteData, setPromotionModalProduct, setPaymentRequest } = props;
     
     const { user, allUsers, setAllUsers, logout } = useAuth();
+    const authData = { user, allUsers, setAllUsers };
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
     const { wishlist } = useWishlist();
 
     const sellerStore = useMemo(() => {
-        if (!user) return undefined;
+        if (!user || (user.role !== 'seller' && user.role !== 'enterprise')) return undefined;
         return siteData.allStores.find((s: Store) => s.sellerId === user.id);
     }, [user, siteData.allStores]);
 
-    const sellerProducts = user?.role === 'seller' && sellerStore ? siteData.allProducts.filter((p: Product) => p.vendor === sellerStore.name) : [];
-    const sellerOrders = user?.role === 'seller' && sellerStore ? siteData.allOrders.filter((o: Order) => o.items.some(i => i.vendor === sellerStore.name)) : [];
-    const sellerNotifications = user?.role === 'seller' && sellerStore ? siteData.allNotifications.filter((n: Notification) => n.userId === user?.id) : [];
+    const sellerProducts = useMemo(() => (
+        (user?.role === 'seller' || user?.role === 'enterprise') && sellerStore 
+            ? siteData.allProducts.filter((p: Product) => p.vendor === sellerStore.name) 
+            : []
+    ), [user, sellerStore, siteData.allProducts]);
 
+    const sellerOrders = useMemo(() => (
+        (user?.role === 'seller' || user?.role === 'enterprise') && sellerStore 
+            ? siteData.allOrders.filter((o: Order) => o.items.some(i => i.vendor === sellerStore.name)) 
+            : []
+    ), [user, sellerStore, siteData.allOrders]);
+
+    const sellerPromoCodes = useMemo(() => (
+        siteData.allPromoCodes.filter((p: PromoCode) => p.sellerId === user?.id)
+    ), [siteData.allPromoCodes, user]);
+
+    const sellerTickets = useMemo(() => (
+        siteData.allTickets.filter((t: Ticket) => t.userId === user?.id)
+    ), [siteData.allTickets, user]);
+
+    const sellerNotifications = useMemo(() => (
+        user ? siteData.allNotifications.filter((n: Notification) => n.userId === user.id) : []
+    ), [user, siteData.allNotifications]);
+    
+    const augmentedSiteData = useMemo(() => ({
+        ...siteData,
+        allUsers,
+    }), [siteData, allUsers]);
+    
     const onBecomeSeller = (
         shopName: string, location: string, neighborhood: string, sellerFirstName: string,
         sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string,
@@ -225,7 +198,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                     if (user) {
                         const handlePaymentSuccess = (paymentDetails: PaymentDetails) => {
                             const finalOrderData = { ...orderData, paymentDetails };
-                            const newOrder = siteData.handleConfirmOrder(finalOrderData, user);
+                            const newOrder = siteData.handleConfirmOrder(finalOrderData, user, allUsers);
                             if (newOrder) {
                                 clearCart();
                                 navigation.setSelectedOrder(newOrder);
@@ -257,102 +230,53 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 categories={siteData.allCategories}
                 flashSales={siteData.flashSales}
                 sellerOrders={sellerOrders}
-                promoCodes={siteData.allPromoCodes.filter((p: PromoCode) => p.sellerId === user?.id)}
-                allTickets={siteData.allTickets.filter((t: Ticket) => t.userId === user?.id)}
+                promoCodes={sellerPromoCodes}
+                allTickets={sellerTickets}
                 onBack={() => {}}
-                onAddProduct={() => navigation.setPage('product-form')}
-                onEditProduct={(p) => {}}
-                onDeleteProduct={() => {}}
-                onUpdateProductStatus={() => {}}
-                onNavigateToProfile={() => navigation.navigateToSellerDashboard('profile')}
+                onAddProduct={() => navigation.navigateToProductForm(null)}
+                onEditProduct={(p: Product) => navigation.navigateToProductForm(p)}
+                onDeleteProduct={(productId) => user && siteData.handleDeleteProduct(productId, user)}
+                onUpdateProductStatus={(productId, status) => user && siteData.handleUpdateProductStatus(productId, status, user)}
                 onNavigateToAnalytics={() => navigation.navigateToSellerDashboard('analytics')}
                 onSetPromotion={setPromotionModalProduct}
-                onRemovePromotion={() => {}}
+                onRemovePromotion={(productId) => siteData.handleSetPromotion(productId, null)}
                 onProposeForFlashSale={() => {}}
                 onUploadDocument={() => {}}
-                onUpdateOrderStatus={onSellerUpdateOrderStatus}
-                onSellerCancelOrder={(orderId) => user && onSellerCancelOrder(orderId, user)}
                 onCreatePromoCode={() => {}}
                 onDeletePromoCode={() => {}}
                 isChatEnabled={siteData.siteSettings.isChatEnabled}
                 siteSettings={siteData.siteSettings}
                 payouts={siteData.payouts}
                 onReplyToReview={() => {}}
-                onCreateOrUpdateCollection={onCreateOrUpdateCollection}
-                onDeleteCollection={onDeleteCollection}
                 initialTab={navigation.sellerDashboardTab}
                 sellerNotifications={sellerNotifications}
                 onCreateTicket={() => {}}
                 allShippingPartners={siteData.allShippingPartners}
-                onUpdateShippingSettings={() => {}}
                 onRequestUpgrade={() => {}}
-                onUpdateStoreProfile={onUpdateStoreProfile}
-                onAddProductToStory={onAddProductToStory}
-                onAddStory={onAddStory}
+                onUpdateOrderStatus={(orderId, status) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user)}
+                onSellerCancelOrder={(orderId) => user && siteData.handleSellerCancelOrder(orderId, user)}
+                onCreateOrUpdateCollection={(storeId, collection) => user && siteData.handleCreateOrUpdateCollection(storeId, collection, user)}
+                onDeleteCollection={(storeId, collectionId) => user && siteData.handleDeleteCollection(storeId, collectionId, user)}
+                onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
+                onAddProductToStory={(productId: string) => user && siteData.handleAddProductToStory(productId, user)}
+                onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+        case 'product-form':
+            if (!user || (user.role !== 'seller' && user.role !== 'enterprise')) return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            return <ProductForm
+                productToEdit={navigation.productToEdit}
+                categories={siteData.allCategories}
+                siteSettings={siteData.siteSettings}
+                onCancel={() => navigation.navigateToSellerDashboard('products')}
+                onSave={(product) => {
+                    user && siteData.handleAddOrUpdateProduct(product, user);
+                    navigation.navigateToSellerDashboard('products');
+                }}
+                onAddCategory={(categoryName: string) => {}}
+            />;
         case 'superadmin-dashboard':
             if (user?.role !== 'superadmin') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
-            return <SuperAdminDashboard 
-                allUsers={allUsers}
-                allOrders={siteData.allOrders}
-                allCategories={siteData.allCategories}
-                allStores={siteData.allStores}
-                allProducts={siteData.allProducts}
-                siteActivityLogs={siteData.siteActivityLogs}
-                flashSales={siteData.flashSales}
-                allPickupPoints={siteData.allPickupPoints}
-                siteSettings={siteData.siteSettings}
-                payouts={siteData.payouts}
-                advertisements={siteData.allAdvertisements}
-                siteContent={siteData.siteContent}
-                allTickets={siteData.allTickets}
-                allAnnouncements={siteData.allAnnouncements}
-                paymentMethods={siteData.allPaymentMethods}
-                onUpdateSiteSettings={siteData.setSiteSettings}
-                onPayoutSeller={(storeId, amount) => user && siteData.handlePayoutSeller(storeId, amount, user)}
-                onAddAdvertisement={(data) => user && siteData.handleAddAdvertisement(data, user)}
-                onUpdateAdvertisement={(id, data) => user && siteData.handleUpdateAdvertisement(id, data, user)}
-                onDeleteAdvertisement={(id) => user && siteData.handleDeleteAdvertisement(id, user)}
-                onSendBulkEmail={onSendBulkEmail}
-                onUpdateOrderStatus={onUpdateOrderStatus}
-                onWarnStore={onWarnStore}
-                onToggleStoreStatus={onToggleStoreStatus}
-                onApproveStore={onApproveStore}
-                onRejectStore={onRejectStore}
-                onSaveFlashSale={onSaveFlashSale}
-                onUpdateFlashSaleSubmissionStatus={onUpdateFlashSaleSubmissionStatus}
-                onBatchUpdateFlashSaleStatus={onBatchUpdateFlashSaleStatus}
-                onAddPickupPoint={onAddPickupPoint}
-                onUpdatePickupPoint={onUpdatePickupPoint}
-                onDeletePickupPoint={onDeletePickupPoint}
-                onAdminAddCategory={onAdminAddCategory}
-                onAdminDeleteCategory={onAdminDeleteCategory}
-                onUpdateUser={onAdminUpdateUser}
-                onCreateUserByAdmin={onCreateUserByAdmin}
-                onAdminReplyToTicket={onAdminReplyToTicket}
-                onAdminUpdateTicketStatus={onAdminUpdateTicketStatus}
-                onCreateOrUpdateAnnouncement={onCreateOrUpdateAnnouncement}
-                onDeleteAnnouncement={onDeleteAnnouncement}
-                onReviewModeration={onReviewModeration}
-                onUpdatePaymentMethods={siteData.setAllPaymentMethods}
-                allZones={siteData.allZones}
-                isChatEnabled={siteData.siteSettings.isChatEnabled}
-                isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}
-                onAdminUpdateCategory={onAdminUpdateCategory}
-                onUpdateDocumentStatus={onUpdateDocumentStatus}
-                onWarnUser={onWarnUser}
-                onSanctionAgent={() => {}}
-                onAdminStoreMessage={() => {}}
-                onAdminCustomerMessage={() => {}}
-                onUpdateSiteContent={siteData.setSiteContent}
-                onRequestDocument={() => {}}
-                onVerifyDocumentStatus={() => {}}
-                onToggleChatFeature={() => {}}
-                onToggleComparisonFeature={() => {}}
-                onAssignAgent={() => {}}
-                onUpdateCategoryImage={() => {}}
-                onResolveDispute={onResolveDispute}
-            />;
+            return <SuperAdminDashboard siteData={siteData} />;
         case 'vendor-page':
              return navigation.selectedStore ? <VendorPage vendorName={navigation.selectedStore.name} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'order-history':
@@ -363,9 +287,9 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onBack={navigation.navigateToOrderHistory} 
                 allPickupPoints={siteData.allPickupPoints} 
                 allUsers={allUsers} 
-                onCancelOrder={onCancelOrder} 
-                onRequestRefund={onRequestRefund} 
-                onCustomerDisputeMessage={onCustomerDisputeMessage}
+                onCancelOrder={(orderId) => user && siteData.handleCancelOrder(orderId, user)}
+                onRequestRefund={(orderId, reason, evidenceUrls) => user && siteData.handleRequestRefund(orderId, reason, evidenceUrls, user)}
+                onCustomerDisputeMessage={(orderId, message) => user && siteData.handleCustomerDisputeMessage(orderId, message, user)}
             /> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'search-results':
             return <SearchResultsPage searchQuery={navigation.searchQuery} products={siteData.allProducts} stores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled} />;
@@ -373,25 +297,14 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             return <WishlistPage allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/>;
         case 'delivery-agent-dashboard':
             return <DeliveryAgentDashboard 
-                allOrders={siteData.allOrders} 
-                allStores={siteData.allStores} 
-                allPickupPoints={siteData.allPickupPoints} 
-                onUpdateDeliveryStatus={onUpdateDeliveryStatus}
                 onLogout={logout} 
-                onUpdateUserAvailability={onUpdateUserAvailability}
+                siteData={augmentedSiteData}
             />;
         case 'depot-agent-dashboard':
             return user ? <DepotAgentDashboard 
                 user={user} 
-                allUsers={allUsers} 
-                allOrders={siteData.allOrders}
-                allStores={siteData.allStores}
-                allZones={siteData.allZones}
-                allPickupPoints={siteData.allPickupPoints}
                 onLogout={logout}
-                onAssignAgentToOrder={(orderId, agentId) => user && siteData.handleAssignAgentToOrder(orderId, agentId, user, allUsers)}
-                handleDepotCheckIn={(orderId, location) => user && siteData.handleDepotCheckIn(orderId, location, user)}
-                onUpdateSchedule={onUpdateSchedule}
+                siteData={augmentedSiteData}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'account':
             return <AccountPage 
@@ -407,7 +320,12 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                         onVendorClick={navigation.navigateToVendorPage}
                     />;
         case 'seller-analytics-dashboard':
-            return <SellerAnalyticsDashboard onBack={() => navigation.navigateToSellerDashboard('overview')} sellerOrders={sellerOrders} sellerProducts={sellerProducts} flashSales={siteData.flashSales}/>
+            return <SellerAnalyticsDashboard 
+                onBack={() => navigation.navigateToSellerDashboard('overview')} 
+                sellerOrders={sellerOrders} 
+                sellerProducts={sellerProducts} 
+                flashSales={siteData.flashSales}
+            />
         case 'seller-subscription':
             return <SellerSubscriptionPage 
                 siteSettings={siteData.siteSettings} 
@@ -420,7 +338,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 // Should not happen if entry point is protected, but as a safeguard.
                 return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
             }
-            if (user.role === 'seller' && sellerStore) {
+            if ((user.role === 'seller' || user.role === 'enterprise') && sellerStore) {
                  // User is already a seller, redirect them.
                  navigation.navigateToSellerDashboard('overview');
                  return null; // Return null while redirecting
@@ -438,12 +356,11 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 content={navigation.infoPageContent.content}
                 slug={navigation.infoPageContent.slug}
                 onBack={navigation.navigateToHome}
-                allProducts={siteData.allProducts}
-                allCategories={siteData.allCategories}
-                allStores={siteData.allStores}
                 onProductClick={navigation.navigateToProduct}
                 onCategoryClick={navigation.navigateToCategory}
                 onVendorClick={navigation.navigateToVendorPage}
+                siteData={siteData}
+                authData={authData}
             /> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'not-found': return <NotFoundPage onNavigateHome={navigation.navigateToHome} />;
         case 'forbidden': return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
@@ -451,6 +368,16 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'reset-password': return <ResetPasswordPage onPasswordReset={() => {}} onNavigateLogin={() => {}}/>;
         case 'promotions': return <PromotionsPage allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled} />;
         case 'flash-sales': return <FlashSalesPage allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled} />;
+        case 'services':
+            return <ServicesPage
+                allProducts={siteData.allProducts}
+                allStores={siteData.allStores}
+                flashSales={siteData.flashSales}
+                onProductClick={navigation.navigateToProduct}
+                onBack={navigation.navigateToHome}
+                onVendorClick={navigation.navigateToVendorPage}
+                isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}
+            />;
         case 'stores': return <StoresPage stores={siteData.allStores} onBack={navigation.navigateToHome} onVisitStore={navigation.navigateToVendorPage} onNavigateToStoresMap={navigation.navigateToStoresMap} />;
         case 'stores-map': return <StoresMapPage stores={siteData.allStores} onBack={navigation.navigateToStores} />;
         case 'comparison': return <ComparisonPage />;

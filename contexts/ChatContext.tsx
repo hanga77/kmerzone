@@ -1,14 +1,13 @@
 import React, { createContext, useState, useContext, ReactNode, useCallback, useMemo, useEffect } from 'react';
 import type { Chat, Message, Product, User, Store, Category } from '../types';
 import { useAuth } from './AuthContext';
-import { GoogleGenAI } from '@google/genai';
 import { useLanguage } from './LanguageContext';
 
 interface ChatContextType {
   chats: Chat[];
   messages: { [chatId: string]: Message[] };
   startChat: (seller: User, store: Store, product?: Product) => void;
-  sendMessage: (chatId: string, text: string, allProducts: Product[], allCategories: Category[]) => void;
+  sendMessage: (chatId: string, text: string) => void;
   setActiveChatId: (chatId: string | null) => void;
   activeChatId: string | null;
   isWidgetOpen: boolean;
@@ -61,16 +60,6 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   const [activeChatId, setActiveChatId] = useState<string | null>(null);
   const [isWidgetOpen, setIsWidgetOpen] = useState(false);
   const [isTyping, setIsTyping] = useState<Record<string, boolean>>({});
-  const [ai, setAi] = useState<GoogleGenAI | null>(null);
-
-  useEffect(() => {
-    try {
-      setAi(new GoogleGenAI({ apiKey: process.env.API_KEY as string }));
-    } catch (error) {
-      console.error("Failed to initialize Google GenAI:", error);
-      setAi(null);
-    }
-  }, []);
 
   const startChat = useCallback((seller: User, store: Store, product?: Product) => {
     if (!user) {
@@ -129,7 +118,7 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             id: `msg_welcome_${Date.now()}`,
             chatId: chatId!,
             senderId: 'assistant-id',
-            text: `Bonjour ! Je suis l'assistant KMER ZONE. Comment puis-je vous aider ${product ? `concernant "${product.name}"` : ''} ?`,
+            text: `Bonjour ! Je suis l'assistant KMER ZONE. Comment puis-je vous aider ${product ? `concernant "${product.name}"` : ''} ? Posez votre question au vendeur ici.`,
             timestamp: new Date().toISOString(),
             isRead: true,
         };
@@ -142,13 +131,14 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
 
   }, [user, chats, messages]);
 
-  const sendMessage = useCallback(async (chatId: string, text: string, allProducts: Product[], allCategories: Category[]) => {
+  const sendMessage = useCallback((chatId: string, text: string) => {
     if (!user) return;
     
     const chat = chats.find(c => c.id === chatId);
-    const censoredVersion = censorText(text, chat?.sellerStoreInfo);
+    if (!chat) return;
+
+    const censoredVersion = censorText(text, chat.sellerStoreInfo);
     
-    // Add user message immediately
     const userMessage: Message = {
       id: `msg_${Date.now()}`,
       chatId,
@@ -156,137 +146,32 @@ export const ChatProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       text: text,
       censoredText: censoredVersion !== text ? censoredVersion : undefined,
       timestamp: new Date().toISOString(),
-      isRead: false,
+      isRead: false, // Will be marked as read by receiver
     };
+    
+    const receiverId = chat.participantIds.find(id => id !== user.id)!;
+
     setMessages(prev => ({
         ...prev,
         [chatId]: [...(prev[chatId] || []), userMessage]
     }));
-    setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: userMessage.timestamp } : c));
 
-    if (!ai) {
-        const errorMessage: Message = {
-            id: `msg_error_${Date.now()}`,
-            chatId,
-            senderId: 'assistant-id',
-            text: "Désolé, la fonction de chat n'est pas disponible pour le moment en raison d'un problème de configuration.",
-            timestamp: new Date().toISOString(),
-            isRead: false,
-        };
-        setMessages(prev => ({
-            ...prev,
-            [chatId]: [...(prev[chatId] || []), errorMessage]
-        }));
-        return;
-    }
-
-    // Set typing indicator
-    setIsTyping(prev => ({ ...prev, [chatId]: true }));
-    
-    // AI Logic with Streaming
-    try {
-        if (!chat) throw new Error("Chat not found");
-
-        const chatHistory = messages[chatId] || [];
-        const formattedHistory = chatHistory.map(msg => `${msg.senderId === user.id ? 'Customer' : 'Assistant'}: ${msg.text}`).join('\n');
-
-        const getCategoryName = (categoryId: string) => {
-            const cat = allCategories.find(c => c.id === categoryId);
-            return cat ? t(cat.name) : 'Unknown';
-        };
-
-        const simplifiedProducts = allProducts.map(p => ({
-            id: p.id,
-            name: p.name,
-            price: p.promotionPrice ?? p.price,
-            vendor: p.vendor,
-            category: getCategoryName(p.categoryId),
-            description: p.description.substring(0, 150) + '...',
-        }));
-
-        const productContext = chat.productContext ? `The user is asking about this product: ${JSON.stringify(chat.productContext)}.` : '';
-
-        const prompt = `
-You are a friendly and helpful shopping assistant for KMER ZONE, an e-commerce marketplace in Cameroon.
-Your goal is to help customers find products and answer their questions about the platform.
-Provide concise, helpful answers in French.
-When recommending products, list their name, price, and vendor.
-Your knowledge is limited to the product data provided. Do not invent products or information.
-For your safety, never ask for or provide personal contact information like phone numbers or email addresses. Keep all communication on the platform.
-
-Here is the product catalog for KMER ZONE:
-${JSON.stringify(simplifiedProducts)}
-
-${productContext}
-
-Here is the chat history so far:
-${formattedHistory}
-
-The customer just said: "${text}"
-
-Please provide a helpful response as the KMER ZONE assistant.
-        `;
-        
-        // Create an initial empty assistant message
-        const assistantMessageId = `msg_assistant_${Date.now()}`;
-        const initialAssistantMessage: Message = {
-            id: assistantMessageId,
-            chatId,
-            senderId: 'assistant-id',
-            text: '', // Start with empty text
-            timestamp: new Date().toISOString(),
-            isRead: false,
-        };
-        setMessages(prev => ({
-            ...prev,
-            [chatId]: [...(prev[chatId] || []), initialAssistantMessage]
-        }));
-        
-        const response = await ai.models.generateContentStream({
-            model: 'gemini-2.5-flash',
-            contents: prompt,
-        });
-
-        let fullText = '';
-        for await (const chunk of response) {
-            const chunkText = chunk.text;
-            if (chunkText) {
-                fullText += chunkText;
-                // Update the existing message with the new text chunk
-                setMessages(prev => ({
-                    ...prev,
-                    [chatId]: prev[chatId].map(msg => 
-                        msg.id === assistantMessageId 
-                            ? { ...msg, text: fullText } 
-                            : msg
-                    )
-                }));
-            }
+    setChats(prev => prev.map(c => {
+        if (c.id === chatId) {
+            return { 
+                ...c, 
+                lastMessageTimestamp: userMessage.timestamp,
+                unreadCount: {
+                    ...c.unreadCount,
+                    [receiverId]: (c.unreadCount[receiverId] || 0) + 1,
+                }
+            };
         }
-        
-        // Final update to timestamp on chat object after the whole message is received
-        setChats(prev => prev.map(c => c.id === chatId ? { ...c, lastMessageTimestamp: new Date().toISOString() } : c));
+        return c;
+    }));
 
-    } catch (error) {
-        console.error("Gemini API call failed or timed out:", error);
-        const errorMessage: Message = {
-             id: `msg_error_${Date.now()}`,
-             chatId,
-             senderId: 'assistant-id',
-             text: "Désolé, je n'arrive pas à répondre pour le moment. Veuillez réessayer plus tard.",
-             timestamp: new Date().toISOString(),
-             isRead: false,
-        };
-        setMessages(prev => ({
-            ...prev,
-            [chatId]: [...(prev[chatId] || []), errorMessage]
-        }));
-    } finally {
-        // Remove typing indicator
-        setIsTyping(prev => ({ ...prev, [chatId]: false }));
-    }
+  }, [user, chats]);
 
-  }, [user, chats, messages, ai, t]);
 
   const handleSetActiveChat = useCallback((chatId: string | null) => {
      setActiveChatId(chatId);

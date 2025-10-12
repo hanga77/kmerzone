@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useChatContext } from '../contexts/ChatContext';
 import { useAuth } from '../contexts/AuthContext';
 import { XIcon, PaperAirplaneIcon, ArrowLeftIcon, ChevronDownIcon } from './Icons';
-import type { Chat, Message, User, Product, Category } from '../types';
+import type { Chat, Message, User, Notification } from '../types';
 
 const PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
 
@@ -161,11 +161,43 @@ const MessageThread: React.FC<{
   )
 };
 
-const ChatWidget: React.FC<{allUsers: User[], allProducts: Product[], allCategories: Category[]}> = ({ allUsers, allProducts, allCategories }) => {
+interface ChatWidgetProps {
+    allUsers: User[];
+    createNotification: (notification: Omit<Notification, 'id'>) => void;
+}
+
+const ChatWidget: React.FC<ChatWidgetProps> = ({ allUsers, createNotification }) => {
   const { user } = useAuth();
   const { chats, messages, activeChatId, setActiveChatId, sendMessage, isWidgetOpen, setIsWidgetOpen, isTyping } = useChatContext();
 
   if (!isWidgetOpen || !user) return null;
+
+  const handleSendMessage = (text: string) => {
+    if (!activeChatId || !user) return;
+
+    // 1. Send message (updates local context state)
+    sendMessage(activeChatId, text);
+
+    // 2. Create notification for receiver
+    const chat = chats.find(c => c.id === activeChatId);
+    if (chat) {
+        const receiverId = chat.participantIds.find(id => id !== user.id);
+        const receiver = allUsers.find(u => u.id === receiverId);
+
+        if (receiver) {
+            createNotification({
+                userId: receiver.id,
+                message: `Nouveau message de ${user.name}`,
+                link: { 
+                    page: receiver.role === 'seller' || receiver.role === 'enterprise' ? 'seller-dashboard' : 'home', 
+                    params: { tab: 'chat' } 
+                },
+                isRead: false,
+                timestamp: new Date().toISOString()
+            });
+        }
+    }
+  };
 
   const activeChat = chats.find(c => c.id === activeChatId);
   const activeChatIsTyping = activeChatId ? isTyping[activeChatId] || false : false;
@@ -195,7 +227,7 @@ const ChatWidget: React.FC<{allUsers: User[], allProducts: Product[], allCategor
                 chat={activeChat || null}
                 messages={activeChatId ? messages[activeChatId] || [] : []}
                 currentUser={user}
-                onSendMessage={(text) => activeChatId && sendMessage(activeChatId, text, allProducts, allCategories)}
+                onSendMessage={handleSendMessage}
                 onBack={() => setActiveChatId(null)}
                 isTyping={activeChatIsTyping}
             />

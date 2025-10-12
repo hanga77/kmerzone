@@ -1,4 +1,5 @@
 
+
 import React, { useState, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, PickupPoint, DisputeMessage, User } from '../types';
 import { ArrowLeftIcon, CheckIcon, TruckIcon, ExclamationTriangleIcon, XIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
@@ -125,6 +126,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
 
   const getStatusTranslation = (status: OrderStatus) => t(`orderStatus.${status}`, status);
 
+  // FIX: Corrected statusDescriptions to match OrderStatus type. Removed 'returned' and added missing return-related statuses.
   const statusDescriptions: Record<OrderStatus, string> = {
     confirmed: 'La boutique prépare le colis.',
     'ready-for-pickup': "Le vendeur a préparé votre colis pour l'enlèvement.",
@@ -134,8 +136,10 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
     delivered: 'Votre colis a été remis.',
     cancelled: 'Votre commande a été annulée.',
     'refund-requested': 'Votre demande est en cours d\'examen.',
+    'return-approved': 'Votre demande de retour a été approuvée.',
+    'return-received': 'Le colis retourné a été réceptionné.',
     refunded: 'Cette commande a été remboursée.',
-    returned: 'Le colis a été retourné.',
+    'return-rejected': 'Votre demande de retour a été refusée.',
     'depot-issue': 'Un problème a été signalé avec votre colis au dépôt.',
     'delivery-failed': 'Un problème est survenu lors de la livraison.',
   };
@@ -288,12 +292,12 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
                             const authorName = msg.author.charAt(0).toUpperCase() + msg.author.slice(1);
                             return (
                                <div key={i} className={`flex ${isMe ? 'justify-end' : 'justify-start'}`}>
-                                <div className={`max-w-sm p-3 rounded-xl text-sm ${isMe ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                                    <p className="font-bold mb-1">{isMe ? 'Vous' : authorName}</p>
-                                    <p>{msg.message}</p>
-                                    <p className="text-xs opacity-70 mt-1 text-right">{new Date(msg.date).toLocaleTimeString('fr-FR')}</p>
+                                <div className={`p-3 rounded-xl max-w-sm ${isMe ? 'bg-kmer-green text-white' : 'bg-gray-200 dark:bg-gray-700'}`}>
+                                    <p className="font-bold text-sm">{isMe ? 'Vous' : authorName}</p>
+                                    <p className="whitespace-pre-wrap">{msg.message}</p>
+                                    {msg.attachmentUrls && <MessageAttachments urls={msg.attachmentUrls} />}
+                                  </div>
                                 </div>
-                            </div>
                             );
                         })}
                     </div>

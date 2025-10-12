@@ -1,8 +1,4 @@
 
-
-
-
-
 export interface Zone {
   id: string;
   name: string;
@@ -260,7 +256,7 @@ export interface Address {
     longitude?: number;
 }
 
-export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'refunded' | 'returned' | 'depot-issue' | 'delivery-failed';
+export type OrderStatus = 'confirmed' | 'ready-for-pickup' | 'picked-up' | 'at-depot' | 'out-for-delivery' | 'delivered' | 'cancelled' | 'refund-requested' | 'return-approved' | 'return-received' | 'refunded' | 'return-rejected' | 'depot-issue' | 'delivery-failed';
 
 export interface PromoCode {
   code: string;
@@ -325,6 +321,8 @@ export interface Order extends NewOrderData {
     cancellationFee?: number;
     refundReason?: string;
     refundEvidenceUrls?: string[];
+    returnId?: string;
+    returnRejectionReason?: string;
     trackingHistory: TrackingEvent[];
     agentId?: string;
     storageLocationId?: string;

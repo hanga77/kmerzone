@@ -239,7 +239,7 @@ export default function App() {
         
         {paymentRequest && <PaymentModal paymentRequest={paymentRequest} paymentMethods={siteData.allPaymentMethods} onClose={() => setPaymentRequest(null)} />}
 
-        {user && siteData.siteSettings.isChatEnabled && <ChatWidget allUsers={allUsers} allProducts={siteData.allProducts} allCategories={siteData.allCategories} />}
+        {user && siteData.siteSettings.isChatEnabled && <ChatWidget allUsers={allUsers} createNotification={siteData.createNotification} />}
 
         {navigation.viewingStoriesFor && <StoryViewer store={navigation.viewingStoriesFor} onClose={navigation.handleCloseStories} allProducts={siteData.allProducts} onProductClick={navigation.navigateToProduct} />}
     </div>

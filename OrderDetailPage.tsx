@@ -124,6 +124,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
 
   const getStatusTranslation = (status: OrderStatus) => t(`orderStatus.${status}`, status);
 
+  // FIX: Corrected statusDescriptions to match OrderStatus type. Removed 'returned' and added missing return-related statuses.
   const statusDescriptions: Record<OrderStatus, string> = {
     confirmed: 'La boutique prépare le colis.',
     'ready-for-pickup': "Le vendeur a préparé votre colis pour l'enlèvement.",
@@ -133,8 +134,10 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
     delivered: 'Votre colis a été remis.',
     cancelled: 'Votre commande a été annulée.',
     'refund-requested': 'Votre demande est en cours d\'examen.',
+    'return-approved': 'Votre demande de retour a été approuvée.',
+    'return-received': 'Le colis retourné a été réceptionné.',
     refunded: 'Cette commande a été remboursée.',
-    returned: 'Le colis a été retourné.',
+    'return-rejected': 'Votre demande de retour a été refusée.',
     'depot-issue': 'Un problème a été signalé avec votre colis au dépôt.',
     'delivery-failed': 'Un problème est survenu lors de la livraison.',
   };

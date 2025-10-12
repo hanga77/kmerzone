@@ -23,6 +23,7 @@ interface DeliveryAgentDashboardProps {
   siteData: any;
 }
 
+// FIX: Corrected statusTranslations to match OrderStatus type.
 const statusTranslations: { [key in OrderStatus]: string } = {
     confirmed: 'Confirmée',
     'ready-for-pickup': 'Prêt pour enlèvement',
@@ -33,7 +34,9 @@ const statusTranslations: { [key in OrderStatus]: string } = {
     cancelled: 'Annulé',
     'refund-requested': 'Remboursement demandé',
     refunded: 'Remboursé',
-    returned: 'Retourné',
+    'return-approved': 'Retour approuvé',
+    'return-received': 'Retour reçu',
+    'return-rejected': 'Retour rejeté',
     'depot-issue': 'Problème au dépôt',
     'delivery-failed': 'Échec de livraison',
 };
@@ -249,7 +252,8 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
         if (!user) return { missions: [], history: [] };
         const agentOrders = allOrders.filter((o: Order) => o.agentId === user.id);
         const _missions = agentOrders.filter((o: Order) => ['picked-up', 'at-depot', 'out-for-delivery', 'ready-for-pickup'].includes(o.status));
-        const _history = agentOrders.filter((o: Order) => ['delivered', 'delivery-failed', 'returned'].includes(o.status));
+        // FIX: Replaced invalid 'returned' status with 'return-received'
+        const _history = agentOrders.filter((o: Order) => ['delivered', 'delivery-failed', 'return-received'].includes(o.status));
         return { missions: _missions, history: _history };
     }, [allOrders, user]);
 

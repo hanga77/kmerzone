@@ -34,9 +34,11 @@ export const translations = {
       'out-for-delivery': 'En livraison',
       delivered: 'Livré',
       cancelled: 'Annulé',
-      'refund-requested': 'Litige',
+      'refund-requested': 'Demande de retour',
       refunded: 'Remboursé',
-      returned: 'Retourné',
+      'return-approved': 'Retour approuvé',
+      'return-received': 'Retour reçu',
+      'return-rejected': 'Retour refusé',
       'depot-issue': 'Problème au dépôt',
       'delivery-failed': 'Échec de livraison'
     },
@@ -706,12 +708,18 @@ export const translations = {
           allStatuses: "Tous les statuts",
           tabs: {
               all: "Toutes les commandes",
-              disputes: "Litiges"
+              disputes: "Demandes de retour",
+              returns: "Retours en cours"
           },
           evidence: "Preuves:",
           rejectRequest: "Rejeter la demande",
           approveRefund: "Approuver le remboursement",
-          noDisputes: "Aucun litige en cours."
+          approveReturn: "Approuver le retour",
+          noDisputes: "Aucune demande de retour en cours.",
+          noReturns: "Aucun retour en cours.",
+          markReceived: "Marquer comme reçu",
+          issueRefund: "Rembourser",
+          rejectRefund: "Refuser le remboursement"
       },
       logistics: {
           title: "Gestion de la Logistique",
@@ -904,9 +912,11 @@ export const translations = {
       'out-for-delivery': 'Out for Delivery',
       delivered: 'Delivered',
       cancelled: 'Cancelled',
-      'refund-requested': 'Dispute',
+      'refund-requested': 'Return Request',
       refunded: 'Refunded',
-      returned: 'Returned',
+      'return-approved': 'Return Approved',
+      'return-received': 'Return Received',
+      'return-rejected': 'Return Rejected',
       'depot-issue': 'Depot Issue',
       'delivery-failed': 'Delivery Failed'
     },
@@ -1576,12 +1586,18 @@ export const translations = {
           allStatuses: "All statuses",
           tabs: {
               all: "All Orders",
-              disputes: "Disputes"
+              disputes: "Return Requests",
+              returns: "Ongoing Returns"
           },
           evidence: "Evidence:",
           rejectRequest: "Reject Request",
           approveRefund: "Approve Refund",
-          noDisputes: "No disputes in progress."
+          approveReturn: "Approve Return",
+          noDisputes: "No pending return requests.",
+          noReturns: "No ongoing returns.",
+          markReceived: "Mark as Received",
+          issueRefund: "Issue Refund",
+          rejectRefund: "Reject Refund"
       },
       logistics: {
           title: "Logistics Management",
@@ -1609,7 +1625,7 @@ export const translations = {
               store: "Store",
               totalRevenue: "Total Revenue",
               commissionDue: "Commission Due",
-              paidAmount: "Amount Paid",
+              amountPaid: "Amount Paid",
               balanceDue: "Balance Due"
           },
           markAsPaid: "Mark as Paid",
