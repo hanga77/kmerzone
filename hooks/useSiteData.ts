@@ -4,7 +4,7 @@ import type {
     Product, Category, Store, FlashSale, Order, SiteSettings, SiteContent, Advertisement, 
     PaymentMethod, SiteActivityLog, PickupPoint, Payout, PromoCode, OrderStatus, 
     NewOrderData, Review, User, DocumentStatus, Warning, Story, ProductCollection, 
-    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus, UserAvailabilityStatus, AgentSchedule 
+    Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus, UserAvailabilityStatus, AgentSchedule, DisputeMessage 
 } from '../types';
 import { 
     initialCategories, initialProducts, initialStores, initialFlashSales, initialPickupPoints, 
@@ -45,6 +45,14 @@ export const useSiteData = () => {
         };
         setSiteActivityLogs(prev => [newLog, ...prev].slice(0, 100)); // Keep last 100 logs
     }, [setSiteActivityLogs]);
+
+    const createNotification = useCallback((notification: Omit<Notification, 'id'>) => {
+        const newNotification: Notification = {
+            ...notification,
+            id: `notif-${Date.now()}-${notification.userId}`,
+        };
+        setAllNotifications(prev => [newNotification, ...prev]);
+    }, [setAllNotifications]);
 
     const handleAdminUpdateUser = useCallback((userId: string, updates: Partial<User>, allUsers: User[], adminUser: User) => {
         let oldUser: User | undefined;
@@ -274,10 +282,38 @@ export const useSiteData = () => {
         logActivity(user, 'STORE_DOCUMENT_MODERATED', `Document "${documentName}" pour la boutique ${storeId} modéré à ${status}.`);
     }, [setAllStores, logActivity]);
 
+    // FIX: Renamed from handleResolveDispute to handleResolveReturnRequest to match its functionality.
+    // Let's create a new onResolveDispute function instead.
     const handleResolveDispute = useCallback((orderId: string, resolution: 'refunded' | 'rejected', user: User) => {
-        const newStatus = resolution === 'refunded' ? 'refunded' : 'delivered'; // Rejecting returns it to delivered status for now
-        setAllOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: newStatus } : o));
-        logActivity(user, 'ORDER_DISPUTE_RESOLVED', `Litige pour la commande ${orderId} résolu. Résolution : ${resolution}.`);
+        setAllOrders(prev => prev.map(o => {
+            if (o.id === orderId && o.status === 'refund-requested') {
+                const newStatus: OrderStatus = resolution === 'refunded' ? 'refunded' : 'return-rejected';
+                const newTrackingEvent: TrackingEvent = {
+                    status: newStatus,
+                    date: new Date().toISOString(),
+                    location: 'Administration',
+                    details: `Litige résolu par l'admin. Décision: ${resolution}.`
+                };
+                const newDisputeMessage: DisputeMessage = {
+                    author: 'admin',
+                    message: `Litige résolu. Décision de l'administration : ${resolution === 'refunded' ? 'Remboursement accordé' : 'Demande rejetée'}.`,
+                    date: new Date().toISOString()
+                };
+                return { 
+                    ...o, 
+                    status: newStatus,
+                    trackingHistory: [...(o.trackingHistory || []), newTrackingEvent],
+                    disputeLog: [...(o.disputeLog || []), newDisputeMessage]
+                };
+            }
+            return o;
+        }));
+        logActivity(user, 'DISPUTE_RESOLVED', `Litige pour la commande ${orderId} résolu avec la décision: ${resolution}.`);
+    }, [setAllOrders, logActivity]);
+
+    const handleResolveReturnRequest = useCallback((orderId: string, resolution: 'approve' | 'reject', reason: string, user: User) => {
+        setAllOrders(prev => prev.map(o => o.id === orderId ? { ...o, status: resolution === 'approve' ? 'return-approved' : 'return-rejected', returnRejectionReason: resolution === 'reject' ? reason : undefined } : o));
+        logActivity(user, 'ORDER_RETURN_REQUEST_RESOLVED', `Demande de retour pour la commande ${orderId} résolue : ${resolution}.`);
     }, [setAllOrders, logActivity]);
 
     const handleSaveFlashSale = useCallback((saleData: Omit<FlashSale, 'id' | 'products'>, user: User) => {
@@ -601,7 +637,8 @@ export const useSiteData = () => {
                     status: 'refund-requested',
                     refundReason: reason,
                     refundEvidenceUrls: evidenceUrls,
-                    disputeLog: [{ author: 'customer', message: reason, date: new Date().toISOString() }],
+                    // FIX: Pass evidenceUrls to the disputeLog.
+                    disputeLog: [{ author: 'customer', message: reason, date: new Date().toISOString(), attachmentUrls: evidenceUrls }],
                 };
             }
             return o;
@@ -731,7 +768,7 @@ export const useSiteData = () => {
         handleUpdateOrderStatus,
         handleAdminUpdateCategory,
         handleUpdateDocumentStatus,
-        handleResolveDispute,
+        handleResolveReturnRequest,
         handleDepotCheckIn,
         handleUpdateSchedule,
         // Seller actions
@@ -751,6 +788,8 @@ export const useSiteData = () => {
         handleCancelOrder,
         handleRequestRefund,
         handleCustomerDisputeMessage,
+        createNotification,
+        handleResolveDispute,
     }), [
         allProducts, setAllProducts, allCategories, setAllCategories, allStores, setAllStores, allOrders, setAllOrders,
         flashSales, setFlashSales, allPickupPoints, setAllPickupPoints, siteSettings, setSiteSettings, siteContent, setSiteContent,
@@ -765,11 +804,11 @@ export const useSiteData = () => {
         handleBatchUpdateFlashSaleStatus, handleCreateOrUpdateAnnouncement, handleDeleteAnnouncement, handleAddPickupPoint,
         handleUpdatePickupPoint, handleDeletePickupPoint, handleAdminReplyToTicket, handleAdminUpdateTicketStatus,
         handleReviewModeration, handleCreateUserByAdmin, handleUpdateOrderStatus, handleAdminUpdateCategory,
-        handleUpdateDocumentStatus, handleResolveDispute, handleDepotCheckIn, handleUpdateSchedule,
+        handleUpdateDocumentStatus, handleResolveReturnRequest, handleDepotCheckIn, handleUpdateSchedule,
         handleAddOrUpdateProduct, handleDeleteProduct, handleUpdateProductStatus,
         handleSellerUpdateOrderStatus, handleSellerCancelOrder, handleCreateOrUpdateCollection, handleDeleteCollection,
         handleUpdateStoreProfile, handleUpdateDeliveryStatus, createStoreAndNotifyAdmin, handleAddProductToStory, handleAddStory,
-        handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage
+        handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage, createNotification, handleResolveDispute
     ]);
 
     return memoizedValue;

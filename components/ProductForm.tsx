@@ -8,7 +8,7 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface ProductFormProps {
   onSave: (product: Product) => void;
   onCancel: () => void;
-  productToEdit: Product | null;
+  productToEdit: Partial<Product> | null;
   categories: Category[];
   onAddCategory: (categoryName: string) => void;
   siteSettings: SiteSettings;
@@ -217,20 +217,51 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
   const hasVariants = variants.length > 0 && variants.every(v => v.name && v.options.length > 0);
 
   useEffect(() => {
+    const defaultProductState: Partial<Product> = {
+        name: '',
+        price: 0,
+        promotionPrice: undefined,
+        stock: 0,
+        categoryId: '',
+        description: '',
+        imageUrls: [],
+        status: 'draft',
+        sku: '',
+        type: 'product',
+    };
+
     if (productToEdit) {
-      setProduct({
-        ...productToEdit,
-        type: productToEdit.type || 'product',
-        productionDate: productToEdit.productionDate ? productToEdit.productionDate.split('T')[0] : '',
-        expirationDate: productToEdit.expirationDate ? productToEdit.expirationDate.split('T')[0] : '',
-      });
-      setImagePreviews(productToEdit.imageUrls);
-      setVariants(productToEdit.variants || []);
-      setVariantDetails(productToEdit.variantDetails || []);
-    } else if (categoryTree.length > 0 && categoryTree[0].subCategories.length > 0) {
-      setProduct(prev => ({ ...prev, categoryId: categoryTree[0].subCategories[0].id }));
+        const initialState = {
+            ...defaultProductState,
+            ...productToEdit,
+            productionDate: productToEdit.productionDate ? productToEdit.productionDate.split('T')[0] : '',
+            expirationDate: productToEdit.expirationDate ? productToEdit.expirationDate.split('T')[0] : '',
+        };
+        
+        // If adding a new service (no id), pre-select a service category
+        if (productToEdit.type === 'service' && !productToEdit.id) {
+            const serviceCategory = categories.find(c => c.parentId === 'cat-services');
+            if (serviceCategory) {
+                initialState.categoryId = serviceCategory.id;
+            }
+        }
+        
+        setProduct(initialState);
+        setImagePreviews(productToEdit.imageUrls || []);
+        setVariants(productToEdit.variants || []);
+        setVariantDetails(productToEdit.variantDetails || []);
+    } else {
+        // Reset form for a new product
+        const defaultState = {...defaultProductState};
+        if (categoryTree.length > 0 && categoryTree[0].subCategories.length > 0) {
+            defaultState.categoryId = categoryTree[0].subCategories[0].id;
+        }
+        setProduct(defaultState);
+        setImagePreviews([]);
+        setVariants([]);
+        setVariantDetails([]);
     }
-  }, [productToEdit, categoryTree]);
+}, [productToEdit, categoryTree, categories]);
   
   useEffect(() => {
       if (hasVariants && product.type !== 'service') {
@@ -388,9 +419,9 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
     }
     
     const finalProduct: Product = {
-        id: productToEdit ? productToEdit.id : new Date().getTime().toString(),
+        id: 'id' in product ? (product as Product).id : new Date().getTime().toString(),
         vendor: user.shopName,
-        reviews: productToEdit ? productToEdit.reviews : [],
+        reviews: 'reviews' in product ? (product as Product).reviews : [],
         ...finalProductData,
         name: finalProductData.name!, 
         price: finalProductData.price!, 
@@ -406,7 +437,7 @@ const ProductForm: React.FC<ProductFormProps> = ({ onSave, onCancel, productToEd
   return (
     <div className="container mx-auto px-4 sm:px-6 py-12">
       <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-6 sm:p-8 rounded-lg shadow-lg">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-6">{productToEdit ? 'Modifier le produit' : 'Ajouter un nouveau produit'}</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 dark:text-white mb-6">{productToEdit?.id ? 'Modifier le produit' : 'Ajouter un nouveau produit'}</h1>
         <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
             <h2 className="text-xl font-semibold -mb-2 dark:text-white">Informations Générales</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t dark:border-gray-700">

@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useEffect } from 'react';
 import type { Product, Category, Store, FlashSale, Order, PromoCode, SiteSettings, Payout, Notification, Ticket, ShippingPartner, ProductCollection, User, ShippingSettings } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -65,6 +62,7 @@ interface SellerDashboardProps {
   onUpdateStoreProfile: (storeId: string, data: Partial<Store>) => void;
   onAddProductToStory: (productId: string) => void;
   onAddStory: (imageUrl: string) => void;
+  navigation: any; // Add navigation prop
 }
 
 const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: boolean, onClick: () => void, count?: number, isLocked?: boolean }> = ({ icon, label, isActive, onClick, count, isLocked }) => {
@@ -91,7 +89,7 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
 
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade } = props;
+    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade, navigation } = props;
     const [activeTab, setActiveTab] = useState(initialTab || 'overview');
     const { t } = useLanguage();
     
@@ -135,7 +133,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
 
         switch(activeTab) {
             case 'overview': return <OverviewPanel {...panelProps} setActiveTab={setActiveTab} />;
-            case 'products': return <ProductsPanel {...panelProps} />;
+            case 'products': return <ProductsPanel {...panelProps} onAddService={() => navigation.navigateToProductForm({ type: 'service' })} />;
             case 'collections': return <CollectionsPanel {...panelProps} />;
             case 'orders': return <OrdersPanel {...panelProps} />;
             case 'reviews': return <ReviewsPanel {...panelProps} />;

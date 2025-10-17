@@ -1,4 +1,5 @@
 
+
 export interface Zone {
   id: string;
   name: string;
@@ -305,6 +306,8 @@ export interface DisputeMessage {
     author: 'admin' | 'seller' | 'customer';
     message: string;
     date: string; // ISO string
+    // FIX: Added optional attachmentUrls to match usage in OrderDetailPage.
+    attachmentUrls?: string[];
 }
 
 export interface StatusChangeLogEntry {

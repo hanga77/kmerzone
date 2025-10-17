@@ -260,6 +260,8 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
                 onAddProductToStory={(productId: string) => user && siteData.handleAddProductToStory(productId, user)}
                 onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
+                // FIX: Pass the navigation prop to SellerDashboard
+                navigation={navigation}
             /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
         case 'product-form':
             if (!user || (user.role !== 'seller' && user.role !== 'enterprise')) return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
@@ -349,7 +351,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 siteSettings={siteData.siteSettings} 
             />;
         case 'become-premium':
-            return <BecomePremiumPage siteSettings={siteData.siteSettings} onBack={navigation.navigateToHome} onBecomePremiumByCaution={() => {}} onUpgradeToPremiumPlus={() => {}}/>
+            return <BecomePremiumPage siteSettings={siteData.siteSettings} onBack={navigation.navigateToHome} onBecomePremiumByCaution={() => {}} onUpgradeToPremiumPlus={() => {}}/>;
         case 'info':
             return navigation.infoPageContent ? <InfoPage 
                 title={navigation.infoPageContent.title} 
@@ -359,6 +361,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onProductClick={navigation.navigateToProduct}
                 onCategoryClick={navigation.navigateToCategory}
                 onVendorClick={navigation.navigateToVendorPage}
+                // FIX: Pass siteData and authData props to InfoPage.
                 siteData={siteData}
                 authData={authData}
             /> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;

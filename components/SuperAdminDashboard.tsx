@@ -16,7 +16,7 @@ import { SupportPanel } from './admin/SupportPanel';
 import { LogsPanel } from './admin/LogsPanel';
 import { SettingsPanel } from './admin/SettingsPanel';
 import ReviewModerationPanel from './admin/ReviewModerationPanel';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 
 
 interface SuperAdminDashboardProps {
@@ -113,6 +113,8 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ siteDa
             onUpdateSiteContent: siteData.setSiteContent,
             onUpdatePaymentMethods: siteData.setAllPaymentMethods,
             onToggleStoreCertification: (storeId: string) => user && siteData.handleToggleStoreCertification(storeId, user),
+            // FIX: Pass onResolveDispute to OrdersPanel to fix missing prop error.
+            onResolveDispute: (orderId: string, resolution: 'refunded' | 'rejected') => user && siteData.handleResolveDispute(orderId, resolution, user),
         };
 
         switch (activeTab) {

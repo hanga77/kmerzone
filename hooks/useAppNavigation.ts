@@ -12,7 +12,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const [viewingStoriesFor, setViewingStoriesFor] = useState<Store | null>(null);
     const [accountPageTab, setAccountPageTab] = useState<string>('dashboard');
     const [sellerDashboardTab, setSellerDashboardTab] = useState<string>('overview');
-    const [productToEdit, setProductToEdit] = useState<Product | null>(null);
+    const [productToEdit, setProductToEdit] = useState<Partial<Product> | null>(null);
 
     useEffect(() => {
         window.scrollTo(0, 0);
@@ -41,7 +41,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const navigateToVisualSearch = useCallback(() => setPage('visual-search'), []);
     const navigateToServices = useCallback(() => setPage('services'), []);
 
-    const navigateToProductForm = useCallback((product: Product | null) => {
+    const navigateToProductForm = useCallback((product: Partial<Product> | null) => {
         setProductToEdit(product);
         setPage('product-form');
     }, []);

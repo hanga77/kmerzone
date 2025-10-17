@@ -2,7 +2,8 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import type { Order, OrderStatus, PickupPoint, DisputeMessage, User } from '../types';
-import { ArrowLeftIcon, CheckIcon, TruckIcon, ExclamationTriangleIcon, XIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon } from './Icons';
+// FIX: Imported PaperclipIcon for use in MessageAttachments component.
+import { ArrowLeftIcon, CheckIcon, TruckIcon, ExclamationTriangleIcon, XIcon, QrCodeIcon, PrinterIcon, PhotoIcon, TrashIcon, PaperAirplaneIcon, PaperclipIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
 declare const QRCode: any;
@@ -108,6 +109,19 @@ const RefundRequestModal: React.FC<{
         </div>
     );
 }
+
+// FIX: Added missing MessageAttachments component definition.
+const MessageAttachments: React.FC<{ urls: string[] }> = ({ urls }) => (
+    <div className="mt-2 flex flex-wrap gap-2">
+        {urls.map((url, i) => {
+            const isImage = /\.(jpeg|jpg|gif|png|webp)$/i.test(url) || url.startsWith('data:image');
+            if (isImage) {
+                return <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="block"><img src={url} alt={`Pièce jointe ${i+1}`} className="h-24 w-auto rounded-md object-contain border dark:border-gray-600"/></a>
+            }
+            return <a key={i} href={url} target="_blank" rel="noopener noreferrer" className="text-blue-500 underline text-sm flex items-center gap-1 p-2 bg-blue-50 dark:bg-blue-900/50 rounded-md"><PaperclipIcon className="w-4 h-4"/>Pièce jointe {i+1}</a>
+        })}
+    </div>
+);
 
 
 const statusSteps: OrderStatus[] = ['confirmed', 'ready-for-pickup', 'picked-up', 'at-depot', 'out-for-delivery', 'delivered'];

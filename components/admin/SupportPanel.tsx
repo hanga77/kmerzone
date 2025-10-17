@@ -56,7 +56,13 @@ export const SupportPanel: React.FC<SupportPanelProps> = ({ allTickets, onAdminR
                 {allTickets.map(ticket => (
                     <button key={ticket.id} onClick={() => setSelectedTicket(ticket)} className="w-full text-left p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center">
                         <div>
-                            <p className="font-semibold">{ticket.subject} <span className="font-normal text-sm text-gray-500">- {ticket.userName}</span></p>
+                            <div className="flex items-center gap-2">
+                                <p className="font-semibold">{ticket.subject}</p>
+                                {ticket.type === 'service_request' && (
+                                    <span className="text-xs font-semibold bg-blue-100 text-blue-800 px-2 py-0.5 rounded-full">Demande de Service</span>
+                                )}
+                            </div>
+                            <p className="text-sm text-gray-500">{ticket.userName}</p>
                             <p className="text-xs text-gray-500">Dernière mise à jour: {new Date(ticket.updatedAt).toLocaleDateString()}</p>
                         </div>
                         <span className={`px-2 py-1 text-xs font-semibold rounded-full ${ticket.status === 'Résolu' ? 'bg-green-200 text-green-800' : 'bg-yellow-200 text-yellow-800'}`}>{ticket.status}</span>

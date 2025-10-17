@@ -6,6 +6,7 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface ProductsPanelProps {
     products: Product[];
     onAddProduct: () => void;
+    onAddService: () => void;
     onEditProduct: (product: Product) => void;
     onDeleteProduct: (productId: string) => void;
     onUpdateProductStatus: (productId: string, status: Product['status']) => void;
@@ -13,16 +14,21 @@ interface ProductsPanelProps {
     onAddProductToStory: (productId: string) => void;
 }
 
-const ProductsPanel: React.FC<ProductsPanelProps> = ({ products, onAddProduct, onEditProduct, onDeleteProduct, onUpdateProductStatus, onSetPromotion, onAddProductToStory }) => {
+const ProductsPanel: React.FC<ProductsPanelProps> = ({ products, onAddProduct, onAddService, onEditProduct, onDeleteProduct, onUpdateProductStatus, onSetPromotion, onAddProductToStory }) => {
     const { t } = useLanguage();
     
     return (
         <div className="p-6">
             <div className="flex justify-between items-center mb-4">
                 <h2 className="text-2xl font-bold">{t('sellerDashboard.products.title', products.length)}</h2>
-                <button onClick={onAddProduct} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
-                    <PlusIcon className="w-5 h-5"/> {t('sellerDashboard.products.addProduct')}
-                </button>
+                <div className="flex gap-2">
+                    <button onClick={onAddProduct} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                        <PlusIcon className="w-5 h-5"/> {t('sellerDashboard.products.addProduct')}
+                    </button>
+                    <button onClick={onAddService} className="bg-purple-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                        <SparklesIcon className="w-5 h-5"/> {t('sellerDashboard.products.addService')}
+                    </button>
+                </div>
             </div>
             
             <div className="overflow-x-auto">
@@ -44,7 +50,7 @@ const ProductsPanel: React.FC<ProductsPanelProps> = ({ products, onAddProduct, o
                                     <span className="font-semibold">{p.name}</span>
                                 </td>
                                 <td className="p-2 text-right">{p.price.toLocaleString('fr-CM')} FCFA</td>
-                                <td className="p-2 text-center">{p.stock}</td>
+                                <td className="p-2 text-center">{p.type === 'service' ? 'N/A' : p.stock}</td>
                                 <td className="p-2 text-center">
                                     <select value={p.status} onChange={(e) => onUpdateProductStatus(p.id, e.target.value as Product['status'])} className="p-1 border rounded-md text-xs dark:bg-gray-600 dark:border-gray-500">
                                         <option value="published">{t('sellerDashboard.products.statusOptions.published')}</option>

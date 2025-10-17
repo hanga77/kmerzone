@@ -148,7 +148,18 @@ export const translations = {
       hobbiesCraftsGames: 'Hobbies, artisanat, jeux',
       homeDecorLighting: 'Décoration intérieure, luminaire, objets festifs',
       phonesHeadphonesAppliances: 'Téléphones, casques, électroménagers',
-      toysSchoolSupplies: 'Jouets, fournitures scolaires'
+      toysSchoolSupplies: 'Jouets, fournitures scolaires',
+      services: 'Services',
+      serv_education: 'Éducation',
+      serv_diy: 'Bricoleur',
+      serv_beauty_health: 'Beauté et santé',
+      serv_transport: 'Transport',
+      serv_repair_construction: 'Réparation et construction',
+      serv_it: 'Services informatiques',
+      serv_business: 'Services aux entreprises',
+      serv_cleaning: 'Nettoyage',
+      serv_auto: 'Services automobiles',
+      serv_equipment_repair: "Réparation d'équipement"
     },
     categoryPage: {
       titlePrefix: 'Catégorie : '
@@ -286,6 +297,7 @@ export const translations = {
        products: {
         title: "Mes Produits ({0})",
         addProduct: "Ajouter un produit",
+        addService: "Ajouter un service",
         table: {
           product: "Produit",
           price: "Prix",
@@ -1026,7 +1038,18 @@ export const translations = {
       hobbiesCraftsGames: 'Hobbies, Crafts, Games',
       homeDecorLighting: 'Home Decor, Lighting, Festive Objects',
       phonesHeadphonesAppliances: 'Phones, Headphones, Appliances',
-      toysSchoolSupplies: 'Toys, School Supplies'
+      toysSchoolSupplies: 'Toys, School Supplies',
+      services: 'Services',
+      serv_education: 'Education',
+      serv_diy: 'DIY',
+      serv_beauty_health: 'Beauty and Health',
+      serv_transport: 'Transport',
+      serv_repair_construction: 'Repair and Construction',
+      serv_it: 'IT Services',
+      serv_business: 'Business Services',
+      serv_cleaning: 'Cleaning',
+      serv_auto: 'Automotive Services',
+      serv_equipment_repair: 'Equipment Repair'
     },
     categoryPage: {
       titlePrefix: 'Category: '
@@ -1164,6 +1187,7 @@ export const translations = {
        products: {
         title: "My Products ({0})",
         addProduct: "Add Product",
+        addService: "Add Service",
         table: {
           product: "Product",
           price: "Price",
@@ -1624,7 +1648,6 @@ export const translations = {
           table: {
               store: "Store",
               totalRevenue: "Total Revenue",
-              commissionDue: "Commission Due",
               amountPaid: "Amount Paid",
               balanceDue: "Balance Due"
           },
