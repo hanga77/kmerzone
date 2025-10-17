@@ -222,7 +222,7 @@ const MissionMap: React.FC<{ start?: L.LatLng; end?: L.LatLng }> = ({ start, end
                  leafletMap.current.setView(end, 14);
             }
         }
-        // FIX: The invalidateSize method expects an argument according to the type checker. Passing `true` to animate the resize.
+// FIX: The invalidateSize method expects an argument according to the type checker. Passing `true` to animate the resize.
         setTimeout(() => leafletMap.current?.invalidateSize(true), 100);
     }, [start, end]);
 
