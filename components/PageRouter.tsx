@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import type { Page, Product, Category, Store, Order, Notification, PaymentRequest, User, UserRole, PromoCode, Ticket, FlashSale, PickupPoint, SiteActivityLog, Payout, Advertisement, SiteContent, PaymentMethod, Zone, EmailTemplate, Review, OrderStatus, Announcement, DocumentStatus, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails, AgentSchedule } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -48,7 +48,7 @@ interface PageRouterProps {
 const PageRouter: React.FC<PageRouterProps> = (props) => {
     const { navigation, siteData, setPromotionModalProduct, setPaymentRequest } = props;
     
-    const { user, logout } = useAuth();
+    const { user, logout, updateAuth } = useAuth();
     const { t } = useLanguage();
     const { allUsers, setAllUsers } = siteData; 
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
@@ -92,7 +92,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         allUsers,
     }), [siteData, allUsers]);
     
-    const onBecomeSeller = (data: any) => {
+    const onBecomeSeller = async (data: any) => {
         if (!user) {
             alert("Erreur: Utilisateur non connecté.");
             return;
@@ -132,15 +132,12 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             };
         }
 
-        const newStore = siteData.createStoreAndNotifyAdmin(storeData, user, allUsers, initialProductData);
+        const result = await siteData.createStoreAndNotifyAdmin(storeData, initialProductData, siteData.siteSettings.requiredSellerDocuments);
 
-        if (newStore) {
-             setAllUsers((prevUsers: User[]) => prevUsers.map(u =>
-                u.id === user.id ? { ...u, role: 'seller', shopName: newStore.name } : u
-            ));
+        if (result) {
+            const { updatedUser, token } = result;
+            updateAuth(token, updatedUser);
             navigation.setPage('seller-subscription');
-        } else {
-             alert("Erreur: La création de la boutique a échoué. Veuillez réessayer.");
         }
     };
     
@@ -177,6 +174,10 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         }
     };
 
+    const handleProductView = useCallback((id: string) => {
+        siteData.setRecentlyViewedIds((prev: string[]) => [id, ...prev.filter((pId: string) => pId !== id)].slice(0, 10));
+    }, [siteData.setRecentlyViewedIds]);
+
     switch (navigation.page) {
         case 'home':
             return <HomePage 
@@ -211,7 +212,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onOpenLogin={() => {}}
                 isChatEnabled={siteData.siteSettings.isChatEnabled}
                 isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}
-                onProductView={(id) => siteData.setRecentlyViewedIds((prev: string[]) => [id, ...prev.filter((pId: string) => pId !== id)].slice(0, 10))}
+                onProductView={handleProductView}
             /> : <NotFoundPage onNavigateHome={navigation.navigateToHome} />;
         case 'cart':
             return <CartView onBack={navigation.navigateToHome} onNavigateToCheckout={navigation.navigateToCheckout} flashSales={siteData.flashSales} allPromoCodes={siteData.allPromoCodes} appliedPromoCode={appliedPromoCode} onApplyPromoCode={onApplyPromoCode} />;
@@ -278,10 +279,10 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 initialTab={navigation.sellerDashboardTab}
                 sellerNotifications={sellerNotifications}
                 onCreateTicket={(subject, message, orderId, type, attachments) => 
-                    user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
+                    user && siteData.handleCreateTicket(subject, message, orderId, type, attachments)
                 }
                 onUserReplyToTicket={(ticketId, message, attachments) => 
-                    user && siteData.handleUserReplyToTicket(ticketId, message, attachments, user, allUsers)
+                    user && siteData.handleUserReplyToTicket(ticketId, message, attachments)
                 }
                 allShippingPartners={siteData.allShippingPartners}
                 onRequestUpgrade={() => {}}
@@ -312,7 +313,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             return <SuperAdminDashboard siteData={{
                 ...augmentedSiteData,
                 handleCreateTicket: (subject: string, message: string, orderId?: string, type?: 'support' | 'service_request', attachments?: string[]) => 
-                    user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
+                    user && siteData.handleCreateTicket(subject, message, orderId, type, attachments)
             }} />;
         case 'vendor-page':
              return navigation.selectedStore ? <VendorPage vendorName={navigation.selectedStore.name} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
@@ -351,10 +352,10 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                         userOrders={userOrders}
                         allTickets={siteData.allTickets}
                         onCreateTicket={(subject, message, orderId, type, attachments) => 
-                            user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
+                            user && siteData.handleCreateTicket(subject, message, orderId, type, attachments)
                         }
                         onUserReplyToTicket={(ticketId, message, attachments) => 
-                            user && siteData.handleUserReplyToTicket(ticketId, message, attachments, user, allUsers)
+                            user && siteData.handleUserReplyToTicket(ticketId, message, attachments)
                         }
                         onSelectOrder={navigation.navigateToOrderDetail}
                         onRepeatOrder={() => {}}

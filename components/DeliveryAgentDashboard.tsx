@@ -16,7 +16,7 @@ interface DeliveryAgentDashboardProps {
 export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ onLogout, siteData }) => {
     const { user, updateUser } = useAuth();
     const { t } = useLanguage();
-    const { allOrders, handleUpdateOrderStatus, handleDeliveryFailure } = siteData;
+    const { allOrders, handleDriverPickup, handleConfirmDelivery, handleDeliveryFailure } = siteData;
 
     const [isScannerOpen, setIsScannerOpen] = useState(false);
     const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
@@ -41,21 +41,21 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
         if (order) {
             setSelectedOrder(order);
             if (order.status === 'ready-for-pickup') {
-                handleUpdateOrderStatus(order.id, 'picked-up', user);
+                handleDriverPickup(order.id);
             }
         } else {
             alert("Commande non trouvée.");
         }
-    }, [allOrders, handleUpdateOrderStatus, user]);
+    }, [allOrders, handleDriverPickup]);
 
-    const handleConfirmDelivery = (orderId: string, recipientName: string) => {
-        handleUpdateOrderStatus(orderId, 'delivered', user);
+    const handleConfirmDeliveryAndClose = (orderId: string, recipientName: string) => {
+        handleConfirmDelivery(orderId, recipientName);
         setIsSignatureModalOpen(false);
         setSelectedOrder(null);
     };
 
-    const handleFailureReport = (orderId: string, failureReason: Required<Order['deliveryFailureReason']>) => {
-        handleDeliveryFailure(orderId, failureReason, user);
+    const handleFailureReportAndClose = (orderId: string, failureReason: Required<Order['deliveryFailureReason']>) => {
+        handleDeliveryFailure(orderId, failureReason);
         setIsFailureModalOpen(false);
         setSelectedOrder(null);
     };
@@ -65,8 +65,8 @@ export const DeliveryAgentDashboard: React.FC<DeliveryAgentDashboardProps> = ({ 
     return (
         <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
             {isScannerOpen && <ScannerModal onClose={() => setIsScannerOpen(false)} onScanSuccess={handleScanSuccess} t={t} />}
-            {isSignatureModalOpen && selectedOrder && <SignatureModal order={selectedOrder} onClose={() => setIsSignatureModalOpen(false)} onConfirm={handleConfirmDelivery} t={t} />}
-            {isFailureModalOpen && selectedOrder && <DeliveryFailureModal order={selectedOrder} onClose={() => setIsFailureModalOpen(false)} onConfirm={handleFailureReport} t={t} />}
+            {isSignatureModalOpen && selectedOrder && <SignatureModal order={selectedOrder} onClose={() => setIsSignatureModalOpen(false)} onConfirm={handleConfirmDeliveryAndClose} t={t} />}
+            {isFailureModalOpen && selectedOrder && <DeliveryFailureModal order={selectedOrder} onClose={() => setIsFailureModalOpen(false)} onConfirm={handleFailureReportAndClose} t={t} />}
 
             <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
                 <div className="container mx-auto px-4 sm:px-6 py-3">

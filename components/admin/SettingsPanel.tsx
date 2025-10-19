@@ -1,10 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { SiteSettings, SiteContent, PaymentMethod, EmailTemplate } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { TrashIcon } from '../Icons';
 
 interface SettingsPanelProps {
-    siteSettings: SiteSettings;
+    siteSettings: SiteSettings | null; // Allow null
     onUpdateSiteSettings: (settings: SiteSettings) => void;
     siteContent: SiteContent[];
     onUpdateSiteContent: (content: SiteContent[]) => void;
@@ -68,6 +68,10 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
     const [content, setContent] = useState(siteContent);
     const [localPaymentMethods, setLocalPaymentMethods] = useState(paymentMethods);
 
+    useEffect(() => {
+        setSettings(siteSettings);
+    }, [siteSettings]);
+
     const handleSettingsChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
         const checked = (e.target as HTMLInputElement).checked;
@@ -86,6 +90,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
         const keys = name.split('.');
         if (keys.length > 1) {
             setSettings(s => {
+                if (!s) return null;
                 const newSettings = JSON.parse(JSON.stringify(s)); // Deep copy
                 let current: any = newSettings;
                 for (let i = 0; i < keys.length - 1; i++) {
@@ -95,22 +100,26 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
                 return newSettings;
             });
         } else {
-            setSettings(s => ({ ...s, [name]: valueToSet }));
+            setSettings(s => (s ? { ...s, [name]: valueToSet } : null));
         }
     };
     
     const handleRequiredDocsChange = (docName: string, isRequired: boolean) => {
-        setSettings(s => ({
-            ...s,
-            requiredSellerDocuments: {
-                ...s.requiredSellerDocuments,
-                [docName]: isRequired,
-            }
-        }));
+        setSettings(s => {
+            if (!s) return null;
+            return {
+                ...s,
+                requiredSellerDocuments: {
+                    ...s.requiredSellerDocuments,
+                    [docName]: isRequired,
+                }
+            };
+        });
     };
     
     const handleBenefitsChange = (plan: 'premium' | 'premiumPlus', value: string) => {
         setSettings(s => {
+            if (!s) return null;
             const newSettings = JSON.parse(JSON.stringify(s));
             newSettings.customerLoyaltyProgram[plan].benefits = value.split('\n').filter(b => b.trim() !== '');
             return newSettings;
@@ -123,6 +132,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
     
     const handleEmailTemplateChange = (id: string, field: 'subject' | 'body', value: string) => {
         setSettings(prev => {
+            if (!prev) return null;
             const updatedTemplates = (prev.emailTemplates || []).map(template => 
                 template.id === id ? { ...template, [field]: value } : template
             );
@@ -148,11 +158,16 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
 
 
     const handleSave = () => {
+        if (!settings) return;
         onUpdateSiteSettings(settings);
         onUpdateSiteContent(content);
         onUpdatePaymentMethods(localPaymentMethods);
         alert(t('superadmin.settings.save'));
     };
+
+    if (!settings) {
+        return <div className="p-6 text-center">Chargement des paramètres...</div>;
+    }
 
     return (
         <div className="p-4 sm:p-6 space-y-8">
@@ -311,6 +326,7 @@ export const SettingsPanel: React.FC<SettingsPanelProps> = ({ siteSettings, onUp
             <details className="p-4 border dark:border-gray-700 rounded-md">
                 <summary className="font-semibold text-lg cursor-pointer">{t('superadmin.settings.sections.emails')}</summary>
                 <div className="mt-4 space-y-4">
+                    {/* FIX: Add a null check for settings.emailTemplates before mapping over it to prevent a crash if the data is not yet loaded. */}
                     {(settings.emailTemplates || []).map(template => (
                         <div key={template.id} className="p-3 bg-gray-50 dark:bg-gray-900/50 rounded-md">
                              <h4 className="font-bold text-md mb-2">{template.name}</h4>

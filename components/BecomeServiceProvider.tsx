@@ -1,5 +1,6 @@
 
 
+
 import React, { useState } from 'react';
 import type { SiteSettings, Category, Product } from '../types';
 import { ArrowLeftIcon, PhotoIcon, DocumentTextIcon, SparklesIcon, CurrencyDollarIcon, ClockIcon, MapPinIcon } from './Icons';

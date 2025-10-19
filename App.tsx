@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useCallback } from 'react';
+// FIX: Corrected import path for useSiteData to be a module import.
 import { useSiteData } from './hooks/useSiteData';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import { useAuth } from './contexts/AuthContext';

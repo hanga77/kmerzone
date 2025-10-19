@@ -1329,7 +1329,7 @@
           return dispatcher;
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var React90 = require_react(), Internals = {
+        var React89 = require_react(), Internals = {
           d: {
             f: noop,
             r: function() {
@@ -1347,7 +1347,7 @@
           },
           p: 0,
           findDOMNode: null
-        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React90.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
+        }, REACT_PORTAL_TYPE = Symbol.for("react.portal"), ReactSharedInternals = React89.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE;
         "function" === typeof Map && null != Map.prototype && "function" === typeof Map.prototype.forEach && "function" === typeof Set && null != Set.prototype && "function" === typeof Set.prototype.clear && "function" === typeof Set.prototype.forEach || console.error(
           "React depends on Map and Set built-in types. Make sure that you load a polyfill in older browsers. https://reactjs.org/link/react-polyfills"
         );
@@ -2882,7 +2882,7 @@
           "number" === type && getActiveElement(node.ownerDocument) === node || node.defaultValue === "" + value || (node.defaultValue = "" + value);
         }
         function validateOptionProps(element, props) {
-          null == props.value && ("object" === typeof props.children && null !== props.children ? React90.Children.forEach(props.children, function(child) {
+          null == props.value && ("object" === typeof props.children && null !== props.children ? React89.Children.forEach(props.children, function(child) {
             null == child || "string" === typeof child || "number" === typeof child || "bigint" === typeof child || didWarnInvalidChild || (didWarnInvalidChild = true, console.error(
               "Cannot infer the option value of complex children. Pass a `value` prop or use a plain string as children to <option>."
             ));
@@ -18514,14 +18514,14 @@
           ));
         }
         "undefined" !== typeof __REACT_DEVTOOLS_GLOBAL_HOOK__ && "function" === typeof __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart && __REACT_DEVTOOLS_GLOBAL_HOOK__.registerInternalModuleStart(Error());
-        var Scheduler = require_scheduler(), React90 = require_react(), ReactDOM2 = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
+        var Scheduler = require_scheduler(), React89 = require_react(), ReactDOM2 = require_react_dom(), assign = Object.assign, REACT_LEGACY_ELEMENT_TYPE = Symbol.for("react.element"), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy");
         Symbol.for("react.scope");
         var REACT_ACTIVITY_TYPE = Symbol.for("react.activity");
         Symbol.for("react.legacy_hidden");
         Symbol.for("react.tracing_marker");
         var REACT_MEMO_CACHE_SENTINEL = Symbol.for("react.memo_cache_sentinel");
         Symbol.for("react.view_transition");
-        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React90.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM2.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
+        var MAYBE_ITERATOR_SYMBOL = Symbol.iterator, REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), isArrayImpl = Array.isArray, ReactSharedInternals = React89.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, ReactDOMSharedInternals = ReactDOM2.__DOM_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, NotPending = Object.freeze({
           pending: false,
           data: null,
           method: null,
@@ -21309,7 +21309,7 @@
           }
         };
         (function() {
-          var isomorphicReactPackageVersion = React90.version;
+          var isomorphicReactPackageVersion = React89.version;
           if ("19.2.0" !== isomorphicReactPackageVersion)
             throw Error(
               'Incompatible React versions: The "react" and "react-dom" packages must have the exact same version. Instead got:\n  - react:      ' + (isomorphicReactPackageVersion + "\n  - react-dom:  19.2.0\nLearn more: https://react.dev/warnings/version-mismatch")
@@ -21663,18 +21663,18 @@
         function isValidElement(object) {
           return "object" === typeof object && null !== object && object.$$typeof === REACT_ELEMENT_TYPE;
         }
-        var React90 = require_react(), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy"), REACT_ACTIVITY_TYPE = Symbol.for("react.activity"), REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), ReactSharedInternals = React90.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, hasOwnProperty = Object.prototype.hasOwnProperty, isArrayImpl = Array.isArray, createTask = console.createTask ? console.createTask : function() {
+        var React89 = require_react(), REACT_ELEMENT_TYPE = Symbol.for("react.transitional.element"), REACT_PORTAL_TYPE = Symbol.for("react.portal"), REACT_FRAGMENT_TYPE = Symbol.for("react.fragment"), REACT_STRICT_MODE_TYPE = Symbol.for("react.strict_mode"), REACT_PROFILER_TYPE = Symbol.for("react.profiler"), REACT_CONSUMER_TYPE = Symbol.for("react.consumer"), REACT_CONTEXT_TYPE = Symbol.for("react.context"), REACT_FORWARD_REF_TYPE = Symbol.for("react.forward_ref"), REACT_SUSPENSE_TYPE = Symbol.for("react.suspense"), REACT_SUSPENSE_LIST_TYPE = Symbol.for("react.suspense_list"), REACT_MEMO_TYPE = Symbol.for("react.memo"), REACT_LAZY_TYPE = Symbol.for("react.lazy"), REACT_ACTIVITY_TYPE = Symbol.for("react.activity"), REACT_CLIENT_REFERENCE = Symbol.for("react.client.reference"), ReactSharedInternals = React89.__CLIENT_INTERNALS_DO_NOT_USE_OR_WARN_USERS_THEY_CANNOT_UPGRADE, hasOwnProperty = Object.prototype.hasOwnProperty, isArrayImpl = Array.isArray, createTask = console.createTask ? console.createTask : function() {
           return null;
         };
-        React90 = {
+        React89 = {
           react_stack_bottom_frame: function(callStackForError) {
             return callStackForError();
           }
         };
         var specialPropKeyWarningShown;
         var didWarnAboutElementRef = {};
-        var unknownOwnerDebugStack = React90.react_stack_bottom_frame.bind(
-          React90,
+        var unknownOwnerDebugStack = React89.react_stack_bottom_frame.bind(
+          React89,
           UnknownOwner
         )();
         var unknownOwnerDebugTask = createTask(getTaskName(UnknownOwner));
@@ -21725,7 +21725,7 @@
   var import_react91 = __toESM(require_react(), 1);
 
   // hooks/useSiteData.ts
-  var import_react3 = __toESM(require_react(), 1);
+  var import_react2 = __toESM(require_react(), 1);
 
   // hooks/usePersistentState.ts
   var import_react = __toESM(require_react(), 1);
@@ -21764,452 +21764,295 @@
     return [state, setPersistentState];
   }
 
-  // contexts/AuthContext.tsx
-  var import_react2 = __toESM(require_react(), 1);
-  var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-  var AuthContext = (0, import_react2.createContext)(void 0);
-  function decodeJwt(token) {
-    try {
-      return JSON.parse(atob(token.split(".")[1]));
-    } catch (e) {
-      return null;
-    }
-  }
-  var AuthProvider = ({ children }) => {
-    const [user, setUser] = (0, import_react2.useState)(null);
-    const [token, setToken] = (0, import_react2.useState)(() => localStorage.getItem("authToken"));
-    (0, import_react2.useEffect)(() => {
-      if (token) {
-        try {
-          const decodedUser = decodeJwt(token);
-          if (decodedUser && decodedUser.user) {
-            setUser({ ...decodedUser.user });
-          } else {
-            console.error("Malformed token payload:", decodedUser);
-            localStorage.removeItem("authToken");
-            setToken(null);
-            setUser(null);
-          }
-        } catch (e) {
-          console.error("Invalid token:", e);
-          localStorage.removeItem("authToken");
-          setToken(null);
-          setUser(null);
-        }
-      }
-    }, [token]);
-    const login = (0, import_react2.useCallback)(async (email, password) => {
-      try {
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
-        if (!response.ok) {
-          throw new Error("Login failed");
-        }
-        const { token: token2, user: loggedInUser } = await response.json();
-        localStorage.setItem("authToken", token2);
-        setToken(token2);
-        setUser(loggedInUser);
-        return loggedInUser;
-      } catch (error) {
-        console.error(error);
-        return null;
-      }
-    }, []);
-    const logout = (0, import_react2.useCallback)(() => {
-      setUser(null);
-      setToken(null);
-      localStorage.removeItem("authToken");
-    }, []);
-    const register = (0, import_react2.useCallback)(async (name, email, password, role, phone, birthDate, address) => {
-      try {
-        const response = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role, phone, birthDate, address })
-        });
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Registration failed");
-        }
-        const { token: token2, user: newUser } = await response.json();
-        localStorage.setItem("authToken", token2);
-        setToken(token2);
-        setUser(newUser);
-        return newUser;
-      } catch (error) {
-        console.error(error);
-        return null;
-      }
-    }, []);
-    const updateUser = (0, import_react2.useCallback)(async (updates) => {
-      if (!user) return null;
-      console.log("Simulating user update with:", updates);
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      return updatedUser;
-    }, [user]);
-    const changePassword = async (oldPassword, newPassword) => {
-      console.log("Simulating password change.");
-      return true;
-    };
-    const resetPassword = async (email) => {
-      console.log(`Simulating password reset for ${email}.`);
-    };
-    const contextValue = (0, import_react2.useMemo)(() => ({
-      user,
-      token,
-      login,
-      logout,
-      register,
-      updateUser,
-      changePassword,
-      resetPassword,
-      // Placeholder functions - these should be moved or implemented with API calls
-      addAddress: () => {
-      },
-      updateAddress: () => {
-      },
-      deleteAddress: () => {
-      },
-      setDefaultAddress: () => {
-      },
-      toggleFollowStore: () => {
-      }
-    }), [user, token, login, logout, register, updateUser]);
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthContext.Provider, { value: contextValue, children });
-  };
-  var useAuth = () => {
-    const context = (0, import_react2.useContext)(AuthContext);
-    if (context === void 0) {
-      throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-  };
-
   // hooks/useSiteData.ts
-  async function makeApiRequest(url, method = "GET", body) {
-    const options = {
-      method,
-      headers: {
-        "Content-Type": "application/json"
-      }
-    };
-    const token = localStorage.getItem("authToken");
-    if (token) {
-      options.headers["Authorization"] = `Bearer ${token}`;
-    }
-    if (body) {
-      options.body = JSON.stringify(body);
-    }
-    const response = await fetch(url, options);
+  async function fetchDataFromApi(endpoint, options) {
+    const response = await fetch(`/api${endpoint}`, options);
     if (!response.ok) {
-      try {
-        const errorData = await response.json();
-        throw new Error(errorData.message || `API Error on ${method} ${url}`);
-      } catch (e) {
-        throw new Error(`API Error: ${response.status} ${response.statusText} on ${method} ${url}`);
-      }
+      const errorData = await response.json();
+      throw new Error(errorData.message || `API Error: ${response.status}`);
     }
-    const contentType = response.headers.get("content-type");
-    if (contentType && contentType.indexOf("application/json") !== -1) {
-      return response.json();
-    } else {
-      const text = await response.text();
-      throw new Error(`Expected JSON response, but got ${contentType}. Response body: ${text}`);
-    }
+    return response.json();
   }
-  var defaultSiteSettings = {
-    logoUrl: "",
-    bannerUrl: "",
-    companyName: "KMER ZONE",
-    isStoriesEnabled: true,
-    requiredSellerDocuments: {},
-    isRentEnabled: false,
-    rentAmount: 0,
-    canSellersCreateCategories: false,
-    commissionRate: 8,
-    standardPlan: {},
-    premiumPlan: {},
-    superPremiumPlan: {},
-    customerLoyaltyProgram: {},
-    deliverySettings: {},
-    maintenanceMode: { isEnabled: false, message: "", reopenDate: "" },
-    seo: { metaTitle: "", metaDescription: "", ogImageUrl: "" },
-    socialLinks: { facebook: { linkUrl: "#", iconUrl: "" }, twitter: { linkUrl: "#", iconUrl: "" }, instagram: { linkUrl: "#", iconUrl: "" } },
-    isChatEnabled: true,
-    isComparisonEnabled: true
-  };
   var useSiteData = () => {
-    const { user } = useAuth();
-    const [data, setData] = (0, import_react3.useState)({
-      allProducts: [],
-      allCategories: [],
-      allStores: [],
-      flashSales: [],
-      allOrders: [],
-      allPromoCodes: [],
-      allPickupPoints: [],
-      allShippingPartners: [],
-      payouts: [],
-      siteSettings: defaultSiteSettings,
-      siteContent: [],
-      allAdvertisements: [],
-      allPaymentMethods: [],
-      siteActivityLogs: [],
-      allNotifications: [],
-      allTickets: [],
-      allAnnouncements: [],
-      allZones: [],
-      allUsers: []
-    });
-    const [isLoading, setIsLoading] = (0, import_react3.useState)(true);
-    const [error, setError] = (0, import_react3.useState)(null);
-    const [recentlyViewedIds, setRecentlyViewedIds] = usePersistentState("recentlyViewed", []);
+    const [isLoading, setIsLoading] = (0, import_react2.useState)(true);
+    const [error, setError] = (0, import_react2.useState)(null);
+    const [allProducts, setAllProducts] = usePersistentState("allProducts", []);
+    const [allCategories, setAllCategories] = usePersistentState("allCategories", []);
+    const [allStores, setAllStores] = usePersistentState("allStores", []);
+    const [flashSales, setFlashSales] = usePersistentState("flashSales", []);
+    const [allOrders, setAllOrders] = usePersistentState("allOrders", []);
+    const [allPromoCodes, setAllPromoCodes] = usePersistentState("allPromoCodes", []);
+    const [allPickupPoints, setAllPickupPoints] = usePersistentState("allPickupPoints", []);
+    const [allShippingPartners, setAllShippingPartners] = usePersistentState("allShippingPartners", []);
+    const [payouts, setPayouts] = usePersistentState("payouts", []);
+    const [siteSettings, setSiteSettings] = usePersistentState("siteSettings", null);
+    const [siteContent, setSiteContent] = usePersistentState("siteContent", []);
+    const [allAdvertisements, setAllAdvertisements] = usePersistentState("allAdvertisements", []);
+    const [allPaymentMethods, setAllPaymentMethods] = usePersistentState("allPaymentMethods", []);
+    const [siteActivityLogs, setSiteActivityLogs] = usePersistentState("siteActivityLogs", []);
+    const [allNotifications, setAllNotifications] = usePersistentState("allNotifications", []);
+    const [allTickets, setAllTickets] = usePersistentState("allTickets", []);
+    const [allAnnouncements, setAllAnnouncements] = usePersistentState("allAnnouncements", []);
+    const [allZones, setAllZones] = usePersistentState("allZones", []);
+    const [allUsers, setAllUsers] = usePersistentState("allUsers", []);
+    const [recentlyViewedIds, setRecentlyViewedIds] = usePersistentState("recentlyViewedIds", []);
     const [dismissedAnnouncements, setDismissedAnnouncements] = usePersistentState("dismissedAnnouncements", []);
-    (0, import_react3.useEffect)(() => {
-      const fetchInitialData = async () => {
-        try {
-          setIsLoading(true);
-          const initialData = await makeApiRequest("/api/all-data");
-          setData((prev) => ({ ...prev, ...initialData }));
-          setError(null);
-        } catch (error2) {
-          console.error("Failed to fetch initial site data:", error2);
-          setError("Impossible de charger les donn\xE9es du site. Le serveur backend est peut-\xEAtre inaccessible ou une erreur de base de donn\xE9es est survenue. Assurez-vous que le backend est en cours d'ex\xE9cution et connect\xE9 \xE0 la base de donn\xE9es. Erreur: " + error2.message);
-        } finally {
-          setIsLoading(false);
-        }
-      };
-      fetchInitialData();
-    }, []);
-    const setAllUsers = (updater) => {
-      setData((prev) => {
-        const newAllUsers = typeof updater === "function" ? updater(prev.allUsers) : updater;
-        return { ...prev, allUsers: newAllUsers };
+    const fetchData = (0, import_react2.useCallback)(async () => {
+      try {
+        const data = await fetchDataFromApi("/sitedata");
+        setAllProducts(data.allProducts);
+        setAllCategories(data.allCategories);
+        setAllStores(data.allStores);
+        setFlashSales(data.flashSales);
+        setAllOrders(data.allOrders);
+        setAllPromoCodes(data.allPromoCodes);
+        setAllPickupPoints(data.allPickupPoints);
+        setAllShippingPartners(data.allShippingPartners);
+        setPayouts(data.payouts);
+        setSiteSettings(data.siteSettings);
+        setSiteContent(data.siteContent);
+        setAllAdvertisements(data.allAdvertisements);
+        setAllPaymentMethods(data.allPaymentMethods);
+        setSiteActivityLogs(data.siteActivityLogs);
+        setAllNotifications(data.allNotifications);
+        setAllTickets(data.allTickets);
+        setAllAnnouncements(data.allAnnouncements);
+        setAllZones(data.allZones);
+        setAllUsers(data.allUsers);
+      } catch (e) {
+        setError(e.message || "An unknown error occurred while fetching site data.");
+      } finally {
+        setIsLoading(false);
+      }
+    }, [
+      setAllProducts,
+      setAllCategories,
+      setAllStores,
+      setFlashSales,
+      setAllOrders,
+      setAllPromoCodes,
+      setAllPickupPoints,
+      setAllShippingPartners,
+      setPayouts,
+      setSiteSettings,
+      setSiteContent,
+      setAllAdvertisements,
+      setAllPaymentMethods,
+      setSiteActivityLogs,
+      setAllNotifications,
+      setAllTickets,
+      setAllAnnouncements,
+      setAllZones,
+      setAllUsers
+    ]);
+    (0, import_react2.useEffect)(() => {
+      if (!siteSettings) {
+        fetchData();
+      } else {
+        setIsLoading(false);
+      }
+    }, [fetchData, siteSettings]);
+    const handleDismissAnnouncement = (id) => setDismissedAnnouncements((prev) => [...prev, id]);
+    const handleMarkNotificationAsRead = (id) => setAllNotifications((prev) => prev.map((n) => n.id === id ? { ...n, isRead: true } : n));
+    const createNotification = (notification) => setAllNotifications((prev) => [{ ...notification, id: `notif-${Date.now()}`, isRead: false }, ...prev]);
+    const handleAddOrUpdateProduct = (product, user) => {
+      setAllProducts((prev) => {
+        const exists = prev.some((p) => p.id === product.id);
+        return exists ? prev.map((p) => p.id === product.id ? product : p) : [...prev, product];
       });
     };
-    const createActivityLog = (0, import_react3.useCallback)((actingUser, action, details) => {
-      if (!actingUser) return;
-      const newLog = {
-        id: `log-${Date.now()}`,
-        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
-        user: { id: actingUser.id, name: actingUser.name, role: actingUser.role },
-        action,
-        details
-      };
-      setData((prev) => ({
-        ...prev,
-        siteActivityLogs: [newLog, ...prev.siteActivityLogs]
+    const handleDeleteProduct = (productId, user) => {
+      setAllProducts((prev) => prev.filter((p) => p.id !== productId));
+    };
+    const handleUpdateProductStatus = (productId, status, user) => {
+      setAllProducts((prev) => prev.map((p) => p.id === productId ? { ...p, status } : p));
+    };
+    const handleSetPromotion = (productId, promoPrice, startDate, endDate) => {
+      setAllProducts((prev) => prev.map((p) => {
+        if (p.id === productId) {
+          return {
+            ...p,
+            promotionPrice: promoPrice ?? void 0,
+            promotionStartDate: startDate || void 0,
+            promotionEndDate: endDate || void 0
+          };
+        }
+        return p;
       }));
-    }, []);
-    const handleConfirmOrder = (0, import_react3.useCallback)(async (orderData) => {
-    }, []);
-    const handleAddOrUpdateProduct = (0, import_react3.useCallback)(async (product) => {
-    }, []);
-    const handleApproveStore = async (store) => {
-      try {
-        await makeApiRequest(`/api/admin/stores/${store.id}/approve`, "POST");
-        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "active" } : s) }));
-        if (user) createActivityLog(user, "Approve Store", `Approved store: ${store.name}`);
-      } catch (error2) {
-        console.error("Failed to approve store:", error2);
-        alert("\xC9chec de l'approbation du magasin.");
-      }
     };
-    const handleRejectStore = async (store) => {
-      try {
-        await makeApiRequest(`/api/admin/stores/${store.id}/reject`, "POST");
-        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "rejected" } : s) }));
-        if (user) createActivityLog(user, "Reject Store", `Rejected store: ${store.name}`);
-      } catch (error2) {
-        console.error("Failed to reject store:", error2);
-        alert("\xC9chec du rejet du magasin.");
-      }
+    const handleConfirmOrder = (orderData, user) => {
+      const newOrder = {
+        ...orderData,
+        id: `ORDER-${Date.now()}`,
+        orderDate: (/* @__PURE__ */ new Date()).toISOString(),
+        status: "confirmed",
+        trackingNumber: `KZ${Date.now()}`,
+        trackingHistory: [{ status: "confirmed", date: (/* @__PURE__ */ new Date()).toISOString(), location: "Syst\xE8me", details: "Commande confirm\xE9e et en attente de pr\xE9paration par le vendeur." }],
+        statusChangeLog: [{ status: "confirmed", date: (/* @__PURE__ */ new Date()).toISOString(), changedBy: `Customer: ${user.name}` }]
+      };
+      setAllOrders((prev) => [...prev, newOrder]);
+      return newOrder;
     };
-    const handleToggleStoreStatus = async (storeId, currentStatus) => {
-      try {
-        const { status } = await makeApiRequest(`/api/admin/stores/${storeId}/toggle-status`, "POST");
-        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, status } : s) }));
-        if (user) createActivityLog(user, "Toggle Store Status", `Changed store ${storeId} to ${status}`);
-      } catch (error2) {
-        console.error("Failed to toggle store status:", error2);
-        alert("\xC9chec du changement de statut du magasin.");
-      }
+    const createStoreAndNotifyAdmin = async (storeData, initialProductData, requiredDocs) => {
+      console.log("Simulating store creation:", storeData, initialProductData);
+      return { updatedUser: {}, token: "fake-token" };
     };
-    const handleWarnStore = async (storeId, reason) => {
-      try {
-        const { newWarning } = await makeApiRequest(`/api/admin/stores/${storeId}/warn`, "POST", { reason });
-        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, warnings: [...s.warnings || [], newWarning] } : s) }));
-        if (user) createActivityLog(user, "Warn Store", `Warned store ${storeId} for: ${reason}`);
-      } catch (error2) {
-        console.error("Failed to warn store:", error2);
-        alert("\xC9chec de l'avertissement du magasin.");
-      }
-    };
-    const handleUpdateDocumentStatus = async (storeId, documentName, status, reason = "") => {
-      try {
-        await makeApiRequest(`/api/admin/stores/${storeId}/documents`, "PUT", { documentName, status, reason });
-        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, documents: s.documents.map((d) => d.name === documentName ? { ...d, status, rejectionReason: reason || void 0 } : d) } : s) }));
-        if (user) createActivityLog(user, "Update Document Status", `Set document ${documentName} for store ${storeId} to ${status}`);
-      } catch (error2) {
-        console.error("Failed to update document status:", error2);
-        alert("\xC9chec de la mise \xE0 jour du statut du document.");
-      }
-    };
-    const handleToggleStoreCertification = async (storeId) => {
-      try {
-        const { isCertified } = await makeApiRequest(`/api/admin/stores/${storeId}/toggle-certification`, "POST");
-        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, isCertified } : s) }));
-        if (user) createActivityLog(user, "Toggle Certification", `Toggled certification for store ${storeId}`);
-      } catch (error2) {
-        console.error("Failed to toggle certification:", error2);
-        alert("\xC9chec du changement de certification.");
-      }
-    };
-    const onUpdateUser = async (userId, updates) => {
-      try {
-        const updatedUser = await makeApiRequest(`/api/admin/users/${userId}`, "PATCH", updates);
-        setData((prev) => ({ ...prev, allUsers: prev.allUsers.map((u) => u.id === userId ? { ...updatedUser, id: userId } : u) }));
-        if (user) createActivityLog(user, "Update User", `Updated user profile for ${updatedUser.name}`);
-      } catch (error2) {
-        console.error("Failed to update user:", error2);
-        alert("Failed to update user.");
-      }
-    };
-    const onCreateUserByAdmin = async (data2) => {
-      try {
-        const { newUser } = await makeApiRequest("/api/admin/users", "POST", data2);
-        setData((prev) => ({ ...prev, allUsers: [...prev.allUsers, newUser] }));
-        if (user) createActivityLog(user, "Create User", `Created new user: ${data2.name} (${data2.role})`);
-      } catch (error2) {
-        console.error("Failed to create user:", error2);
-        alert("\xC9chec de la cr\xE9ation de l'utilisateur.");
-      }
-    };
-    const stubs = {
-      handleDismissAnnouncement: (id) => setDismissedAnnouncements((prev) => [...prev, id]),
-      handleMarkNotificationAsRead: (id) => setData((prev) => ({ ...prev, allNotifications: prev.allNotifications.map((n) => n.id === id ? { ...n, isRead: true } : n) })),
-      handleSetPromotion: (productId, promoPrice, startDate, endDate) => console.log("handleSetPromotion", productId, promoPrice),
-      createNotification: (notif) => console.log("createNotification", notif),
-      createStoreAndNotifyAdmin: (storeData, user2, allUsers, initialProductData) => {
-        console.log("createStoreAndNotifyAdmin called");
-        return { id: `store-${Date.now()}`, ...storeData };
-      },
-      handleDeleteProduct: (productId, user2) => console.log("handleDeleteProduct", productId, user2),
-      handleUpdateProductStatus: (productId, status, user2) => console.log("handleUpdateProductStatus", productId, status, user2),
-      handleCancelOrder: (orderId, user2) => console.log("handleCancelOrder", orderId, user2),
-      handleRequestRefund: (orderId, reason, evidenceUrls, user2) => console.log("handleRequestRefund", orderId, user2),
-      handleCustomerDisputeMessage: (orderId, message, user2) => console.log("handleCustomerDisputeMessage", orderId, user2),
-      handleCreateTicket: (subject, message, orderId, type, attachments, user2, allUsers) => console.log("handleCreateTicket"),
-      handleUserReplyToTicket: (ticketId, message, attachments, user2, allUsers) => console.log("handleUserReplyToTicket"),
-      handleSellerUpdateOrderStatus: (orderId, status, user2) => console.log("handleSellerUpdateOrderStatus", orderId, status),
-      handleSellerCancelOrder: (orderId, user2) => console.log("handleSellerCancelOrder", orderId),
-      handleCreateOrUpdateCollection: (storeId, collection, user2) => console.log("handleCreateOrUpdateCollection", storeId),
-      handleDeleteCollection: (storeId, collectionId, user2) => console.log("handleDeleteCollection", storeId, collectionId),
-      handleUpdateStoreProfile: (storeId, data2, user2) => console.log("handleUpdateStoreProfile", storeId),
-      handleAddProductToStory: (productId, user2) => console.log("handleAddProductToStory", productId),
-      handleAddStory: (imageUrl, user2) => console.log("handleAddStory", imageUrl)
-    };
+    const handleCreateTicket = () => console.log("handleCreateTicket called");
+    const handleUserReplyToTicket = () => console.log("handleUserReplyToTicket called");
+    const handleSellerUpdateOrderStatus = () => console.log("handleSellerUpdateOrderStatus called");
+    const handleSellerCancelOrder = () => console.log("handleSellerCancelOrder called");
+    const handleCreateOrUpdateCollection = () => console.log("handleCreateOrUpdateCollection called");
+    const handleDeleteCollection = () => console.log("handleDeleteCollection called");
+    const handleUpdateStoreProfile = () => console.log("handleUpdateStoreProfile called");
+    const handleAddProductToStory = () => console.log("handleAddProductToStory called");
+    const handleAddStory = () => console.log("handleAddStory called");
+    const handleCancelOrder = () => console.log("handleCancelOrder called");
+    const handleRequestRefund = () => console.log("handleRequestRefund called");
+    const handleCustomerDisputeMessage = () => console.log("handleCustomerDisputeMessage called");
     return {
-      ...data,
       isLoading,
       error,
+      allProducts,
+      setAllProducts,
+      allCategories,
+      setAllCategories,
+      allStores,
+      setAllStores,
+      flashSales,
+      setFlashSales,
+      allOrders,
+      setAllOrders,
+      allPromoCodes,
+      setAllPromoCodes,
+      allPickupPoints,
+      setAllPickupPoints,
+      allShippingPartners,
+      setAllShippingPartners,
+      payouts,
+      setPayouts,
+      siteSettings,
+      setSiteSettings,
+      siteContent,
+      setSiteContent,
+      allAdvertisements,
+      setAllAdvertisements,
+      allPaymentMethods,
+      setAllPaymentMethods,
+      siteActivityLogs,
+      setSiteActivityLogs,
+      allNotifications,
+      setAllNotifications,
+      allTickets,
+      setAllTickets,
+      allAnnouncements,
+      setAllAnnouncements,
+      allUsers,
+      setAllUsers,
+      allZones,
+      setAllZones,
       recentlyViewedIds,
       setRecentlyViewedIds,
       dismissedAnnouncements,
-      handleConfirmOrder,
+      handleDismissAnnouncement,
+      handleMarkNotificationAsRead,
+      createNotification,
       handleAddOrUpdateProduct,
-      setAllUsers,
-      onApproveStore: handleApproveStore,
-      onRejectStore: handleRejectStore,
-      onToggleStoreStatus: handleToggleStoreStatus,
-      onWarnStore: handleWarnStore,
-      onUpdateDocumentStatus: handleUpdateDocumentStatus,
-      onToggleStoreCertification: handleToggleStoreCertification,
-      onUpdateUser,
-      onCreateUserByAdmin,
-      ...stubs
+      handleDeleteProduct,
+      handleUpdateProductStatus,
+      handleSetPromotion,
+      handleConfirmOrder,
+      createStoreAndNotifyAdmin,
+      // Stubs for other handlers
+      handleCreateTicket,
+      handleUserReplyToTicket,
+      handleSellerUpdateOrderStatus,
+      handleSellerCancelOrder,
+      handleCreateOrUpdateCollection,
+      handleDeleteCollection,
+      handleUpdateStoreProfile,
+      handleAddProductToStory,
+      handleAddStory,
+      handleCancelOrder,
+      handleRequestRefund,
+      handleCustomerDisputeMessage
     };
   };
 
   // hooks/useAppNavigation.ts
-  var import_react4 = __toESM(require_react(), 1);
+  var import_react3 = __toESM(require_react(), 1);
   var useAppNavigation = (allCategories, allStores, allOrders, allSiteContent) => {
-    const [page, setPage] = (0, import_react4.useState)("home");
-    const [selectedProduct, setSelectedProduct] = (0, import_react4.useState)(null);
-    const [selectedCategoryId, setSelectedCategoryId] = (0, import_react4.useState)(null);
-    const [selectedStore, setSelectedStore] = (0, import_react4.useState)(null);
-    const [selectedOrder, setSelectedOrder] = (0, import_react4.useState)(null);
-    const [searchQuery, setSearchQuery] = (0, import_react4.useState)("");
-    const [infoPageContent, setInfoPageContent] = (0, import_react4.useState)(null);
-    const [viewingStoriesFor, setViewingStoriesFor] = (0, import_react4.useState)(null);
-    const [accountPageTab, setAccountPageTab] = (0, import_react4.useState)("dashboard");
-    const [sellerDashboardTab, setSellerDashboardTab] = (0, import_react4.useState)("overview");
-    const [productToEdit, setProductToEdit] = (0, import_react4.useState)(null);
-    (0, import_react4.useEffect)(() => {
+    const [page, setPage] = (0, import_react3.useState)("home");
+    const [selectedProduct, setSelectedProduct] = (0, import_react3.useState)(null);
+    const [selectedCategoryId, setSelectedCategoryId] = (0, import_react3.useState)(null);
+    const [selectedStore, setSelectedStore] = (0, import_react3.useState)(null);
+    const [selectedOrder, setSelectedOrder] = (0, import_react3.useState)(null);
+    const [searchQuery, setSearchQuery] = (0, import_react3.useState)("");
+    const [infoPageContent, setInfoPageContent] = (0, import_react3.useState)(null);
+    const [viewingStoriesFor, setViewingStoriesFor] = (0, import_react3.useState)(null);
+    const [accountPageTab, setAccountPageTab] = (0, import_react3.useState)("dashboard");
+    const [sellerDashboardTab, setSellerDashboardTab] = (0, import_react3.useState)("overview");
+    const [productToEdit, setProductToEdit] = (0, import_react3.useState)(null);
+    (0, import_react3.useEffect)(() => {
       window.scrollTo(0, 0);
     }, [page]);
-    const navigateToHome = (0, import_react4.useCallback)(() => setPage("home"), []);
-    const navigateToCart = (0, import_react4.useCallback)(() => setPage("cart"), []);
-    const navigateToCheckout = (0, import_react4.useCallback)(() => setPage("checkout"), []);
-    const navigateToStores = (0, import_react4.useCallback)(() => setPage("stores"), []);
-    const navigateToStoresMap = (0, import_react4.useCallback)(() => setPage("stores-map"), []);
-    const navigateToBecomeSeller = (0, import_react4.useCallback)(() => setPage("become-seller"), []);
-    const navigateToBecomeServiceProvider = (0, import_react4.useCallback)(() => setPage("become-service-provider"), []);
-    const navigateToSellerDashboard = (0, import_react4.useCallback)((tab = "overview") => {
+    const navigateToHome = (0, import_react3.useCallback)(() => setPage("home"), []);
+    const navigateToCart = (0, import_react3.useCallback)(() => setPage("cart"), []);
+    const navigateToCheckout = (0, import_react3.useCallback)(() => setPage("checkout"), []);
+    const navigateToStores = (0, import_react3.useCallback)(() => setPage("stores"), []);
+    const navigateToStoresMap = (0, import_react3.useCallback)(() => setPage("stores-map"), []);
+    const navigateToBecomeSeller = (0, import_react3.useCallback)(() => setPage("become-seller"), []);
+    const navigateToBecomeServiceProvider = (0, import_react3.useCallback)(() => setPage("become-service-provider"), []);
+    const navigateToSellerDashboard = (0, import_react3.useCallback)((tab = "overview") => {
       setSellerDashboardTab(tab);
       setPage("seller-dashboard");
     }, []);
-    const navigateToSellerProfile = (0, import_react4.useCallback)(() => setPage("seller-profile"), []);
-    const navigateToSuperAdminDashboard = (0, import_react4.useCallback)(() => setPage("superadmin-dashboard"), []);
-    const navigateToOrderHistory = (0, import_react4.useCallback)(() => setPage("order-history"), []);
-    const navigateToPromotions = (0, import_react4.useCallback)(() => setPage("promotions"), []);
-    const navigateToFlashSales = (0, import_react4.useCallback)(() => setPage("flash-sales"), []);
-    const navigateToWishlist = (0, import_react4.useCallback)(() => setPage("wishlist"), []);
-    const navigateToDeliveryAgentDashboard = (0, import_react4.useCallback)(() => setPage("delivery-agent-dashboard"), []);
-    const navigateToDepotAgentDashboard = (0, import_react4.useCallback)(() => setPage("depot-agent-dashboard"), []);
-    const navigateToComparison = (0, import_react4.useCallback)(() => setPage("comparison"), []);
-    const navigateToBecomePremium = (0, import_react4.useCallback)(() => setPage("become-premium"), []);
-    const navigateToVisualSearch = (0, import_react4.useCallback)(() => setPage("visual-search"), []);
-    const navigateToServices = (0, import_react4.useCallback)(() => setPage("services"), []);
-    const navigateToProductForm = (0, import_react4.useCallback)((product) => {
+    const navigateToSellerProfile = (0, import_react3.useCallback)(() => setPage("seller-profile"), []);
+    const navigateToSuperAdminDashboard = (0, import_react3.useCallback)(() => setPage("superadmin-dashboard"), []);
+    const navigateToOrderHistory = (0, import_react3.useCallback)(() => setPage("order-history"), []);
+    const navigateToPromotions = (0, import_react3.useCallback)(() => setPage("promotions"), []);
+    const navigateToFlashSales = (0, import_react3.useCallback)(() => setPage("flash-sales"), []);
+    const navigateToWishlist = (0, import_react3.useCallback)(() => setPage("wishlist"), []);
+    const navigateToDeliveryAgentDashboard = (0, import_react3.useCallback)(() => setPage("delivery-agent-dashboard"), []);
+    const navigateToDepotAgentDashboard = (0, import_react3.useCallback)(() => setPage("depot-agent-dashboard"), []);
+    const navigateToComparison = (0, import_react3.useCallback)(() => setPage("comparison"), []);
+    const navigateToBecomePremium = (0, import_react3.useCallback)(() => setPage("become-premium"), []);
+    const navigateToVisualSearch = (0, import_react3.useCallback)(() => setPage("visual-search"), []);
+    const navigateToServices = (0, import_react3.useCallback)(() => setPage("services"), []);
+    const navigateToProductForm = (0, import_react3.useCallback)((product) => {
       setProductToEdit(product);
       setPage("product-form");
     }, []);
-    const navigateToProduct = (0, import_react4.useCallback)((product) => {
+    const navigateToProduct = (0, import_react3.useCallback)((product) => {
       setSelectedProduct(product);
       setPage("product");
     }, []);
-    const navigateToCategory = (0, import_react4.useCallback)((categoryId) => {
+    const navigateToCategory = (0, import_react3.useCallback)((categoryId) => {
       const category = allCategories.find((c) => c.id === categoryId);
       if (category) {
         setSelectedCategoryId(categoryId);
         setPage("category");
       }
     }, [allCategories]);
-    const navigateToVendorPage = (0, import_react4.useCallback)((vendorName) => {
+    const navigateToVendorPage = (0, import_react3.useCallback)((vendorName) => {
       const store = allStores.find((s) => s.name === vendorName);
       if (store) {
         setSelectedStore(store);
         setPage("vendor-page");
       }
     }, [allStores]);
-    const navigateToOrderDetail = (0, import_react4.useCallback)((order) => {
+    const navigateToOrderDetail = (0, import_react3.useCallback)((order) => {
       setSelectedOrder(order);
       setPage("order-detail");
     }, []);
-    const navigateToAccount = (0, import_react4.useCallback)((tab = "dashboard") => {
+    const navigateToAccount = (0, import_react3.useCallback)((tab = "dashboard") => {
       setAccountPageTab(tab);
       setPage("account");
     }, []);
-    const handleSearch = (0, import_react4.useCallback)((query) => {
+    const handleSearch = (0, import_react3.useCallback)((query) => {
       setSearchQuery(query);
       setPage("search-results");
     }, []);
-    const navigateToInfoPage = (0, import_react4.useCallback)((slug) => {
+    const navigateToInfoPage = (0, import_react3.useCallback)((slug) => {
       if (slug === "sell") {
         navigateToBecomeSeller();
         return;
@@ -22226,7 +22069,7 @@
       }
       setPage("info");
     }, [allSiteContent, navigateToBecomeSeller]);
-    const handleNavigateFromNotification = (0, import_react4.useCallback)((link) => {
+    const handleNavigateFromNotification = (0, import_react3.useCallback)((link) => {
       if (!link) return;
       const { page: targetPage, params } = link;
       switch (targetPage) {
@@ -22241,8 +22084,8 @@
           setPage(targetPage);
       }
     }, [allOrders, navigateToOrderDetail, navigateToSellerDashboard]);
-    const handleCloseStories = (0, import_react4.useCallback)(() => setViewingStoriesFor(null), []);
-    return (0, import_react4.useMemo)(() => ({
+    const handleCloseStories = (0, import_react3.useCallback)(() => setViewingStoriesFor(null), []);
+    return (0, import_react3.useMemo)(() => ({
       page,
       setPage,
       selectedProduct,
@@ -22332,6 +22175,168 @@
       navigateToProductForm,
       navigateToServices
     ]);
+  };
+
+  // contexts/AuthContext.tsx
+  var import_react4 = __toESM(require_react(), 1);
+  var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
+  async function makeApiRequest(url, method = "GET", body) {
+    const options = {
+      method,
+      headers: {
+        "Content-Type": "application/json"
+      }
+    };
+    const token = localStorage.getItem("authToken");
+    if (token) {
+      options.headers["Authorization"] = `Bearer ${token}`;
+    }
+    if (body) {
+      options.body = JSON.stringify(body);
+    }
+    const response = await fetch(url, options);
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(errorData.message || `API Error on ${method} ${url}`);
+    }
+    return response.json();
+  }
+  var AuthContext = (0, import_react4.createContext)(void 0);
+  function decodeJwt(token) {
+    try {
+      return JSON.parse(atob(token.split(".")[1]));
+    } catch (e) {
+      return null;
+    }
+  }
+  var AuthProvider = ({ children }) => {
+    const [user, setUser] = (0, import_react4.useState)(null);
+    const [token, setToken] = (0, import_react4.useState)(() => localStorage.getItem("authToken"));
+    (0, import_react4.useEffect)(() => {
+      if (token) {
+        try {
+          const decodedUser = decodeJwt(token);
+          if (decodedUser && decodedUser.user) {
+            setUser({ ...decodedUser.user });
+          } else {
+            console.error("Malformed token payload:", decodedUser);
+            localStorage.removeItem("authToken");
+            setToken(null);
+            setUser(null);
+          }
+        } catch (e) {
+          console.error("Invalid token:", e);
+          localStorage.removeItem("authToken");
+          setToken(null);
+          setUser(null);
+        }
+      }
+    }, [token]);
+    const updateAuth = (0, import_react4.useCallback)((newToken, newUser) => {
+      localStorage.setItem("authToken", newToken);
+      setToken(newToken);
+      setUser(newUser);
+    }, []);
+    const login = (0, import_react4.useCallback)(async (email, password) => {
+      try {
+        const { token: newToken, user: loggedInUser } = await makeApiRequest("/api/auth/login", "POST", { email, password });
+        updateAuth(newToken, loggedInUser);
+        return loggedInUser;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    }, [updateAuth]);
+    const logout = (0, import_react4.useCallback)(() => {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("authToken");
+    }, []);
+    const register = (0, import_react4.useCallback)(async (name, email, password, role, phone, birthDate, address) => {
+      try {
+        const { token: newToken, user: newUser } = await makeApiRequest("/api/auth/register", "POST", { name, email, password, role, phone, birthDate, address });
+        updateAuth(newToken, newUser);
+        return newUser;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    }, [updateAuth]);
+    const updateUser = (0, import_react4.useCallback)(async (updates) => {
+      if (!user) return null;
+      try {
+        const { updatedUser, token: newToken } = await makeApiRequest("/api/users/me", "PATCH", updates);
+        updateAuth(newToken, updatedUser);
+        return updatedUser;
+      } catch (error) {
+        console.error("Failed to update user:", error);
+        return null;
+      }
+    }, [user, updateAuth]);
+    const changePassword = async (oldPassword, newPassword) => {
+      console.log("Simulating password change.");
+      return true;
+    };
+    const resetPassword = async (email) => {
+      console.log(`Simulating password reset for ${email}.`);
+    };
+    const addAddress = (0, import_react4.useCallback)(async (userId, address) => {
+      if (!user) return null;
+      try {
+        const { updatedUser, token: newToken } = await makeApiRequest("/api/users/me/addresses", "POST", address);
+        updateAuth(newToken, updatedUser);
+        return updatedUser;
+      } catch (error) {
+        console.error("Failed to add address:", error);
+        return null;
+      }
+    }, [user, updateAuth]);
+    const updateAddress = async (userId, address) => {
+      console.log("updateAddress stub");
+      return null;
+    };
+    const deleteAddress = async (userId, addressId) => {
+      console.log("deleteAddress stub");
+      return null;
+    };
+    const setDefaultAddress = async (userId, addressId) => {
+      console.log("setDefaultAddress stub");
+      return null;
+    };
+    const toggleFollowStore = (0, import_react4.useCallback)(async (storeId) => {
+      if (!user) return;
+      try {
+        const { updatedUser, token: newToken } = await makeApiRequest(`/api/users/me/toggle-follow/${storeId}`, "POST");
+        updateAuth(newToken, updatedUser);
+      } catch (error) {
+        console.error("Failed to toggle follow store:", error);
+        alert("Action impossible pour le moment. R\xE9essayez plus tard.");
+      }
+    }, [user, updateAuth]);
+    const contextValue = (0, import_react4.useMemo)(() => ({
+      user,
+      token,
+      login,
+      logout,
+      register,
+      updateUser,
+      changePassword,
+      resetPassword,
+      addAddress,
+      updateAddress,
+      deleteAddress,
+      setDefaultAddress,
+      toggleFollowStore,
+      updateAuth
+    }), [user, token, login, logout, register, updateUser, addAddress, toggleFollowStore, updateAuth]);
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthContext.Provider, { value: contextValue, children });
+  };
+  var useAuth = () => {
+    const context = (0, import_react4.useContext)(AuthContext);
+    if (context === void 0) {
+      throw new Error("useAuth must be used within an AuthProvider");
+    }
+    return context;
   };
 
   // contexts/UIContext.tsx
@@ -50683,7 +50688,7 @@
   var import_jsx_runtime110 = __toESM(require_jsx_runtime(), 1);
   var PageRouter = (props) => {
     const { navigation: navigation2, siteData, setPromotionModalProduct, setPaymentRequest } = props;
-    const { user, logout } = useAuth();
+    const { user, logout, updateAuth } = useAuth();
     const { t } = useLanguage();
     const { allUsers, setAllUsers } = siteData;
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
@@ -50702,7 +50707,7 @@
       ...siteData,
       allUsers
     }), [siteData, allUsers]);
-    const onBecomeSeller = (data) => {
+    const onBecomeSeller = async (data) => {
       if (!user) {
         alert("Erreur: Utilisateur non connect\xE9.");
         return;
@@ -50737,14 +50742,11 @@
           availability: data.availability
         };
       }
-      const newStore = siteData.createStoreAndNotifyAdmin(storeData, user, allUsers, initialProductData);
-      if (newStore) {
-        setAllUsers((prevUsers) => prevUsers.map(
-          (u) => u.id === user.id ? { ...u, role: "seller", shopName: newStore.name } : u
-        ));
+      const result = await siteData.createStoreAndNotifyAdmin(storeData, initialProductData, siteData.siteSettings.requiredSellerDocuments);
+      if (result) {
+        const { updatedUser, token } = result;
+        updateAuth(token, updatedUser);
         navigation2.setPage("seller-subscription");
-      } else {
-        alert("Erreur: La cr\xE9ation de la boutique a \xE9chou\xE9. Veuillez r\xE9essayer.");
       }
     };
     const onSelectSubscription = (status) => {
@@ -50893,8 +50895,8 @@
             },
             initialTab: navigation2.sellerDashboardTab,
             sellerNotifications,
-            onCreateTicket: (subject, message, orderId, type, attachments) => user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers),
-            onUserReplyToTicket: (ticketId, message, attachments) => user && siteData.handleUserReplyToTicket(ticketId, message, attachments, user, allUsers),
+            onCreateTicket: (subject, message, orderId, type, attachments) => user && siteData.handleCreateTicket(subject, message, orderId, type, attachments),
+            onUserReplyToTicket: (ticketId, message, attachments) => user && siteData.handleUserReplyToTicket(ticketId, message, attachments),
             allShippingPartners: siteData.allShippingPartners,
             onRequestUpgrade: () => {
             },
@@ -50929,7 +50931,7 @@
         if (user?.role !== "superadmin") return /* @__PURE__ */ (0, import_jsx_runtime110.jsx)(ForbiddenPage_default, { onNavigateHome: navigation2.navigateToHome });
         return /* @__PURE__ */ (0, import_jsx_runtime110.jsx)(SuperAdminDashboard, { siteData: {
           ...augmentedSiteData,
-          handleCreateTicket: (subject, message, orderId, type, attachments) => user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
+          handleCreateTicket: (subject, message, orderId, type, attachments) => user && siteData.handleCreateTicket(subject, message, orderId, type, attachments)
         } });
       case "vendor-page":
         return navigation2.selectedStore ? /* @__PURE__ */ (0, import_jsx_runtime110.jsx)(VendorPage_default, { vendorName: navigation2.selectedStore.name, allProducts: siteData.allProducts, allStores: siteData.allStores, flashSales: siteData.flashSales, onProductClick: navigation2.navigateToProduct, onBack: navigation2.navigateToHome, onVendorClick: navigation2.navigateToVendorPage, isComparisonEnabled: siteData.siteSettings.isComparisonEnabled }) : /* @__PURE__ */ (0, import_jsx_runtime110.jsx)(NotFoundPage_default, { onNavigateHome: navigation2.navigateToHome });
@@ -50979,8 +50981,8 @@
             allStores: siteData.allStores,
             userOrders,
             allTickets: siteData.allTickets,
-            onCreateTicket: (subject, message, orderId, type, attachments) => user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers),
-            onUserReplyToTicket: (ticketId, message, attachments) => user && siteData.handleUserReplyToTicket(ticketId, message, attachments, user, allUsers),
+            onCreateTicket: (subject, message, orderId, type, attachments) => user && siteData.handleCreateTicket(subject, message, orderId, type, attachments),
+            onUserReplyToTicket: (ticketId, message, attachments) => user && siteData.handleUserReplyToTicket(ticketId, message, attachments),
             onSelectOrder: navigation2.navigateToOrderDetail,
             onRepeatOrder: () => {
             },

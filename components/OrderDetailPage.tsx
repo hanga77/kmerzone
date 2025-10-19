@@ -231,7 +231,7 @@ const OrderDetailPage: React.FC<OrderDetailPageProps> = ({ order, onBack, allPic
           {/* Timeline */}
           <div className="mb-8">
             <h2 className="text-xl font-semibold mb-6 dark:text-white">Suivi de la commande</h2>
-            {['cancelled', 'refund-requested', 'refunded', 'depot-issue', 'delivery-failed'].includes(order.status) ? (
+            {['cancelled', 'refund-requested', 'refunded', 'depot-issue', 'delivery-failed', 'return-approved', 'return-received', 'return-rejected'].includes(order.status) ? (
                 <div className={`p-4 rounded-lg ${
                     order.status === 'cancelled' ? 'bg-red-100 text-red-700 dark:bg-red-900/50 dark:text-red-300' :
                     order.status === 'refund-requested' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300' :

@@ -2,7 +2,6 @@ import { MongoClient } from 'mongodb';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
 import * as data from './data.js';
-import process from 'process';
 
 dotenv.config();
 

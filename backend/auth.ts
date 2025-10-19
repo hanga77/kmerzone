@@ -1,15 +1,18 @@
 
+
 import jwt from 'jsonwebtoken';
-// FIX: import Request, Response, NextFunction types from express
-import type { Request, Response, NextFunction } from 'express';
-import { exit } from 'process';
+// FIX: Use default import for express to avoid type conflicts.
+import express from 'express';
+// FIX: Added explicit type imports for express handlers to resolve property not found errors on req and res.
+// Removed to use explicit express.Request/Response to avoid type conflicts
+// import type { Request, Response, NextFunction } from 'express';
 import type { User } from '../types';
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
 if (!JWT_SECRET) {
     console.error("JWT_SECRET is not defined in .env file.");
-    exit(1);
+    process.exit(1);
 }
 
 export const generateToken = (user: User & { _id: any }) => {
@@ -19,8 +22,8 @@ export const generateToken = (user: User & { _id: any }) => {
     return jwt.sign({ user: userForToken }, JWT_SECRET!, { expiresIn: '1d' });
 };
 
-// FIX: Added explicit types for req, res, and next
-export const protectRoute = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Correctly typed req, res, and next parameters using fully qualified express types.
+export const protectRoute = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
@@ -33,12 +36,32 @@ export const protectRoute = (req: Request, res: Response, next: NextFunction) =>
     });
 };
 
-// FIX: Added explicit types for req, res, and next
-export const isAdmin = (req: Request, res: Response, next: NextFunction) => {
+// FIX: Correctly typed req, res, and next parameters using fully qualified express types.
+export const isAdmin = (req: express.Request, res: express.Response, next: express.NextFunction) => {
     const user = (req as any).user?.user;
     if (user && user.role === 'superadmin') {
         next();
     } else {
         res.status(403).json({ message: 'Forbidden: Admin access required' });
+    }
+};
+
+// FIX: Correctly typed req, res, and next parameters using fully qualified express types.
+export const isLogisticsAgent = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const user = (req as any).user?.user;
+    if (user && ['delivery_agent', 'depot_agent', 'depot_manager'].includes(user.role)) {
+        next();
+    } else {
+        res.status(403).json({ message: 'Forbidden: Logistics access required' });
+    }
+};
+
+// FIX: Correctly typed req, res, and next parameters using fully qualified express types.
+export const isDepotManager = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    const user = (req as any).user?.user;
+    if (user && user.role === 'depot_manager') {
+        next();
+    } else {
+        res.status(403).json({ message: 'Forbidden: Depot Manager access required' });
     }
 };

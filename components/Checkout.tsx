@@ -1,3 +1,5 @@
+
+
 import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
@@ -21,7 +23,7 @@ const isPromotionActive = (product: Product): boolean => {
   const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
   const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
   
-  // FIX: A promotion with a price but no dates is a permanent promotion.
+  // FIX: A promotion with a price but no dates is a permanent promotion. This aligns with logic in other components.
   if (!startDate && !endDate) return true;
 
   if (startDate && endDate) return now >= startDate && now <= endDate;

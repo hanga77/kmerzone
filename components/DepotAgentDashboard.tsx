@@ -2,7 +2,7 @@ import React, { useMemo, useState, useCallback } from 'react';
 import type { Order, OrderStatus, Store, PickupPoint, User, UserAvailabilityStatus, Zone, AgentSchedule, Shift, TrackingEvent } from '../types';
 import { useAuth } from '../contexts/AuthContext';
 import { QrCodeIcon, ArchiveBoxIcon, ShoppingBagIcon, UserGroupIcon, BuildingStorefrontIcon, ChartPieIcon, TruckIcon } from './Icons';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { ScannerModal } from './shared/ScannerModal';
 import { CheckInModal } from './depot/CheckInModal';
 import { AssignModal } from './depot/AssignModal';
@@ -23,7 +23,7 @@ interface DepotAgentDashboardProps {
 
 export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, onLogout, siteData }) => {
     const { t } = useLanguage();
-    const { allUsers, allOrders, allStores, allZones, allPickupPoints } = siteData;
+    const { allUsers, allOrders, allStores, allZones, allPickupPoints, handleDepotCheckIn, handleAssignAgentToOrder, handleUpdateSchedule } = siteData;
     const [activeTab, setActiveTab] = useState<'overview' | 'parcels' | 'inventory' | 'drivers' | 'agents' | 'sellers' | 'reports'>('overview');
     const [assigningOrder, setAssigningOrder] = useState<Order | null>(null);
     const [isScannerOpen, setIsScannerOpen] = useState(false);
@@ -32,15 +32,15 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     const isManager = user.role === 'depot_manager';
 
     const onAssignAgentToOrder = (orderId: string, agentId: string) => {
-        siteData.handleAssignAgentToOrder(orderId, agentId, user, allUsers);
+        handleAssignAgentToOrder(orderId, agentId);
     };
 
-    const handleDepotCheckIn = (orderId: string, location: string) => {
-        siteData.handleDepotCheckIn(orderId, location, user);
+    const onConfirmCheckIn = (orderId: string, location: string) => {
+        handleDepotCheckIn(orderId, location);
     };
     
     const onUpdateSchedule = (depotId: string, schedule: AgentSchedule) => {
-        siteData.handleUpdateSchedule(depotId, schedule, user);
+        handleUpdateSchedule(depotId, schedule);
     };
 
     const { ordersToAssign, ordersInDelivery, ordersWithIssues, depotInventory, deliveryAgents, depotAgents, zoneName, recentMovements, depotOrders } = useMemo(() => {
@@ -88,10 +88,10 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
         setCheckingInOrder(order);
     }, [allOrders]);
 
-    const handleConfirmCheckIn = useCallback((orderId: string, location: string) => {
-        handleDepotCheckIn(orderId, location);
+    const handleConfirmCheckInAndClose = useCallback((orderId: string, location: string) => {
+        onConfirmCheckIn(orderId, location);
         setCheckingInOrder(null);
-    }, [handleDepotCheckIn]);
+    }, [onConfirmCheckIn]);
 
     const renderContent = () => {
         const depot = allPickupPoints.find((p: PickupPoint) => p.id === user.depotId);
@@ -131,7 +131,7 @@ export const DepotAgentDashboard: React.FC<DepotAgentDashboardProps> = ({ user, 
     return (
         <div className="bg-gray-100 dark:bg-gray-950 min-h-screen">
             {isScannerOpen && <ScannerModal onClose={() => setIsScannerOpen(false)} onScanSuccess={handleScanSuccess} t={t} />}
-            {checkingInOrder && <CheckInModal order={checkingInOrder} onClose={() => setCheckingInOrder(null)} onConfirm={handleConfirmCheckIn} t={t} />}
+            {checkingInOrder && <CheckInModal order={checkingInOrder} onClose={() => setCheckingInOrder(null)} onConfirm={handleConfirmCheckInAndClose} t={t} />}
             <header className="bg-white dark:bg-gray-800 shadow-sm sticky top-0 z-20">
                 <div className="container mx-auto px-4 sm:px-6 py-3">
                     <div className="flex justify-between items-center flex-wrap gap-4">
