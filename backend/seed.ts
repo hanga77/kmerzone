@@ -1,9 +1,7 @@
-// FIX: Converted require calls to ES6 import statements.
 import { MongoClient } from 'mongodb';
 import bcrypt from 'bcrypt';
 import dotenv from 'dotenv';
-import * as data from './data';
-// FIX: Imported process to resolve type error for process.exit.
+import * as data from './data.js';
 import process from 'process';
 
 dotenv.config();

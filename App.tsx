@@ -1,5 +1,5 @@
 
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { useSiteData } from './hooks/useSiteData';
 import { useAppNavigation } from './hooks/useAppNavigation';
 import { useAuth } from './contexts/AuthContext';
@@ -62,7 +62,7 @@ export const App: React.FC = () => {
     const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
     const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
 
-    const handleLoginSuccess = (loggedInUser: User) => {
+    const handleLoginSuccess = useCallback((loggedInUser: User) => {
         setIsLoginOpen(false);
         if (loggedInUser.role === 'seller' || loggedInUser.role === 'enterprise') {
             navigation.navigateToSellerDashboard();
@@ -73,21 +73,38 @@ export const App: React.FC = () => {
         } else if (loggedInUser.role === 'depot_agent' || loggedInUser.role === 'depot_manager') {
             navigation.navigateToDepotAgentDashboard();
         }
-    };
+    }, [navigation]);
     
-    const handleSelectSellerType = (type: 'physical' | 'service') => {
+    const handleSelectSellerType = useCallback((type: 'physical' | 'service') => {
         setIsLoginOpen(false);
         if (type === 'service') {
             navigation.navigateToBecomeServiceProvider();
         } else {
             navigation.navigateToBecomeSeller();
         }
-    };
+    }, [navigation]);
     
-    const handleLogout = () => {
+    const handleLogout = useCallback(() => {
         logout();
         navigation.navigateToHome();
-    };
+    }, [logout, navigation]);
+
+    const handleOpenLogin = useCallback(() => setIsLoginOpen(true), []);
+    const handleCloseLogin = useCallback(() => setIsLoginOpen(false), []);
+
+    const handleOpenForgotPassword = useCallback(() => {
+        setIsLoginOpen(false);
+        setIsForgotPasswordOpen(true);
+    }, []);
+
+    const handleCloseForgotPassword = useCallback(() => setIsForgotPasswordOpen(false), []);
+    
+    const handleResetPasswordSubmit = useCallback(async (email: string) => {
+        await resetPassword(email);
+        alert(t('app.passwordResetEmailSent', email));
+        setIsForgotPasswordOpen(false);
+    }, [resetPassword, t]);
+
 
     if (siteData.isLoading) {
         return <div className="min-h-screen flex items-center justify-center">Chargement...</div>;
@@ -149,7 +166,7 @@ export const App: React.FC = () => {
                 onNavigateToAccount={navigation.navigateToAccount}
                 onNavigateToVisualSearch={navigation.navigateToVisualSearch}
                 onNavigateToServices={navigation.navigateToServices}
-                onOpenLogin={() => setIsLoginOpen(true)}
+                onOpenLogin={handleOpenLogin}
                 onLogout={handleLogout}
                 onSearch={navigation.handleSearch}
                 isChatEnabled={siteData.siteSettings?.isChatEnabled ?? false}
@@ -177,8 +194,8 @@ export const App: React.FC = () => {
                 companyName={siteData.siteSettings?.companyName || ''}
             />
             
-            {isLoginOpen && <LoginModal onClose={() => setIsLoginOpen(false)} onLoginSuccess={handleLoginSuccess} onForgotPassword={() => { setIsLoginOpen(false); setIsForgotPasswordOpen(true); }} onSelectSellerType={handleSelectSellerType}/>}
-            {isForgotPasswordOpen && <ForgotPasswordModal onClose={() => setIsForgotPasswordOpen(false)} onEmailSubmit={async (email) => { await resetPassword(email); alert(t('app.passwordResetEmailSent', email)); setIsForgotPasswordOpen(false); }} />}
+            {isLoginOpen && <LoginModal onClose={handleCloseLogin} onLoginSuccess={handleLoginSuccess} onForgotPassword={handleOpenForgotPassword} onSelectSellerType={handleSelectSellerType}/>}
+            {isForgotPasswordOpen && <ForgotPasswordModal onClose={handleCloseForgotPassword} onEmailSubmit={handleResetPasswordSubmit} />}
             {isModalOpen && modalProduct && <AddToCartModal product={modalProduct} onClose={closeModal} onNavigateToCart={() => { closeModal(); navigation.navigateToCart(); }} />}
             {navigation.viewingStoriesFor && <StoryViewer store={navigation.viewingStoriesFor} onClose={navigation.handleCloseStories} allProducts={siteData.allProducts} onProductClick={navigation.navigateToProduct} />}
             {siteData.siteSettings?.isChatEnabled && <ChatWidget allUsers={siteData.allUsers} createNotification={siteData.createNotification} />}

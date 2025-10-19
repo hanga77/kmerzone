@@ -1,6 +1,3 @@
-
-
-
 import React, { useState, useMemo } from 'react';
 import type { Order, OrderStatus } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';

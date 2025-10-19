@@ -21719,16 +21719,16 @@
   });
 
   // index.tsx
-  var import_client = __toESM(require_client());
+  var import_client = __toESM(require_client(), 1);
 
   // App.tsx
-  var import_react91 = __toESM(require_react());
+  var import_react91 = __toESM(require_react(), 1);
 
   // hooks/useSiteData.ts
-  var import_react2 = __toESM(require_react());
+  var import_react3 = __toESM(require_react(), 1);
 
   // hooks/usePersistentState.ts
-  var import_react = __toESM(require_react());
+  var import_react = __toESM(require_react(), 1);
   function usePersistentState(key, defaultValue) {
     const [state, setState] = (0, import_react.useState)(() => {
       try {
@@ -21763,6 +21763,124 @@
     );
     return [state, setPersistentState];
   }
+
+  // contexts/AuthContext.tsx
+  var import_react2 = __toESM(require_react(), 1);
+  var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
+  var AuthContext = (0, import_react2.createContext)(void 0);
+  function decodeJwt(token) {
+    try {
+      return JSON.parse(atob(token.split(".")[1]));
+    } catch (e) {
+      return null;
+    }
+  }
+  var AuthProvider = ({ children }) => {
+    const [user, setUser] = (0, import_react2.useState)(null);
+    const [token, setToken] = (0, import_react2.useState)(() => localStorage.getItem("authToken"));
+    (0, import_react2.useEffect)(() => {
+      if (token) {
+        try {
+          const decodedUser = decodeJwt(token);
+          setUser({ ...decodedUser.user });
+        } catch (e) {
+          console.error("Invalid token:", e);
+          localStorage.removeItem("authToken");
+          setToken(null);
+          setUser(null);
+        }
+      }
+    }, [token]);
+    const login = (0, import_react2.useCallback)(async (email, password) => {
+      try {
+        const response = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password })
+        });
+        if (!response.ok) {
+          throw new Error("Login failed");
+        }
+        const { token: token2, user: loggedInUser } = await response.json();
+        localStorage.setItem("authToken", token2);
+        setToken(token2);
+        setUser(loggedInUser);
+        return loggedInUser;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    }, []);
+    const logout = (0, import_react2.useCallback)(() => {
+      setUser(null);
+      setToken(null);
+      localStorage.removeItem("authToken");
+    }, []);
+    const register = (0, import_react2.useCallback)(async (name, email, password, role, phone, birthDate, address) => {
+      try {
+        const response = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, email, password, role, phone, birthDate, address })
+        });
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.message || "Registration failed");
+        }
+        const { token: token2, user: newUser } = await response.json();
+        localStorage.setItem("authToken", token2);
+        setToken(token2);
+        setUser(newUser);
+        return newUser;
+      } catch (error) {
+        console.error(error);
+        return null;
+      }
+    }, []);
+    const updateUser = (0, import_react2.useCallback)(async (updates) => {
+      if (!user) return null;
+      console.log("Simulating user update with:", updates);
+      const updatedUser = { ...user, ...updates };
+      setUser(updatedUser);
+      return updatedUser;
+    }, [user]);
+    const changePassword = async (oldPassword, newPassword) => {
+      console.log("Simulating password change.");
+      return true;
+    };
+    const resetPassword = async (email) => {
+      console.log(`Simulating password reset for ${email}.`);
+    };
+    const contextValue = (0, import_react2.useMemo)(() => ({
+      user,
+      token,
+      login,
+      logout,
+      register,
+      updateUser,
+      changePassword,
+      resetPassword,
+      // Placeholder functions - these should be moved or implemented with API calls
+      addAddress: () => {
+      },
+      updateAddress: () => {
+      },
+      deleteAddress: () => {
+      },
+      setDefaultAddress: () => {
+      },
+      toggleFollowStore: () => {
+      }
+    }), [user, token, login, logout, register, updateUser]);
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthContext.Provider, { value: contextValue, children });
+  };
+  var useAuth = () => {
+    const context = (0, import_react2.useContext)(AuthContext);
+    if (context === void 0) {
+      throw new Error("useAuth must be used within an AuthProvider");
+    }
+    return context;
+  };
 
   // hooks/useSiteData.ts
   async function makeApiRequest(url, method = "GET", body) {
@@ -21818,7 +21936,8 @@
     isComparisonEnabled: true
   };
   var useSiteData = () => {
-    const [data, setData] = (0, import_react2.useState)({
+    const { user } = useAuth();
+    const [data, setData] = (0, import_react3.useState)({
       allProducts: [],
       allCategories: [],
       allStores: [],
@@ -21839,11 +21958,11 @@
       allZones: [],
       allUsers: []
     });
-    const [isLoading, setIsLoading] = (0, import_react2.useState)(true);
-    const [error, setError] = (0, import_react2.useState)(null);
+    const [isLoading, setIsLoading] = (0, import_react3.useState)(true);
+    const [error, setError] = (0, import_react3.useState)(null);
     const [recentlyViewedIds, setRecentlyViewedIds] = usePersistentState("recentlyViewed", []);
     const [dismissedAnnouncements, setDismissedAnnouncements] = usePersistentState("dismissedAnnouncements", []);
-    (0, import_react2.useEffect)(() => {
+    (0, import_react3.useEffect)(() => {
       const fetchInitialData = async () => {
         try {
           setIsLoading(true);
@@ -21865,33 +21984,73 @@
         return { ...prev, allUsers: newAllUsers };
       });
     };
-    const handleConfirmOrder = (0, import_react2.useCallback)(async (orderData, user) => {
+    const createActivityLog = (0, import_react3.useCallback)((actingUser, action, details) => {
+      if (!actingUser) return;
+      const newLog = {
+        id: `log-${Date.now()}`,
+        timestamp: (/* @__PURE__ */ new Date()).toISOString(),
+        user: { id: actingUser.id, name: actingUser.name, role: actingUser.role },
+        action,
+        details
+      };
+      setData((prev) => ({
+        ...prev,
+        siteActivityLogs: [newLog, ...prev.siteActivityLogs]
+      }));
     }, []);
-    const handleAddOrUpdateProduct = (0, import_react2.useCallback)(async (product, user) => {
+    const handleConfirmOrder = (0, import_react3.useCallback)(async (orderData) => {
     }, []);
+    const handleAddOrUpdateProduct = (0, import_react3.useCallback)(async (product) => {
+    }, []);
+    const handleApproveStore = (store) => {
+      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "active" } : s) }));
+      if (user) createActivityLog(user, "Approve Store", `Approved store: ${store.name}`);
+    };
+    const handleRejectStore = (store) => {
+      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "rejected" } : s) }));
+      if (user) createActivityLog(user, "Reject Store", `Rejected store: ${store.name}`);
+    };
+    const handleToggleStoreStatus = (storeId, currentStatus) => {
+      const newStatus = currentStatus === "active" ? "suspended" : "active";
+      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, status: newStatus } : s) }));
+      if (user) createActivityLog(user, "Toggle Store Status", `Changed store ${storeId} to ${newStatus}`);
+    };
+    const handleWarnStore = (storeId, reason) => {
+      const newWarning = { id: `warn-${Date.now()}`, date: (/* @__PURE__ */ new Date()).toISOString(), reason };
+      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, warnings: [...s.warnings, newWarning] } : s) }));
+      if (user) createActivityLog(user, "Warn Store", `Warned store ${storeId} for: ${reason}`);
+    };
+    const handleUpdateDocumentStatus = (storeId, documentName, status, reason = "") => {
+      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, documents: s.documents.map((d) => d.name === documentName ? { ...d, status, rejectionReason: reason } : d) } : s) }));
+      if (user) createActivityLog(user, "Update Document Status", `Set document ${documentName} for store ${storeId} to ${status}`);
+    };
+    const handleToggleStoreCertification = (storeId) => {
+      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, isCertified: !s.isCertified } : s) }));
+      if (user) createActivityLog(user, "Toggle Certification", `Toggled certification for store ${storeId}`);
+    };
     const stubs = {
       handleDismissAnnouncement: (id) => setDismissedAnnouncements((prev) => [...prev, id]),
       handleMarkNotificationAsRead: (id) => setData((prev) => ({ ...prev, allNotifications: prev.allNotifications.map((n) => n.id === id ? { ...n, isRead: true } : n) })),
       handleSetPromotion: (productId, promoPrice, startDate, endDate) => console.log("handleSetPromotion", productId, promoPrice),
       createNotification: (notif) => console.log("createNotification", notif),
-      createStoreAndNotifyAdmin: (storeData, user, allUsers, initialProductData) => {
+      createStoreAndNotifyAdmin: (storeData, user2, allUsers, initialProductData) => {
         console.log("createStoreAndNotifyAdmin called");
         return { id: `store-${Date.now()}`, ...storeData };
       },
-      handleDeleteProduct: (productId, user) => console.log("handleDeleteProduct", productId, user),
-      handleUpdateProductStatus: (productId, status, user) => console.log("handleUpdateProductStatus", productId, status, user),
-      handleCancelOrder: (orderId, user) => console.log("handleCancelOrder", orderId, user),
-      handleRequestRefund: (orderId, reason, evidenceUrls, user) => console.log("handleRequestRefund", orderId, user),
-      handleCustomerDisputeMessage: (orderId, message, user) => console.log("handleCustomerDisputeMessage", orderId, user),
-      handleCreateTicket: (subject, message, orderId, type, attachments, user, allUsers) => console.log("handleCreateTicket"),
-      handleUserReplyToTicket: (ticketId, message, attachments, user, allUsers) => console.log("handleUserReplyToTicket"),
-      handleSellerUpdateOrderStatus: (orderId, status, user) => console.log("handleSellerUpdateOrderStatus", orderId, status),
-      handleSellerCancelOrder: (orderId, user) => console.log("handleSellerCancelOrder", orderId),
-      handleCreateOrUpdateCollection: (storeId, collection, user) => console.log("handleCreateOrUpdateCollection", storeId),
-      handleDeleteCollection: (storeId, collectionId, user) => console.log("handleDeleteCollection", storeId, collectionId),
-      handleUpdateStoreProfile: (storeId, data2, user) => console.log("handleUpdateStoreProfile", storeId),
-      handleAddProductToStory: (productId, user) => console.log("handleAddProductToStory", productId),
-      handleAddStory: (imageUrl, user) => console.log("handleAddStory", imageUrl)
+      handleDeleteProduct: (productId, user2) => console.log("handleDeleteProduct", productId, user2),
+      handleUpdateProductStatus: (productId, status, user2) => console.log("handleUpdateProductStatus", productId, status, user2),
+      handleCancelOrder: (orderId, user2) => console.log("handleCancelOrder", orderId, user2),
+      handleRequestRefund: (orderId, reason, evidenceUrls, user2) => console.log("handleRequestRefund", orderId, user2),
+      handleCustomerDisputeMessage: (orderId, message, user2) => console.log("handleCustomerDisputeMessage", orderId, user2),
+      handleCreateTicket: (subject, message, orderId, type, attachments, user2, allUsers) => console.log("handleCreateTicket"),
+      handleUserReplyToTicket: (ticketId, message, attachments, user2, allUsers) => console.log("handleUserReplyToTicket"),
+      handleSellerUpdateOrderStatus: (orderId, status, user2) => console.log("handleSellerUpdateOrderStatus", orderId, status),
+      handleSellerCancelOrder: (orderId, user2) => console.log("handleSellerCancelOrder", orderId),
+      handleCreateOrUpdateCollection: (storeId, collection, user2) => console.log("handleCreateOrUpdateCollection", storeId),
+      handleDeleteCollection: (storeId, collectionId, user2) => console.log("handleDeleteCollection", storeId, collectionId),
+      handleUpdateStoreProfile: (storeId, data2, user2) => console.log("handleUpdateStoreProfile", storeId),
+      handleAddProductToStory: (productId, user2) => console.log("handleAddProductToStory", productId),
+      handleAddStory: (imageUrl, user2) => console.log("handleAddStory", imageUrl)
     };
     return {
       ...data,
@@ -21903,85 +22062,109 @@
       handleConfirmOrder,
       handleAddOrUpdateProduct,
       setAllUsers,
-      ...stubs
+      onApproveStore: handleApproveStore,
+      onRejectStore: handleRejectStore,
+      onToggleStoreStatus: handleToggleStoreStatus,
+      onWarnStore: handleWarnStore,
+      onUpdateDocumentStatus: handleUpdateDocumentStatus,
+      onToggleStoreCertification: handleToggleStoreCertification,
+      handleDismissAnnouncement: stubs.handleDismissAnnouncement,
+      handleMarkNotificationAsRead: stubs.handleMarkNotificationAsRead,
+      handleSetPromotion: stubs.handleSetPromotion,
+      createNotification: stubs.createNotification,
+      createStoreAndNotifyAdmin: stubs.createStoreAndNotifyAdmin,
+      handleDeleteProduct: stubs.handleDeleteProduct,
+      handleUpdateProductStatus: stubs.handleUpdateProductStatus,
+      handleCancelOrder: stubs.handleCancelOrder,
+      handleRequestRefund: stubs.handleRequestRefund,
+      handleCustomerDisputeMessage: stubs.handleCustomerDisputeMessage,
+      handleCreateTicket: stubs.handleCreateTicket,
+      handleUserReplyToTicket: stubs.handleUserReplyToTicket,
+      handleSellerUpdateOrderStatus: stubs.handleSellerUpdateOrderStatus,
+      handleSellerCancelOrder: stubs.handleSellerCancelOrder,
+      handleCreateOrUpdateCollection: stubs.handleCreateOrUpdateCollection,
+      handleDeleteCollection: stubs.handleDeleteCollection,
+      handleUpdateStoreProfile: stubs.handleUpdateStoreProfile,
+      handleAddProductToStory: stubs.handleAddProductToStory,
+      handleAddStory: stubs.handleAddStory
     };
   };
 
   // hooks/useAppNavigation.ts
-  var import_react3 = __toESM(require_react());
+  var import_react4 = __toESM(require_react(), 1);
   var useAppNavigation = (allCategories, allStores, allOrders, allSiteContent) => {
-    const [page, setPage] = (0, import_react3.useState)("home");
-    const [selectedProduct, setSelectedProduct] = (0, import_react3.useState)(null);
-    const [selectedCategoryId, setSelectedCategoryId] = (0, import_react3.useState)(null);
-    const [selectedStore, setSelectedStore] = (0, import_react3.useState)(null);
-    const [selectedOrder, setSelectedOrder] = (0, import_react3.useState)(null);
-    const [searchQuery, setSearchQuery] = (0, import_react3.useState)("");
-    const [infoPageContent, setInfoPageContent] = (0, import_react3.useState)(null);
-    const [viewingStoriesFor, setViewingStoriesFor] = (0, import_react3.useState)(null);
-    const [accountPageTab, setAccountPageTab] = (0, import_react3.useState)("dashboard");
-    const [sellerDashboardTab, setSellerDashboardTab] = (0, import_react3.useState)("overview");
-    const [productToEdit, setProductToEdit] = (0, import_react3.useState)(null);
-    (0, import_react3.useEffect)(() => {
+    const [page, setPage] = (0, import_react4.useState)("home");
+    const [selectedProduct, setSelectedProduct] = (0, import_react4.useState)(null);
+    const [selectedCategoryId, setSelectedCategoryId] = (0, import_react4.useState)(null);
+    const [selectedStore, setSelectedStore] = (0, import_react4.useState)(null);
+    const [selectedOrder, setSelectedOrder] = (0, import_react4.useState)(null);
+    const [searchQuery, setSearchQuery] = (0, import_react4.useState)("");
+    const [infoPageContent, setInfoPageContent] = (0, import_react4.useState)(null);
+    const [viewingStoriesFor, setViewingStoriesFor] = (0, import_react4.useState)(null);
+    const [accountPageTab, setAccountPageTab] = (0, import_react4.useState)("dashboard");
+    const [sellerDashboardTab, setSellerDashboardTab] = (0, import_react4.useState)("overview");
+    const [productToEdit, setProductToEdit] = (0, import_react4.useState)(null);
+    (0, import_react4.useEffect)(() => {
       window.scrollTo(0, 0);
     }, [page]);
-    const navigateToHome = (0, import_react3.useCallback)(() => setPage("home"), []);
-    const navigateToCart = (0, import_react3.useCallback)(() => setPage("cart"), []);
-    const navigateToCheckout = (0, import_react3.useCallback)(() => setPage("checkout"), []);
-    const navigateToStores = (0, import_react3.useCallback)(() => setPage("stores"), []);
-    const navigateToStoresMap = (0, import_react3.useCallback)(() => setPage("stores-map"), []);
-    const navigateToBecomeSeller = (0, import_react3.useCallback)(() => setPage("become-seller"), []);
-    const navigateToBecomeServiceProvider = (0, import_react3.useCallback)(() => setPage("become-service-provider"), []);
-    const navigateToSellerDashboard = (0, import_react3.useCallback)((tab = "overview") => {
+    const navigateToHome = (0, import_react4.useCallback)(() => setPage("home"), []);
+    const navigateToCart = (0, import_react4.useCallback)(() => setPage("cart"), []);
+    const navigateToCheckout = (0, import_react4.useCallback)(() => setPage("checkout"), []);
+    const navigateToStores = (0, import_react4.useCallback)(() => setPage("stores"), []);
+    const navigateToStoresMap = (0, import_react4.useCallback)(() => setPage("stores-map"), []);
+    const navigateToBecomeSeller = (0, import_react4.useCallback)(() => setPage("become-seller"), []);
+    const navigateToBecomeServiceProvider = (0, import_react4.useCallback)(() => setPage("become-service-provider"), []);
+    const navigateToSellerDashboard = (0, import_react4.useCallback)((tab = "overview") => {
       setSellerDashboardTab(tab);
       setPage("seller-dashboard");
     }, []);
-    const navigateToSellerProfile = (0, import_react3.useCallback)(() => setPage("seller-profile"), []);
-    const navigateToSuperAdminDashboard = (0, import_react3.useCallback)(() => setPage("superadmin-dashboard"), []);
-    const navigateToOrderHistory = (0, import_react3.useCallback)(() => setPage("order-history"), []);
-    const navigateToPromotions = (0, import_react3.useCallback)(() => setPage("promotions"), []);
-    const navigateToFlashSales = (0, import_react3.useCallback)(() => setPage("flash-sales"), []);
-    const navigateToWishlist = (0, import_react3.useCallback)(() => setPage("wishlist"), []);
-    const navigateToDeliveryAgentDashboard = (0, import_react3.useCallback)(() => setPage("delivery-agent-dashboard"), []);
-    const navigateToDepotAgentDashboard = (0, import_react3.useCallback)(() => setPage("depot-agent-dashboard"), []);
-    const navigateToComparison = (0, import_react3.useCallback)(() => setPage("comparison"), []);
-    const navigateToBecomePremium = (0, import_react3.useCallback)(() => setPage("become-premium"), []);
-    const navigateToVisualSearch = (0, import_react3.useCallback)(() => setPage("visual-search"), []);
-    const navigateToServices = (0, import_react3.useCallback)(() => setPage("services"), []);
-    const navigateToProductForm = (0, import_react3.useCallback)((product) => {
+    const navigateToSellerProfile = (0, import_react4.useCallback)(() => setPage("seller-profile"), []);
+    const navigateToSuperAdminDashboard = (0, import_react4.useCallback)(() => setPage("superadmin-dashboard"), []);
+    const navigateToOrderHistory = (0, import_react4.useCallback)(() => setPage("order-history"), []);
+    const navigateToPromotions = (0, import_react4.useCallback)(() => setPage("promotions"), []);
+    const navigateToFlashSales = (0, import_react4.useCallback)(() => setPage("flash-sales"), []);
+    const navigateToWishlist = (0, import_react4.useCallback)(() => setPage("wishlist"), []);
+    const navigateToDeliveryAgentDashboard = (0, import_react4.useCallback)(() => setPage("delivery-agent-dashboard"), []);
+    const navigateToDepotAgentDashboard = (0, import_react4.useCallback)(() => setPage("depot-agent-dashboard"), []);
+    const navigateToComparison = (0, import_react4.useCallback)(() => setPage("comparison"), []);
+    const navigateToBecomePremium = (0, import_react4.useCallback)(() => setPage("become-premium"), []);
+    const navigateToVisualSearch = (0, import_react4.useCallback)(() => setPage("visual-search"), []);
+    const navigateToServices = (0, import_react4.useCallback)(() => setPage("services"), []);
+    const navigateToProductForm = (0, import_react4.useCallback)((product) => {
       setProductToEdit(product);
       setPage("product-form");
     }, []);
-    const navigateToProduct = (0, import_react3.useCallback)((product) => {
+    const navigateToProduct = (0, import_react4.useCallback)((product) => {
       setSelectedProduct(product);
       setPage("product");
     }, []);
-    const navigateToCategory = (0, import_react3.useCallback)((categoryId) => {
+    const navigateToCategory = (0, import_react4.useCallback)((categoryId) => {
       const category = allCategories.find((c) => c.id === categoryId);
       if (category) {
         setSelectedCategoryId(categoryId);
         setPage("category");
       }
     }, [allCategories]);
-    const navigateToVendorPage = (0, import_react3.useCallback)((vendorName) => {
+    const navigateToVendorPage = (0, import_react4.useCallback)((vendorName) => {
       const store = allStores.find((s) => s.name === vendorName);
       if (store) {
         setSelectedStore(store);
         setPage("vendor-page");
       }
     }, [allStores]);
-    const navigateToOrderDetail = (0, import_react3.useCallback)((order) => {
+    const navigateToOrderDetail = (0, import_react4.useCallback)((order) => {
       setSelectedOrder(order);
       setPage("order-detail");
     }, []);
-    const navigateToAccount = (0, import_react3.useCallback)((tab = "dashboard") => {
+    const navigateToAccount = (0, import_react4.useCallback)((tab = "dashboard") => {
       setAccountPageTab(tab);
       setPage("account");
     }, []);
-    const handleSearch = (0, import_react3.useCallback)((query) => {
+    const handleSearch = (0, import_react4.useCallback)((query) => {
       setSearchQuery(query);
       setPage("search-results");
     }, []);
-    const navigateToInfoPage = (0, import_react3.useCallback)((slug) => {
+    const navigateToInfoPage = (0, import_react4.useCallback)((slug) => {
       if (slug === "sell") {
         navigateToBecomeSeller();
         return;
@@ -21998,7 +22181,7 @@
       }
       setPage("info");
     }, [allSiteContent, navigateToBecomeSeller]);
-    const handleNavigateFromNotification = (0, import_react3.useCallback)((link) => {
+    const handleNavigateFromNotification = (0, import_react4.useCallback)((link) => {
       if (!link) return;
       const { page: targetPage, params } = link;
       switch (targetPage) {
@@ -22013,8 +22196,8 @@
           setPage(targetPage);
       }
     }, [allOrders, navigateToOrderDetail, navigateToSellerDashboard]);
-    const handleCloseStories = (0, import_react3.useCallback)(() => setViewingStoriesFor(null), []);
-    return (0, import_react3.useMemo)(() => ({
+    const handleCloseStories = (0, import_react4.useCallback)(() => setViewingStoriesFor(null), []);
+    return (0, import_react4.useMemo)(() => ({
       page,
       setPage,
       selectedProduct,
@@ -22106,127 +22289,9 @@
     ]);
   };
 
-  // contexts/AuthContext.tsx
-  var import_react4 = __toESM(require_react());
-  var import_jsx_runtime = __toESM(require_jsx_runtime());
-  var AuthContext = (0, import_react4.createContext)(void 0);
-  function decodeJwt(token) {
-    try {
-      return JSON.parse(atob(token.split(".")[1]));
-    } catch (e) {
-      return null;
-    }
-  }
-  var AuthProvider = ({ children }) => {
-    const [user, setUser] = (0, import_react4.useState)(null);
-    const [token, setToken] = (0, import_react4.useState)(() => localStorage.getItem("authToken"));
-    (0, import_react4.useEffect)(() => {
-      if (token) {
-        try {
-          const decodedUser = decodeJwt(token);
-          setUser({ ...decodedUser.user });
-        } catch (e) {
-          console.error("Invalid token:", e);
-          localStorage.removeItem("authToken");
-          setToken(null);
-          setUser(null);
-        }
-      }
-    }, [token]);
-    const login = (0, import_react4.useCallback)(async (email, password) => {
-      try {
-        const response = await fetch("/api/auth/login", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email, password })
-        });
-        if (!response.ok) {
-          throw new Error("Login failed");
-        }
-        const { token: token2, user: loggedInUser } = await response.json();
-        localStorage.setItem("authToken", token2);
-        setToken(token2);
-        setUser(loggedInUser);
-        return loggedInUser;
-      } catch (error) {
-        console.error(error);
-        return null;
-      }
-    }, []);
-    const logout = (0, import_react4.useCallback)(() => {
-      setUser(null);
-      setToken(null);
-      localStorage.removeItem("authToken");
-    }, []);
-    const register = (0, import_react4.useCallback)(async (name, email, password, role, phone, birthDate, address) => {
-      try {
-        const response = await fetch("/api/auth/register", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ name, email, password, role, phone, birthDate, address })
-        });
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.message || "Registration failed");
-        }
-        const { token: token2, user: newUser } = await response.json();
-        localStorage.setItem("authToken", token2);
-        setToken(token2);
-        setUser(newUser);
-        return newUser;
-      } catch (error) {
-        console.error(error);
-        return null;
-      }
-    }, []);
-    const updateUser = (0, import_react4.useCallback)(async (updates) => {
-      if (!user) return null;
-      console.log("Simulating user update with:", updates);
-      const updatedUser = { ...user, ...updates };
-      setUser(updatedUser);
-      return updatedUser;
-    }, [user]);
-    const changePassword = async (oldPassword, newPassword) => {
-      console.log("Simulating password change.");
-      return true;
-    };
-    const resetPassword = async (email) => {
-      console.log(`Simulating password reset for ${email}.`);
-    };
-    const contextValue = (0, import_react4.useMemo)(() => ({
-      user,
-      token,
-      login,
-      logout,
-      register,
-      updateUser,
-      changePassword,
-      resetPassword,
-      // Placeholder functions - these should be moved or implemented with API calls
-      addAddress: () => {
-      },
-      updateAddress: () => {
-      },
-      deleteAddress: () => {
-      },
-      setDefaultAddress: () => {
-      },
-      toggleFollowStore: () => {
-      }
-    }), [user, token, login, logout, register, updateUser]);
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(AuthContext.Provider, { value: contextValue, children });
-  };
-  var useAuth = () => {
-    const context = (0, import_react4.useContext)(AuthContext);
-    if (context === void 0) {
-      throw new Error("useAuth must be used within an AuthProvider");
-    }
-    return context;
-  };
-
   // contexts/UIContext.tsx
-  var import_react5 = __toESM(require_react());
-  var import_jsx_runtime2 = __toESM(require_jsx_runtime());
+  var import_react5 = __toESM(require_react(), 1);
+  var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
   var UIContext = (0, import_react5.createContext)(null);
   var UIProvider = ({ children }) => {
     const [isModalOpen, setIsModalOpen] = (0, import_react5.useState)(false);
@@ -22248,7 +22313,7 @@
   };
 
   // contexts/LanguageContext.tsx
-  var import_react6 = __toESM(require_react());
+  var import_react6 = __toESM(require_react(), 1);
 
   // translations.ts
   var translations = {
@@ -23213,7 +23278,7 @@
   };
 
   // contexts/LanguageContext.tsx
-  var import_jsx_runtime3 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
   var LanguageContext = (0, import_react6.createContext)(void 0);
   var getNestedValue = (obj, path) => {
     return path.split(".").reduce((acc, part) => acc && acc[part], obj);
@@ -23240,10 +23305,10 @@
   };
 
   // components/Header.tsx
-  var import_react11 = __toESM(require_react());
+  var import_react11 = __toESM(require_react(), 1);
 
   // components/Icons.tsx
-  var import_jsx_runtime4 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime4 = __toESM(require_jsx_runtime(), 1);
   var LogoIcon = ({ className, logoUrl }) => {
     const logoImage = logoUrl ? /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("img", { src: logoUrl, alt: "Kmer Zone Logo", className: "h-10 object-contain" }) : /* @__PURE__ */ (0, import_jsx_runtime4.jsxs)("svg", { viewBox: "0 0 36 36", className: "h-10 w-10", "aria-hidden": "true", children: [
       /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { fill: "#FCD116", d: "M17.4,32.3c6.7,0,13.2-3.2,13.2-11.4c0-5.3-2.6-10.1-8.2-11.4c-2.3-0.5-5.7,1.1-7.2,2.8c-2.7,3.1-2,7.4,0.3,9.7C17.2,23.1,17.4,32.3,17.4,32.3z" }),
@@ -23378,8 +23443,8 @@
   var PaperclipIcon = (props) => /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("svg", { ...props, xmlns: "http://www.w3.org/2000/svg", fill: "none", viewBox: "0 0 24 24", strokeWidth: 1.5, stroke: "currentColor", children: /* @__PURE__ */ (0, import_jsx_runtime4.jsx)("path", { strokeLinecap: "round", strokeLinejoin: "round", d: "M18.375 12.739l-7.693 7.693a4.5 4.5 0 01-6.364-6.364l10.94-10.94A3.375 3.375 0 0119.5 7.372l-8.625 8.625a1.875 1.875 0 01-2.652-2.652l6.815-6.815" }) });
 
   // contexts/CartContext.tsx
-  var import_react7 = __toESM(require_react());
-  var import_jsx_runtime5 = __toESM(require_jsx_runtime());
+  var import_react7 = __toESM(require_react(), 1);
+  var import_jsx_runtime5 = __toESM(require_jsx_runtime(), 1);
   var CartContext = (0, import_react7.createContext)(void 0);
   var areVariantsEqual = (v1, v2) => {
     if (!v1 && !v2) return true;
@@ -23499,8 +23564,8 @@
   };
 
   // contexts/ThemeContext.tsx
-  var import_react8 = __toESM(require_react());
-  var import_jsx_runtime6 = __toESM(require_jsx_runtime());
+  var import_react8 = __toESM(require_react(), 1);
+  var import_jsx_runtime6 = __toESM(require_jsx_runtime(), 1);
   var ThemeContext = (0, import_react8.createContext)(void 0);
   var ThemeProvider = ({ children }) => {
     const [theme, setTheme] = (0, import_react8.useState)(() => {
@@ -23536,8 +23601,8 @@
   };
 
   // contexts/WishlistContext.tsx
-  var import_react9 = __toESM(require_react());
-  var import_jsx_runtime7 = __toESM(require_jsx_runtime());
+  var import_react9 = __toESM(require_react(), 1);
+  var import_jsx_runtime7 = __toESM(require_jsx_runtime(), 1);
   var WishlistContext = (0, import_react9.createContext)(void 0);
   var WishlistProvider = ({ children }) => {
     const [wishlist, setWishlist] = usePersistentState("wishlist", []);
@@ -23565,8 +23630,8 @@
   };
 
   // contexts/ChatContext.tsx
-  var import_react10 = __toESM(require_react());
-  var import_jsx_runtime8 = __toESM(require_jsx_runtime());
+  var import_react10 = __toESM(require_react(), 1);
+  var import_jsx_runtime8 = __toESM(require_jsx_runtime(), 1);
   var ChatContext = (0, import_react10.createContext)(void 0);
   var initialChats = [];
   var initialMessages = {};
@@ -23731,7 +23796,7 @@
   };
 
   // components/Header.tsx
-  var import_jsx_runtime9 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime9 = __toESM(require_jsx_runtime(), 1);
   var Header = (props) => {
     const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onNavigateToVisualSearch, onNavigateToServices, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, notifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
     const [isMenuOpen, setIsMenuOpen] = (0, import_react11.useState)(false);
@@ -24087,7 +24152,7 @@
   };
 
   // components/Footer.tsx
-  var import_jsx_runtime10 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime10 = __toESM(require_jsx_runtime(), 1);
   var paymentIconMap = {
     pm1: OrangeMoneyLogo,
     pm2: MtnMomoLogo,
@@ -24149,13 +24214,13 @@
   var Footer_default = Footer;
 
   // components/PageRouter.tsx
-  var import_react82 = __toESM(require_react());
+  var import_react82 = __toESM(require_react(), 1);
 
   // components/HomePage.tsx
-  var import_react14 = __toESM(require_react());
+  var import_react14 = __toESM(require_react(), 1);
 
   // components/CategoryCard.tsx
-  var import_jsx_runtime11 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime11 = __toESM(require_jsx_runtime(), 1);
   var CategoryCard = ({ category, onClick }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime11.jsxs)(
@@ -24180,11 +24245,11 @@
   var CategoryCard_default = CategoryCard;
 
   // components/ProductCard.tsx
-  var import_react13 = __toESM(require_react());
+  var import_react13 = __toESM(require_react(), 1);
 
   // contexts/ComparisonContext.tsx
-  var import_react12 = __toESM(require_react());
-  var import_jsx_runtime12 = __toESM(require_jsx_runtime());
+  var import_react12 = __toESM(require_react(), 1);
+  var import_jsx_runtime12 = __toESM(require_jsx_runtime(), 1);
   var ComparisonContext = (0, import_react12.createContext)(void 0);
   var ComparisonProvider = ({ children }) => {
     const [comparisonList, setComparisonList] = (0, import_react12.useState)([]);
@@ -24227,7 +24292,7 @@
   };
 
   // components/ProductCard.tsx
-  var import_jsx_runtime13 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime13 = __toESM(require_jsx_runtime(), 1);
   var PLACEHOLDER_IMAGE_URL = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
   var getActiveFlashSalePrice = (productId, flashSales) => {
     const now = /* @__PURE__ */ new Date();
@@ -24425,7 +24490,7 @@
   var ProductCard_default = ProductCard;
 
   // components/StoreCard.tsx
-  var import_jsx_runtime14 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime14 = __toESM(require_jsx_runtime(), 1);
   var StoreCard = ({ store, onVisitStore }) => {
     return /* @__PURE__ */ (0, import_jsx_runtime14.jsxs)(
       "button",
@@ -24444,7 +24509,7 @@
   var StoreCard_default = StoreCard;
 
   // components/HomePage.tsx
-  var import_jsx_runtime15 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime15 = __toESM(require_jsx_runtime(), 1);
   var StoryCarousel = ({ stores, onViewStories }) => {
     const { t } = useLanguage();
     const storesWithStories = stores.filter((store) => {
@@ -24671,10 +24736,10 @@
   var HomePage_default = HomePage;
 
   // components/ProductDetail.tsx
-  var import_react15 = __toESM(require_react());
+  var import_react15 = __toESM(require_react(), 1);
 
   // components/RecommendedProducts.tsx
-  var import_jsx_runtime16 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime16 = __toESM(require_jsx_runtime(), 1);
   var RecommendedProducts = ({ currentProduct, allProducts, stores, flashSales, onProductClick, onVendorClick, isComparisonEnabled }) => {
     const recommended = allProducts.filter((p) => p.categoryId === currentProduct.categoryId && p.id !== currentProduct.id).slice(0, 4);
     if (recommended.length === 0) return null;
@@ -24699,7 +24764,7 @@
   var RecommendedProducts_default = RecommendedProducts;
 
   // components/AutoComparison.tsx
-  var import_jsx_runtime17 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime17 = __toESM(require_jsx_runtime(), 1);
   var AutoComparison = ({ currentProduct, otherOffers, stores, onProductClick }) => {
     const allItems = [currentProduct, ...otherOffers];
     return /* @__PURE__ */ (0, import_jsx_runtime17.jsxs)("div", { className: "mt-16 bg-gray-100 dark:bg-gray-800/50 p-6 rounded-lg", children: [
@@ -24724,7 +24789,7 @@
   var AutoComparison_default = AutoComparison;
 
   // components/ProductDetail.tsx
-  var import_jsx_runtime18 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime18 = __toESM(require_jsx_runtime(), 1);
   var getActiveFlashSalePrice2 = (productId, flashSales) => {
     const now = /* @__PURE__ */ new Date();
     for (const sale of flashSales) {
@@ -25107,8 +25172,8 @@
   var ProductDetail_default = ProductDetail;
 
   // components/CartView.tsx
-  var import_react16 = __toESM(require_react());
-  var import_jsx_runtime19 = __toESM(require_jsx_runtime());
+  var import_react16 = __toESM(require_react(), 1);
+  var import_jsx_runtime19 = __toESM(require_jsx_runtime(), 1);
   var PLACEHOLDER_IMAGE_URL2 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
   var getActiveFlashSalePrice3 = (productId, flashSales) => {
     const now = /* @__PURE__ */ new Date();
@@ -25279,8 +25344,8 @@
   var CartView_default = CartView;
 
   // components/Checkout.tsx
-  var import_react17 = __toESM(require_react());
-  var import_jsx_runtime20 = __toESM(require_jsx_runtime());
+  var import_react17 = __toESM(require_react(), 1);
+  var import_jsx_runtime20 = __toESM(require_jsx_runtime(), 1);
   var getActiveFlashSalePrice4 = (productId, flashSales) => {
     const now = /* @__PURE__ */ new Date();
     for (const sale of flashSales) {
@@ -25575,8 +25640,8 @@
   var Checkout_default = Checkout;
 
   // components/OrderSuccess.tsx
-  var import_react18 = __toESM(require_react());
-  var import_jsx_runtime21 = __toESM(require_jsx_runtime());
+  var import_react18 = __toESM(require_react(), 1);
+  var import_jsx_runtime21 = __toESM(require_jsx_runtime(), 1);
   var OrderSuccess = ({ order, onNavigateHome, onNavigateToOrders }) => {
     const qrCodeRef = (0, import_react18.useRef)(null);
     const { t } = useLanguage();
@@ -25661,8 +25726,8 @@
   var OrderSuccess_default = OrderSuccess;
 
   // components/StoresPage.tsx
-  var import_react19 = __toESM(require_react());
-  var import_jsx_runtime22 = __toESM(require_jsx_runtime());
+  var import_react19 = __toESM(require_react(), 1);
+  var import_jsx_runtime22 = __toESM(require_jsx_runtime(), 1);
   var StoresPage = ({ stores, onBack, onVisitStore, onNavigateToStoresMap }) => {
     const [filters, setFilters] = (0, import_react19.useState)({
       search: "",
@@ -25770,8 +25835,8 @@
   var StoresPage_default = StoresPage;
 
   // components/BecomeSeller.tsx
-  var import_react20 = __toESM(require_react());
-  var import_jsx_runtime23 = __toESM(require_jsx_runtime());
+  var import_react20 = __toESM(require_react(), 1);
+  var import_jsx_runtime23 = __toESM(require_jsx_runtime(), 1);
   var BecomeSeller = ({ onBack, onBecomeSeller, siteSettings }) => {
     const { t } = useLanguage();
     const [formData, setFormData] = (0, import_react20.useState)({
@@ -26000,8 +26065,8 @@
   var BecomeSeller_default = BecomeSeller;
 
   // components/BecomeServiceProvider.tsx
-  var import_react21 = __toESM(require_react());
-  var import_jsx_runtime24 = __toESM(require_jsx_runtime());
+  var import_react21 = __toESM(require_react(), 1);
+  var import_jsx_runtime24 = __toESM(require_jsx_runtime(), 1);
   var BecomeServiceProvider = ({ onBack, onBecomeSeller, siteSettings, categories }) => {
     const { t } = useLanguage();
     const [formData, setFormData] = (0, import_react21.useState)({
@@ -26149,10 +26214,10 @@
   var BecomeServiceProvider_default = BecomeServiceProvider;
 
   // components/CategoryPage.tsx
-  var import_react24 = __toESM(require_react());
+  var import_react24 = __toESM(require_react(), 1);
 
   // hooks/useProductFiltering.ts
-  var import_react22 = __toESM(require_react());
+  var import_react22 = __toESM(require_react(), 1);
   var getActiveFlashSalePrice5 = (productId, flashSales) => {
     const now = /* @__PURE__ */ new Date();
     for (const sale of flashSales) {
@@ -26258,8 +26323,8 @@
   };
 
   // components/ProductFilters.tsx
-  var import_react23 = __toESM(require_react());
-  var import_jsx_runtime25 = __toESM(require_jsx_runtime());
+  var import_react23 = __toESM(require_react(), 1);
+  var import_jsx_runtime25 = __toESM(require_jsx_runtime(), 1);
   var getFinalPrice3 = (product) => {
     return product.promotionPrice ?? product.price;
   };
@@ -26448,7 +26513,7 @@
   var ProductFilters_default = ProductFilters;
 
   // components/CategoryPage.tsx
-  var import_jsx_runtime26 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime26 = __toESM(require_jsx_runtime(), 1);
   var CategoryPage = ({ categoryId, allCategories, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
     const { t } = useLanguage();
     const { selectedCategory, productsInCategory } = (0, import_react24.useMemo)(() => {
@@ -26513,10 +26578,10 @@
   var CategoryPage_default = CategoryPage;
 
   // components/SellerDashboard.tsx
-  var import_react36 = __toESM(require_react());
+  var import_react36 = __toESM(require_react(), 1);
 
   // components/seller/OverviewPanel.tsx
-  var import_jsx_runtime27 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime27 = __toESM(require_jsx_runtime(), 1);
   var StatCard = ({ label, value, icon }) => /* @__PURE__ */ (0, import_jsx_runtime27.jsx)("div", { className: "p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg shadow-sm", children: /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { className: "flex items-center gap-3", children: [
     icon,
     /* @__PURE__ */ (0, import_jsx_runtime27.jsxs)("div", { children: [
@@ -26564,7 +26629,7 @@
   var OverviewPanel_default = OverviewPanel;
 
   // components/seller/ProductsPanel.tsx
-  var import_jsx_runtime28 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime28 = __toESM(require_jsx_runtime(), 1);
   var ProductsPanel = ({ products, onAddProduct, onAddService, onEditProduct, onDeleteProduct, onUpdateProductStatus, onSetPromotion, onAddProductToStory }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime28.jsxs)("div", { className: "p-6", children: [
@@ -26622,8 +26687,8 @@
   var ProductsPanel_default = ProductsPanel;
 
   // components/seller/OrdersPanel.tsx
-  var import_react25 = __toESM(require_react());
-  var import_jsx_runtime29 = __toESM(require_jsx_runtime());
+  var import_react25 = __toESM(require_react(), 1);
+  var import_jsx_runtime29 = __toESM(require_jsx_runtime(), 1);
   var OrderDetailModal = ({ order, onClose, store }) => {
     const { t } = useLanguage();
     const sellerItems = order.items.filter((item) => item.vendor === store.name);
@@ -26804,8 +26869,8 @@
   var OrdersPanel_default = OrdersPanel;
 
   // components/seller/ReviewsPanel.tsx
-  var import_react26 = __toESM(require_react());
-  var import_jsx_runtime30 = __toESM(require_jsx_runtime());
+  var import_react26 = __toESM(require_react(), 1);
+  var import_jsx_runtime30 = __toESM(require_jsx_runtime(), 1);
   var ReviewsPanel = ({ products, onReplyToReview }) => {
     const { t } = useLanguage();
     const allReviews = products.flatMap((p) => p.reviews.map((r) => ({ ...r, productId: p.id, productName: p.name })));
@@ -26843,7 +26908,7 @@
   var ReviewsPanel_default = ReviewsPanel;
 
   // components/seller/PromotionsPanel.tsx
-  var import_jsx_runtime31 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime31 = __toESM(require_jsx_runtime(), 1);
   var PromotionsPanel = ({ promoCodes, onCreatePromoCode, onDeletePromoCode }) => {
     const { t } = useLanguage();
     const handleCreate = (e) => {
@@ -26873,8 +26938,8 @@
   var PromotionsPanel_default = PromotionsPanel;
 
   // components/seller/FlashSalesPanel.tsx
-  var import_react27 = __toESM(require_react());
-  var import_jsx_runtime32 = __toESM(require_jsx_runtime());
+  var import_react27 = __toESM(require_react(), 1);
+  var import_jsx_runtime32 = __toESM(require_jsx_runtime(), 1);
   var FlashSalesPanel = ({ flashSales, products, onProposeForFlashSale, store }) => {
     const { t } = useLanguage();
     const [selectedProduct, setSelectedProduct] = (0, import_react27.useState)("");
@@ -26906,7 +26971,7 @@
   var FlashSalesPanel_default = FlashSalesPanel;
 
   // components/seller/PayoutsPanel.tsx
-  var import_jsx_runtime33 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime33 = __toESM(require_jsx_runtime(), 1);
   var PayoutsPanel = ({ payouts }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime33.jsxs)("div", { className: "p-6", children: [
@@ -26929,7 +26994,7 @@
   var PayoutsPanel_default = PayoutsPanel;
 
   // components/seller/DocumentsPanel.tsx
-  var import_jsx_runtime34 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime34 = __toESM(require_jsx_runtime(), 1);
   var getStatusIcon = (status) => {
     switch (status) {
       case "verified":
@@ -26977,20 +27042,20 @@
   var DocumentsPanel_default = DocumentsPanel;
 
   // components/seller/SupportPanel.tsx
-  var import_react30 = __toESM(require_react());
+  var import_react30 = __toESM(require_react(), 1);
 
   // components/account/NewTicketForm.tsx
-  var import_react28 = __toESM(require_react());
+  var import_react28 = __toESM(require_react(), 1);
 
   // components/account/common.tsx
-  var import_jsx_runtime35 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime35 = __toESM(require_jsx_runtime(), 1);
   var Section = ({ title, children, className = "" }) => /* @__PURE__ */ (0, import_jsx_runtime35.jsxs)("div", { className, children: [
     /* @__PURE__ */ (0, import_jsx_runtime35.jsx)("h2", { className: "text-2xl font-bold mb-6 text-gray-800 dark:text-white", children: title }),
     children
   ] });
 
   // components/account/NewTicketForm.tsx
-  var import_jsx_runtime36 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime36 = __toESM(require_jsx_runtime(), 1);
   var AttachmentPreview = ({ attachments, onRemove }) => /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("div", { className: "mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2", children: attachments.map((url, i) => /* @__PURE__ */ (0, import_jsx_runtime36.jsxs)("div", { className: "relative group", children: [
     /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("img", { src: url, alt: `Aper\xE7u ${i}`, className: "h-20 w-full object-cover rounded-md" }),
     /* @__PURE__ */ (0, import_jsx_runtime36.jsx)("button", { type: "button", onClick: () => onRemove(i), className: "absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity", children: /* @__PURE__ */ (0, import_jsx_runtime36.jsx)(TrashIcon, { className: "w-4 h-4" }) })
@@ -27057,8 +27122,8 @@
   };
 
   // components/account/TicketDetailView.tsx
-  var import_react29 = __toESM(require_react());
-  var import_jsx_runtime37 = __toESM(require_jsx_runtime());
+  var import_react29 = __toESM(require_react(), 1);
+  var import_jsx_runtime37 = __toESM(require_jsx_runtime(), 1);
   var AttachmentPreview2 = ({ attachments, onRemove }) => /* @__PURE__ */ (0, import_jsx_runtime37.jsx)("div", { className: "mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2", children: attachments.map((url, i) => /* @__PURE__ */ (0, import_jsx_runtime37.jsxs)("div", { className: "relative group", children: [
     /* @__PURE__ */ (0, import_jsx_runtime37.jsx)("img", { src: url, alt: `Aper\xE7u ${i}`, className: "h-20 w-full object-cover rounded-md" }),
     /* @__PURE__ */ (0, import_jsx_runtime37.jsx)("button", { type: "button", onClick: () => onRemove(i), className: "absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity", children: /* @__PURE__ */ (0, import_jsx_runtime37.jsx)(TrashIcon, { className: "w-4 h-4" }) })
@@ -27129,7 +27194,7 @@
   };
 
   // components/seller/SupportPanel.tsx
-  var import_jsx_runtime38 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime38 = __toESM(require_jsx_runtime(), 1);
   var SupportPanel = (props) => {
     const { t } = useLanguage();
     const { allTickets, sellerOrders, onCreateTicket, onUserReplyToTicket } = props;
@@ -27180,8 +27245,8 @@
   var SupportPanel_default = SupportPanel;
 
   // components/seller/CollectionsPanel.tsx
-  var import_react31 = __toESM(require_react());
-  var import_jsx_runtime39 = __toESM(require_jsx_runtime());
+  var import_react31 = __toESM(require_react(), 1);
+  var import_jsx_runtime39 = __toESM(require_jsx_runtime(), 1);
   var CollectionForm = ({ collection, allProducts, onSave, onCancel }) => {
     const { t } = useLanguage();
     const [name, setName] = (0, import_react31.useState)(collection?.name || "");
@@ -27279,8 +27344,8 @@
   var CollectionsPanel_default = CollectionsPanel;
 
   // components/seller/ShippingPanel.tsx
-  var import_react32 = __toESM(require_react());
-  var import_jsx_runtime40 = __toESM(require_jsx_runtime());
+  var import_react32 = __toESM(require_react(), 1);
+  var import_jsx_runtime40 = __toESM(require_jsx_runtime(), 1);
   var ShippingPanel = ({ store, allShippingPartners, onUpdate }) => {
     const { t } = useLanguage();
     const [settings, setSettings] = (0, import_react32.useState)(
@@ -27416,7 +27481,7 @@
   var ShippingPanel_default = ShippingPanel;
 
   // components/seller/SubscriptionPanel.tsx
-  var import_jsx_runtime41 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime41 = __toESM(require_jsx_runtime(), 1);
   var PlanCard = ({ title, description, price, icon, features, onSelect, isFeatured, isCurrent, isDisabled }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime41.jsxs)("div", { className: `p-8 rounded-2xl shadow-lg flex flex-col border-2 ${isCurrent ? "bg-green-50 dark:bg-green-900/20 border-kmer-green" : isFeatured ? "bg-kmer-yellow/5 dark:bg-kmer-yellow/10 border-kmer-yellow" : "bg-white dark:bg-gray-800 dark:border-gray-700"}`, children: [
@@ -27510,7 +27575,7 @@
   var SubscriptionPanel_default = SubscriptionPanel;
 
   // components/seller/UpgradePanel.tsx
-  var import_jsx_runtime42 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime42 = __toESM(require_jsx_runtime(), 1);
   var UpgradePanel = ({ store, siteSettings, onRequestUpgrade, featureName }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime42.jsxs)("div", { className: "text-center p-8 bg-gray-50 dark:bg-gray-800/50 rounded-lg", children: [
@@ -27523,8 +27588,8 @@
   var UpgradePanel_default = UpgradePanel;
 
   // components/SellerAnalyticsDashboard.tsx
-  var import_react33 = __toESM(require_react());
-  var import_jsx_runtime43 = __toESM(require_jsx_runtime());
+  var import_react33 = __toESM(require_react(), 1);
+  var import_jsx_runtime43 = __toESM(require_jsx_runtime(), 1);
   var getActiveFlashSalePrice6 = (productId, flashSales) => {
     const now = /* @__PURE__ */ new Date();
     for (const sale of flashSales) {
@@ -27780,7 +27845,7 @@
   };
 
   // components/seller/AnalyticsPanel.tsx
-  var import_jsx_runtime44 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime44 = __toESM(require_jsx_runtime(), 1);
   var AnalyticsPanel = ({ sellerOrders, sellerProducts, flashSales }) => {
     return /* @__PURE__ */ (0, import_jsx_runtime44.jsx)(
       SellerAnalyticsDashboard,
@@ -27796,8 +27861,8 @@
   var AnalyticsPanel_default = AnalyticsPanel;
 
   // components/SellerProfile.tsx
-  var import_react34 = __toESM(require_react());
-  var import_jsx_runtime45 = __toESM(require_jsx_runtime());
+  var import_react34 = __toESM(require_react(), 1);
+  var import_jsx_runtime45 = __toESM(require_jsx_runtime(), 1);
   var SellerProfile = ({ store, onBack, onUpdateProfile }) => {
     const { t } = useLanguage();
     const [formData, setFormData] = (0, import_react34.useState)(store);
@@ -27965,7 +28030,7 @@
   var SellerProfile_default = SellerProfile;
 
   // components/seller/ProfilePanel.tsx
-  var import_jsx_runtime46 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime46 = __toESM(require_jsx_runtime(), 1);
   var ProfilePanel = ({ store, onUpdateProfile }) => {
     return /* @__PURE__ */ (0, import_jsx_runtime46.jsx)(
       SellerProfile_default,
@@ -27980,7 +28045,7 @@
   var ProfilePanel_default = ProfilePanel;
 
   // components/seller/ChatPanel.tsx
-  var import_jsx_runtime47 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime47 = __toESM(require_jsx_runtime(), 1);
   var ChatPanel = () => {
     const { user } = useAuth();
     const { t } = useLanguage();
@@ -28005,8 +28070,8 @@
   var ChatPanel_default = ChatPanel;
 
   // components/seller/StoriesPanel.tsx
-  var import_react35 = __toESM(require_react());
-  var import_jsx_runtime48 = __toESM(require_jsx_runtime());
+  var import_react35 = __toESM(require_react(), 1);
+  var import_jsx_runtime48 = __toESM(require_jsx_runtime(), 1);
   var StoriesPanel = ({ store, onAddStory }) => {
     const activeStories = (0, import_react35.useMemo)(() => {
       const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1e3);
@@ -28052,7 +28117,7 @@
   var StoriesPanel_default = StoriesPanel;
 
   // components/SellerDashboard.tsx
-  var import_jsx_runtime49 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime49 = __toESM(require_jsx_runtime(), 1);
   var TabButton = ({ icon, label, isActive, onClick, count, isLocked }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime49.jsxs)(
@@ -28162,8 +28227,8 @@
   };
 
   // components/VendorPage.tsx
-  var import_react37 = __toESM(require_react());
-  var import_jsx_runtime50 = __toESM(require_jsx_runtime());
+  var import_react37 = __toESM(require_react(), 1);
+  var import_jsx_runtime50 = __toESM(require_jsx_runtime(), 1);
   var VendorPage = ({ vendorName, allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
     const { user, toggleFollowStore } = useAuth();
     const { t } = useLanguage();
@@ -28251,7 +28316,7 @@
   var VendorPage_default = VendorPage;
 
   // components/ProductForm.tsx
-  var import_react38 = __toESM(require_react());
+  var import_react38 = __toESM(require_react(), 1);
 
   // node_modules/@google/genai/dist/web/index.mjs
   var _defaultBaseGeminiUrl = void 0;
@@ -45544,7 +45609,7 @@
   };
 
   // components/ProductForm.tsx
-  var import_jsx_runtime51 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime51 = __toESM(require_jsx_runtime(), 1);
   var getCombinations = (variants) => {
     if (variants.length === 0 || variants.some((v) => v.options.length === 0)) return [];
     const combinations = [];
@@ -45988,11 +46053,11 @@
   var ProductForm_default = ProductForm;
 
   // components/SuperAdminDashboard.tsx
-  var import_react53 = __toESM(require_react());
+  var import_react53 = __toESM(require_react(), 1);
 
   // components/admin/OverviewPanel.tsx
-  var import_react39 = __toESM(require_react());
-  var import_jsx_runtime52 = __toESM(require_jsx_runtime());
+  var import_react39 = __toESM(require_react(), 1);
+  var import_jsx_runtime52 = __toESM(require_jsx_runtime(), 1);
   var StatCard3 = ({ icon, label, value, color }) => /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("div", { className: "p-4 bg-white dark:bg-gray-800/50 rounded-lg shadow-sm flex items-center gap-4", children: [
     /* @__PURE__ */ (0, import_jsx_runtime52.jsx)("div", { className: `p-3 rounded-full ${color}`, children: icon }),
     /* @__PURE__ */ (0, import_jsx_runtime52.jsxs)("div", { children: [
@@ -46091,11 +46156,11 @@
   };
 
   // components/admin/UsersPanel.tsx
-  var import_react41 = __toESM(require_react());
+  var import_react41 = __toESM(require_react(), 1);
 
   // components/admin/BulkEmailModal.tsx
-  var import_react40 = __toESM(require_react());
-  var import_jsx_runtime53 = __toESM(require_jsx_runtime());
+  var import_react40 = __toESM(require_react(), 1);
+  var import_jsx_runtime53 = __toESM(require_jsx_runtime(), 1);
   var BulkEmailModal = ({ isOpen, onClose, onSend, recipients, emailTemplates }) => {
     const { t } = useLanguage();
     const [subject, setSubject] = (0, import_react40.useState)("");
@@ -46183,7 +46248,7 @@
   var BulkEmailModal_default = BulkEmailModal;
 
   // components/admin/UsersPanel.tsx
-  var import_jsx_runtime54 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime54 = __toESM(require_jsx_runtime(), 1);
   var StatusBadge = ({ user, allStores }) => {
     const { t } = useLanguage();
     let statusText = t("superadmin.users.status.active");
@@ -46379,8 +46444,8 @@
   };
 
   // components/admin/CatalogPanel.tsx
-  var import_react42 = __toESM(require_react());
-  var import_jsx_runtime55 = __toESM(require_jsx_runtime());
+  var import_react42 = __toESM(require_react(), 1);
+  var import_jsx_runtime55 = __toESM(require_jsx_runtime(), 1);
   var CatalogPanel = ({ allCategories, onAdminAddCategory, onAdminDeleteCategory, onAdminUpdateCategory }) => {
     const { t } = useLanguage();
     const [newCategoryName, setNewCategoryName] = (0, import_react42.useState)("");
@@ -46542,11 +46607,11 @@
   };
 
   // components/admin/MarketingPanel.tsx
-  var import_react44 = __toESM(require_react());
+  var import_react44 = __toESM(require_react(), 1);
 
   // components/admin/FlashSaleForm.tsx
-  var import_react43 = __toESM(require_react());
-  var import_jsx_runtime56 = __toESM(require_jsx_runtime());
+  var import_react43 = __toESM(require_react(), 1);
+  var import_jsx_runtime56 = __toESM(require_jsx_runtime(), 1);
   var FlashSaleForm = ({ onSave, onCancel }) => {
     const { t } = useLanguage();
     const [name, setName] = (0, import_react43.useState)("");
@@ -46655,7 +46720,7 @@
   var FlashSaleForm_default = FlashSaleForm;
 
   // components/admin/FlashSaleDetailView.tsx
-  var import_jsx_runtime57 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime57 = __toESM(require_jsx_runtime(), 1);
   var FlashSaleDetailView = ({ sale, allProducts, onUpdateStatus, onBatchUpdateStatus }) => {
     const { t } = useLanguage();
     const pendingProductIds = sale.products.filter((p) => p.status === "pending").map((p) => p.productId);
@@ -46722,7 +46787,7 @@
   var FlashSaleDetailView_default = FlashSaleDetailView;
 
   // components/admin/MarketingPanel.tsx
-  var import_jsx_runtime58 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime58 = __toESM(require_jsx_runtime(), 1);
   var PanelButton = ({ tab, label, activeTab, setActiveTab }) => /* @__PURE__ */ (0, import_jsx_runtime58.jsx)("button", { onClick: () => setActiveTab(tab), className: `px-4 py-2 font-semibold ${activeTab === tab ? "border-b-2 border-kmer-green text-kmer-green" : "text-gray-500 dark:text-gray-400"}`, children: label });
   var AnnouncementForm = ({ announcement, onSave, onCancel }) => {
     const { t } = useLanguage();
@@ -46911,8 +46976,8 @@
   };
 
   // components/admin/StoresPanel.tsx
-  var import_react45 = __toESM(require_react());
-  var import_jsx_runtime59 = __toESM(require_jsx_runtime());
+  var import_react45 = __toESM(require_react(), 1);
+  var import_jsx_runtime59 = __toESM(require_jsx_runtime(), 1);
   var DocumentStatusBadge = ({ status }) => {
     const styles = {
       requested: "bg-gray-200 text-gray-700",
@@ -47051,8 +47116,8 @@
   };
 
   // components/admin/OrdersPanel.tsx
-  var import_react46 = __toESM(require_react());
-  var import_jsx_runtime60 = __toESM(require_jsx_runtime());
+  var import_react46 = __toESM(require_react(), 1);
+  var import_jsx_runtime60 = __toESM(require_jsx_runtime(), 1);
   var AllOrdersView = ({ orders }) => {
     const { t, language } = useLanguage();
     const [searchTerm, setSearchTerm] = (0, import_react46.useState)("");
@@ -47102,8 +47167,8 @@
   };
 
   // components/admin/LogisticsPanel.tsx
-  var import_react47 = __toESM(require_react());
-  var import_jsx_runtime61 = __toESM(require_jsx_runtime());
+  var import_react47 = __toESM(require_react(), 1);
+  var import_jsx_runtime61 = __toESM(require_jsx_runtime(), 1);
   var StaffModal = ({ point, manager, staff, onClose }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime61.jsx)("div", { className: "fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4", children: /* @__PURE__ */ (0, import_jsx_runtime61.jsxs)("div", { className: "bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full", children: [
@@ -47244,8 +47309,8 @@
   };
 
   // components/admin/PayoutsPanel.tsx
-  var import_react48 = __toESM(require_react());
-  var import_jsx_runtime62 = __toESM(require_jsx_runtime());
+  var import_react48 = __toESM(require_react(), 1);
+  var import_jsx_runtime62 = __toESM(require_jsx_runtime(), 1);
   var PayoutsPanel2 = ({ allOrders, allStores, payouts, onPayoutSeller, siteSettings }) => {
     const { t } = useLanguage();
     const getCommissionRate = (store) => {
@@ -47323,8 +47388,8 @@
   };
 
   // components/admin/SupportPanel.tsx
-  var import_react49 = __toESM(require_react());
-  var import_jsx_runtime63 = __toESM(require_jsx_runtime());
+  var import_react49 = __toESM(require_react(), 1);
+  var import_jsx_runtime63 = __toESM(require_jsx_runtime(), 1);
   var AttachmentPreview3 = ({ attachments, onRemove }) => /* @__PURE__ */ (0, import_jsx_runtime63.jsx)("div", { className: "mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2", children: attachments.map((url, i) => /* @__PURE__ */ (0, import_jsx_runtime63.jsxs)("div", { className: "relative group", children: [
     /* @__PURE__ */ (0, import_jsx_runtime63.jsx)("img", { src: url, alt: `Aper\xE7u ${i}`, className: "h-20 w-full object-cover rounded-md" }),
     /* @__PURE__ */ (0, import_jsx_runtime63.jsx)("button", { type: "button", onClick: () => onRemove(i), className: "absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity", children: /* @__PURE__ */ (0, import_jsx_runtime63.jsx)(TrashIcon, { className: "w-4 h-4" }) })
@@ -47448,8 +47513,8 @@
   };
 
   // components/admin/LogsPanel.tsx
-  var import_react50 = __toESM(require_react());
-  var import_jsx_runtime64 = __toESM(require_jsx_runtime());
+  var import_react50 = __toESM(require_react(), 1);
+  var import_jsx_runtime64 = __toESM(require_jsx_runtime(), 1);
   var LogsPanel = ({ siteActivityLogs }) => {
     const { t } = useLanguage();
     const [filter, setFilter] = (0, import_react50.useState)("");
@@ -47496,8 +47561,8 @@
   };
 
   // components/admin/SettingsPanel.tsx
-  var import_react51 = __toESM(require_react());
-  var import_jsx_runtime65 = __toESM(require_jsx_runtime());
+  var import_react51 = __toESM(require_react(), 1);
+  var import_jsx_runtime65 = __toESM(require_jsx_runtime(), 1);
   var Field = ({ label, children, description }) => /* @__PURE__ */ (0, import_jsx_runtime65.jsxs)("div", { children: [
     /* @__PURE__ */ (0, import_jsx_runtime65.jsx)("label", { className: "block text-sm font-medium text-gray-700 dark:text-gray-300", children: label }),
     children,
@@ -47799,7 +47864,7 @@
   };
 
   // components/admin/ReviewModerationPanel.tsx
-  var import_jsx_runtime66 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime66 = __toESM(require_jsx_runtime(), 1);
   var ReviewModerationPanel = ({ allProducts, onReviewModeration }) => {
     const { t } = useLanguage();
     const pendingReviews = allProducts.flatMap(
@@ -47860,8 +47925,8 @@
   var ReviewModerationPanel_default = ReviewModerationPanel;
 
   // components/admin/ServicesPanel.tsx
-  var import_react52 = __toESM(require_react());
-  var import_jsx_runtime67 = __toESM(require_jsx_runtime());
+  var import_react52 = __toESM(require_react(), 1);
+  var import_jsx_runtime67 = __toESM(require_jsx_runtime(), 1);
   var ServicesPanel = ({ allProducts }) => {
     const { t } = useLanguage();
     const serviceProducts = (0, import_react52.useMemo)(() => allProducts.filter((p) => p.type === "service"), [allProducts]);
@@ -47896,7 +47961,7 @@
   };
 
   // components/admin/RefundsPanel.tsx
-  var import_jsx_runtime68 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime68 = __toESM(require_jsx_runtime(), 1);
   var RefundsPanel = ({ allOrders, onResolveDispute }) => {
     const { t } = useLanguage();
     const disputeOrders = allOrders.filter((o) => o.status === "refund-requested");
@@ -47939,7 +48004,7 @@
   };
 
   // components/SuperAdminDashboard.tsx
-  var import_jsx_runtime69 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime69 = __toESM(require_jsx_runtime(), 1);
   var TabButton2 = ({ icon, label, isActive, onClick, count }) => /* @__PURE__ */ (0, import_jsx_runtime69.jsxs)(
     "button",
     {
@@ -48028,7 +48093,7 @@
   };
 
   // components/OrderHistoryPage.tsx
-  var import_jsx_runtime70 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime70 = __toESM(require_jsx_runtime(), 1);
   var OrderHistoryPage = ({ userOrders, onBack, onSelectOrder, onRepeatOrder }) => {
     const { user } = useAuth();
     const { t } = useLanguage();
@@ -48101,8 +48166,8 @@
   var OrderHistoryPage_default = OrderHistoryPage;
 
   // components/OrderDetailPage.tsx
-  var import_react54 = __toESM(require_react());
-  var import_jsx_runtime71 = __toESM(require_jsx_runtime());
+  var import_react54 = __toESM(require_react(), 1);
+  var import_jsx_runtime71 = __toESM(require_jsx_runtime(), 1);
   var RefundRequestModal = ({ onClose, onSubmit }) => {
     const [reason, setReason] = (0, import_react54.useState)("");
     const [evidence, setEvidence] = (0, import_react54.useState)([]);
@@ -48435,8 +48500,8 @@
   var OrderDetailPage_default = OrderDetailPage;
 
   // components/PromotionsPage.tsx
-  var import_react55 = __toESM(require_react());
-  var import_jsx_runtime72 = __toESM(require_jsx_runtime());
+  var import_react55 = __toESM(require_react(), 1);
+  var import_jsx_runtime72 = __toESM(require_jsx_runtime(), 1);
   var isPromotionActive7 = (product) => {
     if (!product.promotionPrice || product.promotionPrice >= product.price) {
       return false;
@@ -48501,8 +48566,8 @@
   var PromotionsPage_default = PromotionsPage;
 
   // components/FlashSalesPage.tsx
-  var import_react56 = __toESM(require_react());
-  var import_jsx_runtime73 = __toESM(require_jsx_runtime());
+  var import_react56 = __toESM(require_react(), 1);
+  var import_jsx_runtime73 = __toESM(require_jsx_runtime(), 1);
   var CountdownTimer = ({ targetDate }) => {
     const calculateTimeLeft = (0, import_react56.useCallback)(() => {
       const difference = +new Date(targetDate) - +/* @__PURE__ */ new Date();
@@ -48610,8 +48675,8 @@
   var FlashSalesPage_default = FlashSalesPage;
 
   // components/SearchResultsPage.tsx
-  var import_react57 = __toESM(require_react());
-  var import_jsx_runtime74 = __toESM(require_jsx_runtime());
+  var import_react57 = __toESM(require_react(), 1);
+  var import_jsx_runtime74 = __toESM(require_jsx_runtime(), 1);
   var SearchResultsPage = ({ searchQuery, products, stores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
     const searchedProducts = (0, import_react57.useMemo)(() => {
       if (!searchQuery) return [];
@@ -48667,7 +48732,7 @@
   var SearchResultsPage_default = SearchResultsPage;
 
   // components/WishlistPage.tsx
-  var import_jsx_runtime75 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime75 = __toESM(require_jsx_runtime(), 1);
   var WishlistPage = ({ allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
     const { wishlist } = useWishlist();
     const wishlistedProducts = allProducts.filter((p) => wishlist.includes(p.id));
@@ -48703,11 +48768,11 @@
   var WishlistPage_default = WishlistPage;
 
   // components/DeliveryAgentDashboard.tsx
-  var import_react62 = __toESM(require_react());
+  var import_react62 = __toESM(require_react(), 1);
 
   // components/shared/ScannerModal.tsx
-  var import_react58 = __toESM(require_react());
-  var import_jsx_runtime76 = __toESM(require_jsx_runtime());
+  var import_react58 = __toESM(require_react(), 1);
+  var import_jsx_runtime76 = __toESM(require_jsx_runtime(), 1);
   var ScannerModal = ({ onClose, onScanSuccess, t }) => {
     const html5QrCodeRef = (0, import_react58.useRef)(null);
     const [scannerError, setScannerError] = (0, import_react58.useState)(null);
@@ -48759,8 +48824,8 @@
   };
 
   // components/delivery/SignatureModal.tsx
-  var import_react59 = __toESM(require_react());
-  var import_jsx_runtime77 = __toESM(require_jsx_runtime());
+  var import_react59 = __toESM(require_react(), 1);
+  var import_jsx_runtime77 = __toESM(require_jsx_runtime(), 1);
   var SignatureModal = ({ order, onClose, onConfirm, t }) => {
     const [recipientName, setRecipientName] = (0, import_react59.useState)("");
     return /* @__PURE__ */ (0, import_jsx_runtime77.jsx)("div", { className: "fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4", children: /* @__PURE__ */ (0, import_jsx_runtime77.jsxs)("div", { className: "bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full", children: [
@@ -48797,8 +48862,8 @@
   };
 
   // components/delivery/DeliveryFailureModal.tsx
-  var import_react60 = __toESM(require_react());
-  var import_jsx_runtime78 = __toESM(require_jsx_runtime());
+  var import_react60 = __toESM(require_react(), 1);
+  var import_jsx_runtime78 = __toESM(require_jsx_runtime(), 1);
   var DeliveryFailureModal = ({ order, onClose, onConfirm, t }) => {
     const [reason, setReason] = (0, import_react60.useState)("client-absent");
     const [details, setDetails] = (0, import_react60.useState)("");
@@ -48855,8 +48920,8 @@
   };
 
   // components/delivery/MissionMap.tsx
-  var import_react61 = __toESM(require_react());
-  var import_jsx_runtime79 = __toESM(require_jsx_runtime());
+  var import_react61 = __toESM(require_react(), 1);
+  var import_jsx_runtime79 = __toESM(require_jsx_runtime(), 1);
   var MissionMap = ({ start, end }) => {
     const mapRef = (0, import_react61.useRef)(null);
     const leafletMap = (0, import_react61.useRef)(null);
@@ -48890,7 +48955,7 @@
   };
 
   // components/DeliveryAgentDashboard.tsx
-  var import_jsx_runtime80 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime80 = __toESM(require_jsx_runtime(), 1);
   var DeliveryAgentDashboard = ({ onLogout, siteData }) => {
     const { user, updateUser } = useAuth();
     const { t } = useLanguage();
@@ -49016,11 +49081,11 @@
   };
 
   // components/DepotAgentDashboard.tsx
-  var import_react70 = __toESM(require_react());
+  var import_react70 = __toESM(require_react(), 1);
 
   // components/depot/CheckInModal.tsx
-  var import_react63 = __toESM(require_react());
-  var import_jsx_runtime81 = __toESM(require_jsx_runtime());
+  var import_react63 = __toESM(require_react(), 1);
+  var import_jsx_runtime81 = __toESM(require_jsx_runtime(), 1);
   var CheckInModal = ({ order, onClose, onConfirm, t }) => {
     const [location, setLocation] = (0, import_react63.useState)("");
     return /* @__PURE__ */ (0, import_jsx_runtime81.jsx)("div", { className: "fixed inset-0 bg-black/75 z-50 flex items-center justify-center p-4", children: /* @__PURE__ */ (0, import_jsx_runtime81.jsxs)("div", { className: "bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full", children: [
@@ -49042,8 +49107,8 @@
   };
 
   // components/depot/AssignModal.tsx
-  var import_react64 = __toESM(require_react());
-  var import_jsx_runtime82 = __toESM(require_jsx_runtime());
+  var import_react64 = __toESM(require_react(), 1);
+  var import_jsx_runtime82 = __toESM(require_jsx_runtime(), 1);
   var AssignModal = ({ order, agents, onAssign, onCancel }) => {
     const { t } = useLanguage();
     const [selectedAgentId, setSelectedAgentId] = (0, import_react64.useState)("");
@@ -49067,17 +49132,17 @@
   };
 
   // components/depot/InventoryPanel.tsx
-  var import_react65 = __toESM(require_react());
+  var import_react65 = __toESM(require_react(), 1);
 
   // components/depot/StatCard.tsx
-  var import_jsx_runtime83 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime83 = __toESM(require_jsx_runtime(), 1);
   var StatCard4 = ({ label, value }) => /* @__PURE__ */ (0, import_jsx_runtime83.jsxs)("div", { className: "p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg shadow-sm", children: [
     /* @__PURE__ */ (0, import_jsx_runtime83.jsx)("h3", { className: "text-sm font-medium text-gray-500 dark:text-gray-400", children: label }),
     /* @__PURE__ */ (0, import_jsx_runtime83.jsx)("p", { className: "text-3xl font-bold text-gray-800 dark:text-white mt-1", children: value })
   ] });
 
   // components/depot/InventoryPanel.tsx
-  var import_jsx_runtime84 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime84 = __toESM(require_jsx_runtime(), 1);
   var InventoryPanel = ({ inventory, depot, recentMovements }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = (0, import_react65.useState)("");
@@ -49162,8 +49227,8 @@
   };
 
   // components/depot/ParcelsPanel.tsx
-  var import_react66 = __toESM(require_react());
-  var import_jsx_runtime85 = __toESM(require_jsx_runtime());
+  var import_react66 = __toESM(require_react(), 1);
+  var import_jsx_runtime85 = __toESM(require_jsx_runtime(), 1);
   var ParcelsPanel = ({ ordersToAssign, ordersInDelivery, ordersWithIssues, deliveryAgents, setAssigningOrder }) => {
     const { t } = useLanguage();
     const [subTab, setSubTab] = (0, import_react66.useState)("toAssign");
@@ -49197,8 +49262,8 @@
   };
 
   // components/depot/AgentsPanel.tsx
-  var import_react67 = __toESM(require_react());
-  var import_jsx_runtime86 = __toESM(require_jsx_runtime());
+  var import_react67 = __toESM(require_react(), 1);
+  var import_jsx_runtime86 = __toESM(require_jsx_runtime(), 1);
   var AgentsPanel = ({ agents, depot, onSaveSchedule }) => {
     const { t } = useLanguage();
     const [schedule, setSchedule] = (0, import_react67.useState)(depot.schedule || {});
@@ -49260,7 +49325,7 @@
   };
 
   // components/depot/DriversPanel.tsx
-  var import_jsx_runtime87 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime87 = __toESM(require_jsx_runtime(), 1);
   var DriversPanel = ({ deliveryAgents }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime87.jsx)("div", { className: "overflow-x-auto", children: /* @__PURE__ */ (0, import_jsx_runtime87.jsxs)("table", { className: "w-full text-sm", children: [
@@ -49285,8 +49350,8 @@
   };
 
   // components/depot/SellersPanel.tsx
-  var import_react68 = __toESM(require_react());
-  var import_jsx_runtime88 = __toESM(require_jsx_runtime());
+  var import_react68 = __toESM(require_react(), 1);
+  var import_jsx_runtime88 = __toESM(require_jsx_runtime(), 1);
   var SellersPanel = ({ depotInventory, allStores }) => {
     const { t } = useLanguage();
     const sellersWithParcels = (0, import_react68.useMemo)(() => {
@@ -49320,8 +49385,8 @@
   };
 
   // components/depot/ReportsPanel.tsx
-  var import_react69 = __toESM(require_react());
-  var import_jsx_runtime89 = __toESM(require_jsx_runtime());
+  var import_react69 = __toESM(require_react(), 1);
+  var import_jsx_runtime89 = __toESM(require_jsx_runtime(), 1);
   var ReportsPanel = ({ depotOrders, deliveryAgents }) => {
     const { t } = useLanguage();
     const [period, setPeriod] = (0, import_react69.useState)("7days");
@@ -49419,7 +49484,7 @@
   };
 
   // components/DepotAgentDashboard.tsx
-  var import_jsx_runtime90 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime90 = __toESM(require_jsx_runtime(), 1);
   var DepotAgentDashboard = ({ user, onLogout, siteData }) => {
     const { t } = useLanguage();
     const { allUsers, allOrders, allStores, allZones, allPickupPoints } = siteData;
@@ -49553,7 +49618,7 @@
   };
 
   // components/BecomePremiumPage.tsx
-  var import_jsx_runtime91 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime91 = __toESM(require_jsx_runtime(), 1);
   var ProgressBar = ({ value, max, label }) => {
     const percentage = Math.min(value / max * 100, 100);
     return /* @__PURE__ */ (0, import_jsx_runtime91.jsxs)("div", { children: [
@@ -49650,7 +49715,7 @@
   var BecomePremiumPage_default = BecomePremiumPage;
 
   // components/ComponentStubs.tsx
-  var import_jsx_runtime92 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime92 = __toESM(require_jsx_runtime(), 1);
   var Stub = ({ name, props }) => /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)("div", { className: "p-6 m-4 border border-dashed border-gray-400 rounded-lg bg-gray-50 dark:bg-gray-800", children: [
     /* @__PURE__ */ (0, import_jsx_runtime92.jsx)("h2", { className: "text-xl font-bold text-gray-700 dark:text-gray-300", children: name }),
     /* @__PURE__ */ (0, import_jsx_runtime92.jsxs)("pre", { className: "mt-2 text-xs text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 p-2 rounded overflow-auto", children: [
@@ -49692,7 +49757,7 @@
   var StoresMapPage = (props) => /* @__PURE__ */ (0, import_jsx_runtime92.jsx)(Stub, { name: "StoresMapPage", props });
 
   // components/NotFoundPage.tsx
-  var import_jsx_runtime93 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime93 = __toESM(require_jsx_runtime(), 1);
   var NotFoundPage = ({ onNavigateHome }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime93.jsx)("div", { className: "container mx-auto px-6 py-24 flex justify-center text-center", children: /* @__PURE__ */ (0, import_jsx_runtime93.jsxs)("div", { className: "max-w-md", children: [
@@ -49715,7 +49780,7 @@
   var NotFoundPage_default = NotFoundPage;
 
   // components/ForbiddenPage.tsx
-  var import_jsx_runtime94 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime94 = __toESM(require_jsx_runtime(), 1);
   var ForbiddenPage = ({ onNavigateHome }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime94.jsx)("div", { className: "container mx-auto px-6 py-24 flex justify-center text-center", children: /* @__PURE__ */ (0, import_jsx_runtime94.jsxs)("div", { className: "max-w-md", children: [
@@ -49739,7 +49804,7 @@
   var ForbiddenPage_default = ForbiddenPage;
 
   // components/ServerErrorPage.tsx
-  var import_jsx_runtime95 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime95 = __toESM(require_jsx_runtime(), 1);
   var ServerErrorPage = ({ onNavigateHome }) => {
     return /* @__PURE__ */ (0, import_jsx_runtime95.jsx)("div", { className: "container mx-auto px-6 py-24 flex justify-center text-center", children: /* @__PURE__ */ (0, import_jsx_runtime95.jsxs)("div", { className: "max-w-md", children: [
       /* @__PURE__ */ (0, import_jsx_runtime95.jsx)(Cog8ToothIcon, { className: "h-16 w-16 text-blue-500 mx-auto mb-6 animate-spin" }),
@@ -49762,8 +49827,8 @@
   var ServerErrorPage_default = ServerErrorPage;
 
   // components/ResetPasswordPage.tsx
-  var import_react71 = __toESM(require_react());
-  var import_jsx_runtime96 = __toESM(require_jsx_runtime());
+  var import_react71 = __toESM(require_react(), 1);
+  var import_jsx_runtime96 = __toESM(require_jsx_runtime(), 1);
   var ResetPasswordPage = ({ onPasswordReset, onNavigateLogin }) => {
     const [password, setPassword] = (0, import_react71.useState)("");
     const [confirmPassword, setConfirmPassword] = (0, import_react71.useState)("");
@@ -49844,10 +49909,10 @@
   var ResetPasswordPage_default = ResetPasswordPage;
 
   // components/AccountPage.tsx
-  var import_react78 = __toESM(require_react());
+  var import_react78 = __toESM(require_react(), 1);
 
   // components/account/DashboardTab.tsx
-  var import_jsx_runtime97 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime97 = __toESM(require_jsx_runtime(), 1);
   var Section2 = ({ title, children, className = "" }) => /* @__PURE__ */ (0, import_jsx_runtime97.jsxs)("div", { className, children: [
     /* @__PURE__ */ (0, import_jsx_runtime97.jsx)("h2", { className: "text-2xl font-bold mb-6 text-gray-800 dark:text-white", children: title }),
     children
@@ -49900,8 +49965,8 @@
   };
 
   // components/account/ProfileTab.tsx
-  var import_react72 = __toESM(require_react());
-  var import_jsx_runtime98 = __toESM(require_jsx_runtime());
+  var import_react72 = __toESM(require_react(), 1);
+  var import_jsx_runtime98 = __toESM(require_jsx_runtime(), 1);
   var Section3 = ({ title, children, className = "" }) => /* @__PURE__ */ (0, import_jsx_runtime98.jsxs)("div", { className, children: [
     /* @__PURE__ */ (0, import_jsx_runtime98.jsx)("h2", { className: "text-2xl font-bold mb-6 text-gray-800 dark:text-white", children: title }),
     children
@@ -49983,11 +50048,11 @@
   };
 
   // components/account/AddressesTab.tsx
-  var import_react74 = __toESM(require_react());
+  var import_react74 = __toESM(require_react(), 1);
 
   // components/account/AddressForm.tsx
-  var import_react73 = __toESM(require_react());
-  var import_jsx_runtime99 = __toESM(require_jsx_runtime());
+  var import_react73 = __toESM(require_react(), 1);
+  var import_jsx_runtime99 = __toESM(require_jsx_runtime(), 1);
   var AddressForm2 = ({ address, onSave, onCancel }) => {
     const { t } = useLanguage();
     const { user } = useAuth();
@@ -50057,7 +50122,7 @@
   };
 
   // components/account/AddressesTab.tsx
-  var import_jsx_runtime100 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime100 = __toESM(require_jsx_runtime(), 1);
   var AddressesTab = () => {
     const { t } = useLanguage();
     const { user, addAddress, updateAddress, deleteAddress, setDefaultAddress } = useAuth();
@@ -50124,7 +50189,7 @@
   };
 
   // components/account/OrdersTab.tsx
-  var import_jsx_runtime101 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime101 = __toESM(require_jsx_runtime(), 1);
   var OrdersTab = ({ userOrders, onSelectOrder, onRepeatOrder }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(Section, { title: t("accountPage.orders"), children: /* @__PURE__ */ (0, import_jsx_runtime101.jsx)(OrderHistoryPage_default, { userOrders, onBack: () => {
@@ -50132,7 +50197,7 @@
   };
 
   // components/account/FollowedStoresTab.tsx
-  var import_jsx_runtime102 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime102 = __toESM(require_jsx_runtime(), 1);
   var FollowedStoresTab = ({ allStores, onVendorClick }) => {
     const { t } = useLanguage();
     const { user } = useAuth();
@@ -50141,8 +50206,8 @@
   };
 
   // components/account/SupportTab.tsx
-  var import_react75 = __toESM(require_react());
-  var import_jsx_runtime103 = __toESM(require_jsx_runtime());
+  var import_react75 = __toESM(require_react(), 1);
+  var import_jsx_runtime103 = __toESM(require_jsx_runtime(), 1);
   var SupportTab = (props) => {
     const { t } = useLanguage();
     const { userTickets, userOrders, onCreateTicket, onUserReplyToTicket } = props;
@@ -50192,8 +50257,8 @@
   };
 
   // components/account/NotificationsTab.tsx
-  var import_react76 = __toESM(require_react());
-  var import_jsx_runtime104 = __toESM(require_jsx_runtime());
+  var import_react76 = __toESM(require_react(), 1);
+  var import_jsx_runtime104 = __toESM(require_jsx_runtime(), 1);
   var NotificationsTab = () => {
     const { t } = useLanguage();
     const { user, updateUser } = useAuth();
@@ -50233,8 +50298,8 @@
   };
 
   // components/account/SecurityTab.tsx
-  var import_react77 = __toESM(require_react());
-  var import_jsx_runtime105 = __toESM(require_jsx_runtime());
+  var import_react77 = __toESM(require_react(), 1);
+  var import_jsx_runtime105 = __toESM(require_jsx_runtime(), 1);
   var SecurityTab = () => {
     const { t } = useLanguage();
     const { user, changePassword } = useAuth();
@@ -50276,7 +50341,7 @@
   };
 
   // components/AccountPage.tsx
-  var import_jsx_runtime106 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime106 = __toESM(require_jsx_runtime(), 1);
   var AccountPage = (props) => {
     const { onBack, initialTab, allStores, userOrders, allTickets, onCreateTicket, onUserReplyToTicket, onSelectOrder, onRepeatOrder, onVendorClick } = props;
     const { t } = useLanguage();
@@ -50346,8 +50411,8 @@
   var AccountPage_default = AccountPage;
 
   // components/VisualSearchPage.tsx
-  var import_react79 = __toESM(require_react());
-  var import_jsx_runtime107 = __toESM(require_jsx_runtime());
+  var import_react79 = __toESM(require_react(), 1);
+  var import_jsx_runtime107 = __toESM(require_jsx_runtime(), 1);
   var VisualSearchPage = ({ onSearch }) => {
     const [image, setImage] = (0, import_react79.useState)(null);
     const [imagePreview, setImagePreview] = (0, import_react79.useState)(null);
@@ -50455,8 +50520,8 @@
   var VisualSearchPage_default = VisualSearchPage;
 
   // components/SellerSubscriptionPage.tsx
-  var import_react80 = __toESM(require_react());
-  var import_jsx_runtime108 = __toESM(require_jsx_runtime());
+  var import_react80 = __toESM(require_react(), 1);
+  var import_jsx_runtime108 = __toESM(require_jsx_runtime(), 1);
   var PlanCard2 = ({ title, description, price, icon, features, onSelect, isFeatured }) => {
     const { t } = useLanguage();
     return /* @__PURE__ */ (0, import_jsx_runtime108.jsxs)("div", { className: `p-8 rounded-2xl shadow-lg flex flex-col border-2 ${isFeatured ? "bg-kmer-green/5 dark:bg-kmer-green/10 border-kmer-green" : "bg-white dark:bg-gray-800 dark:border-gray-700"}`, children: [
@@ -50532,8 +50597,8 @@
   var SellerSubscriptionPage_default = SellerSubscriptionPage;
 
   // components/ServicesPage.tsx
-  var import_react81 = __toESM(require_react());
-  var import_jsx_runtime109 = __toESM(require_jsx_runtime());
+  var import_react81 = __toESM(require_react(), 1);
+  var import_jsx_runtime109 = __toESM(require_jsx_runtime(), 1);
   var ServicesPage = ({ allProducts, allStores, flashSales, onProductClick, onBack, onVendorClick, isComparisonEnabled }) => {
     const { t } = useLanguage();
     const serviceProducts = (0, import_react81.useMemo)(() => allProducts.filter((p) => p.type === "service"), [allProducts]);
@@ -50578,7 +50643,7 @@
   var ServicesPage_default = ServicesPage;
 
   // components/PageRouter.tsx
-  var import_jsx_runtime110 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime110 = __toESM(require_jsx_runtime(), 1);
   var PageRouter = (props) => {
     const { navigation: navigation2, siteData, setPromotionModalProduct, setPaymentRequest } = props;
     const { user, logout } = useAuth();
@@ -51018,8 +51083,8 @@
   var PageRouter_default = PageRouter;
 
   // components/LoginModal.tsx
-  var import_react83 = __toESM(require_react());
-  var import_jsx_runtime111 = __toESM(require_jsx_runtime());
+  var import_react83 = __toESM(require_react(), 1);
+  var import_jsx_runtime111 = __toESM(require_jsx_runtime(), 1);
   var LoginModal = ({ onClose, onLoginSuccess, onForgotPassword, onSelectSellerType }) => {
     const { t } = useLanguage();
     const [view, setView] = (0, import_react83.useState)("login");
@@ -51247,7 +51312,7 @@
   var LoginModal_default = LoginModal;
 
   // components/AddToCartModal.tsx
-  var import_jsx_runtime112 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime112 = __toESM(require_jsx_runtime(), 1);
   var PLACEHOLDER_IMAGE_URL3 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
   var AddToCartModal = ({ product, onClose, onNavigateToCart }) => {
     const { cart } = useCart();
@@ -51294,8 +51359,8 @@
   var AddToCartModal_default = AddToCartModal;
 
   // components/ForgotPasswordModal.tsx
-  var import_react84 = __toESM(require_react());
-  var import_jsx_runtime113 = __toESM(require_jsx_runtime());
+  var import_react84 = __toESM(require_react(), 1);
+  var import_jsx_runtime113 = __toESM(require_jsx_runtime(), 1);
   var ForgotPasswordModal = ({ onClose, onEmailSubmit }) => {
     const { t } = useLanguage();
     const [email, setEmail] = (0, import_react84.useState)("");
@@ -51363,8 +51428,8 @@
   var ForgotPasswordModal_default = ForgotPasswordModal;
 
   // components/StoryViewer.tsx
-  var import_react85 = __toESM(require_react());
-  var import_jsx_runtime114 = __toESM(require_jsx_runtime());
+  var import_react85 = __toESM(require_react(), 1);
+  var import_jsx_runtime114 = __toESM(require_jsx_runtime(), 1);
   var StoryViewer = ({ store, onClose, onProductClick, allProducts }) => {
     const [currentIndex, setCurrentIndex] = (0, import_react85.useState)(0);
     const activeStories = (0, import_react85.useMemo)(() => {
@@ -51433,8 +51498,8 @@
   var StoryViewer_default = StoryViewer;
 
   // components/ChatWidget.tsx
-  var import_react86 = __toESM(require_react());
-  var import_jsx_runtime115 = __toESM(require_jsx_runtime());
+  var import_react86 = __toESM(require_react(), 1);
+  var import_jsx_runtime115 = __toESM(require_jsx_runtime(), 1);
   var PLACEHOLDER_IMAGE_URL4 = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Crect width='24' height='24' fill='%23E5E7EB'/%3E%3Cpath d='M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909m-18 3.75h16.5a1.5 1.5 0 001.5-1.5V6a1.5 1.5 0 00-1.5-1.5H3.75A1.5 1.5 0 002.25 6v12a1.5 1.5 0 001.5 1.5zm10.5-11.25h.008v.008h-.008V8.25zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z' stroke='%239CA3AF' stroke-width='1.5'/%3E%3C/svg%3E";
   var ConversationList = ({ chats, messages, activeChatId, onSelectChat, currentUser }) => {
     const getOtherParticipant = (chat) => {
@@ -51595,8 +51660,8 @@
   var ChatWidget_default = ChatWidget;
 
   // components/PromotionModal.tsx
-  var import_react87 = __toESM(require_react());
-  var import_jsx_runtime116 = __toESM(require_jsx_runtime());
+  var import_react87 = __toESM(require_react(), 1);
+  var import_jsx_runtime116 = __toESM(require_jsx_runtime(), 1);
   var PromotionModal = ({ product, onClose, onSave }) => {
     const [promoPrice, setPromoPrice] = (0, import_react87.useState)(product.promotionPrice?.toString() || "");
     const [startDate, setStartDate] = (0, import_react87.useState)(product.promotionStartDate || "");
@@ -51690,8 +51755,8 @@
   var PromotionModal_default = PromotionModal;
 
   // components/PaymentModal.tsx
-  var import_react88 = __toESM(require_react());
-  var import_jsx_runtime117 = __toESM(require_jsx_runtime());
+  var import_react88 = __toESM(require_react(), 1);
+  var import_jsx_runtime117 = __toESM(require_jsx_runtime(), 1);
   var getPaymentIcon = (id) => {
     switch (id) {
       case "pm1":
@@ -51811,8 +51876,8 @@
   var PaymentModal_default = PaymentModal;
 
   // components/MaintenancePage.tsx
-  var import_react89 = __toESM(require_react());
-  var import_jsx_runtime118 = __toESM(require_jsx_runtime());
+  var import_react89 = __toESM(require_react(), 1);
+  var import_jsx_runtime118 = __toESM(require_jsx_runtime(), 1);
   var MaintenancePage = ({ message, reopenDate }) => {
     const calculateTimeLeft = () => {
       const difference = +new Date(reopenDate) - +/* @__PURE__ */ new Date();
@@ -51879,8 +51944,8 @@
   var MaintenancePage_default = MaintenancePage;
 
   // components/StructuredData.tsx
-  var import_react90 = __toESM(require_react());
-  var import_jsx_runtime119 = __toESM(require_jsx_runtime());
+  var import_react90 = __toESM(require_react(), 1);
+  var import_jsx_runtime119 = __toESM(require_jsx_runtime(), 1);
   var StructuredData = ({ navigation: navigation2, siteData, t }) => {
     const { page, selectedProduct, selectedCategoryId } = navigation2;
     const { allCategories } = siteData;
@@ -51999,7 +52064,7 @@
   var StructuredData_default = StructuredData;
 
   // App.tsx
-  var import_jsx_runtime120 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime120 = __toESM(require_jsx_runtime(), 1);
   var AnnouncementBanner = ({ announcements, dismissed, onDismiss }) => {
     const activeAnnouncement = (0, import_react91.useMemo)(() => {
       const now = /* @__PURE__ */ new Date();
@@ -52024,7 +52089,7 @@
     const [isForgotPasswordOpen, setIsForgotPasswordOpen] = (0, import_react91.useState)(false);
     const [promotionModalProduct, setPromotionModalProduct] = (0, import_react91.useState)(null);
     const [paymentRequest, setPaymentRequest] = (0, import_react91.useState)(null);
-    const handleLoginSuccess = (loggedInUser) => {
+    const handleLoginSuccess = (0, import_react91.useCallback)((loggedInUser) => {
       setIsLoginOpen(false);
       if (loggedInUser.role === "seller" || loggedInUser.role === "enterprise") {
         navigation2.navigateToSellerDashboard();
@@ -52035,19 +52100,31 @@
       } else if (loggedInUser.role === "depot_agent" || loggedInUser.role === "depot_manager") {
         navigation2.navigateToDepotAgentDashboard();
       }
-    };
-    const handleSelectSellerType = (type) => {
+    }, [navigation2]);
+    const handleSelectSellerType = (0, import_react91.useCallback)((type) => {
       setIsLoginOpen(false);
       if (type === "service") {
         navigation2.navigateToBecomeServiceProvider();
       } else {
         navigation2.navigateToBecomeSeller();
       }
-    };
-    const handleLogout = () => {
+    }, [navigation2]);
+    const handleLogout = (0, import_react91.useCallback)(() => {
       logout();
       navigation2.navigateToHome();
-    };
+    }, [logout, navigation2]);
+    const handleOpenLogin = (0, import_react91.useCallback)(() => setIsLoginOpen(true), []);
+    const handleCloseLogin = (0, import_react91.useCallback)(() => setIsLoginOpen(false), []);
+    const handleOpenForgotPassword = (0, import_react91.useCallback)(() => {
+      setIsLoginOpen(false);
+      setIsForgotPasswordOpen(true);
+    }, []);
+    const handleCloseForgotPassword = (0, import_react91.useCallback)(() => setIsForgotPasswordOpen(false), []);
+    const handleResetPasswordSubmit = (0, import_react91.useCallback)(async (email) => {
+      await resetPassword(email);
+      alert(t("app.passwordResetEmailSent", email));
+      setIsForgotPasswordOpen(false);
+    }, [resetPassword, t]);
     if (siteData.isLoading) {
       return /* @__PURE__ */ (0, import_jsx_runtime120.jsx)("div", { className: "min-h-screen flex items-center justify-center", children: "Chargement..." });
     }
@@ -52110,7 +52187,7 @@
           onNavigateToAccount: navigation2.navigateToAccount,
           onNavigateToVisualSearch: navigation2.navigateToVisualSearch,
           onNavigateToServices: navigation2.navigateToServices,
-          onOpenLogin: () => setIsLoginOpen(true),
+          onOpenLogin: handleOpenLogin,
           onLogout: handleLogout,
           onSearch: navigation2.handleSearch,
           isChatEnabled: siteData.siteSettings?.isChatEnabled ?? false,
@@ -52140,15 +52217,8 @@
           companyName: siteData.siteSettings?.companyName || ""
         }
       ),
-      isLoginOpen && /* @__PURE__ */ (0, import_jsx_runtime120.jsx)(LoginModal_default, { onClose: () => setIsLoginOpen(false), onLoginSuccess: handleLoginSuccess, onForgotPassword: () => {
-        setIsLoginOpen(false);
-        setIsForgotPasswordOpen(true);
-      }, onSelectSellerType: handleSelectSellerType }),
-      isForgotPasswordOpen && /* @__PURE__ */ (0, import_jsx_runtime120.jsx)(ForgotPasswordModal_default, { onClose: () => setIsForgotPasswordOpen(false), onEmailSubmit: async (email) => {
-        await resetPassword(email);
-        alert(t("app.passwordResetEmailSent", email));
-        setIsForgotPasswordOpen(false);
-      } }),
+      isLoginOpen && /* @__PURE__ */ (0, import_jsx_runtime120.jsx)(LoginModal_default, { onClose: handleCloseLogin, onLoginSuccess: handleLoginSuccess, onForgotPassword: handleOpenForgotPassword, onSelectSellerType: handleSelectSellerType }),
+      isForgotPasswordOpen && /* @__PURE__ */ (0, import_jsx_runtime120.jsx)(ForgotPasswordModal_default, { onClose: handleCloseForgotPassword, onEmailSubmit: handleResetPasswordSubmit }),
       isModalOpen && modalProduct && /* @__PURE__ */ (0, import_jsx_runtime120.jsx)(AddToCartModal_default, { product: modalProduct, onClose: closeModal, onNavigateToCart: () => {
         closeModal();
         navigation2.navigateToCart();
@@ -52164,7 +52234,7 @@
   };
 
   // index.tsx
-  var import_jsx_runtime121 = __toESM(require_jsx_runtime());
+  var import_jsx_runtime121 = __toESM(require_jsx_runtime(), 1);
   var AppProviders = ({ children }) => /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(AuthProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(ThemeProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(LanguageProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(UIProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(CartProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(WishlistProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(ComparisonProvider, { children: /* @__PURE__ */ (0, import_jsx_runtime121.jsx)(ChatProvider, { children }) }) }) }) }) }) }) });
   var rootElement = document.getElementById("root");
   if (!rootElement) {

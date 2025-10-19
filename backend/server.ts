@@ -9,16 +9,15 @@ import dotenv from 'dotenv';
 // FIX: Import process to resolve type error for process.exit.
 import process from 'process';
 import path from 'path';
-// FIX: Added fileURLToPath to resolve __dirname in ES modules.
 import { fileURLToPath } from 'url';
 import esbuild from 'esbuild';
 import type { User } from '../types';
-import * as initialData from './data';
+import * as initialData from './data.js';
 
 dotenv.config();
 
 const isDev = process.argv.includes('--dev');
-// FIX: __dirname is not available in ES modules. This polyfill defines it.
+// FIX: __dirname is not available in ES modules. This calculates it from import.meta.url.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootPath = path.join(__dirname, '..');
@@ -62,7 +61,7 @@ async function connectToDatabase(): Promise<Db> {
         return cachedDb;
     }
     try {
-        const client = await MongoClient.connect(MONGO_URI);
+        const client = await MongoClient.connect(MONGO_URI!);
         const db = client.db();
         cachedDb = db;
         console.log("New DB connection established.");
@@ -181,7 +180,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
         
         const userForToken = { ...user, id: user._id.toHexString() };
-        delete userForToken.password;
+        delete (userForToken as any).password;
         const token = jwt.sign({ user: userForToken }, JWT_SECRET!, { expiresIn: '1d' });
         res.json({ token, user: userForToken });
     } catch (error) {
@@ -213,6 +212,16 @@ app.post('/api/orders', protectRoute, async (req: Request, res: Response) => {
 // On Vercel, this is handled automatically.
 if (isDev) {
     app.use(express.static(rootPath));
+
+    // Serve bundle.js with the correct MIME type
+    app.get('/bundle.js', (req, res) => {
+        res.sendFile(path.join(rootPath, 'bundle.js'), {
+            headers: {
+                'Content-Type': 'application/javascript'
+            }
+        });
+    });
+
     app.get('*', (req: Request, res: Response) => {
         if (!req.path.startsWith('/api/')) {
             res.sendFile(path.join(rootPath, 'index.html'));

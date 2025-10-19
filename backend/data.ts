@@ -261,7 +261,7 @@ export const initialStores: Store[] = [
         collections: []
     },
     { 
-        id: 'store-4', sellerId: 'seller-4', name: 'Douala Soaps', logoUrl: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRz-M3k_vJXuV2zD6D3XoJzQZzO8Z6O8Z6O8Q&s', 
+        id: 'store-4', sellerId: 'seller-4', name: 'Douala Soaps', logoUrl: 'https://img.freepik.com/premium-vector/soap-logo-design_432311-533.jpg', 
         bannerUrl: 'https://images.unsplash.com/photo-1583947581920-802581a58a7?q=80&w=2071&auto=format&fit=crop',
         category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
         location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
@@ -344,7 +344,7 @@ export const initialPickupPoints: PickupPoint[] = [
 ];
 
 export const initialSiteSettings: SiteSettings = {
-  logoUrl: 'https://kmer-zone-logo.svg',
+  logoUrl: '',
   bannerUrl: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?q=80&w=2070&auto=format&fit=crop',
   companyName: "KMER ZONE Inc.",
   isStoriesEnabled: true,

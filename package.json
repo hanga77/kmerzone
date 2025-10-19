@@ -3,10 +3,11 @@
   "version": "1.0.0",
   "description": "A comprehensive e-commerce platform for Cameroonian merchants.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "start": "ts-node backend/server.ts --dev",
-    "build": "node build.js",
-    "seed": "ts-node backend/seed.ts"
+    "start": "node --loader ts-node/esm backend/server.ts --dev",
+    "build": "node build.cjs",
+    "seed": "node --loader ts-node/esm backend/seed.ts"
   },
   "keywords": [],
   "author": "",
