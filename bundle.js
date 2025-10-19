@@ -21782,7 +21782,14 @@
       if (token) {
         try {
           const decodedUser = decodeJwt(token);
-          setUser({ ...decodedUser.user });
+          if (decodedUser && decodedUser.user) {
+            setUser({ ...decodedUser.user });
+          } else {
+            console.error("Malformed token payload:", decodedUser);
+            localStorage.removeItem("authToken");
+            setToken(null);
+            setUser(null);
+          }
         } catch (e) {
           console.error("Invalid token:", e);
           localStorage.removeItem("authToken");

@@ -21,7 +21,7 @@ const isPromotionActive = (product: Product): boolean => {
   const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
   const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
   
-  // If no dates, it's a permanent promotion
+  // FIX: A promotion with a price but no dates is a permanent promotion.
   if (!startDate && !endDate) return true;
 
   if (startDate && endDate) return now >= startDate && now <= endDate;

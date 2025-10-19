@@ -37,9 +37,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         if (token) {
             try {
                 const decodedUser = decodeJwt(token);
-                // Here you might want to fetch the full user object from a /api/me endpoint
-                // For now, we'll use the decoded token payload
-                setUser({ ...decodedUser.user }); 
+                // FIX: Added a check to ensure the decoded token payload is valid before setting the user.
+                // This prevents a crash on startup if the token is malformed.
+                if (decodedUser && decodedUser.user) {
+                    setUser({ ...decodedUser.user });
+                } else {
+                    console.error("Malformed token payload:", decodedUser);
+                    localStorage.removeItem('authToken');
+                    setToken(null);
+                    setUser(null);
+                }
             } catch (e) {
                 console.error("Invalid token:", e);
                 localStorage.removeItem('authToken');
