@@ -1,4 +1,3 @@
-
 // Changed to standard ES module import for Express to resolve type errors.
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
@@ -12,7 +11,7 @@ import process from 'process';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import esbuild from 'esbuild';
-import type { User, UserRole } from '../types';
+import type { User, UserRole, Store } from '../types';
 import * as initialData from './data.js';
 
 dotenv.config();
@@ -152,7 +151,7 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
     const { name, email, password, role, phone, birthDate, address } = req.body;
     try {
         const db = await connectToDatabase();
-        const existingUser = await db.collection('users').findOne({ email });
+        const existingUser = await db.collection<User>('users').findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
         }
@@ -184,7 +183,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
     try {
         const db = await connectToDatabase();
-        const user = await db.collection('users').findOne({ email });
+        const user = await db.collection<User>('users').findOne({ email });
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
         
         const isMatch = await bcrypt.compare(password, user.password);
@@ -204,7 +203,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 app.post('/api/admin/stores/:id/approve', protectRoute, isAdmin, async (req, res) => {
     try {
         const db = await connectToDatabase();
-        const result = await db.collection('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: 'active' } });
+        const result = await db.collection<Store>('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: 'active' } });
         if (result.matchedCount === 0) return res.status(404).json({ message: 'Store not found' });
         res.status(200).json({ success: true, status: 'active' });
     } catch (e) { res.status(500).json({ message: (e as Error).message }) }
@@ -213,7 +212,7 @@ app.post('/api/admin/stores/:id/approve', protectRoute, isAdmin, async (req, res
 app.post('/api/admin/stores/:id/reject', protectRoute, isAdmin, async (req, res) => {
     try {
         const db = await connectToDatabase();
-        const result = await db.collection('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: 'rejected' } });
+        const result = await db.collection<Store>('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: 'rejected' } });
         if (result.matchedCount === 0) return res.status(404).json({ message: 'Store not found' });
         res.status(200).json({ success: true, status: 'rejected' });
     } catch (e) { res.status(500).json({ message: (e as Error).message }) }
@@ -222,10 +221,10 @@ app.post('/api/admin/stores/:id/reject', protectRoute, isAdmin, async (req, res)
 app.post('/api/admin/stores/:id/toggle-status', protectRoute, isAdmin, async (req, res) => {
     try {
         const db = await connectToDatabase();
-        const store = await db.collection('stores').findOne({ _id: new ObjectId(req.params.id) });
+        const store = await db.collection<Store>('stores').findOne({ _id: new ObjectId(req.params.id) });
         if (!store) return res.status(404).json({ message: 'Store not found' });
         const newStatus = store.status === 'active' ? 'suspended' : 'active';
-        await db.collection('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: newStatus } });
+        await db.collection<Store>('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { status: newStatus } });
         res.status(200).json({ success: true, status: newStatus });
     } catch (e) { res.status(500).json({ message: (e as Error).message }) }
 });
@@ -236,7 +235,7 @@ app.post('/api/admin/stores/:id/warn', protectRoute, isAdmin, async (req, res) =
     try {
         const db = await connectToDatabase();
         const newWarning = { id: new ObjectId().toHexString(), date: new Date().toISOString(), reason };
-        const result = await db.collection('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $push: { warnings: newWarning } });
+        const result = await db.collection<Store>('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $push: { warnings: newWarning } });
         if (result.matchedCount === 0) return res.status(404).json({ message: 'Store not found' });
         res.status(200).json({ success: true, newWarning });
     } catch (e) { res.status(500).json({ message: (e as Error).message }) }
@@ -247,9 +246,9 @@ app.put('/api/admin/stores/:storeId/documents', protectRoute, isAdmin, async (re
     const { documentName, status, reason } = req.body;
     try {
         const db = await connectToDatabase();
-        const result = await db.collection('stores').updateOne(
+        const result = await db.collection<Store>('stores').updateOne(
             { _id: new ObjectId(storeId), "documents.name": documentName },
-            { $set: { "documents.$.status": status, "documents.$.rejectionReason": reason || null } }
+            { $set: { "documents.$.status": status, "documents.$.rejectionReason": reason || undefined } }
         );
         if (result.matchedCount === 0) return res.status(404).json({ message: 'Store or document not found' });
         res.status(200).json({ success: true });
@@ -259,10 +258,10 @@ app.put('/api/admin/stores/:storeId/documents', protectRoute, isAdmin, async (re
 app.post('/api/admin/stores/:id/toggle-certification', protectRoute, isAdmin, async (req, res) => {
     try {
         const db = await connectToDatabase();
-        const store = await db.collection('stores').findOne({ _id: new ObjectId(req.params.id) });
+        const store = await db.collection<Store>('stores').findOne({ _id: new ObjectId(req.params.id) });
         if (!store) return res.status(404).json({ message: 'Store not found' });
         const isCertified = !store.isCertified;
-        await db.collection('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { isCertified } });
+        await db.collection<Store>('stores').updateOne({ _id: new ObjectId(req.params.id) }, { $set: { isCertified } });
         res.status(200).json({ success: true, isCertified });
     } catch (e) { res.status(500).json({ message: (e as Error).message }) }
 });
@@ -282,9 +281,9 @@ app.patch('/api/admin/users/:id', protectRoute, isAdmin, async (req, res) => {
 
     try {
         const db = await connectToDatabase();
-        const result = await db.collection('users').updateOne({ _id: new ObjectId(id) }, { $set: finalUpdates });
+        const result = await db.collection<User>('users').updateOne({ _id: new ObjectId(id) }, { $set: finalUpdates });
         if (result.matchedCount === 0) return res.status(404).json({ message: 'User not found' });
-        const updatedUser = await db.collection('users').findOne({ _id: new ObjectId(id) }, { projection: { password: 0 } });
+        const updatedUser = await db.collection<User>('users').findOne({ _id: new ObjectId(id) }, { projection: { password: 0 } });
         res.json({ ...updatedUser, id: updatedUser!._id.toHexString() });
     } catch (e) { res.status(500).json({ message: (e as Error).message }) }
 });
@@ -294,7 +293,7 @@ app.post('/api/admin/users', protectRoute, isAdmin, async (req, res) => {
     const tempPassword = Math.random().toString(36).slice(-8);
     try {
         const db = await connectToDatabase();
-        if (await db.collection('users').findOne({ email })) {
+        if (await db.collection<User>('users').findOne({ email })) {
             return res.status(400).json({ message: "User already exists" });
         }
         const hashedPassword = await bcrypt.hash(tempPassword, 10);
