@@ -22002,31 +22002,85 @@
     }, []);
     const handleAddOrUpdateProduct = (0, import_react3.useCallback)(async (product) => {
     }, []);
-    const handleApproveStore = (store) => {
-      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "active" } : s) }));
-      if (user) createActivityLog(user, "Approve Store", `Approved store: ${store.name}`);
+    const handleApproveStore = async (store) => {
+      try {
+        await makeApiRequest(`/api/admin/stores/${store.id}/approve`, "POST");
+        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "active" } : s) }));
+        if (user) createActivityLog(user, "Approve Store", `Approved store: ${store.name}`);
+      } catch (error2) {
+        console.error("Failed to approve store:", error2);
+        alert("\xC9chec de l'approbation du magasin.");
+      }
     };
-    const handleRejectStore = (store) => {
-      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "rejected" } : s) }));
-      if (user) createActivityLog(user, "Reject Store", `Rejected store: ${store.name}`);
+    const handleRejectStore = async (store) => {
+      try {
+        await makeApiRequest(`/api/admin/stores/${store.id}/reject`, "POST");
+        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === store.id ? { ...s, status: "rejected" } : s) }));
+        if (user) createActivityLog(user, "Reject Store", `Rejected store: ${store.name}`);
+      } catch (error2) {
+        console.error("Failed to reject store:", error2);
+        alert("\xC9chec du rejet du magasin.");
+      }
     };
-    const handleToggleStoreStatus = (storeId, currentStatus) => {
-      const newStatus = currentStatus === "active" ? "suspended" : "active";
-      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, status: newStatus } : s) }));
-      if (user) createActivityLog(user, "Toggle Store Status", `Changed store ${storeId} to ${newStatus}`);
+    const handleToggleStoreStatus = async (storeId, currentStatus) => {
+      try {
+        const { status } = await makeApiRequest(`/api/admin/stores/${storeId}/toggle-status`, "POST");
+        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, status } : s) }));
+        if (user) createActivityLog(user, "Toggle Store Status", `Changed store ${storeId} to ${status}`);
+      } catch (error2) {
+        console.error("Failed to toggle store status:", error2);
+        alert("\xC9chec du changement de statut du magasin.");
+      }
     };
-    const handleWarnStore = (storeId, reason) => {
-      const newWarning = { id: `warn-${Date.now()}`, date: (/* @__PURE__ */ new Date()).toISOString(), reason };
-      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, warnings: [...s.warnings, newWarning] } : s) }));
-      if (user) createActivityLog(user, "Warn Store", `Warned store ${storeId} for: ${reason}`);
+    const handleWarnStore = async (storeId, reason) => {
+      try {
+        const { newWarning } = await makeApiRequest(`/api/admin/stores/${storeId}/warn`, "POST", { reason });
+        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, warnings: [...s.warnings || [], newWarning] } : s) }));
+        if (user) createActivityLog(user, "Warn Store", `Warned store ${storeId} for: ${reason}`);
+      } catch (error2) {
+        console.error("Failed to warn store:", error2);
+        alert("\xC9chec de l'avertissement du magasin.");
+      }
     };
-    const handleUpdateDocumentStatus = (storeId, documentName, status, reason = "") => {
-      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, documents: s.documents.map((d) => d.name === documentName ? { ...d, status, rejectionReason: reason } : d) } : s) }));
-      if (user) createActivityLog(user, "Update Document Status", `Set document ${documentName} for store ${storeId} to ${status}`);
+    const handleUpdateDocumentStatus = async (storeId, documentName, status, reason = "") => {
+      try {
+        await makeApiRequest(`/api/admin/stores/${storeId}/documents`, "PUT", { documentName, status, reason });
+        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, documents: s.documents.map((d) => d.name === documentName ? { ...d, status, rejectionReason: reason || void 0 } : d) } : s) }));
+        if (user) createActivityLog(user, "Update Document Status", `Set document ${documentName} for store ${storeId} to ${status}`);
+      } catch (error2) {
+        console.error("Failed to update document status:", error2);
+        alert("\xC9chec de la mise \xE0 jour du statut du document.");
+      }
     };
-    const handleToggleStoreCertification = (storeId) => {
-      setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, isCertified: !s.isCertified } : s) }));
-      if (user) createActivityLog(user, "Toggle Certification", `Toggled certification for store ${storeId}`);
+    const handleToggleStoreCertification = async (storeId) => {
+      try {
+        const { isCertified } = await makeApiRequest(`/api/admin/stores/${storeId}/toggle-certification`, "POST");
+        setData((prev) => ({ ...prev, allStores: prev.allStores.map((s) => s.id === storeId ? { ...s, isCertified } : s) }));
+        if (user) createActivityLog(user, "Toggle Certification", `Toggled certification for store ${storeId}`);
+      } catch (error2) {
+        console.error("Failed to toggle certification:", error2);
+        alert("\xC9chec du changement de certification.");
+      }
+    };
+    const onUpdateUser = async (userId, updates) => {
+      try {
+        const updatedUser = await makeApiRequest(`/api/admin/users/${userId}`, "PATCH", updates);
+        setData((prev) => ({ ...prev, allUsers: prev.allUsers.map((u) => u.id === userId ? { ...updatedUser, id: userId } : u) }));
+        if (user) createActivityLog(user, "Update User", `Updated user profile for ${updatedUser.name}`);
+      } catch (error2) {
+        console.error("Failed to update user:", error2);
+        alert("Failed to update user.");
+      }
+    };
+    const onCreateUserByAdmin = async (data2) => {
+      try {
+        const { newUser } = await makeApiRequest("/api/admin/users", "POST", data2);
+        setData((prev) => ({ ...prev, allUsers: [...prev.allUsers, newUser] }));
+        if (user) createActivityLog(user, "Create User", `Created new user: ${data2.name} (${data2.role})`);
+      } catch (error2) {
+        console.error("Failed to create user:", error2);
+        alert("\xC9chec de la cr\xE9ation de l'utilisateur.");
+      }
     };
     const stubs = {
       handleDismissAnnouncement: (id) => setDismissedAnnouncements((prev) => [...prev, id]),
@@ -22068,25 +22122,9 @@
       onWarnStore: handleWarnStore,
       onUpdateDocumentStatus: handleUpdateDocumentStatus,
       onToggleStoreCertification: handleToggleStoreCertification,
-      handleDismissAnnouncement: stubs.handleDismissAnnouncement,
-      handleMarkNotificationAsRead: stubs.handleMarkNotificationAsRead,
-      handleSetPromotion: stubs.handleSetPromotion,
-      createNotification: stubs.createNotification,
-      createStoreAndNotifyAdmin: stubs.createStoreAndNotifyAdmin,
-      handleDeleteProduct: stubs.handleDeleteProduct,
-      handleUpdateProductStatus: stubs.handleUpdateProductStatus,
-      handleCancelOrder: stubs.handleCancelOrder,
-      handleRequestRefund: stubs.handleRequestRefund,
-      handleCustomerDisputeMessage: stubs.handleCustomerDisputeMessage,
-      handleCreateTicket: stubs.handleCreateTicket,
-      handleUserReplyToTicket: stubs.handleUserReplyToTicket,
-      handleSellerUpdateOrderStatus: stubs.handleSellerUpdateOrderStatus,
-      handleSellerCancelOrder: stubs.handleSellerCancelOrder,
-      handleCreateOrUpdateCollection: stubs.handleCreateOrUpdateCollection,
-      handleDeleteCollection: stubs.handleDeleteCollection,
-      handleUpdateStoreProfile: stubs.handleUpdateStoreProfile,
-      handleAddProductToStory: stubs.handleAddProductToStory,
-      handleAddStory: stubs.handleAddStory
+      onUpdateUser,
+      onCreateUserByAdmin,
+      ...stubs
     };
   };
 
