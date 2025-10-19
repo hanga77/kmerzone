@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
-import type { Ticket, TicketStatus, TicketMessage } from '../../types';
+import type { Ticket, TicketStatus, TicketMessage, Order } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
-import { PaperclipIcon, TrashIcon } from '../Icons';
+import { PaperclipIcon, TrashIcon, PlusIcon, XIcon } from '../Icons';
+import { NewTicketForm } from '../account/NewTicketForm';
+
 
 const AttachmentPreview: React.FC<{ attachments: string[], onRemove: (index: number) => void }> = ({ attachments, onRemove }) => (
     <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -36,6 +38,7 @@ interface SupportPanelProps {
     allTickets: Ticket[];
     onAdminReplyToTicket: (ticketId: string, message: string, attachments?: string[]) => void;
     onAdminUpdateTicketStatus: (ticketId: string, status: TicketStatus) => void;
+    onCreateTicket: (subject: string, message: string, orderId?: string, type?: 'support' | 'service_request', attachments?: string[]) => void;
 }
 
 const TicketDetail: React.FC<{ ticket: Ticket, onReply: (id: string, msg: string, attachments?: string[]) => void, onStatusChange: (id: string, status: TicketStatus) => void, onBack: () => void }> = ({ ticket, onReply, onStatusChange, onBack }) => {
@@ -99,9 +102,10 @@ const TicketDetail: React.FC<{ ticket: Ticket, onReply: (id: string, msg: string
     );
 };
 
-export const SupportPanel: React.FC<SupportPanelProps> = ({ allTickets, onAdminReplyToTicket, onAdminUpdateTicketStatus }) => {
+export const SupportPanel: React.FC<SupportPanelProps> = ({ allTickets, onAdminReplyToTicket, onAdminUpdateTicketStatus, onCreateTicket }) => {
     const { t } = useLanguage();
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
+    const [isCreating, setIsCreating] = useState(false);
 
     if (selectedTicket) {
         return (
@@ -113,7 +117,27 @@ export const SupportPanel: React.FC<SupportPanelProps> = ({ allTickets, onAdminR
 
     return (
         <div className="p-4 sm:p-6">
-            <h2 className="text-xl font-bold mb-4">{t('superadmin.support.title', allTickets.length)}</h2>
+            {isCreating && (
+                 <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+                     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 max-w-lg w-full relative">
+                          <button onClick={() => setIsCreating(false)} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
+                            <XIcon className="h-6 w-6" />
+                        </button>
+                        <NewTicketForm 
+                            userOrders={[]} 
+                            onCreate={(subject, message, orderId, type, attachments) => {
+                                onCreateTicket(subject, message, orderId, type, attachments);
+                                setIsCreating(false);
+                            }} 
+                            onCancel={() => setIsCreating(false)} 
+                        />
+                     </div>
+                 </div>
+            )}
+            <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">{t('superadmin.support.title', allTickets.length)}</h2>
+                <button onClick={() => setIsCreating(true)} className="bg-green-500 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2"><PlusIcon className="w-5 h-5"/> {t('superadmin.support.createTicket')}</button>
+            </div>
             <div className="space-y-2">
                 {allTickets.map(ticket => (
                     <button key={ticket.id} onClick={() => setSelectedTicket(ticket)} className="w-full text-left p-3 border dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700/50 flex justify-between items-center">

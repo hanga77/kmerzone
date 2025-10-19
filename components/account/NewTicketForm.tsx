@@ -3,6 +3,7 @@ import type { Order } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
 import { PaperclipIcon, TrashIcon } from '../Icons';
 import { Section } from './common';
+import { useAuth } from '../../contexts/AuthContext';
 
 const AttachmentPreview: React.FC<{ attachments: string[], onRemove: (index: number) => void }> = ({ attachments, onRemove }) => (
     <div className="mt-2 grid grid-cols-3 sm:grid-cols-5 gap-2">
@@ -20,6 +21,7 @@ const AttachmentPreview: React.FC<{ attachments: string[], onRemove: (index: num
 
 export const NewTicketForm: React.FC<{ userOrders: Order[], onCreate: (s: string, m: string, o?: string, type?: 'support' | 'service_request', a?: string[]) => void, onCancel: () => void }> = ({ userOrders, onCreate, onCancel }) => {
     const { t } = useLanguage();
+    const { user } = useAuth();
     const [subject, setSubject] = useState('');
     const [message, setMessage] = useState('');
     const [orderId, setOrderId] = useState('');
@@ -45,14 +47,30 @@ export const NewTicketForm: React.FC<{ userOrders: Order[], onCreate: (s: string
         onCreate(subject, message, orderId, 'support', attachments);
     };
 
+    const problemTypes = [
+        'order_issue', 'product_question', 'delivery_issue', 'return_request',
+        'payment_issue', 'technical_issue', 'report_seller', 'other'
+    ];
+    
+    const canLinkOrders = user && ['customer', 'seller', 'enterprise'].includes(user.role);
+
     return (
         <Section title={t('accountPage.createTicket')}>
             <form onSubmit={handleSubmit} className="space-y-4">
-                 <input type="text" value={subject} onChange={e => setSubject(e.target.value)} placeholder={t('accountPage.ticketSubject')} className="w-full p-2 border rounded-md" required />
-                 <select value={orderId} onChange={e => setOrderId(e.target.value)} className="w-full p-2 border rounded-md">
-                     <option value="">{t('accountPage.linkToOrder')}</option>
-                     {userOrders.map(o => <option key={o.id} value={o.id}>{o.id}</option>)}
+                 <select value={subject} onChange={e => setSubject(e.target.value)} className="w-full p-2 border rounded-md" required>
+                    <option value="">{t('supportProblemTypes.select')}</option>
+                    {problemTypes.map(type => (
+                        <option key={type} value={t(`supportProblemTypes.${type}`)}>{t(`supportProblemTypes.${type}`)}</option>
+                    ))}
                  </select>
+                 
+                 {canLinkOrders && (
+                    <select value={orderId} onChange={e => setOrderId(e.target.value)} className="w-full p-2 border rounded-md">
+                        <option value="">{t('accountPage.linkToOrder')}</option>
+                        {userOrders.map(o => <option key={o.id} value={o.id}>{o.id}</option>)}
+                    </select>
+                 )}
+
                 <textarea value={message} onChange={e => setMessage(e.target.value)} placeholder={t('accountPage.describeProblem')} rows={5} className="w-full p-2 border rounded-md" required />
                 <div>
                     <label htmlFor="attachments-upload-new" className="cursor-pointer text-sm font-semibold text-blue-500 flex items-center gap-2"><PaperclipIcon className="w-4 h-4" /> {t('accountPage.attachFiles')}</label>

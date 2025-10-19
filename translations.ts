@@ -2,6 +2,8 @@ export const translations = {
   fr: {
     app: {
         passwordResetEmailSent: "Si un compte existe pour {0}, vous y trouverez un lien pour réinitialiser votre mot de passe.",
+        getAndroidApp: "Obtenez l'expérience complète avec notre application Android !",
+        download: "Télécharger"
     },
     common: {
       backToHome: "Retour à l'accueil",
@@ -26,6 +28,17 @@ export const translations = {
       days30: "30 jours",
       days90: "90 jours",
       back: "Retour"
+    },
+    supportProblemTypes: {
+        select: "-- Choisissez le type de problème --",
+        order_issue: "Problème avec une commande",
+        product_question: "Question sur un produit",
+        delivery_issue: "Problème de livraison",
+        return_request: "Demande de retour/remboursement",
+        payment_issue: "Problème de paiement",
+        technical_issue: "Problème technique sur le site",
+        report_seller: "Signaler un vendeur/produit",
+        other: "Autre..."
     },
     orderStatus: {
       confirmed: 'Confirmée',
@@ -236,7 +249,9 @@ export const translations = {
         passwordMismatch: "Les nouveaux mots de passe ne correspondent pas.",
         passwordIncorrect: "L'ancien mot de passe est incorrect.",
         passwordSuccess: "Mot de passe mis à jour avec succès !",
-        loginRequired: "Veuillez vous connecter pour voir cette page."
+        loginRequired: "Veuillez vous connecter pour voir cette page.",
+        ticketSentSuccessTitle: "Succès !",
+        ticketSentSuccessMessage: "Votre ticket a été envoyé."
     },
     sitemap: {
         categories: "Catégories",
@@ -819,6 +834,7 @@ export const translations = {
       },
       support: {
           title: "Support Tickets ({0})",
+          createTicket: "Créer un ticket",
           detail: {
               back: "< Back to list",
               user: "User",

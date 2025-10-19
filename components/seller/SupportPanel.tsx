@@ -17,9 +17,17 @@ const SupportPanel: React.FC<SupportPanelProps> = (props) => {
     const { allTickets, sellerOrders, onCreateTicket, onUserReplyToTicket } = props;
     const [selectedTicket, setSelectedTicket] = useState<Ticket | null>(null);
     const [isCreating, setIsCreating] = useState(false);
+    const [showConfirmation, setShowConfirmation] = useState(false);
+
+    const handleCreateTicketAndClose = (subject: string, message: string, orderId?: string, type?: 'support' | 'service_request', attachments?: string[]) => {
+        onCreateTicket(subject, message, orderId, type, attachments);
+        setIsCreating(false);
+        setShowConfirmation(true);
+        setTimeout(() => setShowConfirmation(false), 3000);
+    };
     
     if (isCreating) {
-        return <NewTicketForm userOrders={sellerOrders} onCreate={onCreateTicket} onCancel={() => setIsCreating(false)} />;
+        return <NewTicketForm userOrders={sellerOrders} onCreate={handleCreateTicketAndClose} onCancel={() => setIsCreating(false)} />;
     }
     
     if (selectedTicket) {
@@ -28,6 +36,12 @@ const SupportPanel: React.FC<SupportPanelProps> = (props) => {
 
     return (
         <Section title={t('accountPage.support')}>
+             {showConfirmation && (
+                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative mb-4 animate-in" role="alert">
+                    <strong className="font-bold">{t('accountPage.ticketSentSuccessTitle')}</strong>
+                    <span className="block sm:inline"> {t('accountPage.ticketSentSuccessMessage')}</span>
+                </div>
+            )}
             <button onClick={() => setIsCreating(true)} className="bg-kmer-green text-white font-bold py-2 px-4 rounded-lg mb-4">{t('accountPage.createTicket')}</button>
             <div className="space-y-2">
                 {allTickets.map(ticket => (

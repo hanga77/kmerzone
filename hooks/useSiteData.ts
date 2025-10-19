@@ -599,9 +599,10 @@ export const useSiteData = () => {
     }, [setAllStores, logActivity]);
 
     const createStoreAndNotifyAdmin = useCallback((
-        data: any, // Data from the form
+        storeData: any,
         user: User, 
-        allUsers: User[]
+        allUsers: User[],
+        initialProductData?: Partial<Product>
     ) => {
         if (!user) {
             console.error("A valid user must be provided to create a store.");
@@ -613,17 +614,7 @@ export const useSiteData = () => {
             .map(([name]) => ({ name, status: 'requested' as DocumentStatus }));
 
         const newStore: Store = {
-            name: data.shopName,
-            category: data.category || 'Non classé',
-            location: data.location,
-            neighborhood: data.neighborhood,
-            sellerFirstName: data.sellerFirstName,
-            sellerLastName: data.sellerLastName,
-            sellerPhone: data.sellerPhone,
-            physicalAddress: data.physicalAddress,
-            logoUrl: data.logoUrl,
-            latitude: data.latitude,
-            longitude: data.longitude,
+            ...storeData,
             id: `store-${Date.now()}`,
             sellerId: user.id,
             warnings: [],
@@ -634,6 +625,28 @@ export const useSiteData = () => {
         };
 
         setAllStores(prev => [...prev, newStore]);
+
+        if (initialProductData) {
+            const newProduct: Product = {
+                id: `serv-${Date.now()}`,
+                name: initialProductData.name || newStore.name,
+                price: initialProductData.price || 0,
+                imageUrls: initialProductData.imageUrls || [newStore.logoUrl],
+                vendor: newStore.name,
+                description: initialProductData.description || '',
+                reviews: [],
+                stock: 1, // for services
+                categoryId: initialProductData.categoryId || '',
+                status: 'published',
+                type: 'service',
+                duration: initialProductData.duration,
+                locationType: initialProductData.locationType,
+                serviceArea: initialProductData.serviceArea,
+                availability: initialProductData.availability,
+            };
+            setAllProducts(prev => [...prev, newProduct]);
+            logActivity(user, 'PRODUCT_CREATED', `Service initial créé : ${newProduct.name}`);
+        }
 
         const adminUsers = allUsers.filter(u => u.role === 'superadmin');
         const newNotifications: Notification[] = adminUsers.map(admin => ({
@@ -651,7 +664,7 @@ export const useSiteData = () => {
         logActivity(user, 'STORE_CREATED', `Boutique "${newStore.name}" créée et en attente d'approbation.`);
         
         return newStore;
-    }, [setAllStores, setAllNotifications, logActivity, siteSettings.requiredSellerDocuments]);
+    }, [setAllStores, setAllProducts, setAllNotifications, logActivity, siteSettings.requiredSellerDocuments]);
     
     const handleCancelOrder = useCallback((orderId: string, user: User) => {
         setAllOrders(prev => prev.map(o => {
@@ -908,7 +921,7 @@ export const useSiteData = () => {
         handleToggleStoreCertification, handleAddOrUpdateProduct, handleDeleteProduct, handleUpdateProductStatus,
         handleSellerUpdateOrderStatus, handleSellerCancelOrder, handleCreateOrUpdateCollection, handleDeleteCollection,
         handleUpdateStoreProfile, handleUpdateDeliveryStatus, createStoreAndNotifyAdmin, handleAddProductToStory, handleAddStory,
-        handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage, createNotification, handleResolveDispute,
+        handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage, createNotification, handleResolveDispute, 
         handleCreateTicket, handleUserReplyToTicket
     ]);
 

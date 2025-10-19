@@ -3,6 +3,7 @@ import type { Page, Product, Category, Store, Order, Notification, PaymentReques
 import { useAuth } from '../contexts/AuthContext';
 import { useCart } from '../contexts/CartContext';
 import { useWishlist } from '../contexts/WishlistContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 import HomePage from './HomePage';
 import ProductDetail from './ProductDetail';
@@ -48,6 +49,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
     const { navigation, siteData, setPromotionModalProduct, setPaymentRequest } = props;
     
     const { user, allUsers, setAllUsers, logout } = useAuth();
+    const { t } = useLanguage();
     const authData = { user, allUsers, setAllUsers };
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
     const { wishlist } = useWishlist();
@@ -92,14 +94,46 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             return;
         }
 
-        const newStore = siteData.createStoreAndNotifyAdmin(data, user, allUsers);
+        const isServiceProvider = navigation.page === 'become-service-provider';
+
+        const storeData = {
+            name: data.shopName,
+            category: 'Non classé',
+            location: data.location,
+            neighborhood: data.neighborhood || '',
+            sellerFirstName: data.sellerFirstName,
+            sellerLastName: data.sellerLastName,
+            sellerPhone: data.sellerPhone,
+            physicalAddress: isServiceProvider ? `Prestation de services (${data.serviceArea})` : data.physicalAddress,
+            logoUrl: data.logoUrl,
+            latitude: data.latitude,
+            longitude: data.longitude,
+        };
+
+        let initialProductData;
+        if (isServiceProvider) {
+            const categoryName = siteData.allCategories.find((c: Category) => c.id === data.serviceCategory)?.name;
+            storeData.category = categoryName ? t(categoryName) : 'Services';
+
+            initialProductData = {
+                name: data.shopName,
+                price: data.price,
+                description: data.serviceDescription,
+                categoryId: data.serviceCategory,
+                type: 'service',
+                duration: data.duration,
+                locationType: data.locationType,
+                serviceArea: data.serviceArea,
+                availability: data.availability,
+            };
+        }
+
+        const newStore = siteData.createStoreAndNotifyAdmin(storeData, user, allUsers, initialProductData);
 
         if (newStore) {
-             // Update the user in the global state to become a seller linked to the new store
-            setAllUsers((prevUsers: User[]) => prevUsers.map(u =>
+             setAllUsers((prevUsers: User[]) => prevUsers.map(u =>
                 u.id === user.id ? { ...u, role: 'seller', shopName: newStore.name } : u
             ));
-            // After creating the store, navigate to the subscription page
             navigation.setPage('seller-subscription');
         } else {
              alert("Erreur: La création de la boutique a échoué. Veuillez réessayer.");
@@ -271,7 +305,11 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             />;
         case 'superadmin-dashboard':
             if (user?.role !== 'superadmin') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
-            return <SuperAdminDashboard siteData={augmentedSiteData} />;
+            return <SuperAdminDashboard siteData={{
+                ...augmentedSiteData,
+                handleCreateTicket: (subject: string, message: string, orderId?: string, type?: 'support' | 'service_request', attachments?: string[]) => 
+                    user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
+            }} />;
         case 'vendor-page':
              return navigation.selectedStore ? <VendorPage vendorName={navigation.selectedStore.name} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'order-history':

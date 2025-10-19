@@ -104,6 +104,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ siteDa
             onDeleteAdvertisement: (id: string) => user && siteData.handleDeleteAdvertisement(id, user),
             onCreateOrUpdateAnnouncement: (data: Omit<Announcement, 'id'> | Announcement) => user && siteData.handleCreateOrUpdateAnnouncement(data, user),
             onDeleteAnnouncement: (id: string) => user && siteData.handleDeleteAnnouncement(id, user),
+            onCreateTicket: (subject: string, message: string, orderId?: string, type?: 'support' | 'service_request', attachments?: string[]) => user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers),
             onAdminReplyToTicket: (ticketId: string, message: string, attachments?: string[]) => user && siteData.handleAdminReplyToTicket(ticketId, message, user, attachments),
             onAdminUpdateTicketStatus: (ticketId: string, status: Ticket['status']) => user && siteData.handleAdminUpdateTicketStatus(ticketId, status, user),
             onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => user && siteData.handleReviewModeration(productId, reviewIdentifier, newStatus, user),

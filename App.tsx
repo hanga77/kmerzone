@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { XIcon } from './components/Icons';
+import { XIcon, DownloadIcon } from './components/Icons';
 import { useAuth } from './contexts/AuthContext';
 import { useComparison } from './contexts/ComparisonContext';
 import { useUI } from './contexts/UIContext';
@@ -50,8 +50,28 @@ const AnnouncementBanner: React.FC<{
   );
 };
 
+// FIX: Destructured the `onDismiss` prop from the component's arguments.
+const ApkBanner: React.FC<{ onDismiss: () => void }> = ({ onDismiss }) => {
+    const { t } = useLanguage();
+    return (
+        <div className="bg-kmer-green text-white p-3 text-center relative font-semibold text-sm flex items-center justify-center gap-4">
+            <p className="flex items-center gap-2">
+                <DownloadIcon className="w-5 h-5"/>
+                <span>{t('app.getAndroidApp')}</span>
+            </p>
+            {/* TODO: Replace '#' with the actual link to the APK file */}
+            <a href="#" className="bg-white text-kmer-green font-bold py-1 px-3 rounded-full text-xs hover:bg-gray-200 transition-colors">
+                {t('app.download')}
+            </a>
+            <button onClick={onDismiss} className="absolute top-1/2 right-4 -translate-y-1/2 opacity-70 hover:opacity-100">
+                <XIcon className="w-5 h-5" />
+            </button>
+        </div>
+    );
+};
 
-export default function App() {
+
+export function App() {
   const { user, logout: authLogout, allUsers, resetPassword } = useAuth();
   const { isModalOpen, modalProduct, closeModal: uiCloseModal } = useUI();
   const { comparisonList, setProducts: setComparisonProducts } = useComparison();
@@ -66,6 +86,21 @@ export default function App() {
   
   const [paymentRequest, setPaymentRequest] = useState<PaymentRequest | null>(null);
   const [promotionModalProduct, setPromotionModalProduct] = useState<Product | null>(null);
+
+  const [showApkBanner, setShowApkBanner] = useState(false);
+
+    useEffect(() => {
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const hasDismissed = localStorage.getItem('dismissedApkBanner') === 'true';
+        if (isMobile && !hasDismissed) {
+            setShowApkBanner(true);
+        }
+    }, []);
+
+    const handleDismissApkBanner = () => {
+        localStorage.setItem('dismissedApkBanner', 'true');
+        setShowApkBanner(false);
+    };
   
   const handleLoginSuccess = useCallback((loggedInUser: User) => {
     setIsLoginModalOpen(false);
@@ -75,8 +110,9 @@ export default function App() {
             break;
         case 'seller':
         case 'enterprise':
-            // If new seller without a shop, guide them to create one.
             if (!loggedInUser.shopName) {
+                // This logic is now handled in PageRouter to correctly redirect
+                // to the right seller type page based on selection.
                 if(selectedSellerType === 'service') {
                     navigation.navigateToBecomeServiceProvider();
                 } else {
@@ -95,15 +131,15 @@ export default function App() {
             break;
         case 'customer':
         default:
-            navigation.navigateToAccount('dashboard');
-            break;
+            // Keep them on the current page or redirect to account
+            // navigation.navigateToAccount('dashboard');
+             break; // Let them stay on the page they were on
     }
-    // Reset seller type selection after navigation
-    setSelectedSellerType(null);
   }, [navigation, selectedSellerType]);
 
     const handleLogout = useCallback(() => {
         authLogout();
+        setSelectedSellerType(null); // Reset seller type on logout
         navigation.navigateToHome();
     }, [authLogout, navigation]);
 
@@ -115,7 +151,6 @@ export default function App() {
     useEffect(() => {
         const favicon = document.getElementById('favicon') as HTMLLinkElement;
         if (favicon && siteData.siteSettings.logoUrl) {
-            // Simple URL check. In real app, might need more robust handling for SVG data URLs etc.
             if (siteData.siteSettings.logoUrl.startsWith('http') || siteData.siteSettings.logoUrl.startsWith('data:image')) {
                 favicon.href = siteData.siteSettings.logoUrl;
             }
@@ -168,6 +203,7 @@ export default function App() {
   return (
     <div className="flex flex-col min-h-screen">
         <StructuredData navigation={navigation} siteData={siteData} t={t} />
+        {showApkBanner && <ApkBanner onDismiss={handleDismissApkBanner} />}
         {activeAnnouncement && <AnnouncementBanner announcement={activeAnnouncement} onDismiss={siteData.handleDismissAnnouncement} />}
       
         <Header

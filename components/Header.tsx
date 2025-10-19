@@ -119,6 +119,8 @@ export const Header: React.FC<HeaderProps> = (props) => {
     ...(user?.role === 'depot_agent' || user?.role === 'depot_manager' ? [{ label: t('header.depotDashboard'), action: onNavigateToDepotAgentDashboard, icon: <BuildingStorefrontIcon className="h-5 w-5" /> }] : []),
     ...(user && (user.role === 'customer' || user.role === 'seller' || user.role === 'enterprise') ? [
         { label: t('header.myOrders'), action: onNavigateToOrderHistory, icon: <ClipboardDocumentListIcon className="h-5 w-5" /> },
+    ] : []),
+    ...(user ? [
         { label: t('header.support'), action: () => onNavigateToAccount('support'), icon: <ChatBubbleBottomCenterTextIcon className="h-5 w-5" /> }
     ] : [])
   ];

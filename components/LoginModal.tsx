@@ -126,6 +126,14 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
                           <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600 leading-tight focus:outline-none focus:shadow-outline focus:ring-2 focus:ring-kmer-green" id="register-lastName" type="text" placeholder="Dupont" value={lastName} onChange={(e) => setLastName(e.target.value)} required />
                       </div>
                   </div>
+                   <div className="mb-4">
+                    <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-phone">Téléphone</label>
+                    <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600" id="register-phone" type="tel" placeholder="690123456" value={phone} onChange={(e) => setPhone(e.target.value)} />
+                  </div>
+                   <div className="mb-4">
+                    <label className="block text-gray-700 dark:text-gray-300 text-sm font-bold mb-2" htmlFor="register-birthDate">Date de naissance</label>
+                    <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 dark:text-white dark:bg-gray-700 dark:border-gray-600" id="register-birthDate" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+                  </div>
                 </>
               ) : (
                 <div className="mb-4">
@@ -156,7 +164,7 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 w-full relative overflow-y-auto max-h-[90vh] ${view === 'register' ? 'max-w-xl' : 'max-w-sm'}`}>
+      <div className={`bg-white dark:bg-gray-800 rounded-lg shadow-2xl p-6 w-full relative overflow-y-auto max-h-[90vh] ${view === 'register' && registerStep === 'form' ? 'max-w-xl' : 'max-w-sm'}`}>
         <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300">
           <XIcon className="h-6 w-6" />
         </button>

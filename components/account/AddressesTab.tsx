@@ -31,6 +31,12 @@ export const AddressesTab: React.FC = () => {
             addAddress(user.id, address);
         }
         setIsFormOpen(false);
+        setEditingAddress(null);
+    };
+    
+    const handleCancel = () => {
+        setIsFormOpen(false);
+        setEditingAddress(null);
     };
 
     if (!user) return null;
@@ -41,7 +47,7 @@ export const AddressesTab: React.FC = () => {
                 <AddressForm
                     address={editingAddress}
                     onSave={handleSave}
-                    onCancel={() => setIsFormOpen(false)}
+                    onCancel={handleCancel}
                 />
             ) : (
                 <div className="space-y-4">

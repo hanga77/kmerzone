@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useAuth } from '../contexts/AuthContext';
-import type { Order, Store, Ticket, User } from '../types';
+import type { Order, Store, Ticket, User, UserRole } from '../types';
 import {
     ChartPieIcon, UserCircleIcon, MapPinIcon, ClipboardDocumentListIcon, HeartIcon,
     ChatBubbleBottomCenterTextIcon, BellSnoozeIcon, LockClosedIcon, ArrowLeftIcon
@@ -61,16 +61,19 @@ const AccountPage: React.FC<AccountPageProps> = (props) => {
       updateUserInfo(user.id, updates);
   };
   
-  const TABS = [
-      { id: 'dashboard', label: t('accountPage.dashboard'), icon: <ChartPieIcon className="w-5 h-5"/> },
-      { id: 'profile', label: t('accountPage.profile'), icon: <UserCircleIcon className="w-5 h-5"/> },
-      { id: 'addresses', label: t('accountPage.addresses'), icon: <MapPinIcon className="w-5 h-5"/> },
-      { id: 'orders', label: t('accountPage.orders'), icon: <ClipboardDocumentListIcon className="w-5 h-5"/> },
-      { id: 'followed-stores', label: t('accountPage.followedStores'), icon: <HeartIcon className="w-5 h-5"/> },
-      { id: 'support', label: t('accountPage.support'), icon: <ChatBubbleBottomCenterTextIcon className="w-5 h-5"/> },
-      { id: 'notifications', label: t('accountPage.notifications'), icon: <BellSnoozeIcon className="w-5 h-5"/> },
-      { id: 'security', label: t('accountPage.security'), icon: <LockClosedIcon className="w-5 h-5"/> },
-  ];
+  const TABS = useMemo(() => {
+    const allTabs: { id: string; label: string; icon: React.ReactNode; roles: UserRole[] | 'all' }[] = [
+        { id: 'dashboard', label: t('accountPage.dashboard'), icon: <ChartPieIcon className="w-5 h-5"/>, roles: ['customer'] },
+        { id: 'profile', label: t('accountPage.profile'), icon: <UserCircleIcon className="w-5 h-5"/>, roles: 'all' },
+        { id: 'addresses', label: t('accountPage.addresses'), icon: <MapPinIcon className="w-5 h-5"/>, roles: ['customer'] },
+        { id: 'orders', label: t('accountPage.orders'), icon: <ClipboardDocumentListIcon className="w-5 h-5"/>, roles: ['customer', 'seller', 'enterprise'] },
+        { id: 'followed-stores', label: t('accountPage.followedStores'), icon: <HeartIcon className="w-5 h-5"/>, roles: ['customer'] },
+        { id: 'support', label: t('accountPage.support'), icon: <ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>, roles: 'all' },
+        { id: 'notifications', label: t('accountPage.notifications'), icon: <BellSnoozeIcon className="w-5 h-5"/>, roles: 'all' },
+        { id: 'security', label: t('accountPage.security'), icon: <LockClosedIcon className="w-5 h-5"/>, roles: 'all' },
+    ];
+    return allTabs.filter(tab => tab.roles === 'all' || tab.roles.includes(user.role));
+  }, [user.role, t]);
 
   const renderContent = () => {
     switch (activeTab) {
@@ -82,7 +85,7 @@ const AccountPage: React.FC<AccountPageProps> = (props) => {
       case 'support': return <SupportTab userTickets={userTickets} userOrders={userOrders} onCreateTicket={onCreateTicket} onUserReplyToTicket={onUserReplyToTicket} />;
       case 'notifications': return <NotificationsTab />;
       case 'security': return <SecurityTab />;
-      default: return <DashboardTab user={user} userOrders={userOrders} allStores={allStores} onTabChange={setActiveTab} onSelectOrder={onSelectOrder} />;
+      default: return <ProfileTab user={user} onUpdate={handleUpdateProfile} />; // Default to profile for non-customers
     }
   };
 

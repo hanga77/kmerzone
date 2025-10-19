@@ -6,14 +6,14 @@ import { useLanguage } from '../../contexts/LanguageContext';
 interface CollectionsPanelProps {
     store: Store;
     products: Product[];
-    onCreateOrUpdateCollection: (storeId: string, collection: Omit<ProductCollection, 'storeId'>) => void;
+    onCreateOrUpdateCollection: (storeId: string, collection: ProductCollection) => void;
     onDeleteCollection: (storeId: string, collectionId: string) => void;
 }
 
 const CollectionForm: React.FC<{
     collection?: ProductCollection | null;
     allProducts: Product[];
-    onSave: (collection: Omit<ProductCollection, 'storeId' | 'id'> & { id?: string }) => void;
+    onSave: (collection: Omit<ProductCollection, 'storeId'>) => void;
     onCancel: () => void;
 }> = ({ collection, allProducts, onSave, onCancel }) => {
     const { t } = useLanguage();
@@ -29,7 +29,12 @@ const CollectionForm: React.FC<{
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave({ id: collection?.id, name, description, productIds: selectedProductIds });
+        onSave({ 
+            id: collection?.id || `new-${Date.now()}`,
+            name, 
+            description, 
+            productIds: selectedProductIds 
+        });
     };
 
     return (
@@ -66,15 +71,9 @@ const CollectionsPanel: React.FC<CollectionsPanelProps> = ({ store, products, on
     const [isFormOpen, setIsFormOpen] = useState(false);
     const [editingCollection, setEditingCollection] = useState<ProductCollection | null>(null);
 
-    const handleSave = (collectionData: Omit<ProductCollection, 'storeId' | 'id'> & { id?: string }) => {
-        // The prop expects an object with a required `id`. For new collections,
-        // a temporary ID is generated here. The data handling logic will
-        // replace it with a permanent one upon creation.
-        const collectionToSave = {
-            ...collectionData,
-            id: collectionData.id || `new-${Date.now()}`,
-        };
-        onCreateOrUpdateCollection(store.id, collectionToSave);
+    // FIX: Added the missing `storeId` property to the `collectionData` object before calling `onCreateOrUpdateCollection`.
+    const handleSave = (collectionData: Omit<ProductCollection, 'storeId'>) => {
+        onCreateOrUpdateCollection(store.id, { ...collectionData, storeId: store.id });
         setIsFormOpen(false);
         setEditingCollection(null);
     };

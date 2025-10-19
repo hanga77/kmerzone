@@ -1,39 +1,33 @@
 import React from 'react';
-import ChatWidget from '../ChatWidget'; // We can reuse the main chat widget component
 import { useAuth } from '../../contexts/AuthContext';
 import { useChatContext } from '../../contexts/ChatContext';
 import { useLanguage } from '../../contexts/LanguageContext';
+import { ChatBubbleLeftRightIcon } from '../Icons';
 
 const ChatPanel: React.FC = () => {
-    const { user, allUsers } = useAuth();
+    const { user } = useAuth();
     const { t } = useLanguage();
-    const { isWidgetOpen, setIsWidgetOpen } = useChatContext();
+    const { setIsWidgetOpen } = useChatContext();
 
-    // Since ChatWidget is a full-screen modal-like component, 
-    // we can just provide a button to open it from within the dashboard panel.
-    // A full integration would require refactoring ChatWidget to be embeddable.
-    
-    // For a better experience, we will simulate an embedded chat.
-    // We'll reuse the logic from ChatWidget but without the modal wrapper.
-    const { chats, messages, activeChatId, setActiveChatId, sendMessage } = useChatContext();
-    
-    // This is a placeholder as the real ChatWidget is global
     if (!user) return null;
 
     return (
-        <div className="p-6 h-[calc(100vh-10rem)]">
+        <div className="p-6 h-full flex flex-col">
             <h2 className="text-2xl font-bold mb-4">{t('sellerDashboard.tabs.chat')}</h2>
-             <div className="border rounded-lg h-full overflow-hidden">
-                {/* The ChatWidget is globally positioned, so we can't truly embed it without a refactor.
-                    This panel will serve as a placeholder for the chat functionality.
-                    For a better demo, we will embed a simplified version.
-                */}
-                <p className="p-4 text-center text-gray-500">
-                    La gestion de la messagerie se fait via le widget de chat global.
-                    Cliquez sur l'icône "Messages" dans l'en-tête pour ouvrir vos conversations.
-                </p>
-                {/* A proper implementation would require refactoring ChatWidget to be embeddable */}
-             </div>
+            <div className="flex-grow flex items-center justify-center text-center bg-gray-50 dark:bg-gray-800/50 rounded-lg p-8">
+                <div>
+                    <ChatBubbleLeftRightIcon className="w-16 h-16 mx-auto text-gray-400 mb-4" />
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                        La gestion de votre messagerie se fait via le widget de chat global.
+                    </p>
+                    <button 
+                        onClick={() => setIsWidgetOpen(true)}
+                        className="bg-kmer-green text-white font-bold py-2 px-6 rounded-lg"
+                    >
+                        Ouvrir la Messagerie
+                    </button>
+                </div>
+            </div>
         </div>
     );
 };
