@@ -55,26 +55,28 @@ const initialFilters: ProductFiltersState = {
 };
 
 export const useProductFiltering = (products: Product[], allStores: Store[]) => {
-  const [filters, setFilters] = useState<ProductFiltersState>({
-      ...initialFilters,
-      key: Date.now() // Force reset when component mounts
-  });
+  const [filters, setFilters] = useState<ProductFiltersState>(initialFilters);
   
-  useEffect(() => {
-      setFilters(prev => ({...initialFilters, key: prev.key}));
-  }, [products]);
+  // Create a stable key based on the content of the products array.
+  // This prevents the effect from running if the parent re-renders with a new array reference but identical content.
+  const productIdsKey = useMemo(() => products.map(p => p.id).sort().join(','), [products]);
 
-  const resetFilters = () => setFilters(prev => ({...initialFilters, key: prev.key}));
+  useEffect(() => {
+    // This now only runs when the actual set of products changes, breaking the infinite loop.
+    setFilters(initialFilters);
+  }, [productIdsKey]);
+
+  const resetFilters = () => setFilters(initialFilters);
 
   const filteredAndSortedProducts = useMemo(() => {
     let filtered = [...products];
 
     // Filter by price
     if (filters.priceMin !== undefined) {
-      filtered = filtered.filter(p => getFinalPrice(p) >= filters.priceMin!);
+      filtered = filtered.filter(p => getFinalPrice(p, []) >= filters.priceMin!);
     }
     if (filters.priceMax !== undefined) {
-      filtered = filtered.filter(p => getFinalPrice(p) <= filters.priceMax!);
+      filtered = filtered.filter(p => getFinalPrice(p, []) <= filters.priceMax!);
     }
 
     // Filter by vendors
@@ -107,10 +109,10 @@ export const useProductFiltering = (products: Product[], allStores: Store[]) => 
     // Sort
     switch (filters.sort) {
       case 'price-asc':
-        filtered.sort((a, b) => premiumSort(a, b) || getFinalPrice(a) - getFinalPrice(b));
+        filtered.sort((a, b) => premiumSort(a, b) || getFinalPrice(a, []) - getFinalPrice(b, []));
         break;
       case 'price-desc':
-        filtered.sort((a, b) => premiumSort(a, b) || getFinalPrice(b) - getFinalPrice(a));
+        filtered.sort((a, b) => premiumSort(a, b) || getFinalPrice(b, []) - getFinalPrice(a, []));
         break;
       case 'rating-desc':
         filtered.sort((a, b) => premiumSort(a, b) || getAverageRating(b) - getAverageRating(a));

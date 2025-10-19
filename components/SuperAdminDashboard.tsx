@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import type { Order, Category, OrderStatus, Store, SiteActivityLog, UserRole, FlashSale, Product, PickupPoint, User, SiteSettings, Payout, Advertisement, SiteContent, Ticket, Announcement, PaymentMethod, Zone, EmailTemplate, DocumentStatus } from '../types';
 
-import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, TruckIcon, BanknotesIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, Cog8ToothIcon, ChartPieIcon, ShieldCheckIcon } from './Icons';
+import { AcademicCapIcon, ClockIcon, BuildingStorefrontIcon, UsersIcon, ShoppingBagIcon, TagIcon, BoltIcon, TruckIcon, BanknotesIcon, ChatBubbleBottomCenterTextIcon, ScaleIcon, StarIcon, Cog8ToothIcon, ChartPieIcon, ShieldCheckIcon, SparklesIcon, ArchiveBoxXMarkIcon } from './Icons';
 import { useAuth } from '../contexts/AuthContext';
 
 import { OverviewPanel } from './admin/OverviewPanel';
@@ -16,7 +16,9 @@ import { SupportPanel } from './admin/SupportPanel';
 import { LogsPanel } from './admin/LogsPanel';
 import { SettingsPanel } from './admin/SettingsPanel';
 import ReviewModerationPanel from './admin/ReviewModerationPanel';
-import { useLanguage } from '../contexts/LanguageContext';
+import { useLanguage } from '../../contexts/LanguageContext';
+import { ServicesPanel } from './admin/ServicesPanel';
+import { RefundsPanel } from './admin/RefundsPanel';
 
 
 interface SuperAdminDashboardProps {
@@ -121,11 +123,13 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ siteDa
             case 'overview': return <OverviewPanel {...panelProps} />;
             case 'users': return <UsersPanel {...panelProps} />;
             case 'catalog': return <CatalogPanel {...panelProps} />;
+            case 'services': return <ServicesPanel {...panelProps} />;
             case 'marketing': return <MarketingPanel {...panelProps} />;
             case 'stores': return <StoresPanel {...panelProps} />;
             case 'orders': return <OrdersPanel {...panelProps} />;
             case 'logistics': return <LogisticsPanel {...panelProps} />;
             case 'payouts': return <PayoutsPanel {...panelProps} />;
+            case 'refunds': return <RefundsPanel {...panelProps} />;
             case 'support': return <SupportPanel {...panelProps} />;
             case 'reviews': return <ReviewModerationPanel {...panelProps} />;
             case 'logs': return <LogsPanel {...panelProps} />;
@@ -140,13 +144,15 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ siteDa
                 <aside className="md:w-1/4 lg:w-1/5 flex-shrink-0">
                     <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md space-y-2 sticky top-24">
                         <TabButton icon={<ChartPieIcon className="w-5 h-5"/>} label={t('superadmin.tabs.overview')} isActive={activeTab === 'overview'} onClick={() => setActiveTab('overview')} />
-                        <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label={t('superadmin.tabs.orders')} isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} count={refundRequestsCount} />
+                        <TabButton icon={<ShoppingBagIcon className="w-5 h-5"/>} label={t('superadmin.tabs.orders')} isActive={activeTab === 'orders'} onClick={() => setActiveTab('orders')} />
                         <TabButton icon={<BuildingStorefrontIcon className="w-5 h-5"/>} label={t('superadmin.tabs.stores')} isActive={activeTab === 'stores'} onClick={() => setActiveTab('stores')} count={pendingStoresCount} />
                         <TabButton icon={<UsersIcon className="w-5 h-5"/>} label={t('superadmin.tabs.users')} isActive={activeTab === 'users'} onClick={() => setActiveTab('users')} />
                         <TabButton icon={<TagIcon className="w-5 h-5"/>} label={t('superadmin.tabs.catalog')} isActive={activeTab === 'catalog'} onClick={() => setActiveTab('catalog')} />
+                        <TabButton icon={<SparklesIcon className="w-5 h-5"/>} label={t('superadmin.tabs.services')} isActive={activeTab === 'services'} onClick={() => setActiveTab('services')} />
                         <TabButton icon={<BoltIcon className="w-5 h-5"/>} label={t('superadmin.tabs.marketing')} isActive={activeTab === 'marketing'} onClick={() => setActiveTab('marketing')} />
                         <TabButton icon={<TruckIcon className="w-5 h-5"/>} label={t('superadmin.tabs.logistics')} isActive={activeTab === 'logistics'} onClick={() => setActiveTab('logistics')} />
                         <TabButton icon={<BanknotesIcon className="w-5 h-5"/>} label={t('superadmin.tabs.payouts')} isActive={activeTab === 'payouts'} onClick={() => setActiveTab('payouts')} />
+                        <TabButton icon={<ArchiveBoxXMarkIcon className="w-5 h-5"/>} label={t('superadmin.tabs.refunds')} isActive={activeTab === 'refunds'} onClick={() => setActiveTab('refunds')} count={refundRequestsCount} />
                         <TabButton icon={<ChatBubbleBottomCenterTextIcon className="w-5 h-5"/>} label={t('superadmin.tabs.support')} isActive={activeTab === 'support'} onClick={() => setActiveTab('support')} count={openTicketsCount} />
                         <TabButton icon={<StarIcon className="w-5 h-5"/>} label={t('superadmin.tabs.reviews')} isActive={activeTab === 'reviews'} onClick={() => setActiveTab('reviews')} count={pendingReviewsCount} />
                         <TabButton icon={<ScaleIcon className="w-5 h-5"/>} label={t('superadmin.tabs.logs')} isActive={activeTab === 'logs'} onClick={() => setActiveTab('logs')} />

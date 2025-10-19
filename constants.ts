@@ -195,8 +195,8 @@ export const initialStores: Store[] = [
         location: 'Douala', neighborhood: 'Akwa', sellerFirstName: 'Aïcha', sellerLastName: 'Bakari', sellerPhone: '699887766',
         physicalAddress: '45 Avenue de la Mode, Akwa', latitude: 4.0483, longitude: 9.7020, subscriptionStatus: 'active', subscriptionDueDate: '2024-08-15T00:00:00.000Z',
         documents: [
-            { name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: '...' },
-            { name: "Registre de Commerce", status: 'uploaded', fileUrl: '...' },
+            { name: "CNI (Carte Nationale d'Identité)", status: 'verified', fileUrl: 'https://placehold.co/800x1100/png?text=Document+CNI' },
+            { name: "Registre de Commerce", status: 'uploaded', fileUrl: 'https://placehold.co/800x1100/png?text=Registre+Commerce' },
         ],
         stories: [{id: 's1', imageUrl: 'https://i.pinimg.com/564x/08/94/a3/0894a30e8a719c676767576f3f054812.jpg', createdAt: new Date().toISOString() }],
         visits: 258,
@@ -233,7 +233,7 @@ export const initialStores: Store[] = [
         category: 'Beauté et Hygiène', warnings: [], status: 'suspended', premiumStatus: 'standard',
         location: 'Douala', neighborhood: 'Bonapriso', sellerFirstName: 'Céline', sellerLastName: 'Ngassa', sellerPhone: '691234567',
         physicalAddress: 'Rue Njo-Njo, Bonapriso', latitude: 4.0321, longitude: 9.715, subscriptionStatus: 'inactive',
-        documents: [{ name: "Registre de Commerce", status: 'rejected', rejectionReason: 'Document illisible.' }],
+        documents: [{ name: "Registre de Commerce", status: 'rejected', rejectionReason: 'Document illisible.', fileUrl: 'https://placehold.co/800x1100/png?text=Document+Illisible' }],
         visits: 45,
         collections: []
     },
@@ -323,7 +323,7 @@ export const initialSiteSettings: SiteSettings = {
   standardPlan: { price: 10000, durationDays: 30, productLimit: 20, commissionRate: 8.5, photoServiceIncluded: false, featuredOnHomepage: false, prioritySupport: false },
   premiumPlan: { price: 25000, durationDays: 30, productLimit: 100, commissionRate: 6, photoServiceIncluded: true, featuredOnHomepage: false, prioritySupport: true },
   superPremiumPlan: { price: 50000, durationDays: 30, productLimit: 500, commissionRate: 4, photoServiceIncluded: true, featuredOnHomepage: true, prioritySupport: true },
-  customerLoyaltyProgram: { isEnabled: true, premium: { thresholds: { orders: 10, spending: 50000 }, cautionAmount: 10000, benefits: ["Livraison prioritaire", "Accès anticipé aux ventes flash"] }, premiumPlus: { isEnabled: true, annualFee: 25000, benefits: ["Tous les avantages Premium", "Livraison gratuite sur 5 commandes", "Support client dédié"] }},
+  customerLoyaltyProgram: { isEnabled: false, premium: { thresholds: { orders: 10, spending: 50000 }, cautionAmount: 10000, benefits: ["Livraison prioritaire", "Accès anticipé aux ventes flash"] }, premiumPlus: { isEnabled: true, annualFee: 25000, benefits: ["Tous les avantages Premium", "Livraison gratuite sur 5 commandes", "Support client dédié"] }},
   deliverySettings: { intraUrbanBaseFee: 1000, interUrbanBaseFee: 2500, costPerKg: 500, premiumDeliveryDiscountPercentage: 15 },
   maintenanceMode: { isEnabled: false, message: "Nous serons de retour bientôt !", reopenDate: "" },
   seo: { metaTitle: "KMER ZONE - Le meilleur du Cameroun, livré chez vous.", metaDescription: "Achetez et vendez en ligne au Cameroun. Vêtements, électronique, alimentation et plus encore.", ogImageUrl: "" },

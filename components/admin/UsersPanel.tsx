@@ -1,11 +1,12 @@
 import React, { useState, useMemo } from 'react';
-import type { User, UserRole, PickupPoint, Zone, SiteSettings } from '../../types';
+import type { User, UserRole, PickupPoint, Zone, SiteSettings, Store } from '../../types';
 import { PencilSquareIcon, PlusIcon, ExclamationTriangleIcon } from '../Icons';
 import BulkEmailModal from './BulkEmailModal';
 import { useLanguage } from '../../contexts/LanguageContext';
 
 interface UsersPanelProps {
     allUsers: User[];
+    allStores: Store[];
     onUpdateUser: (userId: string, updates: Partial<User>) => void;
     onCreateUserByAdmin: (data: { name: string, email: string, role: UserRole }) => void;
     onWarnUser: (userId: string, reason: string) => void;
@@ -15,7 +16,57 @@ interface UsersPanelProps {
     siteSettings: SiteSettings;
 }
 
-export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, onCreateUserByAdmin, onWarnUser, allPickupPoints, allZones, onSendBulkEmail, siteSettings }) => {
+const StatusBadge: React.FC<{ user: User; allStores: Store[] }> = ({ user, allStores }) => {
+    const { t } = useLanguage();
+    let statusText = t('superadmin.users.status.active');
+    let colorClass = 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+
+    switch (user.role) {
+        case 'seller':
+        case 'enterprise':
+            const store = allStores.find(s => s.sellerId === user.id);
+            if (store) {
+                switch (store.status) {
+                    case 'active':
+                        statusText = t('superadmin.users.status.active');
+                        colorClass = 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+                        break;
+                    case 'pending':
+                        statusText = t('superadmin.users.status.pending');
+                        colorClass = 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300';
+                        break;
+                    case 'suspended':
+                        statusText = t('superadmin.users.status.suspended');
+                        colorClass = 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+                        break;
+                }
+            } else {
+                statusText = 'En attente de boutique';
+                colorClass = 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+            }
+            break;
+        case 'delivery_agent':
+            if (user.availabilityStatus === 'available') {
+                statusText = t('superadmin.users.status.available');
+                colorClass = 'bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300';
+            } else {
+                statusText = t('superadmin.users.status.unavailable');
+                colorClass = 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300';
+            }
+            break;
+        default:
+            // Default active status for other roles
+            break;
+    }
+
+    return (
+        <span className={`px-2 py-0.5 text-xs font-semibold rounded-full ${colorClass}`}>
+            {statusText}
+        </span>
+    );
+};
+
+export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, allStores, onUpdateUser, onCreateUserByAdmin, onWarnUser, allPickupPoints, allZones, onSendBulkEmail, siteSettings }) => {
     const { t } = useLanguage();
     const [searchTerm, setSearchTerm] = useState('');
     const [editingUser, setEditingUser] = useState<User | null>(null);
@@ -43,11 +94,28 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
     };
 
     const UserForm = ({ user, onSave, onCancel }: { user?: User | null, onSave: (data: any) => void, onCancel: () => void }) => {
-        const [data, setData] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || 'customer', depotId: user?.depotId || '', zoneId: user?.zoneId || '' });
+        const [data, setData] = useState({ name: user?.name || '', email: user?.email || '', role: user?.role || 'delivery_agent', depotId: user?.depotId || '', zoneId: user?.zoneId || '' });
         const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => setData(d => ({...d, [e.target.name]: e.target.value}));
         const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); onSave(data); };
         
         const isLogisticsRole = ['delivery_agent', 'depot_agent', 'depot_manager'].includes(data.role);
+
+        const allRoles: { value: UserRole, label: string }[] = [
+            { value: 'customer', label: t('superadmin.users.form.role_customer') },
+            { value: 'seller', label: t('superadmin.users.form.role_seller') },
+            { value: 'delivery_agent', label: t('superadmin.users.form.role_delivery_agent') },
+            { value: 'depot_agent', label: t('superadmin.users.form.role_depot_agent') },
+            { value: 'depot_manager', label: t('superadmin.users.form.role_depot_manager') },
+            { value: 'superadmin', label: t('superadmin.users.form.role_superadmin') },
+        ];
+
+        const adminCreatableRoles: UserRole[] = ['delivery_agent', 'depot_agent', 'depot_manager', 'superadmin'];
+        
+        // If creating a user, only show admin-creatable roles.
+        // If editing, show all roles to allow changing to/from any role.
+        const availableRoles = !user
+            ? allRoles.filter(r => adminCreatableRoles.includes(r.value))
+            : allRoles;
 
         return (
             <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -56,12 +124,9 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                     <input name="name" value={data.name} onChange={handleChange} placeholder={t('superadmin.users.form.name')} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required />
                     <input type="email" name="email" value={data.email} onChange={handleChange} placeholder="Email" className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" required disabled={!!user} />
                     <select name="role" value={data.role} onChange={handleChange} className="w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
-                        <option value="customer">{t('superadmin.users.form.role_customer')}</option>
-                        <option value="seller">{t('superadmin.users.form.role_seller')}</option>
-                        <option value="delivery_agent">{t('superadmin.users.form.role_delivery_agent')}</option>
-                        <option value="depot_agent">{t('superadmin.users.form.role_depot_agent')}</option>
-                        <option value="depot_manager">{t('superadmin.users.form.role_depot_manager')}</option>
-                        <option value="superadmin">{t('superadmin.users.form.role_superadmin')}</option>
+                       {availableRoles.map(role => (
+                            <option key={role.value} value={role.value}>{role.label}</option>
+                        ))}
                     </select>
                     {isLogisticsRole && (
                         <>
@@ -146,13 +211,18 @@ export const UsersPanel: React.FC<UsersPanelProps> = ({ allUsers, onUpdateUser, 
                 <table className="w-full text-sm">
                     <thead className="bg-gray-100 dark:bg-gray-700"><tr>
                         <th className="p-2 w-10"><input type="checkbox" onChange={handleSelectAll} checked={selectedUserIds.length === filteredUsers.length && filteredUsers.length > 0} /></th>
-                        <th className="p-2 text-left">{t('superadmin.users.table.name')}</th><th className="p-2 text-left">{t('superadmin.users.table.email')}</th><th className="p-2 text-left">{t('superadmin.users.table.role')}</th><th className="p-2 text-center">{t('superadmin.users.table.action')}</th>
+                        <th className="p-2 text-left">{t('superadmin.users.table.name')}</th>
+                        <th className="p-2 text-left">{t('superadmin.users.table.email')}</th>
+                        <th className="p-2 text-left">{t('superadmin.users.table.role')}</th>
+                        <th className="p-2 text-left">{t('common.status')}</th>
+                        <th className="p-2 text-center">{t('superadmin.users.table.action')}</th>
                     </tr></thead>
                     <tbody>
                         {filteredUsers.map(user => (
                             <tr key={user.id} className="border-b dark:border-gray-700">
                                 <td className="p-2"><input type="checkbox" checked={selectedUserIds.includes(user.id)} onChange={() => handleSelectUser(user.id)} /></td>
                                 <td className="p-2">{user.name}</td><td className="p-2">{user.email}</td><td className="p-2 capitalize">{user.role.replace('_', ' ')}</td>
+                                <td className="p-2"><StatusBadge user={user} allStores={allStores} /></td>
                                 <td className="p-2 text-center">
                                     <div className="flex justify-center gap-2">
                                         <button onClick={() => setEditingUser(user)} className="text-blue-500" title={t('common.edit')}><PencilSquareIcon className="w-5 h-5"/></button>

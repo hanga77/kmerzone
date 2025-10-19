@@ -59,6 +59,7 @@ export default function App() {
   
   const [isLoginModalOpen, setIsLoginModalOpen] = useState(false);
   const [isForgotPasswordModalOpen, setIsForgotPasswordModalOpen] = useState(false);
+  const [selectedSellerType, setSelectedSellerType] = useState<'physical' | 'service' | null>(null);
   
   const siteData = useSiteData();
   const navigation = useAppNavigation(siteData.allCategories, siteData.allStores, siteData.allOrders, siteData.siteContent);
@@ -76,7 +77,11 @@ export default function App() {
         case 'enterprise':
             // If new seller without a shop, guide them to create one.
             if (!loggedInUser.shopName) {
-                navigation.navigateToBecomeSeller();
+                if(selectedSellerType === 'service') {
+                    navigation.navigateToBecomeServiceProvider();
+                } else {
+                    navigation.navigateToBecomeSeller();
+                }
             } else {
                 navigation.navigateToSellerDashboard('overview');
             }
@@ -93,7 +98,9 @@ export default function App() {
             navigation.navigateToAccount('dashboard');
             break;
     }
-  }, [navigation]);
+    // Reset seller type selection after navigation
+    setSelectedSellerType(null);
+  }, [navigation, selectedSellerType]);
 
     const handleLogout = useCallback(() => {
         authLogout();
@@ -218,6 +225,7 @@ export default function App() {
             onClose={() => setIsLoginModalOpen(false)}
             onLoginSuccess={handleLoginSuccess}
             onForgotPassword={() => { setIsLoginModalOpen(false); setIsForgotPasswordModalOpen(true); }}
+            onSelectSellerType={setSelectedSellerType}
           />
         )}
         

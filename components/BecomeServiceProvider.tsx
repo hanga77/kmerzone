@@ -1,110 +1,44 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
-import type { SiteSettings } from '../types';
-import { ArrowLeftIcon, PhotoIcon, MapPinIcon, DocumentTextIcon, BecomeSellerIcon } from './Icons';
+import React, { useState } from 'react';
+import type { SiteSettings, Category } from '../types';
+import { ArrowLeftIcon, PhotoIcon, DocumentTextIcon, SparklesIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
 
-declare const L: any;
-
-interface BecomeSellerProps {
+interface BecomeServiceProviderProps {
   onBack: () => void;
   onBecomeSeller: (data: {
-    shopName: string;
-    location: string;
-    neighborhood: string;
-    sellerFirstName: string;
-    sellerLastName: string;
-    sellerPhone: string;
-    physicalAddress: string;
-    logoUrl: string;
-    latitude?: number;
-    longitude?: number;
-    category?: string;
+    shopName: string,
+    location: string,
+    neighborhood: string,
+    sellerFirstName: string,
+    sellerLastName: string,
+    sellerPhone: string,
+    physicalAddress: string,
+    logoUrl: string,
+    latitude?: number,
+    longitude?: number,
+    category?: string,
   }) => void;
   siteSettings: SiteSettings;
+  categories: Category[];
 }
 
-const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, siteSettings }) => {
+const BecomeServiceProvider: React.FC<BecomeServiceProviderProps> = ({ onBack, onBecomeSeller, siteSettings, categories }) => {
     const { t } = useLanguage();
     const [formData, setFormData] = useState({
         shopName: '',
         location: 'Douala',
-        neighborhood: '',
         sellerFirstName: '',
         sellerLastName: '',
         sellerPhone: '',
-        physicalAddress: '',
+        serviceDescription: '',
         logoUrl: '',
-        latitude: undefined as number | undefined,
-        longitude: undefined as number | undefined,
+        serviceCategory: '',
+        serviceArea: ''
     });
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [errors, setErrors] = useState<Partial<typeof formData>>({});
 
-    const mapContainerRef = useRef<HTMLDivElement>(null);
-    const mapRef = useRef<any>(null);
-    const markerRef = useRef<any>(null);
-    
-    const updateMarkerAndForm = useCallback((latlng: { lat: number, lng: number }) => {
-        setFormData(prev => ({ ...prev, latitude: latlng.lat, longitude: latlng.lng }));
-        if (mapRef.current) {
-            if (!markerRef.current) {
-                markerRef.current = L.marker(latlng, { draggable: true }).addTo(mapRef.current);
-                markerRef.current.on('dragend', (e: any) => updateMarkerAndForm(e.target.getLatLng()));
-            } else {
-                markerRef.current.setLatLng(latlng);
-            }
-            mapRef.current.panTo(latlng);
-        }
-    }, []);
-
-    useEffect(() => {
-        if (mapContainerRef.current && !mapRef.current && typeof L !== 'undefined') {
-            const initialLatLng: [number, number] = [4.0511, 9.7679]; // Douala
-            mapRef.current = L.map(mapContainerRef.current).setView(initialLatLng, 13);
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapRef.current);
-            
-            mapRef.current.on('click', (e: any) => updateMarkerAndForm(e.latlng));
-
-            if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const { latitude, longitude } = position.coords;
-                        const userLatLng = { lat: latitude, lng: longitude };
-                        mapRef.current.setView(userLatLng, 15);
-                        updateMarkerAndForm(userLatLng);
-                    },
-                    (error) => {
-                        console.warn(`Geolocation error: ${error.message}`);
-                        updateMarkerAndForm({ lat: initialLatLng[0], lng: initialLatLng[1] });
-                    },
-                    { timeout: 10000 }
-                );
-            } else {
-                updateMarkerAndForm({ lat: initialLatLng[0], lng: initialLatLng[1] });
-            }
-
-            setTimeout(() => mapRef.current?.invalidateSize(), 400);
-        }
-    }, [updateMarkerAndForm]);
-    
-    const handleGeolocate = () => {
-        if (navigator.geolocation && mapRef.current) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const { latitude, longitude } = position.coords;
-                    const userLatLng = { lat: latitude, lng: longitude };
-                    mapRef.current.setView(userLatLng, 15);
-                    updateMarkerAndForm(userLatLng);
-                },
-                (error) => {
-                    alert(`Erreur de géolocalisation: ${error.message}`);
-                },
-                { enableHighAccuracy: true }
-            );
-        } else {
-            alert("La géolocalisation n'est pas supportée par votre navigateur.");
-        }
-    };
+    const serviceCategories = categories.filter(c => c.parentId === 'cat-services');
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value } = e.target;
@@ -133,7 +67,7 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, sit
         if (!formData.sellerFirstName.trim()) newErrors.sellerFirstName = t('becomeSeller.errors.firstName');
         if (!formData.sellerLastName.trim()) newErrors.sellerLastName = t('becomeSeller.errors.lastName');
         if (!formData.sellerPhone.trim()) newErrors.sellerPhone = t('becomeSeller.errors.phone');
-        if (!formData.physicalAddress.trim()) newErrors.physicalAddress = t('becomeSeller.errors.address');
+        if (!formData.serviceDescription.trim()) newErrors.serviceDescription = "La description des services est requise.";
         if (!formData.logoUrl) newErrors.logoUrl = t('becomeSeller.errors.logo');
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
@@ -145,14 +79,13 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, sit
             onBecomeSeller({
                 shopName: formData.shopName,
                 location: formData.location,
-                neighborhood: formData.neighborhood,
+                category: formData.serviceCategory,
                 sellerFirstName: formData.sellerFirstName,
                 sellerLastName: formData.sellerLastName,
                 sellerPhone: formData.sellerPhone,
-                physicalAddress: formData.physicalAddress,
+                physicalAddress: formData.serviceDescription,
                 logoUrl: formData.logoUrl,
-                latitude: formData.latitude,
-                longitude: formData.longitude,
+                neighborhood: '', // Not applicable for service provider form
             });
         }
     };
@@ -170,15 +103,14 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, sit
                 </button>
                 <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg">
                      <div className="text-center mb-8">
-                        <BecomeSellerIcon className="w-12 h-12 mx-auto text-kmer-green" />
-                        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">{t('becomeSeller.title')}</h1>
-                        <p className="text-gray-600 dark:text-gray-400 mt-2">{t('becomeSeller.subtitle')}</p>
+                        <SparklesIcon className="w-12 h-12 mx-auto text-purple-500" />
+                        <h1 className="text-3xl font-bold text-gray-800 dark:text-white mt-4">{t('becomeServiceProvider.title')}</h1>
+                        <p className="text-gray-600 dark:text-gray-400 mt-2">{t('becomeServiceProvider.subtitle')}</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-8">
-                        {/* Section 1 */}
                         <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeSeller.step1Title')}</legend>
+                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeServiceProvider.step1Title')}</legend>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                                 <div>
                                     <label htmlFor="shopName" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.shopNameLabel')}</label>
@@ -198,12 +130,23 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, sit
                                     </div>
                                     {errors.logoUrl && <p className="text-red-500 text-xs mt-1">{errors.logoUrl}</p>}
                                 </div>
+                                 <div className="md:col-span-2">
+                                    <label htmlFor="serviceCategory" className="block text-sm font-medium dark:text-gray-300">{t('becomeServiceProvider.serviceCategory')}</label>
+                                    <select id="serviceCategory" name="serviceCategory" value={formData.serviceCategory} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
+                                        <option value="">-- Sélectionnez une catégorie --</option>
+                                        {serviceCategories.map(c => <option key={c.id} value={t(c.name)}>{t(c.name)}</option>)}
+                                    </select>
+                                </div>
+                                <div className="md:col-span-2">
+                                    <label htmlFor="serviceDescription" className="block text-sm font-medium dark:text-gray-300">{t('becomeServiceProvider.serviceDescription')}</label>
+                                    <textarea id="serviceDescription" name="serviceDescription" value={formData.serviceDescription} onChange={handleChange} rows={4} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" placeholder={t('becomeServiceProvider.serviceDescriptionPlaceholder')} />
+                                    {errors.serviceDescription && <p className="text-red-500 text-xs mt-1">{errors.serviceDescription}</p>}
+                                </div>
                             </div>
                         </fieldset>
 
-                        {/* Section 2 */}
                         <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeSeller.step2Title')}</legend>
+                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeServiceProvider.step2Title')}</legend>
                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
                                  <div>
                                     <label htmlFor="sellerFirstName" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.firstNameLabel')}</label>
@@ -223,40 +166,22 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, sit
                             </div>
                         </fieldset>
 
-                        {/* Section 3 */}
-                        <fieldset className="p-4 border dark:border-gray-700 rounded-md">
-                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeSeller.step3Title')}</legend>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                         <fieldset className="p-4 border dark:border-gray-700 rounded-md">
+                            <legend className="px-2 font-semibold text-lg dark:text-gray-200">{t('becomeServiceProvider.step3Title')}</legend>
+                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                                <div className="md:col-span-2">
+                                    <label htmlFor="serviceArea" className="block text-sm font-medium dark:text-gray-300">{t('becomeServiceProvider.serviceArea')}</label>
+                                    <input type="text" id="serviceArea" name="serviceArea" value={formData.serviceArea} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" placeholder={t('becomeServiceProvider.serviceAreaPlaceholder')} />
+                                </div>
                                 <div>
                                     <label htmlFor="location" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.cityLabel')}</label>
                                     <select id="location" name="location" value={formData.location} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600">
                                         <option>Douala</option><option>Yaoundé</option><option>Bafoussam</option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label htmlFor="neighborhood" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.neighborhoodLabel')}</label>
-                                    <input type="text" id="neighborhood" name="neighborhood" value={formData.neighborhood} onChange={handleChange} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                                </div>
-                                <div className="md:col-span-2">
-                                    <label htmlFor="physicalAddress" className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.addressLabel')}</label>
-                                    <textarea id="physicalAddress" name="physicalAddress" value={formData.physicalAddress} onChange={handleChange} rows={2} className="mt-1 w-full p-2 border rounded-md dark:bg-gray-700 dark:border-gray-600" />
-                                    {errors.physicalAddress && <p className="text-red-500 text-xs mt-1">{errors.physicalAddress}</p>}
-                                </div>
-                                <div className="md:col-span-2">
-                                    <div className="flex justify-between items-center mb-1">
-                                        <label className="block text-sm font-medium dark:text-gray-300">{t('becomeSeller.gpsLabel')}</label>
-                                        <button type="button" onClick={handleGeolocate} className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300">
-                                            <MapPinIcon className="w-4 h-4" />
-                                            {t('becomeSeller.findMyPosition')}
-                                        </button>
-                                    </div>
-                                    <p className="text-xs text-gray-500 dark:text-gray-400">{t('becomeSeller.gpsDescription')}</p>
-                                    <div ref={mapContainerRef} className="h-64 w-full mt-2 rounded-md z-0"></div>
-                                </div>
                             </div>
                         </fieldset>
                         
-                        {/* Section 4 */}
                         <div className="p-4 border-l-4 border-kmer-green bg-green-50 dark:bg-green-900/20 rounded-r-lg">
                              <h2 className="text-lg font-semibold flex items-center gap-2"><DocumentTextIcon className="w-5 h-5"/> {t('becomeSeller.requiredDocsTitle')}</h2>
                              <p className="text-sm mt-2 text-gray-700 dark:text-gray-300">{t('becomeSeller.requiredDocsDescription')}</p>
@@ -266,8 +191,8 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, sit
                         </div>
 
                         <div className="flex justify-end pt-4">
-                            <button type="submit" className="bg-kmer-green text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-colors text-lg">
-                                {t('becomeSeller.submitCandidacy')}
+                            <button type="submit" className="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-purple-700 transition-colors text-lg">
+                                {t('becomeServiceProvider.submit')}
                             </button>
                         </div>
                     </form>
@@ -277,4 +202,4 @@ const BecomeSeller: React.FC<BecomeSellerProps> = ({ onBack, onBecomeSeller, sit
     );
 };
 
-export default BecomeSeller;
+export default BecomeServiceProvider;

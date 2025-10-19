@@ -31,18 +31,27 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
         default: return 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
     }
   };
+  
+  const showBackButton = onBack.toString() !== '() => {}';
 
   return (
     <div className="container mx-auto px-6 py-12">
-      <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
-        <ArrowLeftIcon className="w-5 h-5" />
-        Retour
-      </button>
-      <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-8">Mes Commandes</h1>
+      {showBackButton && (
+        <button onClick={onBack} className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-kmer-green font-semibold mb-8">
+            <ArrowLeftIcon className="w-5 h-5" />
+            {t('common.back')}
+        </button>
+      )}
+      <h1 className="text-3xl font-bold text-gray-800 dark:text-white mb-8">{t('orderHistory.title')}</h1>
       {userOrders.length === 0 ? (
         <div className="text-center py-16 bg-white dark:bg-gray-800 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-2 dark:text-white">Vous n'avez pas encore passé de commande.</h2>
-          <p className="text-gray-600 dark:text-gray-400">Tous vos achats apparaîtront ici.</p>
+          <h2 className="text-2xl font-semibold mb-2 dark:text-white">{t('orderHistory.noOrders')}</h2>
+          <p className="text-gray-600 dark:text-gray-400 mb-6">{t('orderHistory.noOrdersDescription')}</p>
+          {showBackButton && (
+            <button onClick={onBack} className="bg-kmer-green text-white font-bold py-3 px-8 rounded-full hover:bg-green-700 transition-colors">
+                {t('orderHistory.startShopping')}
+            </button>
+          )}
         </div>
       ) : (
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
@@ -50,11 +59,11 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
             <table className="w-full text-sm text-left">
               <thead className="text-xs text-gray-700 dark:text-gray-300 uppercase bg-gray-50 dark:bg-gray-700">
                 <tr>
-                  <th scope="col" className="px-6 py-3">ID Commande</th>
-                  <th scope="col" className="px-6 py-3">Date</th>
-                  <th scope="col" className="px-6 py-3">Total</th>
-                  <th scope="col" className="px-6 py-3">Statut</th>
-                  <th scope="col" className="px-6 py-3">Action</th>
+                  <th scope="col" className="px-6 py-3">{t('common.orderId')}</th>
+                  <th scope="col" className="px-6 py-3">{t('common.date')}</th>
+                  <th scope="col" className="px-6 py-3">{t('common.total')}</th>
+                  <th scope="col" className="px-6 py-3">{t('common.status')}</th>
+                  <th scope="col" className="px-6 py-3">{t('common.actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -71,11 +80,11 @@ const OrderHistoryPage: React.FC<OrderHistoryPageProps> = ({ userOrders, onBack,
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-4">
                         <button onClick={() => onSelectOrder(order)} className="font-medium text-kmer-green hover:underline whitespace-nowrap">
-                          Voir détails
+                          {t('orderHistory.viewDetails')}
                         </button>
                         <button onClick={() => onRepeatOrder(order)} className="font-medium text-blue-500 hover:underline whitespace-nowrap flex items-center gap-1">
                           <ArrowPathIcon className="w-4 h-4"/>
-                          Commander à nouveau
+                          {t('orderHistory.reorder')}
                         </button>
                       </div>
                     </td>

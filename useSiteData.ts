@@ -5,7 +5,7 @@ import type {
     PaymentMethod, SiteActivityLog, PickupPoint, Payout, PromoCode, OrderStatus, 
     NewOrderData, Review, User, DocumentStatus, Warning, Story, ProductCollection, 
     Notification, Ticket, Announcement, ShippingPartner, ShippingSettings, UserRole, TrackingEvent, Zone, TicketStatus, UserAvailabilityStatus, AgentSchedule, DisputeMessage, TicketMessage 
-} from '../types';
+} from './types';
 import { 
     initialCategories, initialProducts, initialStores, initialFlashSales, initialPickupPoints, 
     initialSiteSettings, initialSiteContent, initialAdvertisements, initialPaymentMethods, 
@@ -599,7 +599,7 @@ export const useSiteData = () => {
     }, [setAllStores, logActivity]);
 
     const createStoreAndNotifyAdmin = useCallback((
-        data: any, // Data from the form
+        storeData: Pick<Store, 'name' | 'logoUrl' | 'category' | 'location' | 'neighborhood' | 'sellerFirstName' | 'sellerLastName' | 'sellerPhone' | 'physicalAddress' | 'latitude' | 'longitude'>,
         user: User, 
         allUsers: User[]
     ) => {
@@ -613,17 +613,7 @@ export const useSiteData = () => {
             .map(([name]) => ({ name, status: 'requested' as DocumentStatus }));
 
         const newStore: Store = {
-            name: data.shopName,
-            category: data.category || 'Non classé',
-            location: data.location,
-            neighborhood: data.neighborhood,
-            sellerFirstName: data.sellerFirstName,
-            sellerLastName: data.sellerLastName,
-            sellerPhone: data.sellerPhone,
-            physicalAddress: data.physicalAddress,
-            logoUrl: data.logoUrl,
-            latitude: data.latitude,
-            longitude: data.longitude,
+            ...storeData,
             id: `store-${Date.now()}`,
             sellerId: user.id,
             warnings: [],
@@ -908,7 +898,7 @@ export const useSiteData = () => {
         handleToggleStoreCertification, handleAddOrUpdateProduct, handleDeleteProduct, handleUpdateProductStatus,
         handleSellerUpdateOrderStatus, handleSellerCancelOrder, handleCreateOrUpdateCollection, handleDeleteCollection,
         handleUpdateStoreProfile, handleUpdateDeliveryStatus, createStoreAndNotifyAdmin, handleAddProductToStory, handleAddStory,
-        handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage, createNotification, handleResolveDispute,
+        handleCancelOrder, handleRequestRefund, handleCustomerDisputeMessage, createNotification, handleResolveDispute, 
         handleCreateTicket, handleUserReplyToTicket
     ]);
 

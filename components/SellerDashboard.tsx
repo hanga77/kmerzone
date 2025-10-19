@@ -27,6 +27,7 @@ import ChatPanel from './seller/ChatPanel';
 import StoriesPanel from './seller/StoriesPanel';
 
 interface SellerDashboardProps {
+  user: User;
   store: Store;
   products: Product[];
   categories: Category[];
@@ -51,7 +52,8 @@ interface SellerDashboardProps {
   onReplyToReview: (productId: string, reviewIdentifier: { author: string; date: string }, replyText: string) => void;
   initialTab: string;
   sellerNotifications: Notification[];
-  onCreateTicket: (subject: string, message: string, orderId?: string) => void;
+  onCreateTicket: (subject: string, message: string, orderId?: string, type?: 'support' | 'service_request', attachments?: string[]) => void;
+  onUserReplyToTicket: (ticketId: string, message: string, attachments?: string[]) => void;
   allShippingPartners: ShippingPartner[];
   onRequestUpgrade: (storeId: string, level: 'premium' | 'super_premium') => void;
   isChatEnabled: boolean;
@@ -89,7 +91,7 @@ const TabButton: React.FC<{ icon: React.ReactNode, label: string, isActive: bool
 
 
 export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
-    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade, navigation } = props;
+    const { store, initialTab, sellerNotifications, siteSettings, onRequestUpgrade, navigation, allTickets, user } = props;
     const [activeTab, setActiveTab] = useState(initialTab || 'overview');
     const { t } = useLanguage();
     
@@ -103,6 +105,8 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
     
     const isPremium = store.premiumStatus === 'premium' || store.premiumStatus === 'super_premium';
     const unreadNotifications = sellerNotifications.filter(n => !n.isRead).length;
+
+    const sellerTickets = allTickets.filter(t => t.userId === user?.id);
 
     const TABS = [
       { id: 'overview', label: t('sellerDashboard.tabs.overview'), icon: <ChartPieIcon className="w-5 h-5"/>, count: unreadNotifications, isLocked: false },
@@ -147,7 +151,7 @@ export const SellerDashboard: React.FC<SellerDashboardProps> = (props) => {
             case 'documents': return <DocumentsPanel {...panelProps} />;
             case 'stories': return <StoriesPanel {...panelProps} />;
             case 'chat': return <ChatPanel />;
-            case 'support': return <SupportPanel {...panelProps} />;
+            case 'support': return <SupportPanel {...panelProps} sellerOrders={props.sellerOrders} allTickets={sellerTickets} onCreateTicket={props.onCreateTicket} onUserReplyToTicket={props.onUserReplyToTicket} />;
             default:
                 return <OverviewPanel {...panelProps} setActiveTab={setActiveTab} />;
         }

@@ -11,6 +11,7 @@ import Checkout from './Checkout';
 import OrderSuccess from './OrderSuccess';
 import StoresPage from './StoresPage';
 import BecomeSeller from './BecomeSeller';
+import BecomeServiceProvider from './BecomeServiceProvider';
 import CategoryPage from './CategoryPage';
 import { SellerDashboard } from './SellerDashboard';
 import VendorPage from './VendorPage';
@@ -85,29 +86,13 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         allUsers,
     }), [siteData, allUsers]);
     
-    const onBecomeSeller = (
-        shopName: string, location: string, neighborhood: string, sellerFirstName: string,
-        sellerLastName: string, sellerPhone: string, physicalAddress: string, logoUrl: string,
-        latitude?: number, longitude?: number
-    ) => {
+    const onBecomeSeller = (data: any) => {
         if (!user) {
             alert("Erreur: Utilisateur non connecté.");
             return;
         }
 
-        const newStore = siteData.createStoreAndNotifyAdmin({
-            name: shopName,
-            category: 'Non classé',
-            location,
-            neighborhood,
-            sellerFirstName,
-            sellerLastName,
-            sellerPhone,
-            physicalAddress,
-            logoUrl,
-            latitude,
-            longitude
-        }, user, allUsers);
+        const newStore = siteData.createStoreAndNotifyAdmin(data, user, allUsers);
 
         if (newStore) {
              // Update the user in the global state to become a seller linked to the new store
@@ -134,7 +119,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             setPaymentRequest({
                 amount: plan.price,
                 reason: `Abonnement au plan ${status} pour ${sellerStoreForSubscription.name}`,
-                onSuccess: () => {
+                onSuccess: (paymentDetails: PaymentDetails) => {
                     siteData.setAllStores((prevStores: Store[]) => prevStores.map((s: Store) => 
                         s.id === sellerStoreForSubscription.id ? { 
                             ...s, 
@@ -143,6 +128,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                             subscriptionDueDate: new Date(Date.now() + plan.durationDays * 24 * 60 * 60 * 1000).toISOString()
                         } : s
                     ));
+                    setPaymentRequest(null);
                     navigation.navigateToSellerDashboard('overview');
                 }
             });
@@ -202,6 +188,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                             if (newOrder) {
                                 clearCart();
                                 navigation.setSelectedOrder(newOrder);
+                                setPaymentRequest(null);
                                 navigation.setPage('order-success');
                             }
                         };
@@ -224,14 +211,16 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'category':
             return navigation.selectedCategoryId ? <CategoryPage categoryId={navigation.selectedCategoryId} allCategories={siteData.allCategories} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'seller-dashboard':
-            return sellerStore ? <SellerDashboard 
+            if (!user || !sellerStore) return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            return <SellerDashboard 
+                user={user}
                 store={sellerStore}
                 products={sellerProducts}
                 categories={siteData.allCategories}
                 flashSales={siteData.flashSales}
                 sellerOrders={sellerOrders}
                 promoCodes={sellerPromoCodes}
-                allTickets={sellerTickets}
+                allTickets={siteData.allTickets}
                 onBack={() => {}}
                 onAddProduct={() => navigation.navigateToProductForm(null)}
                 onEditProduct={(p: Product) => navigation.navigateToProductForm(p)}
@@ -250,7 +239,12 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onReplyToReview={() => {}}
                 initialTab={navigation.sellerDashboardTab}
                 sellerNotifications={sellerNotifications}
-                onCreateTicket={() => {}}
+                onCreateTicket={(subject, message, orderId, type, attachments) => 
+                    user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
+                }
+                onUserReplyToTicket={(ticketId, message, attachments) => 
+                    user && siteData.handleUserReplyToTicket(ticketId, message, attachments, user, allUsers)
+                }
                 allShippingPartners={siteData.allShippingPartners}
                 onRequestUpgrade={() => {}}
                 onUpdateOrderStatus={(orderId, status) => user && siteData.handleSellerUpdateOrderStatus(orderId, status, user)}
@@ -260,9 +254,8 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onUpdateStoreProfile={(storeId, data) => user && siteData.handleUpdateStoreProfile(storeId, data, user)}
                 onAddProductToStory={(productId: string) => user && siteData.handleAddProductToStory(productId, user)}
                 onAddStory={(imageUrl: string) => user && siteData.handleAddStory(imageUrl, user)}
-                // FIX: Pass the navigation prop to SellerDashboard
                 navigation={navigation}
-            /> : <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            />;
         case 'product-form':
             if (!user || (user.role !== 'seller' && user.role !== 'enterprise')) return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
             return <ProductForm
@@ -278,7 +271,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             />;
         case 'superadmin-dashboard':
             if (user?.role !== 'superadmin') return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
-            return <SuperAdminDashboard siteData={siteData} />;
+            return <SuperAdminDashboard siteData={augmentedSiteData} />;
         case 'vendor-page':
              return navigation.selectedStore ? <VendorPage vendorName={navigation.selectedStore.name} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'order-history':
@@ -315,8 +308,12 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                         allStores={siteData.allStores}
                         userOrders={user ? siteData.allOrders.filter((o: Order) => o.userId === user.id) : []}
                         allTickets={siteData.allTickets}
-                        onCreateTicket={() => {}}
-                        onUserReplyToTicket={() => {}}
+                        onCreateTicket={(subject, message, orderId, type, attachments) => 
+                            user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
+                        }
+                        onUserReplyToTicket={(ticketId, message, attachments) => 
+                            user && siteData.handleUserReplyToTicket(ticketId, message, attachments, user, allUsers)
+                        }
                         onSelectOrder={navigation.navigateToOrderDetail}
                         onRepeatOrder={() => {}}
                         onVendorClick={navigation.navigateToVendorPage}
@@ -350,6 +347,20 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onBecomeSeller={onBecomeSeller} 
                 siteSettings={siteData.siteSettings} 
             />;
+         case 'become-service-provider':
+            if (!user) {
+                return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
+            }
+             if ((user.role === 'seller' || user.role === 'enterprise') && sellerStore) {
+                 navigation.navigateToSellerDashboard('overview');
+                 return null;
+            }
+            return <BecomeServiceProvider 
+                onBack={navigation.navigateToHome} 
+                onBecomeSeller={onBecomeSeller} 
+                siteSettings={siteData.siteSettings}
+                categories={siteData.allCategories}
+            />;
         case 'become-premium':
             return <BecomePremiumPage siteSettings={siteData.siteSettings} onBack={navigation.navigateToHome} onBecomePremiumByCaution={() => {}} onUpgradeToPremiumPlus={() => {}}/>;
         case 'info':
@@ -361,9 +372,10 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onProductClick={navigation.navigateToProduct}
                 onCategoryClick={navigation.navigateToCategory}
                 onVendorClick={navigation.navigateToVendorPage}
-                // FIX: Pass siteData and authData props to InfoPage.
-                siteData={siteData}
-                authData={authData}
+                // FIX: Pass individual props from siteData instead of the whole object.
+                allProducts={siteData.allProducts}
+                allCategories={siteData.allCategories}
+                allStores={siteData.allStores}
             /> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'not-found': return <NotFoundPage onNavigateHome={navigation.navigateToHome} />;
         case 'forbidden': return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;

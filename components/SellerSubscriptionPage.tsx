@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import type { SiteSettings } from '../types';
 import { CheckCircleIcon, StarIcon, StarPlatinumIcon, BuildingStorefrontIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -43,6 +43,12 @@ const PlanCard: React.FC<{
 
 const SellerSubscriptionPage: React.FC<SellerSubscriptionPageProps> = ({ siteSettings, onSelectSubscription }) => {
     const { t } = useLanguage();
+    const [selectedPlan, setSelectedPlan] = useState<'standard' | 'premium' | 'super_premium'>('premium');
+
+    const handleSelectPlan = (plan: 'standard' | 'premium' | 'super_premium') => {
+        setSelectedPlan(plan);
+        onSelectSubscription(plan);
+    };
 
     const plans = [
         {
@@ -51,8 +57,8 @@ const SellerSubscriptionPage: React.FC<SellerSubscriptionPageProps> = ({ siteSet
             price: `${siteSettings.standardPlan.price.toLocaleString('fr-CM')} FCFA / ${siteSettings.standardPlan.durationDays} jrs`,
             icon: <BuildingStorefrontIcon className="w-8 h-8 text-gray-500" />,
             features: t('sellerSubscription.standardFeatures', siteSettings.standardPlan.productLimit, siteSettings.standardPlan.commissionRate).split('|'),
-            onSelect: () => onSelectSubscription('standard'),
-            isFeatured: false,
+            onSelect: () => handleSelectPlan('standard'),
+            isFeatured: selectedPlan === 'standard',
         },
         {
             title: t('sellerSubscription.premiumTitle'),
@@ -60,8 +66,8 @@ const SellerSubscriptionPage: React.FC<SellerSubscriptionPageProps> = ({ siteSet
             price: `${siteSettings.premiumPlan.price.toLocaleString('fr-CM')} FCFA / ${siteSettings.premiumPlan.durationDays} jrs`,
             icon: <StarIcon className="w-8 h-8 text-kmer-yellow" />,
             features: t('sellerSubscription.premiumFeatures', siteSettings.premiumPlan.productLimit, siteSettings.premiumPlan.commissionRate).split('|'),
-            onSelect: () => onSelectSubscription('premium'),
-            isFeatured: true,
+            onSelect: () => handleSelectPlan('premium'),
+            isFeatured: selectedPlan === 'premium',
         },
         {
             title: t('sellerSubscription.superPremiumTitle'),
@@ -69,8 +75,8 @@ const SellerSubscriptionPage: React.FC<SellerSubscriptionPageProps> = ({ siteSet
             price: `${siteSettings.superPremiumPlan.price.toLocaleString('fr-CM')} FCFA / ${siteSettings.superPremiumPlan.durationDays} jrs`,
             icon: <StarPlatinumIcon className="w-8 h-8 text-kmer-red" />,
             features: t('sellerSubscription.superPremiumFeatures', siteSettings.superPremiumPlan.productLimit, siteSettings.superPremiumPlan.commissionRate).split('|'),
-            onSelect: () => onSelectSubscription('super_premium'),
-            isFeatured: false,
+            onSelect: () => handleSelectPlan('super_premium'),
+            isFeatured: selectedPlan === 'super_premium',
         }
     ];
 

@@ -24,6 +24,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
     const navigateToStores = useCallback(() => setPage('stores'), []);
     const navigateToStoresMap = useCallback(() => setPage('stores-map'), []);
     const navigateToBecomeSeller = useCallback(() => setPage('become-seller'), []);
+    const navigateToBecomeServiceProvider = useCallback(() => setPage('become-service-provider'), []);
     const navigateToSellerDashboard = useCallback((tab: string = 'overview') => {
         setSellerDashboardTab(tab);
         setPage('seller-dashboard');
@@ -142,6 +143,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         navigateToStores,
         navigateToStoresMap,
         navigateToBecomeSeller,
+        navigateToBecomeServiceProvider,
         navigateToSellerDashboard,
         navigateToSellerProfile,
         navigateToSuperAdminDashboard,
@@ -169,7 +171,7 @@ export const useAppNavigation = (allCategories: Category[], allStores: Store[], 
         page, selectedProduct, selectedCategoryId, selectedStore, selectedOrder, searchQuery,
         infoPageContent, viewingStoriesFor, accountPageTab, sellerDashboardTab, productToEdit,
         navigateToHome, navigateToCart, navigateToCheckout, navigateToStores, navigateToStoresMap,
-        navigateToBecomeSeller, navigateToSellerDashboard, navigateToSellerProfile,
+        navigateToBecomeSeller, navigateToBecomeServiceProvider, navigateToSellerDashboard, navigateToSellerProfile,
         navigateToSuperAdminDashboard, navigateToOrderHistory, navigateToPromotions,
         navigateToFlashSales, navigateToWishlist, navigateToDeliveryAgentDashboard,
         navigateToDepotAgentDashboard, navigateToComparison, navigateToBecomePremium,
