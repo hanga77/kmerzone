@@ -39,31 +39,19 @@ const getActiveFlashSalePrice = (productId: string, flashSales: FlashSale[]): nu
 }
 
 const isPromotionActive = (product: Product): boolean => {
-  // A promotion must have a promotional price lower than the regular price.
   if (!product.promotionPrice || product.promotionPrice >= product.price) {
     return false;
   }
-
   const now = new Date();
-  // Dates from input are YYYY-MM-DD. Appending time details ensures they are parsed correctly in local time.
   const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
   const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
 
-  // A promotion is not active if it doesn't have at least a start or end date defined.
-  if (!startDate && !endDate) {
-    return false;
-  }
+  // If no dates, it's a permanent promotion
+  if (!startDate && !endDate) return true;
 
-  // Check against date ranges
-  if (startDate && endDate) {
-    return now >= startDate && now <= endDate;
-  }
-  if (startDate) {
-    return now >= startDate;
-  }
-  if (endDate) {
-    return now <= endDate;
-  }
+  if (startDate && endDate) return now >= startDate && now <= endDate;
+  if (startDate) return now >= startDate;
+  if (endDate) return now <= endDate;
   
   return false; 
 };
@@ -293,7 +281,7 @@ const ProductDetail: React.FC<ProductDetailProps> = ({ product, allProducts, all
 
   const percentageOff = flashPrice ? Math.round(((product.price - flashPrice) / product.price) * 100) : (promotionIsActive ? Math.round(((product.price - product.promotionPrice!) / product.price) * 100) : 0);
   
-  const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price && (product.promotionStartDate || product.promotionEndDate));
+  const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price);
   const promotionIsUpcoming = promotionIsDefined && !promotionIsActive && product.promotionStartDate && new Date(product.promotionStartDate + 'T00:00:00') > new Date();
 
 

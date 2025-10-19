@@ -1,5 +1,3 @@
-
-
 import React, { useState, useMemo } from 'react';
 import type { Product, Order, FlashSale, CartItem } from '../types';
 import { ArrowLeftIcon, BarChartIcon, CurrencyDollarIcon, ShoppingBagIcon, ArchiveBoxIcon, StarIcon } from './Icons';
@@ -27,7 +25,9 @@ const isPromotionActive = (product: Product): boolean => {
   const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
   const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
 
-  if (!startDate && !endDate) return false;
+  // If no dates, it's a permanent promotion
+  if (!startDate && !endDate) return true;
+
   if (startDate && endDate) return now >= startDate && now <= endDate;
   if (startDate) return now >= startDate;
   if (endDate) return now <= endDate;

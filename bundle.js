@@ -24313,7 +24313,7 @@
     const now = /* @__PURE__ */ new Date();
     const startDate = product.promotionStartDate ? /* @__PURE__ */ new Date(product.promotionStartDate + "T00:00:00") : null;
     const endDate = product.promotionEndDate ? /* @__PURE__ */ new Date(product.promotionEndDate + "T23:59:59") : null;
-    if (!startDate && !endDate) return false;
+    if (!startDate && !endDate) return true;
     if (startDate && endDate) return now >= startDate && now <= endDate;
     if (startDate) return now >= startDate;
     if (endDate) return now <= endDate;
@@ -24361,7 +24361,7 @@
     };
     const flashPrice = getActiveFlashSalePrice(product.id, flashSales);
     const promotionIsActive = isPromotionActive(product);
-    const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price && (product.promotionStartDate || product.promotionEndDate));
+    const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price);
     const promotionIsUpcoming = promotionIsDefined && !promotionIsActive && product.promotionStartDate && /* @__PURE__ */ new Date(product.promotionStartDate + "T00:00:00") > /* @__PURE__ */ new Date();
     const finalPrice = flashPrice ?? (promotionIsActive ? product.promotionPrice : product.price);
     const originalPrice = flashPrice || promotionIsActive && product.promotionPrice ? product.price : null;
@@ -24809,18 +24809,10 @@
     const now = /* @__PURE__ */ new Date();
     const startDate = product.promotionStartDate ? /* @__PURE__ */ new Date(product.promotionStartDate + "T00:00:00") : null;
     const endDate = product.promotionEndDate ? /* @__PURE__ */ new Date(product.promotionEndDate + "T23:59:59") : null;
-    if (!startDate && !endDate) {
-      return false;
-    }
-    if (startDate && endDate) {
-      return now >= startDate && now <= endDate;
-    }
-    if (startDate) {
-      return now >= startDate;
-    }
-    if (endDate) {
-      return now <= endDate;
-    }
+    if (!startDate && !endDate) return true;
+    if (startDate && endDate) return now >= startDate && now <= endDate;
+    if (startDate) return now >= startDate;
+    if (endDate) return now <= endDate;
     return false;
   };
   var Rating = ({ rating, setRating }) => /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: "flex items-center", children: [...Array(5)].map((_, i) => /* @__PURE__ */ (0, import_jsx_runtime18.jsx)(
@@ -25022,7 +25014,7 @@
       ] });
     }
     const percentageOff = flashPrice ? Math.round((product.price - flashPrice) / product.price * 100) : promotionIsActive ? Math.round((product.price - product.promotionPrice) / product.price * 100) : 0;
-    const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price && (product.promotionStartDate || product.promotionEndDate));
+    const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price);
     const promotionIsUpcoming = promotionIsDefined && !promotionIsActive && product.promotionStartDate && /* @__PURE__ */ new Date(product.promotionStartDate + "T00:00:00") > /* @__PURE__ */ new Date();
     return /* @__PURE__ */ (0, import_jsx_runtime18.jsxs)(import_jsx_runtime18.Fragment, { children: [
       toastMessage && /* @__PURE__ */ (0, import_jsx_runtime18.jsx)("div", { className: "fixed bottom-20 left-1/2 -translate-x-1/2 bg-gray-800 text-white px-4 py-2 rounded-lg shadow-lg z-50 animate-in fade-in-0 slide-in-from-bottom-5", children: toastMessage }),
@@ -25361,7 +25353,7 @@
     const now = /* @__PURE__ */ new Date();
     const startDate = product.promotionStartDate ? /* @__PURE__ */ new Date(product.promotionStartDate + "T00:00:00") : null;
     const endDate = product.promotionEndDate ? /* @__PURE__ */ new Date(product.promotionEndDate + "T23:59:59") : null;
-    if (!startDate && !endDate) return false;
+    if (!startDate && !endDate) return true;
     if (startDate && endDate) return now >= startDate && now <= endDate;
     if (startDate) return now >= startDate;
     if (endDate) return now <= endDate;
@@ -26237,7 +26229,7 @@
     const now = /* @__PURE__ */ new Date();
     const startDate = product.promotionStartDate ? /* @__PURE__ */ new Date(product.promotionStartDate + "T00:00:00") : null;
     const endDate = product.promotionEndDate ? /* @__PURE__ */ new Date(product.promotionEndDate + "T23:59:59") : null;
-    if (!startDate && !endDate) return false;
+    if (!startDate && !endDate) return true;
     if (startDate && endDate) return now >= startDate && now <= endDate;
     if (startDate) return now >= startDate;
     if (endDate) return now <= endDate;
@@ -27609,7 +27601,7 @@
     const now = /* @__PURE__ */ new Date();
     const startDate = product.promotionStartDate ? /* @__PURE__ */ new Date(product.promotionStartDate + "T00:00:00") : null;
     const endDate = product.promotionEndDate ? /* @__PURE__ */ new Date(product.promotionEndDate + "T23:59:59") : null;
-    if (!startDate && !endDate) return false;
+    if (!startDate && !endDate) return true;
     if (startDate && endDate) return now >= startDate && now <= endDate;
     if (startDate) return now >= startDate;
     if (endDate) return now <= endDate;

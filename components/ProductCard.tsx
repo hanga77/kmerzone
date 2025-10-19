@@ -29,7 +29,9 @@ const isPromotionActive = (product: Product): boolean => {
   const startDate = product.promotionStartDate ? new Date(product.promotionStartDate + 'T00:00:00') : null;
   const endDate = product.promotionEndDate ? new Date(product.promotionEndDate + 'T23:59:59') : null;
 
-  if (!startDate && !endDate) return false;
+  // If no dates, it's a permanent promotion
+  if (!startDate && !endDate) return true;
+
   if (startDate && endDate) return now >= startDate && now <= endDate;
   if (startDate) return now >= startDate;
   if (endDate) return now <= endDate;
@@ -99,7 +101,7 @@ const ProductCard: React.FC<ProductCardProps> = ({ product, onProductClick, onVe
 
   const flashPrice = getActiveFlashSalePrice(product.id, flashSales);
   const promotionIsActive = isPromotionActive(product);
-  const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price && (product.promotionStartDate || product.promotionEndDate));
+  const promotionIsDefined = !!(product.promotionPrice && product.promotionPrice < product.price);
   const promotionIsUpcoming = promotionIsDefined && !promotionIsActive && product.promotionStartDate && new Date(product.promotionStartDate + 'T00:00:00') > new Date();
 
   const finalPrice = flashPrice ?? (promotionIsActive ? product.promotionPrice! : product.price);
