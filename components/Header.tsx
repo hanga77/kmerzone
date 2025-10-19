@@ -43,6 +43,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   const { categories, onNavigateHome, onNavigateCart, onNavigateToStores, onNavigateToPromotions, onNavigateToCategory, onNavigateToBecomeSeller, onNavigateToSellerDashboard, onNavigateToSellerProfile, onOpenLogin, onLogout, onNavigateToOrderHistory, onNavigateToSuperAdminDashboard, onNavigateToFlashSales, onNavigateToWishlist, onNavigateToDeliveryAgentDashboard, onNavigateToDepotAgentDashboard, onNavigateToBecomePremium, onNavigateToAccount, onNavigateToVisualSearch, onNavigateToServices, onSearch, isChatEnabled, isPremiumProgramEnabled, logoUrl, notifications, onMarkNotificationAsRead, onNavigateFromNotification } = props;
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isCategoryMenuOpen, setIsCategoryMenuOpen] = useState(false);
+  const [isServicesMenuOpen, setIsServicesMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,6 +60,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
   const unreadNotificationsCount = notifications.filter(n => !n.isRead).length;
 
   const categoryMenuRef = useRef<HTMLDivElement>(null);
+  const servicesMenuRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const notificationsMenuRef = useRef<HTMLDivElement>(null);
 
@@ -70,10 +72,17 @@ export const Header: React.FC<HeaderProps> = (props) => {
     }));
   }, [categories]);
 
+  const serviceCategories = useMemo(() => {
+      return categories.filter(c => c.parentId === 'cat-services');
+  }, [categories]);
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (categoryMenuRef.current && !categoryMenuRef.current.contains(event.target as Node)) {
         setIsCategoryMenuOpen(false);
+      }
+      if (servicesMenuRef.current && !servicesMenuRef.current.contains(event.target as Node)) {
+        setIsServicesMenuOpen(false);
       }
       if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
         setIsUserMenuOpen(false);
@@ -83,7 +92,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
       }
     };
 
-    if (isCategoryMenuOpen || isUserMenuOpen || isNotificationsOpen) {
+    if (isCategoryMenuOpen || isUserMenuOpen || isNotificationsOpen || isServicesMenuOpen) {
       document.addEventListener('mousedown', handleClickOutside);
     } else {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -92,7 +101,7 @@ export const Header: React.FC<HeaderProps> = (props) => {
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
-  }, [isCategoryMenuOpen, isUserMenuOpen, isNotificationsOpen]);
+  }, [isCategoryMenuOpen, isUserMenuOpen, isNotificationsOpen, isServicesMenuOpen]);
 
 
   const handleSearchSubmit = (e: React.FormEvent, query: string) => {
@@ -309,7 +318,34 @@ export const Header: React.FC<HeaderProps> = (props) => {
             <button onClick={onNavigateToPromotions} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><TagIcon className="w-5 h-5 text-kmer-red"/>{t('header.promotions')}</button>
             <button onClick={onNavigateToFlashSales} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><BoltIcon className="w-5 h-5 text-blue-500"/>{t('header.flashSales')}</button>
             <button onClick={onNavigateToStores} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold">{t('header.stores')}</button>
-            <button onClick={onNavigateToServices} className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"><SparklesIcon className="w-5 h-5 text-purple-500"/>{t('header.services')}</button>
+            
+            <div className="relative" ref={servicesMenuRef}>
+                <button
+                    onClick={() => setIsServicesMenuOpen(o => !o)}
+                    className="text-gray-700 dark:text-gray-200 hover:text-kmer-green font-semibold flex items-center gap-1"
+                >
+                    <SparklesIcon className="w-5 h-5 text-purple-500"/>
+                    {t('header.services')}
+                    <ChevronDownIcon className={`w-4 h-4 ml-1 transition-transform ${isServicesMenuOpen ? 'rotate-180' : ''}`} />
+                </button>
+                {isServicesMenuOpen && serviceCategories.length > 0 && (
+                    <div className="absolute left-0 mt-2 w-56 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5 z-50">
+                    {serviceCategories.map(subCat => (
+                        <button
+                        key={subCat.id}
+                        onClick={() => {
+                            onNavigateToCategory(subCat.id);
+                            setIsServicesMenuOpen(false);
+                        }}
+                        className="w-full text-left block px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
+                        >
+                        {t(subCat.name)}
+                        </button>
+                    ))}
+                    </div>
+                )}
+            </div>
+
             {isPremiumProgramEnabled && (!user || user.role === 'customer') && (
                 <button onClick={user ? onNavigateToBecomePremium : onOpenLogin} className="text-kmer-yellow hover:text-yellow-400 font-bold flex items-center gap-1">
                     <StarIcon className="w-5 h-5"/>{t('header.becomePremium')}
