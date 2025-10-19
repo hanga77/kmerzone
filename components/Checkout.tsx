@@ -135,7 +135,7 @@ const Checkout: React.FC<CheckoutProps> = ({ onBack, onOrderConfirm, flashSales,
         for (const vendorName in itemsByVendor) {
             const vendorItems = itemsByVendor[vendorName];
             
-            // If all items from this vendor are services, skip shipping fee calculation for them
+            // FIX: If all items from this vendor are services, skip shipping fee calculation for them
             if (vendorItems.every(item => (item.type || 'product') === 'service')) {
                 continue;
             }

@@ -1,5 +1,28 @@
 
 
+// FIX: Export SiteData interface
+export interface SiteData {
+  allProducts: Product[];
+  allCategories: Category[];
+  allStores: Store[];
+  flashSales: FlashSale[];
+  allOrders: Order[];
+  allPromoCodes: PromoCode[];
+  allPickupPoints: PickupPoint[];
+  allShippingPartners: ShippingPartner[];
+  payouts: Payout[];
+  siteSettings: SiteSettings;
+  siteContent: SiteContent[];
+  allAdvertisements: Advertisement[];
+  allPaymentMethods: PaymentMethod[];
+  siteActivityLogs: SiteActivityLog[];
+  allNotifications: Notification[];
+  allTickets: Ticket[];
+  allAnnouncements: Announcement[];
+  allZones: Zone[];
+  allUsers: User[];
+}
+
 export interface Zone {
   id: string;
   name: string;

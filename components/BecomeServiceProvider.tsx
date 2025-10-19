@@ -1,7 +1,11 @@
+
+
 import React, { useState } from 'react';
 import type { SiteSettings, Category, Product } from '../types';
 import { ArrowLeftIcon, PhotoIcon, DocumentTextIcon, SparklesIcon, CurrencyDollarIcon, ClockIcon, MapPinIcon } from './Icons';
 import { useLanguage } from '../contexts/LanguageContext';
+
+declare const L: any;
 
 interface BecomeServiceProviderProps {
   onBack: () => void;
@@ -180,7 +184,7 @@ const BecomeServiceProvider: React.FC<BecomeServiceProviderProps> = ({ onBack, o
                         </div>
 
                         <div className="flex justify-end pt-4">
-                            <button type="submit" className="bg-purple-600 text-white font-bold py-3 px-8 rounded-lg hover:bg-purple-700 transition-colors text-lg">
+                            <button type="submit" className="bg-kmer-green text-white font-bold py-3 px-8 rounded-lg hover:bg-green-700 transition-colors text-lg">
                                 {t('becomeServiceProvider.submit')}
                             </button>
                         </div>

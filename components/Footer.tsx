@@ -7,7 +7,7 @@ interface FooterProps {
   onNavigate: (slug: string) => void;
   logoUrl: string;
   paymentMethods: PaymentMethod[];
-  socialLinks: SiteSettings['socialLinks'];
+  socialLinks?: SiteSettings['socialLinks'];
   companyName: string;
 }
 
@@ -60,9 +60,9 @@ const Footer: React.FC<FooterProps> = ({ onNavigate, logoUrl, paymentMethods, so
           <div>
             <h3 className="text-lg font-bold mb-4 text-white">{t('footer.followUs')}</h3>
             <div className="flex space-x-4 mb-6">
-              <a href={socialLinks.facebook.linkUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><img src={socialLinks.facebook.iconUrl} alt="Facebook" className="h-6 w-6" /></a>
-              <a href={socialLinks.twitter.linkUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><img src={socialLinks.twitter.iconUrl} alt="Twitter" className="h-6 w-6" /></a>
-              <a href={socialLinks.instagram.linkUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><img src={socialLinks.instagram.iconUrl} alt="Instagram" className="h-6 w-6" /></a>
+              {socialLinks?.facebook?.iconUrl && <a href={socialLinks.facebook.linkUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><img src={socialLinks.facebook.iconUrl} alt="Facebook" className="h-6 w-6" /></a>}
+              {socialLinks?.twitter?.iconUrl && <a href={socialLinks.twitter.linkUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><img src={socialLinks.twitter.iconUrl} alt="Twitter" className="h-6 w-6" /></a>}
+              {socialLinks?.instagram?.iconUrl && <a href={socialLinks.instagram.linkUrl} target="_blank" rel="noopener noreferrer" className="text-gray-400 hover:text-white"><img src={socialLinks.instagram.iconUrl} alt="Instagram" className="h-6 w-6" /></a>}
             </div>
             <h3 className="text-lg font-bold mb-4 text-white">{t('footer.paymentMethods')}</h3>
             <div className="flex items-center space-x-2 flex-wrap gap-y-2">

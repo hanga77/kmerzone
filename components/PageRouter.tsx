@@ -48,9 +48,9 @@ interface PageRouterProps {
 const PageRouter: React.FC<PageRouterProps> = (props) => {
     const { navigation, siteData, setPromotionModalProduct, setPaymentRequest } = props;
     
-    const { user, allUsers, setAllUsers, logout } = useAuth();
+    const { user, logout } = useAuth();
     const { t } = useLanguage();
-    const authData = { user, allUsers, setAllUsers };
+    const { allUsers, setAllUsers } = siteData; 
     const { cart, appliedPromoCode, onApplyPromoCode, clearCart } = useCart();
     const { wishlist } = useWishlist();
 
@@ -82,6 +82,10 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
     const sellerNotifications = useMemo(() => (
         user ? siteData.allNotifications.filter((n: Notification) => n.userId === user.id) : []
     ), [user, siteData.allNotifications]);
+    
+    const userOrders = useMemo(() => (
+      user ? siteData.allOrders.filter((o: Order) => o.userId === user.id) : []
+    ), [user, siteData.allOrders]);
     
     const augmentedSiteData = useMemo(() => ({
         ...siteData,
@@ -190,7 +194,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}
                 isStoriesEnabled={siteData.siteSettings.isStoriesEnabled}
                 recentlyViewedIds={siteData.recentlyViewedIds}
-                userOrders={user ? siteData.allOrders.filter((o: Order) => o.userId === user.id) : []}
+                userOrders={userOrders}
                 wishlist={wishlist}
              />;
         case 'product':
@@ -254,7 +258,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 flashSales={siteData.flashSales}
                 sellerOrders={sellerOrders}
                 promoCodes={sellerPromoCodes}
-                allTickets={siteData.allTickets}
+                allTickets={sellerTickets}
                 onBack={() => {}}
                 onAddProduct={() => navigation.navigateToProductForm(null)}
                 onEditProduct={(p: Product) => navigation.navigateToProductForm(p)}
@@ -313,7 +317,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'vendor-page':
              return navigation.selectedStore ? <VendorPage vendorName={navigation.selectedStore.name} allProducts={siteData.allProducts} allStores={siteData.allStores} flashSales={siteData.flashSales} onProductClick={navigation.navigateToProduct} onBack={navigation.navigateToHome} onVendorClick={navigation.navigateToVendorPage} isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}/> : <NotFoundPage onNavigateHome={navigation.navigateToHome}/>;
         case 'order-history':
-            return <OrderHistoryPage userOrders={user ? siteData.allOrders.filter((o: Order) => o.userId === user.id) : []} onBack={navigation.navigateToHome} onSelectOrder={navigation.navigateToOrderDetail} onRepeatOrder={() => {}} />;
+            return <OrderHistoryPage userOrders={userOrders} onBack={navigation.navigateToHome} onSelectOrder={navigation.navigateToOrderDetail} onRepeatOrder={() => {}} />;
         case 'order-detail':
             return navigation.selectedOrder ? <OrderDetailPage 
                 order={navigation.selectedOrder} 
@@ -344,7 +348,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                         onBack={navigation.navigateToHome}
                         initialTab={navigation.accountPageTab}
                         allStores={siteData.allStores}
-                        userOrders={user ? siteData.allOrders.filter((o: Order) => o.userId === user.id) : []}
+                        userOrders={userOrders}
                         allTickets={siteData.allTickets}
                         onCreateTicket={(subject, message, orderId, type, attachments) => 
                             user && siteData.handleCreateTicket(subject, message, orderId, type, attachments, user, allUsers)
@@ -362,7 +366,7 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 sellerOrders={sellerOrders} 
                 sellerProducts={sellerProducts} 
                 flashSales={siteData.flashSales}
-            />
+            />;
         case 'seller-subscription':
             return <SellerSubscriptionPage 
                 siteSettings={siteData.siteSettings} 
@@ -372,13 +376,11 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
             return <VisualSearchPage onSearch={navigation.handleSearch} />;
         case 'become-seller':
             if (!user) {
-                // Should not happen if entry point is protected, but as a safeguard.
                 return <ForbiddenPage onNavigateHome={navigation.navigateToHome} />;
             }
             if ((user.role === 'seller' || user.role === 'enterprise') && sellerStore) {
-                 // User is already a seller, redirect them.
                  navigation.navigateToSellerDashboard('overview');
-                 return null; // Return null while redirecting
+                 return null;
             }
             return <BecomeSeller 
                 onBack={navigation.navigateToHome} 
@@ -410,7 +412,6 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
                 onProductClick={navigation.navigateToProduct}
                 onCategoryClick={navigation.navigateToCategory}
                 onVendorClick={navigation.navigateToVendorPage}
-                // FIX: Pass individual props from siteData instead of the whole object.
                 allProducts={siteData.allProducts}
                 allCategories={siteData.allCategories}
                 allStores={siteData.allStores}
@@ -434,7 +435,24 @@ const PageRouter: React.FC<PageRouterProps> = (props) => {
         case 'stores': return <StoresPage stores={siteData.allStores} onBack={navigation.navigateToHome} onVisitStore={navigation.navigateToVendorPage} onNavigateToStoresMap={navigation.navigateToStoresMap} />;
         case 'stores-map': return <StoresMapPage stores={siteData.allStores} onBack={navigation.navigateToStores} />;
         case 'comparison': return <ComparisonPage />;
-        default: return <NotFoundPage onNavigateHome={navigation.navigateToHome} />;
+        default: return <HomePage 
+                categories={siteData.allCategories} 
+                products={siteData.allProducts}
+                stores={siteData.allStores}
+                flashSales={siteData.flashSales}
+                advertisements={siteData.allAdvertisements}
+                siteSettings={siteData.siteSettings}
+                onProductClick={navigation.navigateToProduct}
+                onCategoryClick={navigation.navigateToCategory}
+                onVendorClick={navigation.navigateToVendorPage}
+                onVisitStore={navigation.navigateToVendorPage}
+                onViewStories={(store) => navigation.setViewingStoriesFor(store)}
+                isComparisonEnabled={siteData.siteSettings.isComparisonEnabled}
+                isStoriesEnabled={siteData.siteSettings.isStoriesEnabled}
+                recentlyViewedIds={siteData.recentlyViewedIds}
+                userOrders={userOrders}
+                wishlist={wishlist}
+             />;
     }
 }
 

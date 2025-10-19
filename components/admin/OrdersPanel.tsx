@@ -1,3 +1,6 @@
+
+
+
 import React, { useState, useMemo } from 'react';
 import type { Order, OrderStatus } from '../../types';
 import { useLanguage } from '../../contexts/LanguageContext';
@@ -28,6 +31,7 @@ const AllOrdersView: React.FC<{orders: Order[]}> = ({ orders }) => {
                 <input type="text" placeholder={t('superadmin.orders.searchPlaceholder')} value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="p-2 border rounded-md w-full sm:w-1/2 dark:bg-gray-700 dark:border-gray-600"/>
                 <select value={statusFilter} onChange={e => setStatusFilter(e.target.value as OrderStatus | '')} className="p-2 border rounded-md w-full sm:w-auto dark:bg-gray-700 dark:border-gray-600">
                     <option value="">{t('superadmin.orders.allStatuses')}</option>
+                    {/* FIX: Corrected typo in translations key from orderStatuts to orderStatus */}
                     {Object.keys((translations as any)[language]?.orderStatus || translations.fr.orderStatus).map(key => (
                         <option key={key} value={key}>{t(`orderStatus.${key}`)}</option>
                     ))}

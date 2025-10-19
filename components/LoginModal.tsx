@@ -32,13 +32,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
     setError(null);
   }, [email, password, name, view, registerStep]);
 
-  const handleLogin = (e: React.FormEvent) => {
+  // FIX: Make handleLogin async to await the result of the login function.
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Veuillez entrer une adresse e-mail et un mot de passe.");
       return;
     }
-    const loggedInUser = login(email, password);
+    // FIX: Await the login promise to get the user object.
+    const loggedInUser = await login(email, password);
     if (loggedInUser) {
       onLoginSuccess(loggedInUser);
     } else {
@@ -46,7 +48,8 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
     }
   };
 
-  const handleRegister = (e: React.FormEvent) => {
+  // FIX: Make handleRegister async to await the result of the register function.
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError("Veuillez remplir les champs e-mail et mot de passe.");
@@ -64,13 +67,15 @@ const LoginModal: React.FC<LoginModalProps> = ({ onClose, onLoginSuccess, onForg
       }
       const fullName = `${firstName} ${lastName}`;
       const newAddress = address ? { fullName, phone: phone || '', address, city, label: 'Maison' } : undefined;
-      registeredUser = register(fullName, email, password, accountType, phone, birthDate, newAddress);
+      // FIX: Await the register promise to get the new user object.
+      registeredUser = await register(fullName, email, password, accountType, phone, birthDate, newAddress);
     } else { // seller
       if (!name) {
         setError("Veuillez renseigner votre nom complet.");
         return;
       }
-      registeredUser = register(name, email, password, accountType);
+      // FIX: Await the register promise to get the new user object.
+      registeredUser = await register(name, email, password, accountType);
     }
 
     if (registeredUser) {

@@ -5,7 +5,8 @@ import { Section } from './common';
 
 export const NotificationsTab: React.FC = () => {
     const { t } = useLanguage();
-    const { user, updateUserInfo } = useAuth();
+    // FIX: Replaced `updateUserInfo` with `updateUser` from the new AuthContext.
+    const { user, updateUser } = useAuth();
     const [prefs, setPrefs] = useState(user?.notificationPreferences || { promotions: true, orderUpdates: true, newsletters: true });
     const [isSaved, setIsSaved] = useState(false);
 
@@ -16,7 +17,8 @@ export const NotificationsTab: React.FC = () => {
 
     const handleSave = () => {
         if (user) {
-            updateUserInfo(user.id, { notificationPreferences: prefs });
+            // FIX: Adapted `handleSave` to use `updateUser` which doesn't require a userId.
+            updateUser({ notificationPreferences: prefs });
             setIsSaved(true);
             setTimeout(() => setIsSaved(false), 2000);
         }

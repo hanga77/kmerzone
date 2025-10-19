@@ -1,5 +1,7 @@
+
 import React from 'react';
 import ReactDOM from 'react-dom/client';
+// FIX: Corrected import path to be a module import
 import { App } from './App';
 import { AuthProvider } from './contexts/AuthContext';
 import { ComparisonProvider } from './contexts/ComparisonContext';

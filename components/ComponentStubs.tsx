@@ -106,4 +106,4 @@ export const InfoPage: React.FC<InfoPageProps> = ({ title, content, slug, onBack
 };
 
 
-export const StoresMapPage: React.FC<any> = (props) => <Stub name="StoresMapPage" props={props} />
+export const StoresMapPage: React.FC<any> = (props) => <Stub name="StoresMapPage" props={props} />;

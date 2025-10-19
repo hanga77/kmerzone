@@ -11,20 +11,29 @@ export const SecurityTab: React.FC = () => {
     const [confirmPassword, setConfirmPassword] = useState('');
     const [message, setMessage] = useState<{ type: 'error' | 'success', text: string } | null>(null);
 
-    const handleSubmit = (e: React.FormEvent) => {
+    // FIX: Made handleSubmit async to handle the promise from changePassword.
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setMessage(null);
+        if (newPassword.length < 6) {
+            setMessage({ type: 'error', text: "Le mot de passe doit contenir au moins 6 caractères." });
+            return;
+        }
         if (newPassword !== confirmPassword) {
             setMessage({ type: 'error', text: t('accountPage.passwordMismatch') });
             return;
         }
-        if (user && changePassword(user.id, oldPassword, newPassword)) {
-            setMessage({ type: 'success', text: t('accountPage.passwordSuccess') });
-            setOldPassword('');
-            setNewPassword('');
-            setConfirmPassword('');
-        } else {
-            setMessage({ type: 'error', text: t('accountPage.passwordIncorrect') });
+        if (user) {
+            // FIX: Awaited the result of changePassword and updated the function call signature.
+            const success = await changePassword(oldPassword, newPassword);
+            if (success) {
+                setMessage({ type: 'success', text: t('accountPage.passwordSuccess') });
+                setOldPassword('');
+                setNewPassword('');
+                setConfirmPassword('');
+            } else {
+                setMessage({ type: 'error', text: t('accountPage.passwordIncorrect') });
+            }
         }
     };
 
