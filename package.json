@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "start": "node --loader ts-node/esm backend/server.ts --dev",
-    "build": "node build.cjs",
+    "build": "node build.js",
     "seed": "node --loader ts-node/esm backend/seed.ts"
   },
   "keywords": [],

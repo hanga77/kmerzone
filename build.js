@@ -1,7 +1,8 @@
-require('dotenv').config();
-const esbuild = require('esbuild');
-const fs = require('fs/promises');
-const path = require('path');
+import dotenv from 'dotenv';
+dotenv.config();
+import esbuild from 'esbuild';
+import fs from 'fs/promises';
+import path from 'path';
 
 const distDir = 'dist';
 

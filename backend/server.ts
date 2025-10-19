@@ -1,13 +1,13 @@
 
-// FIX: Changed to standard ES module import for Express to resolve type errors.
-import express, { Request, Response, NextFunction } from 'express';
+// Changed to standard ES module import for Express to resolve type errors.
+import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
-import bodyParser from 'body-parser';
 import { MongoClient, ObjectId, Db } from 'mongodb';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
-// FIX: Import process to resolve type error for process.exit.
+// Import process to resolve type error for process.exit.
 import process from 'process';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -18,7 +18,7 @@ import * as initialData from './data.js';
 dotenv.config();
 
 const isDev = process.argv.includes('--dev');
-// FIX: __dirname is not available in ES modules. This calculates it from import.meta.url.
+// __dirname is not available in ES modules. This calculates it from import.meta.url.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const rootPath = path.join(__dirname, '..');
@@ -44,7 +44,7 @@ if (isDev) {
 
 const app = express();
 app.use(cors());
-app.use(bodyParser.json({ limit: '10mb' }));
+app.use(express.json({ limit: '10mb' }));
 
 const MONGO_URI = process.env.MONGO_URI;
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -75,7 +75,7 @@ async function connectToDatabase(): Promise<Db> {
 // --------------------------------------------------
 
 
-// FIX: Use imported Request, Response, NextFunction types from express.
+// Use imported Request, Response, NextFunction types from express.
 const protectRoute = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
