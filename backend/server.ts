@@ -12,8 +12,13 @@ import path from 'path';
 import esbuild from 'esbuild';
 import type { User } from '../types';
 import * as initialData from './data';
+import { fileURLToPath } from 'url';
 
 dotenv.config();
+
+// FIX: Add __dirname for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const isDev = process.argv.includes('--dev');
 const rootPath = path.join(__dirname, '..');
@@ -52,24 +57,6 @@ if (!MONGO_URI || !JWT_SECRET) {
 let db: any;
 let isDbConnected = false;
 
-MongoClient.connect(MONGO_URI)
-    .then(client => {
-        console.log('Connected to Database');
-        db = client.db();
-        isDbConnected = true;
-    })
-    .catch(error => {
-        console.error(error);
-        if (error.name === 'MongoServerSelectionError') {
-            console.error("\n---[ Erreur de Connexion MongoDB ]---");
-            console.error("Impossible de se connecter à la base de données. L'application va démarrer avec des données de secours.");
-            console.error("Pour une fonctionnalité complète, veuillez résoudre les problèmes suivants :");
-            console.error("1. Votre adresse IP n'est pas autorisée : Dans MongoDB Atlas, allez dans 'Network Access' et ajoutez votre adresse IP actuelle.");
-            console.error("2. Chaîne de connexion incorrecte : Vérifiez la variable MONGO_URI dans votre fichier .env.");
-            console.error("3. Cluster en pause : Assurez-vous que votre cluster MongoDB Atlas est actif.");
-            console.error("-------------------------------------\n");
-        }
-    });
 
 // FIX: Use imported Request, Response, NextFunction types from express.
 const protectRoute = (req: Request, res: Response, next: NextFunction) => {
@@ -235,15 +222,37 @@ app.get('*', (req: Request, res: Response) => {
     res.sendFile(path.join(rootPath, 'index.html'));
 });
 
-// Start server only if not in a serverless environment (like Vercel)
-if (process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_ENV !== 'preview') {
-    const PORT = process.env.PORT || 3000;
-    app.listen(PORT, () => {
-        console.log(`\n=================================================`);
-        console.log(`🚀 Server running at: http://localhost:${PORT}`);
-        console.log(`=================================================\n`);
-    });
+async function startServer() {
+    try {
+        const client = await MongoClient.connect(MONGO_URI);
+        console.log('Connected to Database');
+        db = client.db();
+        isDbConnected = true;
+    } catch (error: any) {
+        console.error(error);
+        if (error.name === 'MongoServerSelectionError') {
+            console.error("\n---[ Erreur de Connexion MongoDB ]---");
+            console.error("Impossible de se connecter à la base de données. L'application va démarrer avec des données de secours.");
+            console.error("Pour une fonctionnalité complète, veuillez résoudre les problèmes suivants :");
+            console.error("1. Votre adresse IP n'est pas autorisée : Dans MongoDB Atlas, allez dans 'Network Access' et ajoutez votre adresse IP actuelle.");
+            console.error("2. Chaîne de connexion incorrecte : Vérifiez la variable MONGO_URI dans votre fichier .env.");
+            console.error("3. Cluster en pause : Assurez-vous que votre cluster MongoDB Atlas est actif.");
+            console.error("-------------------------------------\n");
+        }
+    }
+
+    // Start server only if not in a serverless environment (like Vercel)
+    if (process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_ENV !== 'preview') {
+        const PORT = process.env.PORT || 3000;
+        app.listen(PORT, () => {
+            console.log(`\n=================================================`);
+            console.log(`🚀 Server running at: http://localhost:${PORT}`);
+            console.log(`=================================================\n`);
+        });
+    }
 }
+
+startServer();
 
 
 export default app;
