@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import { usePersistentState } from './usePersistentState';
+import { useAuth } from './AuthContext';
 import type { SiteData, Product, Category, Store, FlashSale, Order, NewOrderData, SiteSettings, User, SiteContent, Advertisement, PaymentMethod, PickupPoint, Zone, EmailTemplate, Ticket, UserRole, DocumentStatus, PromoCode, Warning, ProductCollection, UserAvailabilityStatus, PaymentDetails, AgentSchedule, Payout, ShippingPartner, Notification } from '../types';
 
 async function makeApiRequest(url: string, method: string = 'GET', body?: any) {
@@ -61,6 +62,7 @@ const defaultSiteSettings: SiteSettings = {
 };
 
 export const useSiteData = () => {
+    const { user } = useAuth();
     const [data, setData] = useState<SiteData>({
         allProducts: [], allCategories: [], allStores: [], flashSales: [], allOrders: [], allPromoCodes: [], allPickupPoints: [], allShippingPartners: [], payouts: [],
         siteSettings: defaultSiteSettings,
@@ -95,15 +97,56 @@ export const useSiteData = () => {
         });
     };
 
-    const handleConfirmOrder = useCallback(async (orderData: NewOrderData, user: User) => {
-        // Implementation remains the same
+    const createActivityLog = useCallback((actingUser: User | null, action: string, details: string) => {
+        if (!actingUser) return;
+        const newLog = {
+            id: `log-${Date.now()}`,
+            timestamp: new Date().toISOString(),
+            user: { id: actingUser.id, name: actingUser.name, role: actingUser.role },
+            action,
+            details,
+        };
+        setData(prev => ({
+            ...prev,
+            siteActivityLogs: [newLog, ...prev.siteActivityLogs]
+        }));
+    }, []);
+
+    const handleConfirmOrder = useCallback(async (orderData: NewOrderData) => {
+        // This would be an API call in a real app
     }, []);
     
-    const handleAddOrUpdateProduct = useCallback(async (product: Product, user: User) => {
-        // Implementation remains the same
+    const handleAddOrUpdateProduct = useCallback(async (product: Product) => {
+        // This would be an API call in a real app
     }, []);
 
     const stubs = {
+        handleApproveStore: (store: Store) => {
+            setData(prev => ({...prev, allStores: prev.allStores.map(s => s.id === store.id ? {...s, status: 'active'} : s)}));
+            if(user) createActivityLog(user, "Approve Store", `Approved store: ${store.name}`);
+        },
+        handleRejectStore: (store: Store) => {
+            setData(prev => ({...prev, allStores: prev.allStores.map(s => s.id === store.id ? {...s, status: 'rejected'} : s)}));
+            if(user) createActivityLog(user, "Reject Store", `Rejected store: ${store.name}`);
+        },
+        handleToggleStoreStatus: (storeId: string, currentStatus: 'active' | 'suspended') => {
+            const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+            setData(prev => ({...prev, allStores: prev.allStores.map(s => s.id === storeId ? {...s, status: newStatus} : s)}));
+            if(user) createActivityLog(user, "Toggle Store Status", `Changed store ${storeId} to ${newStatus}`);
+        },
+        handleWarnStore: (storeId: string, reason: string) => {
+            const newWarning: Warning = { id: `warn-${Date.now()}`, date: new Date().toISOString(), reason };
+            setData(prev => ({...prev, allStores: prev.allStores.map(s => s.id === storeId ? {...s, warnings: [...s.warnings, newWarning]} : s)}));
+            if(user) createActivityLog(user, "Warn Store", `Warned store ${storeId} for: ${reason}`);
+        },
+        handleUpdateDocumentStatus: (storeId: string, documentName: string, status: DocumentStatus, reason = '') => {
+            setData(prev => ({...prev, allStores: prev.allStores.map(s => s.id === storeId ? {...s, documents: s.documents.map(d => d.name === documentName ? {...d, status, rejectionReason: reason} : d)} : s)}));
+            if(user) createActivityLog(user, "Update Document Status", `Set document ${documentName} for store ${storeId} to ${status}`);
+        },
+        handleToggleStoreCertification: (storeId: string) => {
+            setData(prev => ({...prev, allStores: prev.allStores.map(s => s.id === storeId ? {...s, isCertified: !s.isCertified} : s)}));
+            if(user) createActivityLog(user, "Toggle Certification", `Toggled certification for store ${storeId}`);
+        },
         handleDismissAnnouncement: (id: string) => setDismissedAnnouncements(prev => [...prev, id]),
         handleMarkNotificationAsRead: (id: string) => setData(prev => ({...prev, allNotifications: prev.allNotifications.map(n => n.id === id ? {...n, isRead: true} : n)})),
         handleSetPromotion: (productId: string, promoPrice: number | null, startDate?: string, endDate?: string) => console.log('handleSetPromotion', productId, promoPrice),
@@ -135,6 +178,30 @@ export const useSiteData = () => {
         handleConfirmOrder,
         handleAddOrUpdateProduct,
         setAllUsers,
-        ...stubs,
+        onApproveStore: stubs.handleApproveStore,
+        onRejectStore: stubs.handleRejectStore,
+        onToggleStoreStatus: stubs.handleToggleStoreStatus,
+        onWarnStore: stubs.handleWarnStore,
+        onUpdateDocumentStatus: stubs.handleUpdateDocumentStatus,
+        onToggleStoreCertification: stubs.handleToggleStoreCertification,
+        handleDismissAnnouncement: stubs.handleDismissAnnouncement,
+        handleMarkNotificationAsRead: stubs.handleMarkNotificationAsRead,
+        handleSetPromotion: stubs.handleSetPromotion,
+        createNotification: stubs.createNotification,
+        createStoreAndNotifyAdmin: stubs.createStoreAndNotifyAdmin,
+        handleDeleteProduct: stubs.handleDeleteProduct,
+        handleUpdateProductStatus: stubs.handleUpdateProductStatus,
+        handleCancelOrder: stubs.handleCancelOrder,
+        handleRequestRefund: stubs.handleRequestRefund,
+        handleCustomerDisputeMessage: stubs.handleCustomerDisputeMessage,
+        handleCreateTicket: stubs.handleCreateTicket,
+        handleUserReplyToTicket: stubs.handleUserReplyToTicket,
+        handleSellerUpdateOrderStatus: stubs.handleSellerUpdateOrderStatus,
+        handleSellerCancelOrder: stubs.handleSellerCancelOrder,
+        handleCreateOrUpdateCollection: stubs.handleCreateOrUpdateCollection,
+        handleDeleteCollection: stubs.handleDeleteCollection,
+        handleUpdateStoreProfile: stubs.handleUpdateStoreProfile,
+        handleAddProductToStory: stubs.handleAddProductToStory,
+        handleAddStory: stubs.handleAddStory,
     };
 };

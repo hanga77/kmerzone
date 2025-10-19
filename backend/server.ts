@@ -2,25 +2,25 @@
 import express, { Request, Response, NextFunction } from 'express';
 import cors from 'cors';
 import bodyParser from 'body-parser';
-import { MongoClient, ObjectId } from 'mongodb';
+import { MongoClient, ObjectId, Db } from 'mongodb';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import dotenv from 'dotenv';
 // FIX: Import process to resolve type error for process.exit.
 import process from 'process';
 import path from 'path';
+// FIX: Added fileURLToPath to resolve __dirname in ES modules.
+import { fileURLToPath } from 'url';
 import esbuild from 'esbuild';
 import type { User } from '../types';
 import * as initialData from './data';
-import { fileURLToPath } from 'url';
 
 dotenv.config();
 
-// FIX: Add __dirname for ES modules
+const isDev = process.argv.includes('--dev');
+// FIX: __dirname is not available in ES modules. This polyfill defines it.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-
-const isDev = process.argv.includes('--dev');
 const rootPath = path.join(__dirname, '..');
 
 // --- ESBUILD DEV WATCHER ---
@@ -54,8 +54,25 @@ if (!MONGO_URI || !JWT_SECRET) {
     process.exit(1);
 }
 
-let db: any;
-let isDbConnected = false;
+// --- Database Connection Caching for Serverless ---
+let cachedDb: Db | null = null;
+
+async function connectToDatabase(): Promise<Db> {
+    if (cachedDb) {
+        return cachedDb;
+    }
+    try {
+        const client = await MongoClient.connect(MONGO_URI);
+        const db = client.db();
+        cachedDb = db;
+        console.log("New DB connection established.");
+        return db;
+    } catch (error) {
+        console.error("Failed to connect to MongoDB", error);
+        throw new Error("Could not connect to database.");
+    }
+}
+// --------------------------------------------------
 
 
 // FIX: Use imported Request, Response, NextFunction types from express.
@@ -73,41 +90,13 @@ const protectRoute = (req: Request, res: Response, next: NextFunction) => {
 };
 
 // --- API ROUTES ---
-// FIX: Define all API routes *before* serving static files.
 app.get('/api/all-data', async (req: Request, res: Response) => {
-    if (!isDbConnected) {
-        console.warn("Database not connected. Serving initial fallback data.");
-        const usersWithoutPasswords = initialData.initialUsers.map(({ password, ...user }) => user);
-
-        res.json({
-            allProducts: initialData.initialProducts,
-            allCategories: initialData.initialCategories,
-            allStores: initialData.initialStores,
-            flashSales: initialData.initialFlashSales,
-            allOrders: [initialData.sampleDeliveredOrder, initialData.sampleDeliveredOrder2, initialData.sampleDeliveredOrder3, initialData.sampleNewMissionOrder],
-            allPromoCodes: [],
-            allPickupPoints: initialData.initialPickupPoints,
-            allShippingPartners: initialData.initialShippingPartners,
-            payouts: [],
-            siteSettings: initialData.initialSiteSettings,
-            siteContent: initialData.initialSiteContent,
-            allAdvertisements: initialData.initialAdvertisements,
-            allPaymentMethods: initialData.initialPaymentMethods,
-            siteActivityLogs: initialData.initialSiteActivityLogs,
-            allNotifications: [],
-            allTickets: [],
-            allAnnouncements: [],
-            allZones: initialData.initialZones,
-            allUsers: usersWithoutPasswords,
-        });
-        return;
-    }
-
     try {
+        const db = await connectToDatabase();
         const [
             allProducts, allCategories, allStores, flashSales, allOrders, 
             allPromoCodes, allPickupPoints, allShippingPartners, payouts, 
-            siteSettings, siteContent, allAdvertisements, allPaymentMethods, 
+            siteSettingsResult, siteContent, allAdvertisements, allPaymentMethods, 
             siteActivityLogs, allNotifications, allTickets, allAnnouncements, 
             allZones, allUsers
         ] = await Promise.all([
@@ -131,6 +120,8 @@ app.get('/api/all-data', async (req: Request, res: Response) => {
             db.collection('zones').find().toArray(),
             db.collection('users').find({}, { projection: { password: 0 } }).toArray(),
         ]);
+        
+        const siteSettings = siteSettingsResult || initialData.initialSiteSettings;
 
         res.json({
             allProducts, allCategories, allStores, flashSales, allOrders, 
@@ -141,7 +132,7 @@ app.get('/api/all-data', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error("Error fetching all data:", error);
-        res.status(500).json({ message: "Internal server error" });
+        res.status(500).json({ message: "Internal server error while fetching data." });
     }
 });
 
@@ -150,6 +141,7 @@ app.get('/api/all-data', async (req: Request, res: Response) => {
 app.post('/api/auth/register', async (req: Request, res: Response) => {
     const { name, email, password, role, phone, birthDate, address } = req.body;
     try {
+        const db = await connectToDatabase();
         const existingUser = await db.collection('users').findOne({ email });
         if (existingUser) {
             return res.status(400).json({ message: "User already exists" });
@@ -166,13 +158,14 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
         };
 
         const result = await db.collection('users').insertOne(newUser);
-        const userForToken = { ...newUser, id: result.insertedId, _id: result.insertedId };
+        const userForToken = { ...newUser, id: result.insertedId.toHexString(), _id: result.insertedId };
         delete (userForToken as any).password;
 
         const token = jwt.sign({ user: userForToken }, JWT_SECRET!, { expiresIn: '1d' });
 
         res.status(201).json({ token, user: userForToken });
     } catch (error) {
+        console.error("Error in /api/auth/register:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
@@ -180,17 +173,19 @@ app.post('/api/auth/register', async (req: Request, res: Response) => {
 app.post('/api/auth/login', async (req: Request, res: Response) => {
     const { email, password } = req.body;
     try {
+        const db = await connectToDatabase();
         const user = await db.collection('users').findOne({ email });
         if (!user) return res.status(400).json({ message: 'Invalid credentials' });
         
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) return res.status(400).json({ message: 'Invalid credentials' });
         
-        const userForToken = { ...user };
+        const userForToken = { ...user, id: user._id.toHexString() };
         delete userForToken.password;
         const token = jwt.sign({ user: userForToken }, JWT_SECRET!, { expiresIn: '1d' });
         res.json({ token, user: userForToken });
     } catch (error) {
+        console.error("Error in /api/auth/login:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
@@ -198,6 +193,7 @@ app.post('/api/auth/login', async (req: Request, res: Response) => {
 app.post('/api/orders', protectRoute, async (req: Request, res: Response) => {
     const orderData = req.body;
     try {
+        const db = await connectToDatabase();
         const newOrder = {
             ...orderData,
             orderDate: new Date().toISOString(),
@@ -207,52 +203,35 @@ app.post('/api/orders', protectRoute, async (req: Request, res: Response) => {
         const result = await db.collection('orders').insertOne(newOrder);
         res.status(201).json({ ...newOrder, _id: result.insertedId });
     } catch (error) {
+        console.error("Error in /api/orders:", error);
         res.status(500).json({ message: "Server error" });
     }
 });
 
 // --- STATIC FILES & SPA CATCH-ALL ---
-// Serve static files from the project root. This will serve `index.html` for `/`, `bundle.js` for `/bundle.js` etc.
-app.use(express.static(rootPath));
-
-// For any other GET request that is not an API route and was not found in the static folder,
-// serve the index.html. This is the catch-all for Single Page Applications.
-// It MUST be the last route registered.
-app.get('*', (req: Request, res: Response) => {
-    res.sendFile(path.join(rootPath, 'index.html'));
-});
-
-async function startServer() {
-    try {
-        const client = await MongoClient.connect(MONGO_URI);
-        console.log('Connected to Database');
-        db = client.db();
-        isDbConnected = true;
-    } catch (error: any) {
-        console.error(error);
-        if (error.name === 'MongoServerSelectionError') {
-            console.error("\n---[ Erreur de Connexion MongoDB ]---");
-            console.error("Impossible de se connecter à la base de données. L'application va démarrer avec des données de secours.");
-            console.error("Pour une fonctionnalité complète, veuillez résoudre les problèmes suivants :");
-            console.error("1. Votre adresse IP n'est pas autorisée : Dans MongoDB Atlas, allez dans 'Network Access' et ajoutez votre adresse IP actuelle.");
-            console.error("2. Chaîne de connexion incorrecte : Vérifiez la variable MONGO_URI dans votre fichier .env.");
-            console.error("3. Cluster en pause : Assurez-vous que votre cluster MongoDB Atlas est actif.");
-            console.error("-------------------------------------\n");
+// Serve static files from the project root for local development.
+// On Vercel, this is handled automatically.
+if (isDev) {
+    app.use(express.static(rootPath));
+    app.get('*', (req: Request, res: Response) => {
+        if (!req.path.startsWith('/api/')) {
+            res.sendFile(path.join(rootPath, 'index.html'));
+        } else {
+            res.status(404).json({ message: "API endpoint not found" });
         }
-    }
-
-    // Start server only if not in a serverless environment (like Vercel)
-    if (process.env.VERCEL_ENV !== 'production' && process.env.VERCEL_ENV !== 'preview') {
-        const PORT = process.env.PORT || 3000;
-        app.listen(PORT, () => {
-            console.log(`\n=================================================`);
-            console.log(`🚀 Server running at: http://localhost:${PORT}`);
-            console.log(`=================================================\n`);
-        });
-    }
+    });
 }
 
-startServer();
+
+// Start server only for local development
+if (isDev) {
+    const PORT = process.env.PORT || 3000;
+    app.listen(PORT, () => {
+        console.log(`\n=================================================`);
+        console.log(`🚀 Server running at: http://localhost:${PORT}`);
+        console.log(`=================================================\n`);
+    });
+}
 
 
 export default app;
