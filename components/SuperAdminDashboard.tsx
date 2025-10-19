@@ -16,7 +16,7 @@ import { SupportPanel } from './admin/SupportPanel';
 import { LogsPanel } from './admin/LogsPanel';
 import { SettingsPanel } from './admin/SettingsPanel';
 import ReviewModerationPanel from './admin/ReviewModerationPanel';
-import { useLanguage } from '../../contexts/LanguageContext';
+import { useLanguage } from '../contexts/LanguageContext';
 import { ServicesPanel } from './admin/ServicesPanel';
 import { RefundsPanel } from './admin/RefundsPanel';
 
@@ -104,7 +104,7 @@ export const SuperAdminDashboard: React.FC<SuperAdminDashboardProps> = ({ siteDa
             onDeleteAdvertisement: (id: string) => user && siteData.handleDeleteAdvertisement(id, user),
             onCreateOrUpdateAnnouncement: (data: Omit<Announcement, 'id'> | Announcement) => user && siteData.handleCreateOrUpdateAnnouncement(data, user),
             onDeleteAnnouncement: (id: string) => user && siteData.handleDeleteAnnouncement(id, user),
-            onAdminReplyToTicket: (ticketId: string, message: string) => user && siteData.handleAdminReplyToTicket(ticketId, message, user),
+            onAdminReplyToTicket: (ticketId: string, message: string, attachments?: string[]) => user && siteData.handleAdminReplyToTicket(ticketId, message, user, attachments),
             onAdminUpdateTicketStatus: (ticketId: string, status: Ticket['status']) => user && siteData.handleAdminUpdateTicketStatus(ticketId, status, user),
             onReviewModeration: (productId: string, reviewIdentifier: { author: string; date: string; }, newStatus: 'approved' | 'rejected') => user && siteData.handleReviewModeration(productId, reviewIdentifier, newStatus, user),
             onSendBulkEmail: (recipientIds: string[], subject: string, body: string) => user && siteData.handleSendBulkEmail(recipientIds, subject, body, user),
